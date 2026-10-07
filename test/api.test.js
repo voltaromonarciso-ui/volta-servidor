@@ -192,3 +192,13 @@ test('stats de una semana anterior cuentan como cero en la clasificación actual
   const r = await api('GET', '/api/friends/leaderboard', { token: a.token });
   assert.deepEqual(r.body.entries.map((e) => [e.days, e.sets, e.volume]), [[0, 0, 0]]);
 });
+
+test('la app se sirve precomprimida y responde 304 si no ha cambiado', async () => {
+  const r = await fetch(base() + '/', { headers: { 'Accept-Encoding': 'gzip' } });
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /VOLTA-MEJORAS:START/); // fetch descomprime: el gzip es válido
+  const etag = r.headers.get('etag');
+  assert.ok(etag);
+  const again = await fetch(base() + '/', { headers: { 'If-None-Match': etag } });
+  assert.equal(again.status, 304);
+});

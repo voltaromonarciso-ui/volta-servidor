@@ -1,4 +1,6 @@
 const fs = require('fs');
+const zlib = require('zlib');
+const crypto = require('crypto');
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
@@ -45,8 +47,15 @@ const APP_CSP = [
   "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "object-src 'none'",
 ].join('; ');
 if (appHtml) {
-  app.get(['/', '/index.html'], (_req, res) => {
-    res.set({ 'Content-Security-Policy': APP_CSP, 'Cache-Control': 'no-cache' }).type('html').send(appHtml);
+  // Se comprime una sola vez al arrancar (comprimir 2,9 MB en cada visita limitaba a ~20 cargas/s)
+  const appGz = zlib.gzipSync(appHtml, { level: 9 });
+  const etag = '"' + crypto.createHash('sha1').update(appHtml).digest('base64url').slice(0, 20) + '"';
+  app.get(['/', '/index.html'], (req, res) => {
+    res.set({ 'Content-Security-Policy': APP_CSP, 'Cache-Control': 'no-cache', ETag: etag, Vary: 'Accept-Encoding' });
+    if (req.headers['if-none-match'] === etag) return res.status(304).end();
+    res.type('html');
+    if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) return res.set('Content-Encoding', 'gzip').send(appGz);
+    res.send(appHtml);
   });
 }
 app.use(express.static(path.join(__dirname, '..', 'public'), {
