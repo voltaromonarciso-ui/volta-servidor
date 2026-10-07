@@ -298,6 +298,40 @@
     });
   }
 
+  /* ───────────── 8. Cronómetro de la sesión y siguiente ejercicio (como Hevy) ───────────── */
+  const NX = ['Siguiente', 'Up next', 'Ensuite', 'A seguir'];
+  const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+  function sessionStart() {
+    const V2 = vx(), k = td();
+    if (!V2.ws || V2.ws.d !== k) { V2.ws = { d: k, t: Date.now() }; save(); }
+    return V2.ws.t;
+  }
+  function nextExercise() {
+    const r = (S.routines || []).find((x) => x.id == S.cur);
+    const L = r ? r.ex.length : (typeof DEF !== 'undefined' ? DEF.length : 0);
+    if (S.wi >= L - 1) return null;
+    const keep = S.wi;
+    try { S.wi = keep + 1; const c = cfg(); return c && EX[c.i] ? c : null; } catch (e) { return null; } finally { S.wi = keep; }
+  }
+  if (typeof V.work === 'function') {
+    const _work = V.work;
+    V.work = function () {
+      let h = _work.apply(this, arguments);
+      try {
+        if (S.done && S.done[td()] && !S.edit) return h; // pantalla de "completado"
+        const t0 = sessionStart();
+        h = h.replace('</div></div><div class="bar"', `</div><span class="vx-clock" id="vxclk" aria-label="⏱">⏱ ${clock(Date.now() - t0)}</span></div><div class="bar"`);
+        const n = nextExercise();
+        if (n) h += `<div class="vx-next"><span class="mu">${NX[LI[S.lang] || 0]}</span><b>${esc(window.vxTr ? window.vxTr(EX[n.i][0]) : EX[n.i][0])}</b><span class="mu">${n.sets} × ${esc(String(n.reps))}</span></div>`;
+      } catch (e) { /* la pantalla original sigue intacta */ }
+      return h;
+    };
+  }
+  setInterval(() => {
+    const el = document.getElementById('vxclk');
+    if (el && vx().ws) el.textContent = '⏱ ' + clock(Date.now() - vx().ws.t);
+  }, 1000);
+
   const _R = R;
   R = function () {
     const out = _R.apply(this, arguments);

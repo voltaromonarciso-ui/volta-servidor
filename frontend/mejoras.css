@@ -91,3 +91,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 /* Entrada suave de las tarjetas nuevas */
 @keyframes vxIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .vx-missions,.vx-rec,.vx-achcard,.vx-heat{animation:vxIn .35s cubic-bezier(.2,.8,.2,1) both}
+
+/* ───── Cronómetro de sesión y siguiente ejercicio ───── */
+.vx-clock{margin-left:auto;padding:6px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--ln);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vx-next{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;padding:12px 14px;border:1px dashed var(--ln);border-radius:16px}
+.vx-next b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
