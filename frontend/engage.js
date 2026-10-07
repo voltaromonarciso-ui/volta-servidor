@@ -13,6 +13,9 @@
     go: ['Ir', 'Go', 'Aller', 'Ir'],
     perfect: ['¡Día perfecto! Misiones completadas', 'Perfect day! Missions complete', 'Journée parfaite ! Missions accomplies', 'Dia perfeito! Missões concluídas'],
     perfectShort: ['Día perfecto', 'Perfect day', 'Journée parfaite', 'Dia perfeito'],
+    frzWon: ['Has ganado un congelador de racha 🧊', 'You earned a streak freeze 🧊', 'Tu as gagné un gel de série 🧊', 'Ganhaste um congelador de sequência 🧊'],
+    frzUsed: ['Congelador usado: tu racha sigue viva 🧊', 'Streak freeze used: your streak lives on 🧊', 'Gel utilisé : ta série continue 🧊', 'Congelador usado: a tua sequência continua 🧊'],
+    frzTip: ['Congeladores de racha: protegen tu racha si un día no abres la app. Ganas uno cada 3 días perfectos.', 'Streak freezes protect your streak if you miss a day. Earn one every 3 perfect days.', "Les gels de série protègent ta série si tu rates un jour. Gagnes-en un tous les 3 jours parfaits.", 'Os congeladores protegem a tua sequência se falhares um dia. Ganhas um a cada 3 dias perfeitos.'],
     rec: ['Recuperación muscular', 'Muscle recovery', 'Récupération musculaire', 'Recuperação muscular'],
     readyToday: ['Listos para hoy', 'Ready today', "Prêts aujourd'hui", 'Prontos para hoje'],
     allReady: ['Todo recuperado: elige lo que quieras', 'Fully recovered: train anything', 'Tout est récupéré : entraîne ce que tu veux', 'Tudo recuperado: treina o que quiseres'],
@@ -63,7 +66,8 @@
   function missionsCard() {
     const M = missions(), n = M.filter((m) => m.done).length, perfect = n === M.length;
     const ring = (p) => { const C = 2 * Math.PI * 15; return `<svg class="vx-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="vx-ring-bg"/><circle cx="18" cy="18" r="15" class="vx-ring-fg" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - p)}"/></svg>`; };
-    return `<div class="card vx-missions${perfect ? ' vx-perfect' : ''}"><div class="row sp"><b>${perfect ? '🔥 ' + t('perfectShort') : t('missions')}</b><span class="vx-count">${n}/${M.length}</span></div>` +
+    const frz = vx().freezes || 0;
+    return `<div class="card vx-missions${perfect ? ' vx-perfect' : ''}"><div class="row sp"><b>${perfect ? '🔥 ' + t('perfectShort') : t('missions')}</b><span class="row" style="gap:8px">${frz ? `<span class="vx-frz" title="${esc(t('frzTip'))}" aria-label="${esc(t('frzTip'))}">🧊 ${frz}</span>` : ''}<span class="vx-count">${n}/${M.length}</span></span></div>` +
       M.map((m) => `<div class="row vx-mrow${m.done ? ' done' : ''}"><div class="vx-mic">${ring(m.prog)}<span>${m.done ? '✓' : m.icon}</span></div><div class="g"><div class="vx-ml">${m.label}</div>${m.txt && !m.done ? `<div class="mu">${m.txt}</div>` : ''}</div>${m.done ? '' : m.act}</div>`).join('') +
       '</div>';
   }
@@ -73,6 +77,9 @@
     if (M.every((m) => m.done) && !V2.perfect[k]) {
       V2.perfect[k] = 1; save();
       pushInbox('🔥', t('perfect'));
+      const nP = Object.keys(V2.perfect).length;
+      if (nP % 3 === 0 && (V2.freezes || 0) < 2) { V2.freezes = (V2.freezes || 0) + 1; save(); pushInbox('🧊', t('frzWon')); setTimeout(() => toast(t('frzWon')), 2400); }
+      try { R(); } catch (e) { /* se verá en el siguiente render */ }
       setTimeout(() => { window.vxCelebrate && window.vxCelebrate(); toast('🔥 ' + t('perfect')); }, 120);
     }
   }
@@ -566,6 +573,25 @@
     try { fixHeader(); } catch (e) { /* cabecera original */ }
     return out;
   };
+
+  /* ───────────── 12. Congelador de racha (como Duolingo) ───────────── */
+  // La app reinicia la racha si pasan más de 48 h sin abrirla. Con un congelador, aguanta hasta 72 h.
+  function guardStreak() {
+    const V2 = vx(), snap = V2.streakSnap, now = Date.now(), today = lk(now);
+    if (snap && snap.count > 1 && S.streakCount === 1 && S.lastLoginDate === today && snap.date !== today &&
+        now - snap.ts <= 72 * 36e5 && (V2.freezes || 0) > 0) {
+      V2.freezes -= 1;
+      S.streakCount = snap.count + 1;
+      S.bestStreak = Math.max(S.bestStreak || 0, S.streakCount);
+      pushInbox('🧊', t('frzUsed'));
+      setTimeout(() => toast(t('frzUsed')), 800);
+    }
+    V2.streakSnap = { count: S.streakCount || 0, ts: S.lastLoginTs || now, date: S.lastLoginDate || today };
+    save();
+  }
+  try { guardStreak(); } catch (e) { /* sin racha */ }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { guardStreak(); R(); } catch (e) { /* idem */ } } });
+  window.vxGuardStreak = guardStreak; // para pruebas
 
   setTimeout(() => { try { checkAchievements(); } catch (e) { /* sin logros */ } }, 1500);
   try { R(); } catch (e) { /* la app ya está pintada */ }

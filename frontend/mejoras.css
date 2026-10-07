@@ -143,3 +143,4 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-lbr.me{background:rgba(157,255,46,.08);border-radius:12px}
 .vx-lbp{width:28px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
 .vx-lbv{color:var(--ac);font-variant-numeric:tabular-nums;white-space:nowrap}
+.vx-frz{padding:3px 9px;border-radius:10px;background:rgba(120,200,255,.14);border:1px solid rgba(120,200,255,.45);color:#9fdcff;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
