@@ -1,5 +1,5 @@
 // Uso: npm run build:app
-// Inyecta frontend/mejoras.css y frontend/mejoras.js al final de Volta-app.html (entre marcadores,
+// Inyecta frontend/mejoras.css, frontend/mejoras.js y frontend/engage.js al final de Volta-app.html (entre marcadores,
 // así se puede volver a ejecutar tantas veces como haga falta sin duplicar nada).
 const fs = require('fs');
 const path = require('path');
@@ -7,7 +7,8 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const file = path.join(root, 'Volta-app.html');
 const css = fs.readFileSync(path.join(root, 'frontend/mejoras.css'), 'utf8');
-const js = fs.readFileSync(path.join(root, 'frontend/mejoras.js'), 'utf8');
+// Orden importante: engage.js se apoya en lo que define mejoras.js (vxTr, vxCelebrate)
+const js = ['mejoras.js', 'engage.js'].map((f) => fs.readFileSync(path.join(root, 'frontend', f), 'utf8')).join('\n');
 
 const START = '<!-- VOLTA-MEJORAS:START -->';
 const END = '<!-- VOLTA-MEJORAS:END -->';
