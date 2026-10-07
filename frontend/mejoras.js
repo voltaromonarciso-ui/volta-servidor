@@ -384,6 +384,184 @@ Puente de glúteo a una pierna|Single-leg glute bridge|Pont fessier unijambe|Pon
 Elevación de talones con peso corporal|Bodyweight calf raise|Extension des mollets au poids du corps|Elevação de calcanhares com peso corporal
 Elevación de rodillas colgado|Hanging knee raise|Relevé de genoux suspendu|Elevação de joelhos suspenso
 `);
+  // Comidas, ingredientes y alimentos de la base nutricional
+  add(`
+Todos|All|Tous|Todos
+Recomendado para ti|Recommended for you|Recommandé pour toi|Recomendado para ti
+Desayunos|Breakfasts|Petits-déjeuners|Pequenos-almoços
+Comidas|Lunches|Déjeuners|Almoços
+Cenas|Dinners|Dîners|Jantares
+Meriendas|Afternoon snacks|Goûters|Lanches
+Postres|Desserts|Desserts|Sobremesas
+Snacks|Snacks|Snacks|Snacks
+Alto en proteína|High protein|Riche en protéines|Rico em proteína
+Bajo en calorías|Low calorie|Faible en calories|Baixo em calorias
+Rápidas|Quick|Rapides|Rápidas
+Económicas|Budget-friendly|Économiques|Económicas
+Vegetarianas|Vegetarian|Végétariennes|Vegetarianas
+Pasta con pollo|Chicken pasta|Pâtes au poulet|Massa com frango
+Salmón con patata|Salmon with potatoes|Saumon et pommes de terre|Salmão com batata
+Arroz con pollo|Chicken and rice|Riz au poulet|Arroz com frango
+Tortilla de verduras|Vegetable omelette|Omelette aux légumes|Omelete de legumes
+Yogur con fruta|Yogurt with fruit|Yaourt aux fruits|Iogurte com fruta
+Avena con plátano|Oats with banana|Avoine à la banane|Aveia com banana
+Bowl de garbanzos|Chickpea bowl|Bowl de pois chiches|Bowl de grão-de-bico
+Ensalada de atún|Tuna salad|Salade de thon|Salada de atum
+Tostada de aguacate|Avocado toast|Tartine à l'avocat|Tosta de abacate
+Pavo con verduras|Turkey with vegetables|Dinde aux légumes|Peru com legumes
+Lentejas estofadas|Lentil stew|Ragoût de lentilles|Lentilhas estufadas
+Batido de proteína|Protein shake|Shake protéiné|Batido de proteína
+Manzana con requesón|Apple with cottage cheese|Pomme et fromage blanc|Maçã com requeijão
+Tarta de queso ligera|Light cheesecake|Cheesecake léger|Cheesecake leve
+Wrap de pollo|Chicken wrap|Wrap au poulet|Wrap de frango
+Huevos con espinacas|Eggs with spinach|Œufs aux épinards|Ovos com espinafres
+Tofu salteado con arroz|Stir-fried tofu with rice|Tofu sauté au riz|Tofu salteado com arroz
+Merluza al horno|Baked hake|Merlu au four|Pescada no forno
+Ternera con boniato|Beef with sweet potato|Bœuf et patate douce|Vitela com batata-doce
+Gazpacho|Gazpacho|Gaspacho|Gaspacho
+Hummus con crudités|Hummus with crudités|Houmous et crudités|Húmus com palitos de legumes
+pasta|pasta|pâtes|massa
+pollo|chicken|poulet|frango
+tomate|tomato|tomate|tomate
+salmón|salmon|saumon|salmão
+patata|potato|pomme de terre|batata
+espárragos|asparagus|asperges|espargos
+arroz|rice|riz|arroz
+pimiento|bell pepper|poivron|pimento
+huevos|eggs|œufs|ovos
+calabacín|zucchini|courgette|curgete
+cebolla|onion|oignon|cebola
+yogur|yogurt|yaourt|iogurte
+fresas|strawberries|fraises|morangos
+plátano|banana|banane|banana
+avena|oats|avoine|aveia
+leche|milk|lait|leite
+garbanzos|chickpeas|pois chiches|grão-de-bico
+brócoli|broccoli|brocoli|brócolos
+aguacate|avocado|avocat|abacate
+atún|tuna|thon|atum
+lechuga|lettuce|laitue|alface
+pan|bread|pain|pão
+pavo|turkey|dinde|peru
+zanahoria|carrot|carotte|cenoura
+lentejas|lentils|lentilles|lentilhas
+whey|whey|whey|whey
+proteína whey|whey protein|protéine whey|proteína whey
+manzana|apple|pomme|maçã
+requesón|cottage cheese|fromage blanc|requeijão
+edulcorante|sweetener|édulcorant|adoçante
+tortilla|omelette|omelette|omelete
+espinacas|spinach|épinards|espinafres
+tofu|tofu|tofu|tofu
+merluza|hake|merlu|pescada
+limón|lemon|citron|limão
+ternera|beef|bœuf|vitela
+boniato|sweet potato|patate douce|batata-doce
+pepino|cucumber|concombre|pepino
+ternera magra|lean beef|bœuf maigre|vitela magra
+cerdo magro|lean pork|porc maigre|porco magro
+bacalao|cod|cabillaud|bacalhau
+dorada|sea bream|dorade|dourada
+lubina|sea bass|bar|robalo
+lenguado|sole|sole|linguado
+trucha|trout|truite|truta
+sardina|sardine|sardine|sardinha
+caballa|mackerel|maquereau|cavala
+bonito|bonito tuna|bonite|bonito
+gambas|prawns|crevettes|camarão
+langostinos|king prawns|gambas|lagostins
+claras|egg whites|blancs d'œufs|claras
+tempeh|tempeh|tempeh|tempeh
+seitán|seitan|seitan|seitan
+soja texturizada|textured soy|soja texturée|soja texturizada
+edamame|edamame|edamame|edamame
+alubias|beans|haricots|feijão
+guisantes|peas|petits pois|ervilhas
+arroz integral|brown rice|riz complet|arroz integral
+basmati|basmati rice|riz basmati|arroz basmati
+jazmín|jasmine rice|riz jasmin|arroz jasmim
+pasta integral|wholewheat pasta|pâtes complètes|massa integral
+quinoa|quinoa|quinoa|quinoa
+cuscús|couscous|couscous|cuscuz
+bulgur|bulgur|boulgour|bulgur
+trigo sarraceno|buckwheat|sarrasin|trigo-sarraceno
+polenta|polenta|polenta|polenta
+maíz|corn|maïs|milho
+gnocchi|gnocchi|gnocchis|gnocchi
+fideos de arroz|rice noodles|nouilles de riz|massa de arroz
+pasta de legumbres|legume pasta|pâtes de légumineuses|massa de leguminosas
+tortilla de trigo|flour tortilla|tortilla de blé|tortilha de trigo
+tortilla de maíz|corn tortilla|tortilla de maïs|tortilha de milho
+pan integral|wholemeal bread|pain complet|pão integral
+pan de centeno|rye bread|pain de seigle|pão de centeio
+pan multicereal|multigrain bread|pain multicéréales|pão multicereais
+tortitas de arroz|rice cakes|galettes de riz|bolachas de arroz
+tortitas de maíz|corn cakes|galettes de maïs|bolachas de milho
+harina de avena|oat flour|farine d'avoine|farinha de aveia
+crema de arroz|cream of rice|crème de riz|creme de arroz
+muesli|muesli|muesli|muesli
+cereales integrales|wholegrain cereal|céréales complètes|cereais integrais
+copos de maíz|corn flakes|flocons de maïs|flocos de milho
+granola|granola|granola|granola
+arroz inflado|puffed rice|riz soufflé|arroz tufado
+leche entera|whole milk|lait entier|leite gordo
+leche semidesnatada|semi-skimmed milk|lait demi-écrémé|leite meio-gordo
+leche desnatada|skimmed milk|lait écrémé|leite magro
+leche sin lactosa|lactose-free milk|lait sans lactose|leite sem lactose
+bebida de soja|soy drink|boisson au soja|bebida de soja
+bebida de avena|oat drink|boisson à l'avoine|bebida de aveia
+bebida de almendras|almond drink|boisson aux amandes|bebida de amêndoa
+bebida de arroz|rice drink|boisson au riz|bebida de arroz
+bebida de coco|coconut drink|boisson à la noix de coco|bebida de coco
+yogur griego|Greek yogurt|yaourt grec|iogurte grego
+yogur griego 0 %|0% Greek yogurt|yaourt grec 0 %|iogurte grego 0 %
+skyr|skyr|skyr|skyr
+queso fresco batido|quark|fromage blanc battu|queijo fresco batido
+kéfir|kefir|kéfir|kefir
+yogur alto en proteína|high-protein yogurt|yaourt riche en protéines|iogurte rico em proteína
+queso fresco|fresh cheese|fromage frais|queijo fresco
+cottage|cottage cheese|cottage|cottage
+ricotta|ricotta|ricotta|ricota
+mozzarella|mozzarella|mozzarella|mozarela
+aceite de oliva|olive oil|huile d'olive|azeite
+aceite de aguacate|avocado oil|huile d'avocat|óleo de abacate
+aceite de girasol|sunflower oil|huile de tournesol|óleo de girassol
+aceite de canola|canola oil|huile de colza|óleo de canola
+aceite de coco|coconut oil|huile de coco|óleo de coco
+aceitunas|olives|olives|azeitonas
+frutos secos|nuts|fruits à coque|frutos secos
+crema de cacahuete|peanut butter|beurre de cacahuète|manteiga de amendoim
+crema de almendras|almond butter|purée d'amandes|manteiga de amêndoa
+crema de anacardos|cashew butter|purée de cajou|manteiga de caju
+crema de avellanas 100 %|100% hazelnut butter|purée de noisettes 100 %|creme de avelã 100 %
+tahini|tahini|tahini|tahini
+almendras|almonds|amandes|amêndoas
+nueces|walnuts|noix|nozes
+anacardos|cashews|noix de cajou|cajus
+pistachos|pistachios|pistaches|pistácios
+avellanas|hazelnuts|noisettes|avelãs
+cacahuetes|peanuts|cacahuètes|amendoins
+nueces pecanas|pecans|noix de pécan|nozes-pecã
+pera|pear|poire|pera
+kiwi|kiwi|kiwi|kiwi
+mango|mango|mangue|manga
+piña|pineapple|ananas|ananás
+melocotón|peach|pêche|pêssego
+uvas|grapes|raisin|uvas
+arándanos|blueberries|myrtilles|mirtilos
+frambuesas|raspberries|framboises|framboesas
+moras|blackberries|mûres|amoras
+melón|melon|melon|melão
+coliflor|cauliflower|chou-fleur|couve-flor
+judías verdes|green beans|haricots verts|feijão-verde
+acelgas|chard|blettes|acelgas
+coles de Bruselas|Brussels sprouts|choux de Bruxelles|couves-de-bruxelas
+kale|kale|chou kale|couve kale
+rúcula|rocket|roquette|rúcula
+canónigos|lamb's lettuce|mâche|canónigos
+berenjena|aubergine|aubergine|beringela
+calabaza|pumpkin|courge|abóbora
+`);
   const UP = {};
   Object.keys(D).forEach((k) => { UP[k.toUpperCase()] = D[k].map((s) => s.toUpperCase()); });
   const EXNAMES = Object.keys(D).filter((k) => Array.isArray(EX) && EX.some((e) => e[0] === k)).sort((a, b) => b.length - a.length);
@@ -401,6 +579,7 @@ Elevación de rodillas colgado|Hanging knee raise|Relevé de genoux suspendu|Ele
     [/^(\d+) días?$/, ['$1 d', '$1 j', '$1 d']],
     [/^días?$/, ['d', 'j', 'd']],
     [/^Abre Volta cada día para construir tu racha\. Se reinicia tras 48 h sin abrir la app\. Récord: (\d+)\.$/, ['Open Volta every day to build your streak. It resets after 48 h without opening the app. Best: $1.', "Ouvre Volta chaque jour pour construire ta série. Elle repart à zéro après 48 h sans ouvrir l'app. Record : $1.", 'Abre o Volta todos os dias para construíres a tua sequência. Reinicia após 48 h sem abrir a app. Recorde: $1.']],
+    [/^Ver más \((\d+)\)$/, ['See more ($1)', 'Voir plus ($1)', 'Ver mais ($1)']],
     [/^NUEVO RANGO: (.+)$/, ['NEW RANK: $1', 'NOUVEAU RANG : $1', 'NOVO NÍVEL: $1']],
     [/^NUEVO RÉCORD PERSONAL · (.+)$/, ['NEW PERSONAL RECORD · $1', 'NOUVEAU RECORD PERSONNEL · $1', 'NOVO RECORDE PESSOAL · $1']],
   ];
@@ -414,6 +593,12 @@ Elevación de rodillas colgado|Hanging knee raise|Relevé de genoux suspendu|Ele
     for (const [re, out] of P) {
       const m = re.exec(s);
       if (m) return out[x - 1].replace(/\$(\d)/g, (_, i) => trInner(m[i], x));
+    }
+    // "Avena, plátano, proteína whey": lista de alimentos separada por comas
+    if (s.indexOf(', ') !== -1) {
+      const parts = s.split(', ');
+      const tr = parts.map((p) => { const k = p.charAt(0).toLowerCase() + p.slice(1); return D[p] ? D[p][x] : D[k] ? D[k][x] : null; });
+      if (tr.every(Boolean)) { const o = tr.join(', '); return o.charAt(0).toUpperCase() + o.slice(1); }
     }
     // "Martes, 6 de octubre" → fecha en el idioma elegido
     const f = /^[A-Za-zÁÉÍÓÚáéíóú]+, (\d{1,2}) de ([a-z]+)$/.exec(s);
