@@ -230,7 +230,7 @@
   V.home = function () {
     let h = _home.apply(this, arguments);
     try {
-      const block = missionsCard() + recoveryCard();
+      const block = (weekDue() ? weekCard(true) : '') + missionsCard() + recoveryCard();
       h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
       h += achCard() + quoteCard();
     } catch (e) { /* la pantalla original sigue intacta */ }
@@ -240,7 +240,7 @@
     const _prog = V.prog;
     V.prog = function () {
       let h = _prog.apply(this, arguments);
-      try { h = insertBefore(h, 'esumen de esta semana', heatmapCard()) || insertBefore(h, 'ESUMEN DE ESTA SEMANA', heatmapCard()) || h + heatmapCard(); } catch (e) { /* idem */ }
+      try { const blk = weekCard(false) + heatmapCard(); h = insertBefore(h, 'esumen de esta semana', blk) || insertBefore(h, 'ESUMEN DE ESTA SEMANA', blk) || h + blk; } catch (e) { /* idem */ }
       return h;
     };
   }
@@ -297,6 +297,106 @@
       })(t0);
     });
   }
+
+  /* ───────────── 9. Resumen semanal en historias (estilo Wrapped) ───────────── */
+  const W = {
+    title: ['Tu semana en Volta', 'Your week in Volta', 'Ta semaine sur Volta', 'A tua semana no Volta'],
+    last7: ['Últimos 7 días', 'Last 7 days', '7 derniers jours', 'Últimos 7 dias'],
+    open: ['Ver mi semana', 'See my week', 'Voir ma semaine', 'Ver a minha semana'],
+    ready: ['Tu resumen semanal está listo', 'Your weekly recap is ready', 'Ton récap de la semaine est prêt', 'O teu resumo semanal está pronto'],
+    days: ['días entrenados', 'training days', "jours d'entraînement", 'dias treinados'],
+    sets: ['series', 'sets', 'séries', 'séries'],
+    volume: ['volumen total', 'total volume', 'volume total', 'volume total'],
+    vsPrev: ['vs. los 7 días anteriores', 'vs. the previous 7 days', 'vs. les 7 jours précédents', 'vs. os 7 dias anteriores'],
+    best: ['Tu mejor marca', 'Your best lift', 'Ta meilleure perf', 'A tua melhor marca'],
+    e1rm: ['1RM estimado', 'estimated 1RM', '1RM estimé', '1RM estimado'],
+    prs: ['récords batidos', 'records broken', 'records battus', 'recordes batidos'],
+    top: ['Tu músculo estrella', 'Your star muscle', 'Ton muscle star', 'O teu músculo estrela'],
+    perfect: ['días perfectos', 'perfect days', 'journées parfaites', 'dias perfeitos'],
+    water: ['litros de agua', 'litres of water', "litres d'eau", 'litros de água'],
+    end: ['A por la siguiente semana', 'On to next week', 'En route pour la semaine prochaine', 'Venha a próxima semana'],
+    share: ['Compartir', 'Share', 'Partager', 'Partilhar'],
+    none: ['Aún no hay entrenos esta semana: ¡empieza hoy!', 'No workouts this week yet: start today!', "Pas encore de séance cette semaine : commence aujourd'hui !", 'Ainda sem treinos esta semana: começa hoje!'],
+  };
+  const w = (k) => W[k][LI[S.lang] || 0];
+  function weekStats() {
+    const now = Date.now(), D7 = 7 * 864e5, L = viewLog();
+    const cur = L.filter((l) => now - l.t < D7), prev = L.filter((l) => now - l.t >= D7 && now - l.t < 2 * D7);
+    const vol = (A) => A.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0);
+    const best = cur.reduce((a, b) => (!a || e1of(b) > e1of(a) ? b : a), null);
+    const byG = {}; cur.forEach((l) => { const g = EX[l.ex] && EX[l.ex][1]; if (g) byG[g] = (byG[g] || 0) + 1; });
+    const top = Object.keys(byG).sort((a, b) => byG[b] - byG[a])[0];
+    const before = L.filter((l) => now - l.t >= D7), mx = {};
+    before.forEach((l) => { mx[l.ex] = Math.max(mx[l.ex] || 0, l.w || 0); });
+    const prs = new Set(cur.filter((l) => mx[l.ex] > 0 && (l.w || 0) > mx[l.ex]).map((l) => l.ex)).size;
+    let perfect = 0, water = 0;
+    for (let i = 0; i < 7; i++) { const k = lk(now - i * 864e5); if ((vx().perfect || {})[k]) perfect++; water += +dayOf(k).w || 0; }
+    const pv = vol(prev), cv = vol(cur);
+    return {
+      days: new Set(cur.map((l) => lk(l.t))).size, sets: cur.length, vol: cv,
+      delta: pv > 0 ? Math.round(((cv - pv) / pv) * 100) : null,
+      best, bestE: best ? Math.round(e1of(best)) : 0, prs, top, topN: top ? byG[top] : 0, perfect, water: water / 1000,
+    };
+  }
+  const num = (v, d) => Number(v).toLocaleString(S.lang, { maximumFractionDigits: d || 0 });
+  const big = (txt, small) => { const n = String(txt).length + (small ? String(small).length * 0.45 : 0); return `<div class="vx-st-big${n > 9 ? ' s' : n > 6 ? ' m' : ''}">${txt}${small ? ` <small>${small}</small>` : ''}</div>`; };
+  function slides(s) {
+    const u = S.units.w, nm = (x) => esc(window.vxTr ? window.vxTr(x) : x);
+    const delta = s.delta == null ? '' : `<div class="vx-st-delta ${s.delta >= 0 ? 'up' : 'down'}">${s.delta >= 0 ? '▲' : '▼'} ${Math.abs(s.delta)} % <span>${w('vsPrev')}</span></div>`;
+    if (!s.sets) return [`<div class="vx-st-k">${w('last7')}</div><h2>${w('title')}</h2><p>${w('none')}</p>`];
+    return [
+      `<div class="vx-st-k">${w('last7')}</div><h2>${w('title')}</h2>${big(s.days)}<div class="vx-st-l">${w('days')}</div>`,
+      `${big(num(s.vol), u)}<div class="vx-st-l">${w('volume')}</div>${delta}<div class="vx-st-row"><b>${s.sets}</b> ${w('sets')}</div>`,
+      `<div class="vx-st-k">${w('best')}</div><h2>${nm(EX[s.best.ex][0])}</h2>${big(s.best.w, u + ' × ' + s.best.r)}<div class="vx-st-l">${w('e1rm')}: ${s.bestE} ${u}</div><div class="vx-st-row">🏆 <b>${s.prs}</b> ${w('prs')}</div>`,
+      `<div class="vx-st-k">${w('top')}</div><h2>${s.top ? nm(s.top) : '—'}</h2><div class="vx-st-l">${s.topN} ${w('sets')}</div><div class="vx-st-row">⭐ <b>${s.perfect}</b> ${w('perfect')}</div><div class="vx-st-row">💧 <b>${num(s.water, 1)}</b> ${w('water')}</div>`,
+      `<h2>${w('end')} 💪</h2><button class="btn" onclick="event.stopPropagation();vxWeekShare()">📤 ${w('share')}</button>`,
+    ];
+  }
+  let story = null;
+  function storyClose() { if (story) { clearTimeout(story.timer); story.el.remove(); story = null; } }
+  function storyShow(i) {
+    if (!story) return;
+    story.i = Math.max(0, Math.min(story.n - 1, i));
+    story.el.querySelector('.vx-st-body').innerHTML = story.sl[story.i];
+    story.el.querySelectorAll('.vx-st-bars i').forEach((b, k) => { b.className = k < story.i ? 'done' : k === story.i ? 'on' : ''; });
+    clearTimeout(story.timer);
+    if (!reduceMotion() && story.i < story.n - 1) story.timer = setTimeout(() => storyShow(story.i + 1), 5000);
+  }
+  window.vxWeek = function () {
+    storyClose();
+    const sl = slides(weekStats());
+    const el = document.createElement('div');
+    el.className = 'vx-story'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', w('title'));
+    el.innerHTML = `<div class="vx-st-bars">${sl.map(() => '<i></i>').join('')}</div><button class="vx-st-x" aria-label="✕" onclick="event.stopPropagation();vxWeekClose()">✕</button><div class="vx-st-body"></div>`;
+    el.addEventListener('click', (e) => { if (!story) return; storyShow(story.i + (e.clientX > innerWidth / 3 ? 1 : -1)); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Escape') storyClose(); if (e.key === 'ArrowRight') storyShow(story.i + 1); if (e.key === 'ArrowLeft') storyShow(story.i - 1); });
+    document.body.appendChild(el); el.tabIndex = -1; el.focus();
+    story = { el, sl, n: sl.length, i: 0, timer: null };
+    storyShow(0);
+    vx().weekSeen = lk(Date.now()); save();
+  };
+  window.vxWeekClose = storyClose;
+  window.vxWeekShare = async function () {
+    const s = weekStats(), cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920;
+    const g = cv.getContext('2d'), F = (wt, px) => `${wt} ${px}px "Barlow","Segoe UI",system-ui,sans-serif`;
+    const bg = g.createLinearGradient(0, 0, 0, 1920); bg.addColorStop(0, '#1d3a10'); bg.addColorStop(0.5, '#0a1208'); bg.addColorStop(1, '#050805');
+    g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+    g.fillStyle = '#9dff2e'; g.font = F(900, 70); g.fillText('VOLTA', 90, 170);
+    g.fillStyle = '#f2f6f0'; g.font = F(800, 96); g.fillText(w('title'), 90, 330);
+    g.fillStyle = '#8a968a'; g.font = F(600, 44); g.fillText(w('last7'), 90, 400);
+    const rows = [[String(s.days), w('days')], [num(s.vol) + ' ' + S.units.w, w('volume')], [String(s.sets), w('sets')], ['🏆 ' + s.prs, w('prs')], ['⭐ ' + s.perfect, w('perfect')]];
+    rows.forEach(([v, l], k) => { const y = 600 + k * 230; g.fillStyle = '#9dff2e'; g.font = F(900, 120); g.fillText(v, 90, y); g.fillStyle = '#8a968a'; g.font = F(600, 44); g.fillText(l, 90, y + 66); });
+    if (s.best) { g.fillStyle = '#f2f6f0'; const line = w('best') + ': ' + (window.vxTr ? window.vxTr(EX[s.best.ex][0]) : EX[s.best.ex][0]) + ' · ' + s.best.w + ' ' + S.units.w + ' × ' + s.best.r; let px = 46; do { g.font = F(700, px); px -= 2; } while (g.measureText(line).width > 900 && px > 24); g.fillText(line, 90, 1800); }
+    if (false) { g.fillText(w('best') + ': ' + (window.vxTr ? window.vxTr(EX[s.best.ex][0]) : EX[s.best.ex][0]) + ' · ' + s.best.w + ' ' + S.units.w + ' × ' + s.best.r, 90, 1800); }
+    const blob = await new Promise((ok) => cv.toBlob(ok, 'image/png'));
+    const file = new File([blob], 'volta-semana.png', { type: 'image/png' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Volta' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  window.vxWeekStats = weekStats; // para pruebas
+  const weekCard = (highlight) => `<div class="card vx-weekcard${highlight ? ' hl' : ''}" onclick="vxWeek()" role="button" tabindex="0"><div class="row sp"><div><div class="mu">${w('last7')}</div><b>${highlight ? '✨ ' + w('ready') : '📊 ' + w('title')}</b></div><span class="chip on">${w('open')} ›</span></div></div>`;
+  // En Inicio, los lunes y martes si aún no se ha visto y hubo entrenos
+  const weekDue = () => { const d = new Date().getDay(); return (d === 1 || d === 2) && vx().weekSeen !== lk(Date.now()) && !(vx().weekSeen && Date.now() - new Date(vx().weekSeen + 'T12:00') < 2 * 864e5) && weekStats().sets > 0; };
 
   /* ───────────── 8. Cronómetro de la sesión y siguiente ejercicio (como Hevy) ───────────── */
   const NX = ['Siguiente', 'Up next', 'Ensuite', 'A seguir'];

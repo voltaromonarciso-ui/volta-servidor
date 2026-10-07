@@ -96,3 +96,30 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-clock{margin-left:auto;padding:6px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--ln);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vx-next{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;padding:12px 14px;border:1px dashed var(--ln);border-radius:16px}
 .vx-next b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ───── Resumen semanal en historias ───── */
+.vx-weekcard{cursor:pointer}
+.vx-weekcard.hl{border-color:var(--ac);background:linear-gradient(135deg,rgba(157,255,46,.16),var(--card) 70%)}
+.vx-story{position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 80% at 50% 0%,#24461a 0%,#0a1208 55%,#050805 100%);color:var(--tx);display:flex;flex-direction:column;padding:calc(14px + var(--pd)) 22px calc(30px + var(--pb));outline:none;animation:vxIn .25s ease both;user-select:none}
+.vx-st-bars{display:flex;gap:5px}
+.vx-st-bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;position:relative}
+.vx-st-bars i.done{background:#f2f6f0}
+.vx-st-bars i.on::after{content:"";position:absolute;inset:0;background:#f2f6f0;transform-origin:left;animation:vxBar 5s linear forwards}
+@keyframes vxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.vx-st-x{position:absolute;top:calc(26px + var(--pd));right:16px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:18px;cursor:pointer}
+.vx-st-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;animation:vxIn .35s cubic-bezier(.2,.8,.2,1) both}
+.vx-st-body h2{font-size:34px;line-height:1.1;margin:0}
+.vx-st-body p{font-size:18px;color:var(--mu)}
+.vx-st-k{font-size:14px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ac)}
+.vx-st-big{font-size:88px;font-weight:900;line-height:1;color:var(--ac);font-variant-numeric:tabular-nums;letter-spacing:-2px}
+.vx-st-big small{font-size:30px;font-weight:800;letter-spacing:0}
+.vx-st-l{font-size:18px;color:var(--mu)}
+.vx-st-row{font-size:20px;margin-top:8px}
+.vx-st-delta{font-size:22px;font-weight:800;margin-top:6px}.vx-st-delta span{font-size:14px;font-weight:600;color:var(--mu)}
+.vx-st-delta.up{color:var(--ac)}.vx-st-delta.down{color:#ff8a5c}
+.vx-st-body .btn{margin-top:20px}
+@media (prefers-reduced-motion:reduce){.vx-st-bars i.on::after{animation:none;transform:none}}
+.vx-st-big{white-space:nowrap}
+.vx-st-big.m{font-size:68px}
+.vx-st-big.s{font-size:52px;letter-spacing:-1px}
+.vx-st-big.s small,.vx-st-big.m small{font-size:24px}
