@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -26,6 +28,32 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/forum', require('./routes/forum'));
+
+// ── App web (Volta-app.html) + archivos para instalarla como app (PWA) ──
+// La meta "volta-api" le indica a la app que use este mismo servidor como API.
+const APP_FILE = path.join(__dirname, '..', 'Volta-app.html');
+const appHtml = fs.existsSync(APP_FILE)
+  ? fs.readFileSync(APP_FILE, 'utf8').replace('<head>', '<head><meta name="volta-api" content="same-origin">')
+  : null;
+// La app usa scripts y estilos en línea y llama a la API de Anthropic desde el navegador (clave del usuario)
+const APP_CSP = [
+  "default-src 'self'", "script-src 'self' 'unsafe-inline'", "script-src-attr 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "media-src 'self' data: blob:", "font-src 'self' data:",
+  "connect-src 'self' ws: wss: https://api.anthropic.com", "manifest-src 'self' blob:", "worker-src 'self'",
+  "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "object-src 'none'",
+].join('; ');
+if (appHtml) {
+  app.get(['/', '/index.html'], (_req, res) => {
+    res.set({ 'Content-Security-Policy': APP_CSP, 'Cache-Control': 'no-cache' }).type('html').send(appHtml);
+  });
+}
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  index: false,
+  setHeaders(res, file) {
+    if (file.endsWith('sw.js')) res.set('Cache-Control', 'no-cache');
+    if (file.endsWith('.webmanifest')) res.type('application/manifest+json');
+  },
+}));
 
 app.use((_req, res) => res.status(404).json({ error: 'not_found', message: 'Ruta no encontrada.' }));
 

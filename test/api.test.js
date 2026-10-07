@@ -1,6 +1,6 @@
 const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
-const { start, stop, reset, api, newUser, pool } = require('./helpers');
+const { start, stop, reset, api, newUser, pool, base } = require('./helpers');
 
 before(start);
 after(stop);
@@ -140,4 +140,28 @@ test('el filtro de palabras también se aplica a los textos de la tarjeta', asyn
   const u = await newUser();
   const r = await api('POST', '/api/forum/posts', { token: u.token, body: { progressData: card({ title: 'eres un gilipollas' }) } });
   assert.equal(r.status, 422);
+});
+
+// ───────────── app web / PWA ─────────────
+test('sirve la app en / con la meta de API propia y una CSP que permite sus scripts', async () => {
+  const res = await fetch(base() + '/');
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /<meta name="volta-api" content="same-origin">/);
+  assert.match(html, /VOLTA-MEJORAS:START/);
+  const csp = res.headers.get('content-security-policy');
+  assert.match(csp, /script-src 'self' 'unsafe-inline'/);
+  assert.match(csp, /connect-src 'self' ws: wss: https:\/\/api\.anthropic\.com/);
+});
+
+test('sirve el manifiesto, los iconos y el service worker', async () => {
+  const m = await fetch(base() + '/manifest.webmanifest');
+  assert.equal(m.status, 200);
+  assert.match(m.headers.get('content-type'), /application\/manifest\+json/);
+  const man = await m.json();
+  assert.equal(man.short_name, 'Volta');
+  for (const ic of man.icons) assert.equal((await fetch(base() + '/' + ic.src)).status, 200, ic.src);
+  const sw = await fetch(base() + '/sw.js');
+  assert.equal(sw.status, 200);
+  assert.equal(sw.headers.get('cache-control'), 'no-cache');
 });

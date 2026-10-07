@@ -1,0 +1,26 @@
+/* VOLTA · mejoras de interfaz (se inyecta con `npm run build:app`) */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%}
+
+/* Títulos sin palabras huérfanas; textos cortos con mejor corte */
+h1,h2,h3{text-wrap:balance}
+.mu,.card p,label{text-wrap:pretty}
+
+/* Números que se actualizan: no "bailan" al cambiar de cifra */
+#tm,.w9c input,input[type=number],.num,nav button,.setc,.chip,b,strong{font-variant-numeric:tabular-nums}
+
+/* Foco visible solo con teclado (no al tocar) */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:12px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0;border-color:var(--ac)}
+
+/* Campos numéricos del entreno: sin flechas del navegador, cifra grande centrada */
+.w9c input::-webkit-outer-spin-button,.w9c input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.w9c input{-moz-appearance:textfield}
+
+/* Áreas táctiles mínimas de 44 px en controles con icono */
+.w9b,.back{min-width:44px;min-height:44px}
+
+/* Confeti de récord personal */
+.vx-confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+
+@media (prefers-reduced-motion:reduce){.vx-confetti{display:none}}

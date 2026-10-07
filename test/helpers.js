@@ -50,4 +50,4 @@ async function newUser(name) {
   return { ...r.body.user, token: r.body.token };
 }
 
-module.exports = { start, stop, reset, api, newUser, pool };
+module.exports = { start, stop, reset, api, newUser, pool, base: () => base };

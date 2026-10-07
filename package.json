@@ -4,13 +4,16 @@
   "private": true,
   "description": "API REST + WebSocket para la comunidad social de VOLTA",
   "main": "src/index.js",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "node scripts/migrate.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
-    "mock": "node test/mock-server.js"
+    "mock": "node test/mock-server.js",
+    "build:app": "node scripts/build-app.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
