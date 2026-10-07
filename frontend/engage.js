@@ -72,6 +72,7 @@
     V2.perfect = V2.perfect || {};
     if (M.every((m) => m.done) && !V2.perfect[k]) {
       V2.perfect[k] = 1; save();
+      pushInbox('🔥', t('perfect'));
       setTimeout(() => { window.vxCelebrate && window.vxCelebrate(); toast('🔥 ' + t('perfect')); }, 120);
     }
   }
@@ -139,10 +140,12 @@
   function checkAchievements() {
     const V2 = vx(); V2.ach = V2.ach || {};
     const list = achList(), fresh = list.filter((a) => a.ok && !V2.ach[a.id]);
+    // Primera comprobación: lo ya conseguido se marca sin avalancha de avisos
+    if (!V2.achInit) { fresh.forEach((a) => { V2.ach[a.id] = Date.now(); }); V2.achInit = 1; save(); return; }
     if (!fresh.length) return;
     fresh.forEach((a) => { V2.ach[a.id] = Date.now(); });
-    const first = !V2.achInit; V2.achInit = 1; save();
-    if (first) return; // primera vez: lo ya conseguido se marca sin avalancha de avisos
+    save();
+    fresh.forEach((a) => pushInbox(a.icon, t('unlocked') + ': ' + a.name, "go('vx:ach')"));
     fresh.forEach((a, i) => setTimeout(() => { toast('🏅 ' + t('unlocked') + ': ' + a.icon + ' ' + a.name); if (i === 0 && window.vxCelebrate) window.vxCelebrate(); }, 300 + i * 1800));
   }
   window.vxAch = achList; // para pruebas
@@ -230,7 +233,12 @@
   V.home = function () {
     let h = _home.apply(this, arguments);
     try {
-      const block = (weekDue() ? weekCard(true) : '') + missionsCard() + recoveryCard();
+      const due = weekDue();
+      if (due && vx().weekNote !== lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5)) { vx().weekNote = lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5); pushInbox('📊', w('ready'), 'vxWeek()'); }
+      const block = (due ? weekCard(true) : '') + missionsCard() + recoveryCard();
+      // Social pasa de flotar sobre el logo a la fila de iconos de la cabecera
+      const soc = '<div class="chips"><div class="chip" onclick="socGo()" style="border-color:var(--ac)">👥 Social ›</div></div>';
+      if (h.indexOf(soc) !== -1) h = h.replace(soc, '').replace('<div class="row" style="gap:8px"><div class="ib"', '<div class="row" style="gap:8px"><div class="ib vx-soc" onclick="socGo()">👥</div><div class="ib"');
       h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
       h += achCard() + quoteCard();
     } catch (e) { /* la pantalla original sigue intacta */ }
@@ -297,6 +305,70 @@
       })(t0);
     });
   }
+
+  /* ───────────── 10. Actividad (la campana): logros, récords, días perfectos y avisos ───────────── */
+  const IB = {
+    title: ['Actividad', 'Activity', 'Activité', 'Atividade'],
+    empty: ['Aquí verás tus logros, récords y avisos.', "Your achievements, records and alerts will show up here.", 'Tes succès, records et alertes apparaîtront ici.', 'Aqui vais ver as tuas conquistas, recordes e avisos.'],
+    now: ['ahora', 'now', 'maintenant', 'agora'],
+    social: ['Comunidad', 'Community', 'Communauté', 'Comunidade'],
+  };
+  const ib = (k) => IB[k][LI[S.lang] || 0];
+  function inbox() { const V2 = vx(); if (!Array.isArray(V2.inbox)) V2.inbox = []; return V2.inbox; }
+  function pushInbox(icon, text, act) {
+    const L = inbox();
+    if (L.length && L[0].text === text && Date.now() - L[0].t < 6e4) return; // evita duplicados seguidos
+    L.unshift({ t: Date.now(), icon, text, act: act || '', seen: false });
+    L.length = Math.min(L.length, 60); save();
+  }
+  const unread = () => inbox().some((n) => !n.seen);
+  function ago(ts) {
+    const s = (Date.now() - ts) / 1000;
+    try {
+      const f = new Intl.RelativeTimeFormat(S.lang, { numeric: 'auto' });
+      if (s < 60) return ib('now');
+      if (s < 3600) return f.format(-Math.round(s / 60), 'minute');
+      if (s < 86400) return f.format(-Math.round(s / 3600), 'hour');
+      return f.format(-Math.round(s / 86400), 'day');
+    } catch (e) { return new Date(ts).toLocaleString(); }
+  }
+  V['vx:inbox'] = function () {
+    const L = inbox();
+    const html = `<div class="row"><button class="back" onclick="back()">‹</button><h1 style="font-size:22px">${ib('title')}</h1></div>` +
+      (L.length ? `<div class="vx-inbox">${L.map((n) => `<div class="vx-ibi${n.seen ? '' : ' new'}"${n.act ? ` onclick="${n.act}" role="button" tabindex="0"` : ''}><span class="vx-ibic">${n.icon}</span><div class="g"><div>${esc(n.text)}</div><div class="mu">${ago(n.t)}</div></div></div>`).join('')}</div>`
+        : `<div class="vx-empty"><div>🔔</div><p class="mu">${ib('empty')}</p></div>`);
+    if (L.some((n) => !n.seen)) { L.forEach((n) => { n.seen = true; }); save(); }
+    return html;
+  };
+  // Los avisos de la app (récord, rango nuevo) también quedan guardados en Actividad
+  if (typeof toast === 'function') {
+    const _toast = toast;
+    toast = function (m) {
+      try {
+        const s = String(m || '');
+        if (/RÉCORD PERSONAL|NUEVO RANGO/.test(s)) pushInbox(/RANGO/.test(s) ? '🟣' : '🏆', (window.vxTr ? window.vxTr(s) : s).replace(/^[^\wÀ-ÿ¡¿]+/u, ''), "tab('prog')");
+      } catch (e) { /* sin bandeja */ }
+      return _toast.apply(this, arguments);
+    };
+  }
+  // Cabecera: campana → Actividad (con punto si hay novedades) e iconos accesibles con teclado
+  const HDR = { '?': ['Ayuda', 'Help', 'Aide', 'Ajuda'], bell: ['Actividad', 'Activity', 'Activité', 'Atividade'], prof: ['Perfil', 'Profile', 'Profil', 'Perfil'], soc: ['Comunidad', 'Community', 'Communauté', 'Comunidade'] };
+  function fixHeader() {
+    const root = document.getElementById('m'); if (!root) return;
+    const x = LI[S.lang] || 0;
+    root.querySelectorAll('[onclick*="Sin notificaciones"]').forEach((el) => { el.setAttribute('onclick', "go('vx:inbox')"); el.classList.add('vx-bell'); });
+    root.querySelectorAll('.vx-bell').forEach((el) => { const d = el.querySelector('.vx-dot'); if (unread() && !d) el.insertAdjacentHTML('beforeend', '<i class="vx-dot"></i>'); else if (!unread() && d) d.remove(); });
+    root.querySelectorAll('.ib').forEach((el) => {
+      el.setAttribute('role', 'button'); el.tabIndex = 0;
+      const oc = el.getAttribute('onclick') || '';
+      const k = el.classList.contains('vx-bell') ? 'bell' : /obOpen/.test(oc) ? '?' : /prof/.test(oc) ? 'prof' : /socGo/.test(oc) ? 'soc' : null;
+      if (k) el.setAttribute('aria-label', HDR[k][x]);
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    const el = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && el && el.getAttribute && el.getAttribute('role') === 'button' && el.tagName !== 'BUTTON') { e.preventDefault(); el.click(); }
+  });
 
   /* ───────────── 9. Resumen semanal en historias (estilo Wrapped) ───────────── */
   const W = {
@@ -436,6 +508,7 @@
   R = function () {
     const out = _R.apply(this, arguments);
     try { countUp(); } catch (e) { /* sin animación */ }
+    try { fixHeader(); } catch (e) { /* cabecera original */ }
     return out;
   };
 

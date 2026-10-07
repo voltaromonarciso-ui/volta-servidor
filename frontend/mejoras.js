@@ -60,7 +60,7 @@
 
   /* ───────────── 4. Celebración de récord personal ───────────── */
   function confetti() {
-    if (reduceMotion()) return;
+    if (reduceMotion() || document.querySelector('.vx-confetti')) return; // una celebración cada vez
     const cv = document.createElement('canvas');
     cv.className = 'vx-confetti';
     cv.setAttribute('aria-hidden', 'true');
@@ -208,6 +208,8 @@ Sobrecarga progresiva|Progressive overload|Surcharge progressive|Sobrecarga prog
 Entrenamiento rápido|Quick workout|Entraînement rapide|Treino rápido
 Datos de ejemplo|Sample data|Données d'exemple|Dados de exemplo
 Continuar|Continue|Continuer|Continuar
+¡Bienvenido!|Welcome!|Bienvenue !|Bem-vindo!
+Sin notificaciones|No notifications|Aucune notification|Sem notificações
 Empezar|Start|Commencer|Começar
 DATO INUSUAL: se aleja de tu historial. Comprueba que sea correcto.|UNUSUAL ENTRY: far from your history. Check it's correct.|DONNÉE INHABITUELLE : loin de ton historique. Vérifie qu'elle est correcte.|DADO INVULGAR: afasta-se do teu histórico. Confirma que está correto.
 Principiante|Beginner|Débutant|Iniciante
