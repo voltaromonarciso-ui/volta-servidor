@@ -23,4 +23,4 @@ Copiadas desde los repos de `repos/` (cada carpeta conserva su LICENSE original)
 | improve-animations | Auditar y mejorar las animaciones | emilkowalski/skills |
 
 Cambios respecto al original: en `ui-ux-pro-max` las rutas `${CLAUDE_PLUGIN_ROOT}/.claude/skills/...`
-pasan a `.claude/skills/...`, y en las de superpowers se quitó el prefijo `superpowers:` de las referencias.
+pasan a `.claude/skills/...`, y en las de superpowers se quitó el prefijo `` de las referencias.
