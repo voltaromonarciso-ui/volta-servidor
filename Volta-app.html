@@ -203,8 +203,8 @@ ${S.demo?`<div class="grid2" style="grid-template-columns:repeat(3,1fr);text-ali
 "s:lang"(){return bk("Idioma")+[["es","Español"],["en","English"]].map(a=>`<div class="card row" onclick="S.lang='${a[0]}';R()"><div class="g">${a[1]}</div><div class="ck ${S.lang==a[0]?"on":""}"></div></div>`).join("")+`<div class="mu">Tus datos y progreso se mantienen al cambiar de idioma.</div>`},
 "s:units"(){const o=(k,a,b,l)=>`<h2>${l}</h2><div class="row"><button class="btn ${S.units[k]==a?"":"s"}" onclick="S.units.${k}='${a}';R()">${a}</button><button class="btn ${S.units[k]==b?"":"s"}" onclick="S.units.${k}='${b}';R()">${b}</button></div>`;return bk("Unidades")+o("w","kg","lb","Peso")+o("h","cm","in","Altura")+o("d","km","mi","Distancia")},
 "s:notif"(){return bk("Notificaciones")+["Recordatorios de entrenamiento","Recordatorios de comidas","Recordatorios de registro","Recordatorios de descanso"].map((n,i)=>`<div class="card row sp"><span>${n}</span>${tg(S.notif[i],`S.notif[${i}]=+!S.notif[${i}];R()`)}</div>`).join("")},
-"s:priv"(){return bk("Privacidad")+[["Datos personales","Nombre, edad y medidas."],["Datos de entrenamiento","Tus series, cargas y marcas."],["Datos nutricionales","Tus comidas y preferencias."],["Permisos","Notificaciones y accesos."],["Exportar mis datos","Descarga todos tus datos en un archivo JSON."],["Importar copia de seguridad","Restaura tus datos desde un archivo JSON."],["Eliminar cuenta","Borra todo de forma permanente."]].map(p=>li(p[0],p[0]=="Exportar mis datos"?"NUTR.exportDownload()":p[0]=="Importar copia de seguridad"?"NUTR.importPick()":"",p[1])).join("")},
-"s:acc"(){return bk("Cuenta")+li("Cambiar correo","")+li("Cambiar contraseña","")+li("Gestionar cuenta","")+li("Cerrar sesión","S.name='';tab('home')")+`<button class="btn o" style="margin-top:16px" onclick="confirm('¿Eliminar la cuenta de forma permanente?')">Eliminar cuenta</button>`},
+"s:priv"(){return bk("Privacidad")+[["Datos personales","Nombre, edad y medidas."],["Datos de entrenamiento","Tus series, cargas y marcas."],["Datos nutricionales","Tus comidas y preferencias."],["Permisos","Notificaciones y accesos."],["Exportar mis datos","Descarga todos tus datos en un archivo JSON."],["Importar copia de seguridad","Restaura tus datos desde un archivo JSON."],["Eliminar cuenta","Borra todo de forma permanente."]].map(p=>li(p[0],p[0]=="Exportar mis datos"?"NUTR.exportDownload()":p[0]=="Importar copia de seguridad"?"NUTR.importPick()":p[0]=="Eliminar cuenta"?"delAcc()":"",p[1])).join("")},
+"s:acc"(){return bk("Cuenta")+li("Cambiar correo","")+li("Cambiar contraseña","")+li("Gestionar cuenta","")+li("Cerrar sesión","S.name='';tab('home')")+`<button class="btn o" style="margin-top:16px" onclick="delAcc()">Eliminar cuenta</button>`},
 "s:help"(){return bk("Centro de ayuda")+["Preguntas frecuentes","Cómo utilizar la aplicación","Entrenamientos","Nutrición","Progreso","Cuenta","Contacto / soporte"].map(h=>li(h,"")).join("")},
 "s:about"(){return bk("Acerca de")+`<div class="card"><b class="ac" style="letter-spacing:3px">VOLTA</b><div class="mu">Versión 1.0.0</div></div>`+["Información legal","Política de privacidad","Términos","Créditos","Fuentes"].map(h=>li(h,"")).join("")}};
 Object.assign(S,{mq:"",mc:"Todos",mp:1,mf:{t:0,k:0,p:0},alg:{},mfav:{},plan:[],subo:"",fo:false,pick:-1});
@@ -2201,9 +2201,17 @@ window.obReset=full=>{if(full&&!confirm(t("resetq")))return;
  if(full){S.userProfile=null;S.routines=[];S.plan=[];S.cur=0;S.planSrc="";delete S.ng}
  S.stack=[];S.tab="home";sv();R()};
 
+/* --- Eliminar cuenta: borra la cuenta del servidor (si hay sesión) y todos los datos del dispositivo --- */
+window.delAcc=async()=>{const on=!!(window.VoltaAPI&&VoltaAPI.isLoggedIn()&&S.soc&&S.soc.me);
+ if(!confirm("¿Eliminar la cuenta de forma permanente? Se borrarán todos tus datos de este dispositivo"+(on?" y tu cuenta de la comunidad (mensajes y amigos)":"")+". No se puede deshacer."))return;
+ if(on){const pw=prompt("Escribe tu contraseña para confirmar:");if(pw==null)return;
+  try{await VoltaAPI.deleteAccount(pw)}catch(x){toast(x.message||"No se pudo eliminar la cuenta.");return}}
+ try{localStorage.removeItem(K);localStorage.removeItem(K+"_PREV")}catch(x){}
+ location.reload()};
+
 /* --- Pantallas de Ajustes: selector de idioma (4) y cuenta --- */
 V["s:lang"]=()=>bk(t("langT"))+L.map(l=>`<div class="card row" onclick="setLang('${l}')"><div class="g">${NAT[l]}</div><div class="ck ${S.lang===l?"on":""}"></div></div>`).join("");
-V["s:acc"]=()=>bk("Cuenta")+li("Cambiar correo","")+li("Cambiar contraseña","")+li("Gestionar cuenta","")+li(t("logout"),"obReset(false)")+li(t("resetp"),"obReset(true)")+`<button class="btn o" style="margin-top:16px" onclick="confirm('${esc(t("resetq")).replace(/'/g,"\\'")}')">Eliminar cuenta</button>`;
+V["s:acc"]=()=>bk("Cuenta")+li("Cambiar correo","")+li("Cambiar contraseña","")+li("Gestionar cuenta","")+li(t("logout"),"obReset(false)")+li(t("resetp"),"obReset(true)")+`<button class="btn o" style="margin-top:16px" onclick="delAcc()">Eliminar cuenta</button>`;
 
 /* --- Integración en Nutrición e Inicio con el perfil --- */
 {const _n=V.nut;V.nut=function(){let h=_n();if(S.planSrc==="ai")h=h.split("Añadidas desde Explorar").join(t("mealplan"));return h}}
@@ -2518,8 +2526,8 @@ R();
 
   /* ---------- RUTAS DEL BACKEND (ajusta aquí si hace falta) ---------- */
   var ROUTES = {
-    health: "/api/health",
-    checkUsername: "/api/auth/check-username",
+    health: "/health",
+    checkUsername: "/api/users/check-username",
     register: "/api/auth/register",
     login: "/api/auth/login",
     me: "/api/auth/me",
@@ -2528,7 +2536,7 @@ R();
     friendRequest: "/api/friends/request",
     friendRespond: "/api/friends/respond",
     posts: "/api/forum/posts",
-    heartbeat: "/api/presence/heartbeat",
+    heartbeat: "/api/users/heartbeat",
     ws: "/ws"
   };
 
@@ -2692,8 +2700,7 @@ R();
   var ws = { sock: null, handler: null, tries: 0, timer: null, stopped: true };
 
   function wsUrl() {
-    return base.replace(/^http/i, "ws") + ROUTES.ws +
-      "?token=" + encodeURIComponent(getToken() || "");
+    return base.replace(/^http/i, "ws") + ROUTES.ws;
   }
 
   function scheduleReconnect() {
@@ -2710,7 +2717,8 @@ R();
     try { s = new WebSocket(wsUrl()); } catch (e) { scheduleReconnect(); return; }
     ws.sock = s;
 
-    s.onopen = function () { ws.tries = 0; };
+    // El servidor exige {type:"auth", token} como primer mensaje (el JWT no viaja en la URL)
+    s.onopen = function () { ws.tries = 0; s.send(JSON.stringify({ type: "auth", token: getToken() || "" })); };
     s.onmessage = function (m) {
       var ev;
       try { ev = JSON.parse(m.data); } catch (e) { return; }
@@ -2720,8 +2728,9 @@ R();
         try { ws.handler(ev); } catch (e) { console.error("VoltaAPI handler:", e); }
       }
     };
-    s.onclose = function () {
+    s.onclose = function (ev) {
       if (ws.sock === s) ws.sock = null;
+      if (ev && ev.code === 4401) return; // token inválido o cuenta borrada: no reintentar
       scheduleReconnect();
     };
     s.onerror = function () { try { s.close(); } catch (e) { /* nada */ } };
@@ -2806,6 +2815,12 @@ R();
       clearSession();
     },
 
+    // Borra la cuenta en el servidor (pide la contraseña) y cierra la sesión
+    deleteAccount: function (password) {
+      return request("DELETE", ROUTES.me, { body: { password: password } })
+        .then(function () { closeSocket(); clearSession(); });
+    },
+
     /* --- social --- */
     searchUsers: function (q) {
       return request("GET", ROUTES.searchUsers, { query: { q: q } }).then(function (d) {
@@ -2831,7 +2846,7 @@ R();
     },
 
     respondFriendRequest: function (username, action) {
-      return request("POST", ROUTES.friendRespond, {
+      return request("PUT", ROUTES.friendRespond, {
         body: { username: username, action: action }
       }).then(function (d) { return d || {}; });
     },
@@ -2840,10 +2855,10 @@ R();
     posts: function (opts) {
       opts = opts || {};
       return request("GET", ROUTES.posts, {
-        query: { limit: opts.limit || 20, before: opts.before }
+        query: { limit: opts.limit || 20, cursor: opts.cursor || opts.before }
       }).then(function (d) {
         var list = Array.isArray(d) ? d : arr(d && (d.posts || d.items));
-        return { posts: list.map(normPost) };
+        return { posts: list.map(normPost), nextCursor: (d && d.nextCursor) || null };
       });
     },
 

@@ -47,7 +47,7 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 | `POST /api/auth/register` | `{username, email, password}` | `201 {token, user}` · `400` nombre malsonante o formato · `409` usuario/correo en uso |
 | `POST /api/auth/login` | `{identifier, password}` (correo **o** usuario) | `200 {token, user}` · `401` |
 | 🔒 `GET /api/auth/me` | | `{user}` |
-| 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `401` contraseña incorrecta |
+| 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `403` contraseña incorrecta (la sesión sigue abierta) |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
 | 🔒 `GET /api/users/search?q=an` | mín. 2 letras | `{users:[{username}]}` |
 | 🔒 `POST /api/users/heartbeat` | | `204` (actualiza "en línea") |

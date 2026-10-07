@@ -18,7 +18,7 @@ const server=http.createServer((req,res)=>{
    if(j.type==='request'){friends.push({a:'marta_fit',b:j.to,status:'pending',id:crypto.randomUUID()});push(j.to,{type:'friend:request',from:'marta_fit'})}return send(res,200,{ok:1})}
  if(P==='/__hb')return send(res,200,hb);
  if(!me)return send(res,401,{error:'unauthorized',message:'Inicia sesión para continuar.'});
- if(P==='/api/auth/me'&&req.method==='DELETE'){if(!users[me]||users[me].password!==j.password)return send(res,401,{error:'bad_credentials',message:'Contraseña incorrecta.'});delete users[me];return send(res,204)}
+ if(P==='/api/auth/me'&&req.method==='DELETE'){if(!users[me]||users[me].password!==j.password)return send(res,403,{error:'bad_credentials',message:'Contraseña incorrecta.'});delete users[me];return send(res,204)}
  if(P==='/api/auth/me')return send(res,200,{user:{id:'1',username:users[me]?users[me].username:me,email:'x'}});
  if(P==='/api/users/heartbeat'){hb.push(me);return send(res,204)}
  if(P==='/api/users/search'){const q=url.searchParams.get('q').toLowerCase();return send(res,200,{users:Object.values(users).filter(u=>u.username.toLowerCase().startsWith(q)&&u.username.toLowerCase()!==me).map(u=>({username:u.username}))})}

@@ -54,7 +54,8 @@ test('DELETE /api/auth/me borra la cuenta y sus datos si la contraseña es corre
   await api('POST', '/api/friends/request', { token: u.token, body: { username: v.username } });
 
   const wrong = await api('DELETE', '/api/auth/me', { token: u.token, body: { password: 'incorrecta' } });
-  assert.equal(wrong.status, 401);
+  assert.equal(wrong.status, 403);
+  assert.equal((await api('GET', '/api/auth/me', { token: u.token })).status, 200);
 
   const ok = await api('DELETE', '/api/auth/me', { token: u.token, body: { password: 'password123' } });
   assert.equal(ok.status, 204);

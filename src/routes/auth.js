@@ -87,8 +87,9 @@ router.delete('/me', authLimiter, requireAuth, ah(async (req, res) => {
   const { password } = z.object({ password: z.string().min(1).max(200) }).parse(req.body ?? {});
   const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  // 403 y no 401: la sesión es válida (los clientes cierran sesión al recibir 401)
   if (!(await bcrypt.compare(password, rows[0].password_hash))) {
-    throw new HttpError(401, 'bad_credentials', 'Contraseña incorrecta.');
+    throw new HttpError(403, 'bad_credentials', 'Contraseña incorrecta.');
   }
   await query('DELETE FROM users WHERE id = $1', [req.user.id]);
   ws.disconnectUser(req.user.id);
