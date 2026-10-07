@@ -24,3 +24,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
 
 @media (prefers-reduced-motion:reduce){.vx-confetti{display:none}}
+
+/* Resumen de la sesión al terminar */
+.vx-sum{margin-top:12px;text-align:left}
+.vx-sum-row{padding:9px 0;border-top:1px solid var(--ln);gap:10px}
+.vx-sum-row:first-of-type{margin-top:8px}
+.vx-pr{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:8px;background:#ffd23f;color:#1a1400;font-size:11px;font-weight:800;letter-spacing:.3px;vertical-align:1px}

@@ -2916,6 +2916,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
 
 @media (prefers-reduced-motion:reduce){.vx-confetti{display:none}}
+
+/* Resumen de la sesión al terminar */
+.vx-sum{margin-top:12px;text-align:left}
+.vx-sum-row{padding:9px 0;border-top:1px solid var(--ln);gap:10px}
+.vx-sum-row:first-of-type{margin-top:8px}
+.vx-pr{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:8px;background:#ffd23f;color:#1a1400;font-size:11px;font-weight:800;letter-spacing:.3px;vertical-align:1px}
 </style>
 <script>
 /* VOLTA · mejoras (se inyecta al final de Volta-app.html con `npm run build:app`).
@@ -3405,6 +3411,119 @@ Elevación de rodillas colgado|Hanging knee raise|Relevé de genoux suspendu|Ele
     });
     const nav = document.getElementById('nav');
     if (nav) nav.querySelectorAll('button').forEach((b) => { if (b.classList.contains('on')) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  }
+
+  /* ───────────── 8. Resumen al terminar el entreno + imagen para compartir (como Hevy / Strava) ───────────── */
+  const TX = {
+    sum: ['Resumen de la sesión', 'Session summary', 'Résumé de la séance', 'Resumo da sessão'],
+    dur: ['duración', 'duration', 'durée', 'duração'],
+    vol: ['volumen', 'volume', 'volume', 'volume'],
+    sets: ['series', 'sets', 'séries', 'séries'],
+    prs: ['récords', 'records', 'records', 'recordes'],
+    prs1: ['récord', 'record', 'record', 'recorde'],
+    pr: ['RÉCORD', 'PR', 'RECORD', 'RECORDE'],
+    share: ['Compartir resumen', 'Share summary', 'Partager le résumé', 'Partilhar resumo'],
+    done: ['Entreno completado', 'Workout complete', 'Séance terminée', 'Treino concluído'],
+    saved: ['Imagen guardada', 'Image saved', 'Image enregistrée', 'Imagem guardada'],
+  };
+  const tx = (k) => TX[k][LANGS[S.lang] || 0];
+  const exName = (i) => window.vxTr(EX[i][0]);
+  const fmtDur = (ms) => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+
+  function sessionSummary() {
+    const td = lk(Date.now());
+    const today = S.log.filter((l) => lk(l.t) == td && isEff(l));
+    if (!today.length) return null;
+    const before = S.log.filter((l) => lk(l.t) != td);
+    const byEx = {};
+    today.forEach((l) => { (byEx[l.ex] = byEx[l.ex] || []).push(l); });
+    const rows = Object.keys(byEx).map((i) => {
+      const L = byEx[i], best = L.reduce((a, b) => (e1of(b) > e1of(a) ? b : a));
+      const prevMax = Math.max(0, ...before.filter((l) => l.ex == i).map((l) => l.w || 0));
+      return { i: +i, sets: L.length, best, pr: prevMax > 0 && Math.max(...L.map((l) => l.w || 0)) > prevMax };
+    });
+    const ts = today.map((l) => l.t);
+    return {
+      rows,
+      vol: today.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0),
+      sets: today.length,
+      dur: Math.max(...ts) - Math.min(...ts) + 90000, // + el descanso de la primera serie
+      prs: rows.filter((r) => r.pr).length,
+    };
+  }
+
+  function summaryHtml(s) {
+    const u = S.units.w;
+    return `<div class="card vx-sum"><div class="row sp"><b>${tx('sum')}</b><span class="mu">${fmtDur(s.dur)} · ${s.prs} ${tx(s.prs === 1 ? 'prs1' : 'prs')}</span></div>` +
+      s.rows.map((r) => `<div class="row sp vx-sum-row"><span class="g">${esc(exName(r.i))}${r.pr ? ` <span class="vx-pr">${tx('pr')}</span>` : ''}</span><span class="mu">${r.sets} × · <b>${r.best.w} ${u} × ${r.best.r}</b></span></div>`).join('') +
+      `</div><button class="btn o" style="margin-top:12px" onclick="vxShare()">📤 ${tx('share')}</button>`;
+  }
+
+  if (window.CanvasRenderingContext2D && !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h) { this.rect(x, y, w, h); };
+  }
+  function drawCard(s) {
+    const W = 1080, H = 1350, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0e1a0b'); bg.addColorStop(1, '#050805');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const glow = g.createRadialGradient(W * 0.8, 120, 10, W * 0.8, 120, 620); glow.addColorStop(0, 'rgba(157,255,46,.28)'); glow.addColorStop(1, 'rgba(157,255,46,0)');
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    const font = (w, px) => `${w} ${px}px "Barlow","Segoe UI",system-ui,sans-serif`;
+    g.fillStyle = '#9dff2e'; g.font = font(900, 64); g.fillText('VOLTA', 80, 140);
+    g.fillStyle = '#8a968a'; g.font = font(600, 36);
+    g.fillText(new Date().toLocaleDateString(S.lang, { weekday: 'long', day: 'numeric', month: 'long' }), 80, 200);
+    g.fillStyle = '#f2f6f0'; g.font = font(800, 92); g.fillText(tx('done'), 80, 330);
+    const stats = [[fmtDur(s.dur), tx('dur')], [Math.round(s.vol).toLocaleString(S.lang) + ' ' + S.units.w, tx('vol')], [String(s.sets), tx('sets')]];
+    stats.forEach(([v, l], k) => {
+      const x = 80 + k * 310;
+      g.fillStyle = 'rgba(255,255,255,.06)'; g.beginPath(); g.roundRect(x, 390, 290, 190, 32); g.fill();
+      g.fillStyle = '#9dff2e'; g.font = font(800, v.length > 8 ? 46 : 58); g.fillText(v, x + 28, 480);
+      g.fillStyle = '#8a968a'; g.font = font(600, 32); g.fillText(l, x + 28, 540);
+    });
+    let y = 690;
+    s.rows.slice(0, 6).forEach((r) => {
+      g.fillStyle = '#f2f6f0'; g.font = font(700, 40);
+      let name = exName(r.i); while (g.measureText(name).width > 560 && name.length > 4) name = name.slice(0, -2);
+      if (name !== exName(r.i)) name += '…';
+      g.fillText(name, 80, y);
+      g.fillStyle = '#9dff2e'; g.font = font(700, 40); g.textAlign = 'right';
+      g.fillText(`${r.best.w} ${S.units.w} × ${r.best.r}`, W - 80, y); g.textAlign = 'left';
+      if (r.pr) { g.fillStyle = '#ffd23f'; g.font = font(800, 28); g.fillText('🏆 ' + tx('pr'), 80, y + 40); y += 30; }
+      y += 90;
+    });
+    if (s.rows.length > 6) { g.fillStyle = '#8a968a'; g.font = font(600, 34); g.fillText('+' + (s.rows.length - 6), 80, y); }
+    g.fillStyle = 'rgba(157,255,46,.9)'; g.fillRect(80, H - 120, 120, 8);
+    g.fillStyle = '#8a968a'; g.font = font(600, 32); g.fillText(s.prs ? `🏆 ${s.prs} ${tx(s.prs === 1 ? 'prs1' : 'prs')}` : 'volta', 80, H - 60);
+    return cv;
+  }
+
+  window.vxShare = async function () {
+    const s = sessionSummary(); if (!s) return;
+    const blob = await new Promise((ok) => drawCard(s).toBlob(ok, 'image/png'));
+    const file = new File([blob], 'volta-entreno.png', { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Volta' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(tx('saved'));
+  };
+  window.vxSummary = sessionSummary; // para pruebas
+
+  if (typeof V.work === 'function') {
+    const _work2 = V.work;
+    V.work = function () {
+      const html = _work2.apply(this, arguments);
+      try {
+        if (S.done && S.done[lk(Date.now())] && !S.edit) {
+          const s = sessionSummary();
+          if (s) return html.replace('<button class="btn s"', summaryHtml(s) + '<button class="btn s"');
+        }
+      } catch (e) { /* sin resumen */ }
+      return html;
+    };
   }
 
   /* ───────────── Enganche con el render de la app ───────────── */
