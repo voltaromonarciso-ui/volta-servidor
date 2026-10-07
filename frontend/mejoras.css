@@ -144,3 +144,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-lbp{width:28px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
 .vx-lbv{color:var(--ac);font-variant-numeric:tabular-nums;white-space:nowrap}
 .vx-frz{padding:3px 9px;border-radius:10px;background:rgba(120,200,255,.14);border:1px solid rgba(120,200,255,.45);color:#9fdcff;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+
+/* Progreso tiene un fondo oscuro fijo: en tema claro su texto quedaba invisible. Dentro de ese
+   bloque se usan siempre los colores del tema oscuro. */
+:root[data-t="light"] .vx.vp{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;color:var(--tx)}
+@media (prefers-color-scheme:light){:root[data-t="auto"] .vx.vp{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;color:var(--tx)}}
