@@ -562,9 +562,11 @@ canónigos|lamb's lettuce|mâche|canónigos
 berenjena|aubergine|aubergine|beringela
 calabaza|pumpkin|courge|abóbora
 `);
+  window.vxAddTr = add; // para que otros módulos (comidas.js) añadan sus traducciones
   const UP = {};
   Object.keys(D).forEach((k) => { UP[k.toUpperCase()] = D[k].map((s) => s.toUpperCase()); });
-  const EXNAMES = Object.keys(D).filter((k) => Array.isArray(EX) && EX.some((e) => e[0] === k)).sort((a, b) => b.length - a.length);
+  let EXN = null, EXN_N = 0;
+  const exNames = () => { if (!EXN || EXN_N !== EX.length) { EXN_N = EX.length; EXN = Object.keys(D).filter((k) => EX.some((e) => e[0] === k)).sort((a, b) => b.length - a.length); } return EXN; };
 
   const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const P = [
@@ -614,7 +616,7 @@ calabaza|pumpkin|courge|abóbora
   // Traduce nombres de ejercicio dentro de un texto más largo ("Press de banca 80 kg")
   function trInner(s, x) {
     if (D[s]) return D[s][x];
-    for (const n of EXNAMES) if (s.indexOf(n) !== -1) return s.replace(n, D[n][x]);
+    for (const n of exNames()) if (s.indexOf(n) !== -1) return s.replace(n, D[n][x]);
     return s;
   }
   window.vxTr = function (str) {
