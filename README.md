@@ -24,6 +24,15 @@ npm run migrate               # aplica sql/schema.sql  (o pégalo en el SQL Edit
 npm run dev                   # http://localhost:3000
 ```
 
+**Tests** (necesitan un PostgreSQL de pruebas; se vacía en cada test):
+
+```bash
+createdb volta_test
+TEST_DATABASE_URL=postgres://usuario:clave@localhost:5432/volta_test npm test
+```
+
+`npm run mock` arranca un servidor simulado sin base de datos para probar la interfaz.
+
 **Supabase:** usa la cadena de conexión de *Project Settings → Database* en `DATABASE_URL` y pon `PGSSL=true`.
 El esquema activa RLS sin políticas: la *anon key* no puede tocar las tablas; solo este servidor.
 **Firebase/Firestore:** no se ha usado; el modelo es relacional (parejas únicas de amigos, cursor por `created_at`).
@@ -38,6 +47,7 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 | `POST /api/auth/register` | `{username, email, password}` | `201 {token, user}` · `400` nombre malsonante o formato · `409` usuario/correo en uso |
 | `POST /api/auth/login` | `{identifier, password}` (correo **o** usuario) | `200 {token, user}` · `401` |
 | 🔒 `GET /api/auth/me` | | `{user}` |
+| 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `401` contraseña incorrecta |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
 | 🔒 `GET /api/users/search?q=an` | mín. 2 letras | `{users:[{username}]}` |
 | 🔒 `POST /api/users/heartbeat` | | `204` (actualiza "en línea") |
@@ -45,7 +55,7 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 | 🔒 `POST /api/friends/request` | `{username}` | `201 {status:"pending"}` · `200 {status:"accepted"}` si ya te había invitado · `404` · `409` |
 | 🔒 `PUT /api/friends/respond` | `{requestId \| username, action:"accept"\|"reject"}` | `200` · `404` si no hay solicitud pendiente tuya |
 | 🔒 `GET /api/forum/posts?limit=20&cursor=` | | `{posts, nextCursor}` (más recientes primero) |
-| 🔒 `POST /api/forum/posts` | `{content?, progressData?}` | `201 {post}` · **`429`** `{message:"Debes esperar 10 segundos entre mensajes.", retryAfter}` + cabecera `Retry-After` · `422` mensaje no permitido |
+| 🔒 `POST /api/forum/posts` | `{content?, progressData?}` (tarjeta: `{type?, icon, title, stats:[[etiqueta, valor]…] (máx. 8), note}`) | `201 {post}` · **`429`** `{message:"Debes esperar 10 segundos entre mensajes.", retryAfter}` + cabecera `Retry-After` · `422` mensaje no permitido |
 
 **Cooldown de 10 s:** el middleware consulta el `created_at` del último post del `user_id` con el reloj de la base de datos.
 Además, dentro de la transacción se toma un candado por usuario (`pg_advisory_xact_lock`) y se vuelve a comprobar, así que dos peticiones simultáneas no pueden saltárselo.

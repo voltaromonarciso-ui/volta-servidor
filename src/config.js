@@ -16,6 +16,8 @@ const config = {
   trustProxy: process.env.TRUST_PROXY === '1',
   postCooldownMs: 10_000, // 10 s entre mensajes del foro
   isProd: process.env.NODE_ENV === 'production',
+  // En los tests se registran muchos usuarios desde la misma IP: sin esto saltarían los límites
+  rateLimitOff: process.env.NODE_ENV === 'test',
 };
 
 if (config.jwtSecret.length < 32) throw new Error('JWT_SECRET debe tener al menos 32 caracteres');

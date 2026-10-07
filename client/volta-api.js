@@ -53,6 +53,11 @@
     },
     logout() { setToken(''); VoltaAPI.disconnect(); },
     me: () => http('/api/auth/me').then((d) => d.user),
+    /** Borra la cuenta en el servidor (pide la contraseña) y cierra la sesión. */
+    async deleteAccount(password) {
+      await http('/api/auth/me', { method: 'DELETE', body: { password } });
+      VoltaAPI.logout();
+    },
 
     // ── Usuarios ──
     /** → { available, reason?, message? }  (reason: banned | format | taken) */

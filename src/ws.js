@@ -74,6 +74,11 @@ function broadcast(payload) {
   sockets.forEach((set) => set.forEach((ws) => send(ws, data)));
 }
 
+/** Cierra las conexiones de un usuario (p. ej. al borrar su cuenta). */
+function disconnectUser(userId) {
+  (sockets.get(userId) || []).forEach((ws) => ws.close(4401, 'account deleted'));
+}
+
 const close = () => wss && wss.close();
 
-module.exports = { attach, sendToUser, broadcast, close };
+module.exports = { attach, sendToUser, broadcast, disconnectUser, close };

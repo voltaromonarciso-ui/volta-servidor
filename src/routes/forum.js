@@ -56,21 +56,35 @@ router.get('/posts', ah(async (req, res) => {
 }));
 
 // POST /api/forum/posts   { content?, progressData? }
-const MAX_CARD_BYTES = 4096;
+// Misma forma que generan las tarjetas de la app (CARDS: weekly, monthly, achievement, milestone).
+// Se valida estrictamente porque se envía tal cual a todos los clientes: un "stats" que no sea
+// lista rompería el foro de todos al pintarlo.
+const cardText = (max) => z.string({ invalid_type_error: 'La tarjeta de progreso no es válida.' }).trim().max(max, 'La tarjeta de progreso es demasiado larga.');
+const progressSchema = z
+  .object({
+    type: z.string().regex(/^[a-z_]{1,30}$/, 'La tarjeta de progreso no es válida.').optional(),
+    icon: cardText(8).default(''),
+    title: cardText(60).min(1, 'La tarjeta de progreso necesita un título.'),
+    stats: z.array(z.tuple([cardText(40), cardText(40)]), { invalid_type_error: 'La tarjeta de progreso no es válida.' })
+      .max(8, 'La tarjeta de progreso tiene demasiados datos.')
+      .default([]),
+    note: cardText(200).default(''),
+  }, { invalid_type_error: 'La tarjeta de progreso no es válida.' })
+  .strict('La tarjeta de progreso no es válida.');
+
+const cardTexts = (c) => [c.icon, c.title, c.note, ...c.stats.flat()].filter(Boolean);
+
 const postSchema = z
   .object({
     content: z.string().trim().max(1000, 'El mensaje no puede superar los 1000 caracteres.').default(''),
-    progressData: z
-      .record(z.string(), z.unknown())
-      .refine((o) => Buffer.byteLength(JSON.stringify(o)) <= MAX_CARD_BYTES, 'La tarjeta de progreso es demasiado grande.')
-      .optional(),
+    progressData: progressSchema.optional(),
   })
   .refine((b) => b.content || b.progressData, { message: 'Escribe algo o adjunta tu progreso.' });
 
 router.post('/posts', postCooldown, ah(async (req, res) => {
   const { content, progressData } = postSchema.parse(req.body);
 
-  if (content && !VMOD.text(content)) {
+  if ((content && !VMOD.text(content)) || (progressData && !cardTexts(progressData).every(VMOD.text))) {
     throw new HttpError(422, 'banned_content', 'Tu mensaje contiene términos no permitidos.');
   }
 

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { z } = require('zod');
 const rateLimit = require('express-rate-limit');
+const config = require('../config');
 const { query } = require('../db');
 const { ah, HttpError } = require('../lib/http');
 const VMOD = require('../lib/moderation');
@@ -12,6 +13,7 @@ const checkLimiter = rateLimit({
   limit: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => config.rateLimitOff,
   message: { error: 'rate_limited', message: 'Demasiadas comprobaciones. Espera un momento.' },
 });
 
@@ -45,7 +47,8 @@ router.get('/search', requireAuth, ah(async (req, res) => {
 
 // POST /api/users/heartbeat   (marca "en línea"; llámalo cada ~30-60 s mientras la app esté abierta)
 router.post('/heartbeat', requireAuth, ah(async (req, res) => {
-  await query('UPDATE users SET last_seen_at = now() WHERE id = $1', [req.user.id]);
+  const { rowCount } = await query('UPDATE users SET last_seen_at = now() WHERE id = $1', [req.user.id]);
+  if (!rowCount) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
   res.status(204).end();
 }));
 

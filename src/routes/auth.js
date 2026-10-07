@@ -7,12 +7,14 @@ const { query } = require('../db');
 const { ah, HttpError } = require('../lib/http');
 const VMOD = require('../lib/moderation');
 const { sign, requireAuth } = require('../middleware/auth');
+const ws = require('../ws');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => config.rateLimitOff,
   message: { error: 'rate_limited', message: 'Demasiados intentos. Prueba de nuevo en unos minutos.' },
 });
 
@@ -78,6 +80,19 @@ router.get('/me', requireAuth, ah(async (req, res) => {
   const { rows } = await query('SELECT id, username, email, created_at FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
   res.json({ user: publicUser(rows[0]) });
+}));
+
+// DELETE /api/auth/me   { password }  → borra la cuenta, sus mensajes y amistades (ON DELETE CASCADE)
+router.delete('/me', authLimiter, requireAuth, ah(async (req, res) => {
+  const { password } = z.object({ password: z.string().min(1).max(200) }).parse(req.body ?? {});
+  const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+  if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  if (!(await bcrypt.compare(password, rows[0].password_hash))) {
+    throw new HttpError(401, 'bad_credentials', 'Contraseña incorrecta.');
+  }
+  await query('DELETE FROM users WHERE id = $1', [req.user.id]);
+  ws.disconnectUser(req.user.id);
+  res.status(204).end();
 }));
 
 module.exports = router;

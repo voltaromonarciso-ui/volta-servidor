@@ -41,6 +41,11 @@ router.post('/request', ah(async (req, res) => {
   if (target.id === me) throw new HttpError(400, 'self', 'No puedes añadirte a ti mismo.');
 
   const result = await tx(async (c) => {
+    // Candado por pareja: si A→B y B→A llegan a la vez, la segunda espera y ve la fila de la primera
+    await c.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended(LEAST($1::uuid, $2::uuid)::text || GREATEST($1::uuid, $2::uuid)::text, 1))',
+      [me, target.id]
+    );
     const { rows } = await c.query(
       `SELECT id, user_id_1, status FROM friends
         WHERE (user_id_1 = $1 AND user_id_2 = $2) OR (user_id_1 = $2 AND user_id_2 = $1)

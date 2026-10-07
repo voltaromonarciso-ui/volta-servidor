@@ -2,7 +2,7 @@
 const http=require('http'),crypto=require('crypto');
 const users={marta_fit:{username:'marta_fit',email:'m@x.com',password:'password1',seen:null},taken_user:{username:'taken_user',email:'t@x.com',password:'password1'}};
 const friends=[];const posts=[];const socks=new Map();const lastPost={};const hb=[];
-const send=(res,s,o,h={})=>{res.writeHead(s,{'Content-Type':'application/json','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS','Access-Control-Expose-Headers':'Retry-After',...h});res.end(o==null?'':JSON.stringify(o))};
+const send=(res,s,o,h={})=>{res.writeHead(s,{'Content-Type':'application/json','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,PUT,DELETE,OPTIONS','Access-Control-Expose-Headers':'Retry-After',...h});res.end(o==null?'':JSON.stringify(o))};
 const frame=o=>{const b=Buffer.from(JSON.stringify(o));const h=b.length<126?Buffer.from([0x81,b.length]):Buffer.from([0x81,126,b.length>>8,b.length&255]);return Buffer.concat([h,b])};
 const push=(u,o)=>(socks.get(u)||[]).forEach(s=>s.write(frame(o)));
 const pub=p=>({id:p.id,content:p.content,progressData:p.card,createdAt:new Date(p.t).toISOString(),author:{username:p.u}});
@@ -18,6 +18,7 @@ const server=http.createServer((req,res)=>{
    if(j.type==='request'){friends.push({a:'marta_fit',b:j.to,status:'pending',id:crypto.randomUUID()});push(j.to,{type:'friend:request',from:'marta_fit'})}return send(res,200,{ok:1})}
  if(P==='/__hb')return send(res,200,hb);
  if(!me)return send(res,401,{error:'unauthorized',message:'Inicia sesión para continuar.'});
+ if(P==='/api/auth/me'&&req.method==='DELETE'){if(!users[me]||users[me].password!==j.password)return send(res,401,{error:'bad_credentials',message:'Contraseña incorrecta.'});delete users[me];return send(res,204)}
  if(P==='/api/auth/me')return send(res,200,{user:{id:'1',username:users[me]?users[me].username:me,email:'x'}});
  if(P==='/api/users/heartbeat'){hb.push(me);return send(res,204)}
  if(P==='/api/users/search'){const q=url.searchParams.get('q').toLowerCase();return send(res,200,{users:Object.values(users).filter(u=>u.username.toLowerCase().startsWith(q)&&u.username.toLowerCase()!==me).map(u=>({username:u.username}))})}
