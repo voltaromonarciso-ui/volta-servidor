@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { ZodError } = require('zod');
@@ -19,6 +20,7 @@ app.use(cors({
   exposedHeaders: ['Retry-After'],
   maxAge: 600,
 }));
+app.use(compression()); // la app (≈2,8 MB) viaja comprimida
 app.use(express.json({ limit: '16kb' }));
 app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false, skip: () => config.rateLimitOff }));
 

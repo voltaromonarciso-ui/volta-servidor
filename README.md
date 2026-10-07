@@ -139,3 +139,21 @@ Para el servidor real: `npm install`, `npm run migrate`, `npm run dev`.
 
 **Corrección en el filtro de nombres:** `lib/moderation.js` (y la copia dentro del HTML) rechazaba por error cualquier nombre con la letra «k»
 (la palabra «kkk» se reducía a «k»). Ya está corregido en ambos sitios.
+
+## 4. App web (`Volta-app.html`) e instalación como app
+
+El servidor también sirve la app en `/` (además de `manifest.webmanifest`, iconos y `sw.js` desde `public/`):
+
+- **Misma dirección para app y API:** al servirla, el servidor añade `<meta name="volta-api">` y la app usa su propio origen como API (sin CORS).
+- **Instalable y sin conexión:** desde el móvil, abre la URL del servidor → *Añadir a pantalla de inicio*. El service worker guarda la app; la API y el WebSocket siempre van a la red.
+- **Comprimida:** viaja con gzip (≈2,0 MB en vez de 2,9 MB).
+
+Las mejoras sobre el HTML original están en `frontend/mejoras.js` y `frontend/mejoras.css`. Tras editarlas:
+
+```bash
+npm run build:app      # las inyecta en Volta-app.html (entre los marcadores VOLTA-MEJORAS)
+```
+
+Qué añaden: series prerrellenadas con el objetivo de sobrecarga progresiva, pantalla siempre encendida al entrenar,
+confeti y vibración al batir un récord, resumen de la sesión con imagen para compartir, traducción completa
+(EN/FR/PT, incluidos los 145 ejercicios), imágenes incrustadas sin 404, etiquetas accesibles y foco visible.
