@@ -64,6 +64,10 @@
     checkUsername: (username) => http('/api/users/check-username?' + qs({ username }), { auth: false }),
     searchUsers: (q) => http('/api/users/search?' + qs({ q })).then((d) => d.users),
     heartbeat: () => http('/api/users/heartbeat', { method: 'POST', body: {} }),
+    /** Resumen de la semana en curso: { days, sets, volume } */
+    submitStats: (s) => http('/api/users/stats', { method: 'POST', body: s }),
+    /** → { week, entries: [{ username, days, sets, volume, me }] } (tú + amigos, por volumen) */
+    leaderboard: () => http('/api/friends/leaderboard'),
 
     // ── Amigos ──
     friends: () => http('/api/friends'),                       // { friends, incoming, outgoing }

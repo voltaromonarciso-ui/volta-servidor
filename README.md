@@ -50,6 +50,8 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 | 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `403` contraseña incorrecta (la sesión sigue abierta) |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
 | 🔒 `GET /api/users/search?q=an` | mín. 2 letras | `{users:[{username}]}` |
+| 🔒 `POST /api/users/stats` | `{days, sets, volume}` (semana en curso) | `204` |
+| 🔒 `GET /api/friends/leaderboard` | | `{week, entries:[{username, days, sets, volume, me}]}` tú + amigos, por volumen |
 | 🔒 `POST /api/users/heartbeat` | | `204` (actualiza "en línea") |
 | 🔒 `GET /api/friends` | | `{friends, incoming, outgoing}` |
 | 🔒 `POST /api/friends/request` | `{username}` | `201 {status:"pending"}` · `200 {status:"accepted"}` si ya te había invitado · `404` · `409` |

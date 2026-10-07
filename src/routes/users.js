@@ -45,6 +45,23 @@ router.get('/search', requireAuth, ah(async (req, res) => {
   res.json({ users: rows.map((r) => ({ username: r.username })) });
 }));
 
+// POST /api/users/stats   { days, sets, volume }  → resumen de la semana en curso (lunes a domingo)
+const statsSchema = z.object({
+  days: z.number().int().min(0).max(7),
+  sets: z.number().int().min(0).max(5000),
+  volume: z.number().min(0).max(10_000_000),
+});
+router.post('/stats', requireAuth, ah(async (req, res) => {
+  const { days, sets, volume } = statsSchema.parse(req.body ?? {});
+  const { rowCount } = await query(
+    `UPDATE users SET week_key = date_trunc('week', now())::date, week_days = $2, week_sets = $3, week_volume = $4
+      WHERE id = $1`,
+    [req.user.id, days, sets, Math.round(volume)]
+  );
+  if (!rowCount) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  res.status(204).end();
+}));
+
 // POST /api/users/heartbeat   (marca "en línea"; llámalo cada ~30-60 s mientras la app esté abierta)
 router.post('/heartbeat', requireAuth, ah(async (req, res) => {
   const { rowCount } = await query('UPDATE users SET last_seen_at = now() WHERE id = $1', [req.user.id]);

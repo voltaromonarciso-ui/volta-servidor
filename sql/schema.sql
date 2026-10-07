@@ -23,6 +23,12 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username));
 CREATE INDEX        IF NOT EXISTS users_username_prefix_idx ON users (lower(username) text_pattern_ops);
 
+-- Resumen de la semana en curso (lo envía la app; solo cifras agregadas, nunca las series)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS week_key    date;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS week_days   smallint NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS week_sets   integer  NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS week_volume integer  NOT NULL DEFAULT 0;
+
 -- ───────────────────────── friends ─────────────────────────
 -- user_id_1 = quien envía la solicitud · user_id_2 = quien la recibe
 CREATE TABLE IF NOT EXISTS friends (

@@ -165,3 +165,30 @@ test('sirve el manifiesto, los iconos y el service worker', async () => {
   assert.equal(sw.status, 200);
   assert.equal(sw.headers.get('cache-control'), 'no-cache');
 });
+
+// ───────────── clasificación semanal ─────────────
+test('stats semanales: valida, guarda y la clasificación incluye solo amigos aceptados', async () => {
+  const a = await newUser(), b = await newUser(), c = await newUser();
+  // a y b amigos; c pendiente (no debe aparecer)
+  await api('POST', '/api/friends/request', { token: a.token, body: { username: b.username } });
+  await api('PUT', '/api/friends/respond', { token: b.token, body: { username: a.username, action: 'accept' } });
+  await api('POST', '/api/friends/request', { token: c.token, body: { username: a.username } });
+
+  assert.equal((await api('POST', '/api/users/stats', { token: a.token, body: { days: 9, sets: 1, volume: 1 } })).status, 400);
+  assert.equal((await api('POST', '/api/users/stats', { token: a.token, body: { days: 3, sets: 40, volume: 12000 } })).status, 204);
+  assert.equal((await api('POST', '/api/users/stats', { token: b.token, body: { days: 4, sets: 50, volume: 15500.6 } })).status, 204);
+  assert.equal((await api('POST', '/api/users/stats', { token: c.token, body: { days: 5, sets: 90, volume: 99000 } })).status, 204);
+
+  const r = await api('GET', '/api/friends/leaderboard', { token: a.token });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.entries.map((e) => [e.username, e.volume, e.me]), [[b.username, 15501, false], [a.username, 12000, true]]);
+  assert.match(r.body.week, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('stats de una semana anterior cuentan como cero en la clasificación actual', async () => {
+  const a = await newUser();
+  await api('POST', '/api/users/stats', { token: a.token, body: { days: 2, sets: 10, volume: 500 } });
+  await pool.query("UPDATE users SET week_key = week_key - 7 WHERE id = $1", [a.id]);
+  const r = await api('GET', '/api/friends/leaderboard', { token: a.token });
+  assert.deepEqual(r.body.entries.map((e) => [e.days, e.sets, e.volume]), [[0, 0, 0]]);
+});

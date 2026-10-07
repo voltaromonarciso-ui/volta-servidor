@@ -240,6 +240,7 @@
       const soc = '<div class="chips"><div class="chip" onclick="socGo()" style="border-color:var(--ac)">👥 Social ›</div></div>';
       if (h.indexOf(soc) !== -1) h = h.replace(soc, '').replace('<div class="row" style="gap:8px"><div class="ib"', '<div class="row" style="gap:8px"><div class="ib vx-soc" onclick="socGo()">👥</div><div class="ib"');
       h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
+      if (socialOn()) { h += lbCard(); setTimeout(loadLeaderboard, 0); }
       h += achCard() + quoteCard();
     } catch (e) { /* la pantalla original sigue intacta */ }
     return h;
@@ -283,7 +284,7 @@
       try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch (e) { /* sin avisos */ }
       const out = _done.apply(this, arguments);
       if (!restIv) restIv = setInterval(restTick, 1000);
-      setTimeout(() => { checkPerfect(); checkAchievements(); }, 400);
+      setTimeout(() => { checkPerfect(); checkAchievements(); pushStats(); }, 400);
       return out;
     };
   }
@@ -305,6 +306,60 @@
       })(t0);
     });
   }
+
+  /* ───────────── 11. Clasificación semanal con amigos (como Strava) ───────────── */
+  const LB = {
+    title: ['Clasificación semanal', 'Weekly leaderboard', 'Classement de la semaine', 'Classificação semanal'],
+    resets: ['Se reinicia cada lunes', 'Resets every Monday', 'Remis à zéro chaque lundi', 'Reinicia todas as segundas'],
+    you: ['tú', 'you', 'toi', 'tu'],
+    days: ['días', 'days', 'jours', 'dias'],
+    invite: ['Añade amigos para competir', 'Add friends to compete', 'Ajoute des amis pour te mesurer à eux', 'Adiciona amigos para competir'],
+    loading: ['Cargando…', 'Loading…', 'Chargement…', 'A carregar…'],
+  };
+  const lb = (k) => LB[k][LI[S.lang] || 0];
+  const socialOn = () => !!(window.VoltaAPI && VoltaAPI.isLoggedIn() && S.soc && S.soc.me);
+  const apiCall = (method, path, body) => {
+    let token = ''; try { token = localStorage.getItem('volta.token') || ''; } catch (e) { /* sin almacenamiento */ }
+    return fetch(VoltaAPI.getBase() + path, { method, headers: Object.assign({ Authorization: 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined })
+      .then((r) => (r.status === 204 ? null : r.ok ? r.json() : Promise.reject(r.status)));
+  };
+  function thisWeek() {
+    const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const L = realLog().filter((l) => l.t >= mon.getTime());
+    return { days: new Set(L.map((l) => lk(l.t))).size, sets: L.length, volume: Math.round(L.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0)) };
+  }
+  let lbCache = null, lbAt = 0, lbBusy = false, pushT = null;
+  function pushStats() {
+    if (!socialOn()) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(() => {
+      apiCall('POST', '/api/users/stats', thisWeek())
+        .then(() => { lbAt = 0; if (document.querySelector('.vx-lb-body')) loadLeaderboard(); }) // la tarjeta visible refleja tu última serie
+        .catch(() => {});
+    }, 1500);
+  }
+  function lbRows(d) {
+    if (!d || !d.entries) return `<div class="mu">${lb('loading')}</div>`;
+    const medal = ['🥇', '🥈', '🥉'];
+    const rows = d.entries.map((e, i) => `<div class="row vx-lbr${e.me ? ' me' : ''}"><span class="vx-lbp">${medal[i] || i + 1}</span><b class="g">${esc(e.username)}${e.me ? ` <span class="mu">(${lb('you')})</span>` : ''}</b><span class="mu">${e.days} ${lb('days')}</span><b class="vx-lbv">${e.volume.toLocaleString(S.lang)} ${S.units.w}</b></div>`).join('');
+    return rows + (d.entries.length < 2 ? `<button class="btn o sm" style="margin-top:10px" onclick="socGo()">👥 ${lb('invite')}</button>` : '');
+  }
+  function loadLeaderboard() {
+    if (lbBusy || !socialOn() || Date.now() - lbAt < 30000) return;
+    lbBusy = true;
+    apiCall('GET', '/api/friends/leaderboard').then((d) => {
+      lbCache = d; lbAt = Date.now();
+      document.querySelectorAll('.vx-lb-body').forEach((el) => { el.innerHTML = lbRows(d); });
+    }).catch(() => {}).finally(() => { lbBusy = false; });
+  }
+  const lbCard = () => `<div class="card vx-lb"><div class="row sp"><b>🏁 ${lb('title')}</b><span class="mu">${lb('resets')}</span></div><div class="vx-lb-body">${lbRows(lbCache)}</div></div>`;
+  window.vxLeaderboard = () => lbCache; // para pruebas
+  if (typeof V.soc === 'function') {
+    const _soc = V.soc;
+    V.soc = function () { const h = _soc.apply(this, arguments); try { if (socialOn()) { setTimeout(loadLeaderboard, 0); return h + lbCard(); } } catch (e) { /* idem */ } return h; };
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pushStats(); });
+  setTimeout(pushStats, 2500);
 
   /* ───────────── 10. Actividad (la campana): logros, récords, días perfectos y avisos ───────────── */
   const IB = {
