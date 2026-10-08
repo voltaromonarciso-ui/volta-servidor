@@ -318,3 +318,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-st-d.on i{background:color-mix(in srgb,#ff8a2a 22%,var(--card2));border-color:color-mix(in srgb,#ff8a2a 55%,transparent)}
 .vx-st-d.now span{color:var(--tx);font-weight:800}
 @media (prefers-reduced-motion:reduce){.vx-streak.hot .vx-st-flame{animation:none}}
+.vx-or-fav{margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)}
+.vx-or-rank{color:#e0b13a;font-weight:800}
+:root[data-t="light"] .vx-or-rank{color:#a87a08}
+.vx-oracle a{color:var(--ac)}
