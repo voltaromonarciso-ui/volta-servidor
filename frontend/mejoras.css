@@ -269,3 +269,32 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-tpl-ex{font-size:12px;color:var(--mu);margin-top:4px;line-height:1.35}
 .vx-tpl .chip{flex:none}
 @media (prefers-reduced-motion:reduce){.vx-tpl{transition:none}}
+
+/* El Olimpo: Oráculo de Delfos y 12 Trabajos de Heracles */
+.vx-oracle{position:relative;overflow:hidden;border-color:color-mix(in srgb,#e0b13a 45%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#e0b13a 16%,transparent),transparent 60%),var(--card)}
+.vx-oracle.rest{border-color:color-mix(in srgb,#7aa8ff 40%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#7aa8ff 14%,transparent),transparent 60%),var(--card)}
+.vx-or-ic{flex:none;display:flex}
+.vx-or-proph{font-style:italic;margin-top:2px}
+.vx-or-groups{display:flex;align-items:stretch;gap:8px;margin-top:8px}
+.vx-or-g{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--ln)}
+.vx-or-g b{font-size:16px}
+.vx-or-g .mu{font-size:12px}
+.vx-or-plus{align-self:center;color:var(--mu);font-weight:800}
+.vx-oracle .btn{width:100%}
+.vx-lab-card{cursor:pointer}
+.vx-lab-hero{display:flex;gap:16px;align-items:center;background:radial-gradient(120% 100% at 0 0,color-mix(in srgb,#e0b13a 18%,transparent),transparent 60%),var(--card)}
+.vx-lab-ring{--p:0;flex:none;width:84px;height:84px;border-radius:50%;display:flex;align-items:baseline;justify-content:center;padding-top:26px;box-sizing:border-box;background:radial-gradient(closest-side,var(--card) 76%,transparent 78% 100%),conic-gradient(#e0b13a calc(var(--p)*1%),var(--card2) 0)}
+.vx-lab-ring b{font-size:26px;line-height:1}
+.vx-lab-ring span{color:var(--mu);font-size:13px}
+.vx-lab-title{font-size:22px;font-weight:800;color:#e0b13a;letter-spacing:-.01em}
+:root[data-t="light"] .vx-lab-title{color:#a87a08}
+.vx-lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.vx-lab{position:relative;margin:0;display:flex;flex-direction:column;gap:3px;padding:14px 12px}
+.vx-lab .mu{font-size:12px;line-height:1.35}
+.vx-lab-n{position:absolute;top:10px;right:12px;font:700 11px Georgia,serif;letter-spacing:.08em;color:var(--mu)}
+.vx-lab-ic{font-size:28px;line-height:1.1;filter:grayscale(.6);opacity:.75}
+.vx-lab-v{font-size:12px;font-weight:700;color:var(--mu);margin-top:4px;font-variant-numeric:tabular-nums}
+.vx-lab.ok{border-color:#e0b13a;box-shadow:0 0 0 1px color-mix(in srgb,#e0b13a 40%,transparent),0 6px 18px color-mix(in srgb,#e0b13a 18%,transparent)}
+.vx-lab.ok .vx-lab-ic{filter:none;opacity:1}
+.vx-lab.ok .vx-lab-v{color:#e0b13a}
+.vx-lab.ok .bar i{background:#e0b13a}

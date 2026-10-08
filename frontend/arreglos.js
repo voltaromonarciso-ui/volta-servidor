@@ -172,6 +172,9 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
       console.warn('[volta] pantalla inexistente:', S.stack.pop());
     }
     if (!known(S.tab)) S.tab = 'home';
+    // Perfiles guardados por versiones antiguas o a medias: sin listas, Inicio se rompía entero
+    const up = S.userProfile;
+    if (up && typeof up === 'object') { if (!Array.isArray(up.injuries)) up.injuries = []; if (!Array.isArray(up.allergies)) up.allergies = []; }
     return _R.apply(this, arguments);
   };
 })();
