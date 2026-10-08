@@ -127,6 +127,26 @@ Archivo: `frontend/a11y.js`, que se carga el último. Revisa la pantalla despué
 - **Nuevo código**: usa `<button>` para lo que se toca, pon `<label for>` en los campos y `aria-label` en los botones que
   solo llevan un icono. El módulo es una red de seguridad, no un sustituto.
 
+## 7. Logros escalables y misiones del día
+
+Archivo: `frontend/engage.js`.
+
+- **112 logros en 19 familias con niveles** (I, II, III…), en la lista `FAM`.
+  - Cada familia tiene una métrica y sus umbrales; cada umbral es un logro.
+  - Las métricas: días entrenados, racha, kg levantados, series, repeticiones, récords, ejercicios distintos, grupos
+    musculares, días perfectos, agua, comidas, semanas sólidas, madrugador, noctámbulo, fin de semana, sesiones largas,
+    rutinas creadas, los 12 Trabajos y el nivel del Oráculo.
+  - El color del nivel va de bronce a mítico.
+  - **Añadir una familia**: una entrada nueva en `FAM`; si la métrica es nueva, se calcula en `stats()`.
+  - Al subir `ACH_VER`, lo ya conseguido se marca sin avisos.
+  - Los logros se revisan al registrar una serie y al moverse por la app, como mucho una vez cada 5 s.
+- **Misiones: 3 fijas + 2 del día.** Las fijas son entrenar, 2 comidas y 2 L de agua.
+  - Las 2 del día salen por sorteo de un grupo de 11 (`POOL`), con la fecha como semilla: son las mismas todo el día y
+    cambian al siguiente.
+  - El grupo: 12 series, 5.000 kg, 2 grupos musculares, ejercicio nuevo, objetivo de proteína, 3 comidas, 3 L de agua,
+    registrar el peso, batir un récord, entrenar antes de las 10:00 y finalizar un entreno.
+  - El **día perfecto** (que da congeladores de racha) se gana con las 3 fijas; las del día son un extra.
+
 ## Pruebas
 
 Navegador (Playwright), con capturas en todas las pantallas:

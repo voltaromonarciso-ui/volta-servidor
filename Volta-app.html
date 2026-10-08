@@ -3293,6 +3293,23 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-thr .vx-th-sw{width:30px;height:30px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,var(--b),var(--a));box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ln)}
 .vx-thr.on .vx-th-sw{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--a)}
 .vx-thk{font-weight:800;color:var(--ac);font-size:18px;min-width:20px;text-align:right}
+/* Misiones: etiqueta de las 2 que cambian cada día */
+.vx-dtag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;vertical-align:1px;color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 10%,transparent)}
+/* Logros por familias con niveles */
+.vx-famlist{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.vx-fam{padding:14px;margin:0}
+.vx-fam.ok{border-color:color-mix(in srgb,var(--m) 55%,var(--ln));background:linear-gradient(180deg,color-mix(in srgb,var(--m) 9%,transparent),var(--card) 70%)}
+.vx-fam .vx-badge{flex:none;position:relative}
+.vx-fam.ok .vx-badge{background:radial-gradient(circle at 30% 30%,color-mix(in srgb,var(--m) 40%,transparent),var(--card2));box-shadow:0 0 16px color-mix(in srgb,var(--m) 30%,transparent)}
+.vx-fam:not(.ok) .vx-badge span{filter:grayscale(1);opacity:.45}
+.vx-tier{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:10px;font-weight:800;min-width:20px;height:18px;padding:0 4px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--m);color:#111;box-shadow:0 0 0 2px var(--card)}
+.vx-fambar{height:6px;border-radius:3px;background:var(--card2);margin-top:8px;overflow:hidden}
+.vx-fambar i{display:block;height:100%;border-radius:3px;background:var(--m,var(--ac))}
+.vx-fam:not(.ok) .vx-fambar i{background:var(--ac)}
+.vx-dots{display:flex;gap:4px;flex-wrap:wrap}
+.vx-dots i{width:8px;height:8px;border-radius:50%;background:var(--card2);box-shadow:inset 0 0 0 1px var(--ln)}
+.vx-dots i.on{background:var(--d);box-shadow:none}
+.vx-badge.sm[style*="--m"]{box-shadow:0 0 0 2px color-mix(in srgb,var(--m) 60%,transparent)}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -5916,6 +5933,18 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     mTrain: ['Entrena hoy', 'Work out today', "Entraîne-toi aujourd'hui", 'Treina hoje'],
     mMeals: ['Registra 2 comidas', 'Log 2 meals', 'Enregistre 2 repas', 'Regista 2 refeições'],
     mWater: ['Bebe 2 litros de agua', 'Drink 2 litres of water', "Bois 2 litres d'eau", 'Bebe 2 litros de água'],
+    mSets: ['Completa 12 series', 'Complete 12 sets', 'Termine 12 séries', 'Conclui 12 séries'],
+    mVol: ['Mueve 5.000 kg hoy', 'Move 5,000 kg today', 'Soulève 5 000 kg aujourd’hui', 'Move 5.000 kg hoje'],
+    mGroups: ['Entrena 2 grupos musculares', 'Train 2 muscle groups', 'Entraîne 2 groupes musculaires', 'Treina 2 grupos musculares'],
+    mNewEx: ['Prueba un ejercicio nuevo', 'Try a new exercise', 'Essaie un nouvel exercice', 'Experimenta um exercício novo'],
+    mProt: ['Llega a {n} g de proteína', 'Reach {n} g of protein', 'Atteins {n} g de protéines', 'Chega a {n} g de proteína'],
+    mMeals3: ['Registra 3 comidas', 'Log 3 meals', 'Enregistre 3 repas', 'Regista 3 refeições'],
+    mWater3: ['Bebe 3 litros de agua', 'Drink 3 litres of water', 'Bois 3 litres d’eau', 'Bebe 3 litros de água'],
+    mWeigh: ['Registra tu peso', 'Log your weight', 'Enregistre ton poids', 'Regista o teu peso'],
+    mPr: ['Bate un récord personal', 'Set a personal record', 'Bats un record personnel', 'Bate um recorde pessoal'],
+    mEarly: ['Entrena antes de las 10:00', 'Train before 10 am', 'Entraîne-toi avant 10 h', 'Treina antes das 10:00'],
+    mFinish: ['Finaliza un entreno completo', 'Finish a full workout', 'Termine une séance complète', 'Termina um treino completo'],
+    daily: ['Del día', 'Today only', 'Du jour', 'Do dia'],
     go: ['Ir', 'Go', 'Aller', 'Ir'],
     perfect: ['¡Día perfecto! Misiones completadas', 'Perfect day! Missions complete', 'Journée parfaite ! Missions accomplies', 'Dia perfeito! Missões concluídas'],
     perfectShort: ['Día perfecto', 'Perfect day', 'Journée parfaite', 'Dia perfeito'],
@@ -5931,6 +5960,8 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     less: ['Menos', 'Less', 'Moins', 'Menos'], more: ['Más', 'More', 'Plus', 'Mais'],
     ach: ['Logros', 'Achievements', 'Succès', 'Conquistas'],
     achSub: ['{a} de {b} desbloqueados', '{a} of {b} unlocked', '{a} sur {b} débloqués', '{a} de {b} desbloqueadas'],
+    level: ['Nivel', 'Level', 'Niveau', 'Nível'],
+    maxLevel: ['Nivel máximo', 'Max level', 'Niveau max', 'Nível máximo'],
     unlocked: ['Logro desbloqueado', 'Achievement unlocked', 'Succès débloqué', 'Conquista desbloqueada'],
     restEnd: ['¡Descanso terminado!', 'Rest is over!', 'Repos terminé !', 'Descanso terminado!'],
     restBody: ['Vamos a por la siguiente serie 💪', "Let's hit the next set 💪", 'On attaque la série suivante 💪', 'Vamos à próxima série 💪'],
@@ -5958,29 +5989,73 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
   const dayOf = (k) => (S.nlog && typeof S.nlog === 'object' && S.nlog[k]) || { e: [], w: 0 };
 
   /* ───────────── 1. Misiones diarias ───────────── */
+  // 3 misiones fijas (entrenar, comer, beber) + 2 que cambian cada día, elegidas de un grupo de 11.
+  // El sorteo depende de la fecha: todo el día ves las mismas y mañana tocan otras.
+  const POOL = ['sets', 'vol', 'groups', 'newex', 'protein', 'meals3', 'water3', 'weigh', 'pr', 'early', 'finish'];
+  function dailyPicks(k) {
+    let h = 0; for (const ch of String(k)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const out = [], pool = POOL.slice();
+    while (out.length < 2 && pool.length) { h = (h * 1103515245 + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
+    return out;
+  }
+  function proteinGoal() {
+    try { const c = NUTR.calc(NUTR.prof()); if (c && c.ok && c.pr > 0) return Math.round(c.pr); } catch (e) { /* sin perfil */ }
+    return 100;
+  }
   function missions() {
-    const k = td(), d = dayOf(k);
-    const trained = !!(S.done && S.done[k]) || realLog().some((l) => lk(l.t) == k);
+    const k = td(), d = dayOf(k), now = Date.now();
+    const L = realLog(), today = L.filter((l) => lk(l.t) == k), before = L.filter((l) => lk(l.t) < k);
+    const trained = !!(S.done && S.done[k]) || today.length > 0;
     const meals = Array.isArray(d.e) ? d.e.length : 0;
     const water = +d.w || 0;
-    return [
-      { id: 'train', icon: '🏋️', label: t('mTrain'), done: trained, prog: trained ? 1 : 0, txt: trained ? '✓' : '', act: `<button class="chip" onclick="tab('train')">${t('go')}</button>` },
-      { id: 'meals', icon: '🍽️', label: t('mMeals'), done: meals >= 2, prog: Math.min(1, meals / 2), txt: Math.min(meals, 2) + '/2', act: `<button class="chip" onclick="tab('nut')">${t('go')}</button>` },
-      { id: 'water', icon: '💧', label: t('mWater'), done: water >= 2000, prog: Math.min(1, water / 2000), txt: (water / 1000).toLocaleString(S.lang, { maximumFractionDigits: 2 }) + '/2 L', act: '<button class="chip vx-water" onclick="vxWater(250)">+250 ml</button>' },
+    const prot = Array.isArray(d.e) ? Math.round(d.e.reduce((a, e) => a + (+(e && e.p) || 0), 0)) : 0;
+    const L2 = (n) => (n / 1000).toLocaleString(S.lang, { maximumFractionDigits: 2 });
+    const goT = `<button class="chip" onclick="tab('train')">${t('go')}</button>`, goN = `<button class="chip" onclick="tab('nut')">${t('go')}</button>`;
+    const sip = '<button class="chip vx-water" onclick="vxWater(250)">+250 ml</button>';
+    const core = [
+      { id: 'train', icon: '🏋️', label: t('mTrain'), done: trained, prog: trained ? 1 : 0, txt: trained ? '✓' : '', act: goT },
+      { id: 'meals', icon: '🍽️', label: t('mMeals'), done: meals >= 2, prog: Math.min(1, meals / 2), txt: Math.min(meals, 2) + '/2', act: goN },
+      { id: 'water', icon: '💧', label: t('mWater'), done: water >= 2000, prog: Math.min(1, water / 2000), txt: L2(water) + '/2 L', act: sip },
     ];
+    const vol = today.reduce((a, l) => a + (l.w || 0) * (l.r || 0), 0);
+    const groups = new Set(today.map((l) => EX[l.ex] && EX[l.ex][1]).filter(Boolean)).size;
+    const seen = new Set(before.map((l) => l.ex));
+    const newEx = today.some((l) => !seen.has(l.ex));
+    const best = {}; before.forEach((l) => { best[l.ex] = Math.max(best[l.ex] || 0, l.w || 0); });
+    const pr = today.some((l) => best[l.ex] > 0 && (l.w || 0) > best[l.ex]);
+    const early = today.some((l) => new Date(l.t).getHours() < 10);
+    const weighed = Array.isArray(S.wts) && S.wts.some((w) => w && w.d === new Date(now).toISOString().slice(0, 10));
+    const finished = !!(S.done && S.done[k]);
+    const pg = proteinGoal();
+    const X = {
+      sets: { icon: '🎯', label: t('mSets'), done: today.length >= 12, prog: Math.min(1, today.length / 12), txt: Math.min(today.length, 12) + '/12', act: goT },
+      vol: { icon: '🏗️', label: t('mVol'), done: vol >= 5000, prog: Math.min(1, vol / 5000), txt: nf2(Math.min(vol, 5000)) + '/5.000 kg', act: goT },
+      groups: { icon: '🫀', label: t('mGroups'), done: groups >= 2, prog: Math.min(1, groups / 2), txt: Math.min(groups, 2) + '/2', act: goT },
+      newex: { icon: '🧭', label: t('mNewEx'), done: newEx, prog: newEx ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('train');go('lib')">${t('go')}</button>` },
+      protein: { icon: '🥩', label: t('mProt').replace('{n}', pg), done: prot >= pg, prog: Math.min(1, prot / pg), txt: Math.min(prot, pg) + '/' + pg + ' g', act: goN },
+      meals3: { icon: '🥗', label: t('mMeals3'), done: meals >= 3, prog: Math.min(1, meals / 3), txt: Math.min(meals, 3) + '/3', act: goN },
+      water3: { icon: '🌊', label: t('mWater3'), done: water >= 3000, prog: Math.min(1, water / 3000), txt: L2(water) + '/3 L', act: sip },
+      weigh: { icon: '⚖️', label: t('mWeigh'), done: weighed, prog: weighed ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('prog');go('pg:body')">${t('go')}</button>` },
+      pr: { icon: '🏆', label: t('mPr'), done: pr, prog: pr ? 1 : 0, txt: '', act: goT },
+      early: { icon: '🌅', label: t('mEarly'), done: early, prog: early ? 1 : 0, txt: '', act: goT },
+      finish: { icon: '🏁', label: t('mFinish'), done: finished, prog: finished ? 1 : 0, txt: '', act: goT },
+    };
+    return core.concat(dailyPicks(k).map((id) => Object.assign({ id, daily: true }, X[id])));
   }
+  const nf2 = (v) => Math.round(v).toLocaleString(S.lang);
   function missionsCard() {
-    const M = missions(), n = M.filter((m) => m.done).length, perfect = n === M.length;
+    // el día perfecto (y los congeladores de racha) se gana con las 3 fijas; las 2 del día son un extra
+    const M = missions(), n = M.filter((m) => m.done).length, perfect = M.filter((m) => !m.daily).every((m) => m.done);
     const ring = (p) => { const C = 2 * Math.PI * 15; return `<svg class="vx-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="vx-ring-bg"/><circle cx="18" cy="18" r="15" class="vx-ring-fg" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - p)}"/></svg>`; };
     const frz = vx().freezes || 0;
     return `<div class="card vx-missions${perfect ? ' vx-perfect' : ''}"><div class="row sp"><b>${perfect ? '🔥 ' + t('perfectShort') : t('missions')}</b><span class="row" style="gap:8px">${frz ? `<span class="vx-frz" title="${esc(t('frzTip'))}" aria-label="${esc(t('frzTip'))}">🧊 ${frz}</span>` : ''}<span class="vx-count">${n}/${M.length}</span></span></div>` +
-      M.map((m) => `<div class="row vx-mrow${m.done ? ' done' : ''}"><div class="vx-mic">${ring(m.prog)}<span>${m.done ? '✓' : m.icon}</span></div><div class="g"><div class="vx-ml">${m.label}</div>${m.txt && !m.done ? `<div class="mu">${m.txt}</div>` : ''}</div>${m.done ? '' : m.act}</div>`).join('') +
+      M.map((m) => `<div class="row vx-mrow${m.done ? ' done' : ''}"><div class="vx-mic">${ring(m.prog)}<span>${m.done ? '✓' : m.icon}</span></div><div class="g"><div class="vx-ml">${m.label}${m.daily ? ` <span class="vx-dtag">${t('daily')}</span>` : ''}</div>${m.txt && !m.done ? `<div class="mu">${m.txt}</div>` : ''}</div>${m.done ? '' : m.act}</div>`).join('') +
       '</div>';
   }
   function checkPerfect() {
     const M = missions(), k = td(), V2 = vx();
     V2.perfect = V2.perfect || {};
-    if (M.every((m) => m.done) && !V2.perfect[k]) {
+    if (M.filter((m) => !m.daily).every((m) => m.done) && !V2.perfect[k]) {
       V2.perfect[k] = 1; save();
       pushInbox('🔥', t('perfect'));
       const nP = Object.keys(V2.perfect).length;
@@ -5998,84 +6073,126 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     save(); R(); checkPerfect(); checkAchievements();
   };
 
-  /* ───────────── 2. Logros ───────────── */
+  /* ───────────── 2. Logros escalables ─────────────
+     Familias con niveles (I, II, III…): cada nivel es un logro. Todo se mide con tus datos reales. */
   function stats() {
     const L = realLog().slice().sort((a, b) => a.t - b.t);
     const days = new Set(L.map((l) => lk(l.t)));
     const mx = {}; let prs = 0;
     L.forEach((l) => { const w = l.w || 0; if (mx[l.ex] > 0 && w > mx[l.ex]) prs++; mx[l.ex] = Math.max(mx[l.ex] || 0, w); });
-    const weeks = {};
+    const weeks = {}, perDay = {};
     days.forEach((d) => { const x = new Date(d + 'T12:00'); const m = new Date(x); m.setDate(x.getDate() - ((x.getDay() + 6) % 7)); const wk = lk(m); weeks[wk] = (weeks[wk] || 0) + 1; });
+    L.forEach((l) => { const k = lk(l.t); perDay[k] = (perDay[k] || 0) + 1; });
+    const dayHour = (fn) => new Set(L.filter((l) => fn(new Date(l.t).getHours())).map((l) => lk(l.t))).size;
     const nl = S.nlog && typeof S.nlog === 'object' ? Object.values(S.nlog) : [];
+    let labors = 0, oracle = 1;
+    try { labors = window.vxLabors ? window.vxLabors().filter((x) => x.ok).length : 0; } catch (e) { /* sin Trabajos */ }
+    try { oracle = window.vxFavor ? window.vxFavor().lv : 1; } catch (e) { /* sin Oráculo */ }
     return {
       days: days.size, sets: L.length, prs,
       vol: L.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0),
+      reps: L.reduce((s, l) => s + (+l.r || 0), 0),
       exs: new Set(L.map((l) => l.ex)).size,
-      early: L.some((l) => new Date(l.t).getHours() < 8) ? 1 : 0,
-      late: L.some((l) => new Date(l.t).getHours() >= 22) ? 1 : 0,
-      streak: +S.streakCount || 0,
+      groups: new Set(L.map((l) => EX[l.ex] && EX[l.ex][1]).filter(Boolean)).size,
+      early: dayHour((h) => h < 8),
+      late: dayHour((h) => h >= 22),
+      weekend: [...days].filter((d) => { const g = new Date(d + 'T12:00').getDay(); return g === 0 || g === 6; }).length,
+      streak: Math.max(+S.streakCount || 0, +S.bestStreak || 0),
       perfect: Object.keys(vx().perfect || {}).length,
       water: nl.filter((d) => d && +d.w >= 2000).length,
       food: nl.filter((d) => d && Array.isArray(d.e) && d.e.length >= 2).length,
       solid: Object.values(weeks).filter((n) => n >= 3).length,
+      long: Object.values(perDay).filter((n) => n >= 20).length,
+      routines: (Array.isArray(S.routines) ? S.routines : []).length,
+      labors, oracle,
     };
   }
-  // [id, icono, nombre ES|EN|FR|PT, descripción ES|EN|FR|PT, métrica, objetivo]
-  const ACH = [
-    ['first', '👟', 'Primer paso|First step|Premier pas|Primeiro passo', 'Completa tu primer entreno|Finish your first workout|Termine ton premier entraînement|Conclui o teu primeiro treino', 'days', 1],
-    ['w5', '⚡', 'En marcha|On a roll|Lancé|Em andamento', 'Entrena 5 días|Train on 5 days|Entraîne-toi 5 jours|Treina 5 dias', 'days', 5],
-    ['w25', '🏋️', 'Constante|Consistent|Régulier|Constante', 'Entrena 25 días|Train on 25 days|Entraîne-toi 25 jours|Treina 25 dias', 'days', 25],
-    ['w100', '🦾', 'Imparable|Unstoppable|Inarrêtable|Imparável', 'Entrena 100 días|Train on 100 days|Entraîne-toi 100 jours|Treina 100 dias', 'days', 100],
-    ['str3', '🔥', 'Calentando motores|Warming up|Ça chauffe|A aquecer', 'Racha de 3 días|3-day streak|Série de 3 jours|Sequência de 3 dias', 'streak', 3],
-    ['str7', '🔥', 'Semana de fuego|Week on fire|Semaine en feu|Semana em chamas', 'Racha de 7 días|7-day streak|Série de 7 jours|Sequência de 7 dias', 'streak', 7],
-    ['str30', '🌋', 'Volcán|Volcano|Volcan|Vulcão', 'Racha de 30 días|30-day streak|Série de 30 jours|Sequência de 30 dias', 'streak', 30],
-    ['pr1', '🏆', 'Nuevo nivel|Level up|Niveau supérieur|Novo nível', 'Bate tu primer récord|Set your first record|Bats ton premier record|Bate o teu primeiro recorde', 'prs', 1],
-    ['pr10', '👑', 'Rompe-récords|Record breaker|Briseur de records|Quebra-recordes', 'Bate 10 récords|Set 10 records|Bats 10 records|Bate 10 recordes', 'prs', 10],
-    ['t10', '🧱', '10 toneladas|10 tonnes|10 tonnes|10 toneladas', 'Levanta 10.000 kg en total|Lift 10,000 kg in total|Soulève 10 000 kg au total|Levanta 10.000 kg no total', 'vol', 10000],
-    ['t100', '🏗️', '100 toneladas|100 tonnes|100 tonnes|100 toneladas', 'Levanta 100.000 kg en total|Lift 100,000 kg in total|Soulève 100 000 kg au total|Levanta 100.000 kg no total', 'vol', 100000],
-    ['t1000', '🗿', 'Leyenda de hierro|Iron legend|Légende de fer|Lenda de ferro', 'Levanta 1.000.000 kg en total|Lift 1,000,000 kg in total|Soulève 1 000 000 kg au total|Levanta 1.000.000 kg no total', 'vol', 1000000],
-    ['s100', '💯', 'Centenario|Centurion|Centurion|Centenário', 'Completa 100 series|Complete 100 sets|Termine 100 séries|Conclui 100 séries', 'sets', 100],
-    ['s1000', '🎯', 'Mil series|Thousand sets|Mille séries|Mil séries', 'Completa 1.000 series|Complete 1,000 sets|Termine 1 000 séries|Conclui 1.000 séries', 'sets', 1000],
-    ['ex20', '🧭', 'Explorador|Explorer|Explorateur|Explorador', 'Prueba 20 ejercicios distintos|Try 20 different exercises|Essaie 20 exercices différents|Experimenta 20 exercícios diferentes', 'exs', 20],
-    ['early', '🌅', 'Madrugador|Early bird|Lève-tôt|Madrugador', 'Entrena antes de las 8:00|Train before 8 am|Entraîne-toi avant 8 h|Treina antes das 8:00', 'early', 1],
-    ['late', '🌙', 'Noctámbulo|Night owl|Oiseau de nuit|Noctívago', 'Entrena después de las 22:00|Train after 10 pm|Entraîne-toi après 22 h|Treina depois das 22:00', 'late', 1],
-    ['perf1', '⭐', 'Día perfecto|Perfect day|Journée parfaite|Dia perfeito', 'Completa las 3 misiones de un día|Complete all 3 missions in a day|Accomplis les 3 missions en un jour|Conclui as 3 missões num dia', 'perfect', 1],
-    ['perf7', '🌟', 'Semana perfecta|Perfect week|Semaine parfaite|Semana perfeita', 'Consigue 7 días perfectos|Get 7 perfect days|Obtiens 7 journées parfaites|Consegue 7 dias perfeitos', 'perfect', 7],
-    ['h7', '💧', 'Hidratado|Hydrated|Hydraté|Hidratado', 'Bebe 2 L en 7 días distintos|Drink 2 L on 7 different days|Bois 2 L sur 7 jours différents|Bebe 2 L em 7 dias diferentes', 'water', 7],
-    ['n7', '🥗', 'Buen comer|Eating well|Bien manger|Comer bem', 'Registra tus comidas 7 días|Log your meals on 7 days|Enregistre tes repas 7 jours|Regista as refeições em 7 dias', 'food', 7],
-    ['wk4', '📅', 'Mes sólido|Solid month|Mois solide|Mês sólido', '4 semanas con 3+ entrenos|4 weeks with 3+ workouts|4 semaines avec 3+ séances|4 semanas com 3+ treinos', 'solid', 4],
+  // [id, icono, nombre ES|EN|FR|PT, descripción con {n} ES|EN|FR|PT, métrica, niveles]
+  const FAM = [
+    ['days', '🏋️', 'Constancia|Consistency|Régularité|Constância', 'Entrena {n} días|Train on {n} days|Entraîne-toi {n} jours|Treina {n} dias', 'days', [1, 5, 10, 25, 50, 100, 200, 365, 500, 1000]],
+    ['streak', '🔥', 'Racha de fuego|Fire streak|Série de feu|Sequência de fogo', 'Racha de {n} días|{n}-day streak|Série de {n} jours|Sequência de {n} dias', 'streak', [3, 7, 14, 30, 60, 100, 180, 365]],
+    ['vol', '🏗️', 'Toneladas|Tonnage|Tonnage|Toneladas', 'Levanta {n} kg en total|Lift {n} kg in total|Soulève {n} kg au total|Levanta {n} kg no total', 'vol', [1000, 10000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000, 10000000]],
+    ['sets', '🎯', 'Series|Sets|Séries|Séries', 'Completa {n} series|Complete {n} sets|Termine {n} séries|Conclui {n} séries', 'sets', [50, 100, 250, 500, 1000, 2500, 5000, 10000]],
+    ['reps', '🔁', 'Repeticiones|Reps|Répétitions|Repetições', 'Suma {n} repeticiones|Do {n} reps|Fais {n} répétitions|Faz {n} repetições', 'reps', [500, 2000, 5000, 10000, 25000, 50000]],
+    ['prs', '🏆', 'Rompe-récords|Record breaker|Briseur de records|Quebra-recordes', 'Bate {n} récords|Set {n} records|Bats {n} records|Bate {n} recordes', 'prs', [1, 5, 10, 25, 50, 100, 250]],
+    ['exs', '🧭', 'Explorador|Explorer|Explorateur|Explorador', 'Prueba {n} ejercicios distintos|Try {n} different exercises|Essaie {n} exercices différents|Experimenta {n} exercícios diferentes', 'exs', [5, 10, 20, 40, 60, 100]],
+    ['groups', '🫀', 'Cuerpo completo|Full body|Corps complet|Corpo completo', 'Entrena {n} grupos musculares|Train {n} muscle groups|Entraîne {n} groupes musculaires|Treina {n} grupos musculares', 'groups', [4, 8, 12, 16]],
+    ['perfect', '⭐', 'Día perfecto|Perfect day|Journée parfaite|Dia perfeito', 'Consigue {n} días perfectos|Get {n} perfect days|Obtiens {n} journées parfaites|Consegue {n} dias perfeitos', 'perfect', [1, 3, 7, 14, 30, 60, 100]],
+    ['water', '💧', 'Hidratación|Hydration|Hydratation|Hidratação', 'Bebe 2 L en {n} días|Drink 2 L on {n} days|Bois 2 L sur {n} jours|Bebe 2 L em {n} dias', 'water', [1, 7, 14, 30, 60, 100]],
+    ['food', '🥗', 'Buen comer|Eating well|Bien manger|Comer bem', 'Registra tus comidas {n} días|Log your meals on {n} days|Enregistre tes repas {n} jours|Regista as refeições em {n} dias', 'food', [1, 7, 14, 30, 60, 100]],
+    ['solid', '📅', 'Semanas sólidas|Solid weeks|Semaines solides|Semanas sólidas', '{n} semanas con 3+ entrenos|{n} weeks with 3+ workouts|{n} semaines avec 3+ séances|{n} semanas com 3+ treinos', 'solid', [1, 4, 8, 12, 26, 52]],
+    ['early', '🌅', 'Madrugador|Early bird|Lève-tôt|Madrugador', 'Entrena antes de las 8:00 {n} días|Train before 8 am on {n} days|Entraîne-toi avant 8 h {n} jours|Treina antes das 8:00 em {n} dias', 'early', [1, 5, 20, 50]],
+    ['late', '🌙', 'Noctámbulo|Night owl|Oiseau de nuit|Noctívago', 'Entrena después de las 22:00 {n} días|Train after 10 pm on {n} days|Entraîne-toi après 22 h {n} jours|Treina depois das 22:00 em {n} dias', 'late', [1, 5, 20, 50]],
+    ['weekend', '🎉', 'Guerrero de finde|Weekend warrior|Guerrier du week-end|Guerreiro de fim de semana', 'Entrena {n} días de fin de semana|Train on {n} weekend days|Entraîne-toi {n} jours de week-end|Treina {n} dias de fim de semana', 'weekend', [1, 10, 25, 52]],
+    ['long', '⏳', 'Maratón|Marathon|Marathon|Maratona', '{n} sesiones de 20+ series|{n} sessions of 20+ sets|{n} séances de 20+ séries|{n} sessões de 20+ séries', 'long', [1, 5, 15]],
+    ['routines', '📋', 'Arquitecto|Architect|Architecte|Arquiteto', 'Crea {n} rutinas|Create {n} routines|Crée {n} routines|Cria {n} rotinas', 'routines', [1, 3, 5]],
+    ['labors', '🏛️', 'Trabajos de Hércules|Labours of Hercules|Travaux d’Hercule|Trabalhos de Hércules', 'Completa {n} de los 12 Trabajos|Complete {n} of the 12 Labours|Accomplis {n} des 12 Travaux|Conclui {n} dos 12 Trabalhos', 'labors', [1, 3, 6, 9, 12]],
+    ['oracle', '🔮', 'Favor del Oráculo|Oracle’s favour|Faveur de l’Oracle|Favor do Oráculo', 'Llega al nivel {n} del Oráculo|Reach Oracle level {n}|Atteins le niveau {n} de l’Oracle|Chega ao nível {n} do Oráculo', 'oracle', [2, 5, 10, 15, 20]],
   ];
   const part = (s, i) => s.split('|')[i] || s.split('|')[0];
-  function achList() {
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  // color del nivel según lo alto que esté dentro de su familia: bronce → plata → oro → platino → diamante → mítico
+  const MEDAL = ['#c97b45', '#b9c2cc', '#f2c14e', '#7fe3d6', '#7ab8ff', '#c38bff'];
+  const medal = (i, n) => MEDAL[Math.min(MEDAL.length - 1, Math.floor((i / Math.max(1, n - 1)) * (MEDAL.length - 1) + 1e-9))];
+  const nf = (v) => Math.round(v).toLocaleString(S.lang);
+  // "Bate 1 récords" → "Bate 1 récord": singular cuando la cifra es 1
+  const ONE = [[/ días perfectos/, ' día perfecto'], [/ días de fin de semana/, ' día de fin de semana'], [/ días/, ' día'], [/ récords/, ' récord'], [/ rutinas/, ' rutina'], [/ semanas/, ' semana'], [/ sesiones/, ' sesión'],
+    [/ perfect days/, ' perfect day'], [/ weekend days/, ' weekend day'], [/ days/, ' day'], [/ records/, ' record'], [/ routines/, ' routine'], [/ weeks/, ' week'], [/ sessions/, ' session'],
+    [/ journées parfaites/, ' journée parfaite'], [/ jours de week-end/, ' jour de week-end'], [/ jours/, ' jour'], [/ routines/, ' routine'], [/ semaines/, ' semaine'], [/ séances/, ' séance'],
+    [/ dias perfeitos/, ' dia perfeito'], [/ dias de fim de semana/, ' dia de fim de semana'], [/ dias/, ' dia'], [/ recordes/, ' recorde'], [/ rotinas/, ' rotina'], [/ sessões/, ' sessão']];
+  const descN = (d, n, txt) => { let o = d.replace('{n}', txt); if (n === 1) for (const [re, to] of ONE) if (re.test(o)) { o = o.replace(re, to); break; } return o; };
+  function families() {
     const st = stats(), x = LI[S.lang] || 0;
-    return ACH.map(([id, icon, name, desc, m, goal]) => ({ id, icon, name: part(name, x), desc: part(desc, x), cur: Math.min(st[m] || 0, goal), goal, ok: (st[m] || 0) >= goal }));
+    return FAM.map(([id, icon, name, desc, m, tiers]) => {
+      const v = st[m] || 0, lvl = tiers.filter((g) => v >= g).length;
+      return { id, icon, name: part(name, x), desc: part(desc, x), v, tiers, lvl, next: tiers[lvl], max: lvl === tiers.length };
+    });
   }
+  // lista plana: un logro por nivel (para el contador, los avisos y la tarjeta de Perfil)
+  function achList() {
+    return families().flatMap((f) => f.tiers.map((g, i) => ({
+      id: f.id + '_' + (i + 1), icon: f.icon, name: f.name + ' ' + ROMAN[i], desc: descN(f.desc, g, nf(g)),
+      cur: Math.min(f.v, g), goal: g, ok: f.v >= g, color: medal(i, f.tiers.length),
+    })));
+  }
+  const ACH_VER = 2;
   function checkAchievements() {
     const V2 = vx(); V2.ach = V2.ach || {};
     const list = achList(), fresh = list.filter((a) => a.ok && !V2.ach[a.id]);
-    // Primera comprobación: lo ya conseguido se marca sin avalancha de avisos
-    if (!V2.achInit) { fresh.forEach((a) => { V2.ach[a.id] = Date.now(); }); V2.achInit = 1; save(); return; }
+    // Primera vez (o logros nuevos tras una actualización): lo ya conseguido se marca sin avalancha de avisos
+    if (!V2.achInit || (V2.achVer || 1) < ACH_VER) { fresh.forEach((a) => { V2.ach[a.id] = Date.now(); }); V2.achInit = 1; V2.achVer = ACH_VER; save(); return; }
     if (!fresh.length) return;
     fresh.forEach((a) => { V2.ach[a.id] = Date.now(); });
     save();
     fresh.forEach((a) => pushInbox(a.icon, t('unlocked') + ': ' + a.name, "go('vx:ach')"));
-    fresh.forEach((a, i) => setTimeout(() => { toast('🏅 ' + t('unlocked') + ': ' + a.icon + ' ' + a.name); if (i === 0 && window.vxCelebrate) window.vxCelebrate(); }, 300 + i * 1800));
+    fresh.slice(0, 3).forEach((a, i) => setTimeout(() => { toast('🏅 ' + t('unlocked') + ': ' + a.icon + ' ' + a.name); if (i === 0 && window.vxCelebrate) window.vxCelebrate(); }, 300 + i * 1800));
   }
-  window.vxAch = achList; // para pruebas
+  window.vxAch = achList; window.vxAchFam = families; window.vxMissions = missions; // para pruebas
 
   function achCard() {
     const L = achList(), n = L.filter((a) => a.ok).length;
-    const next = L.filter((a) => !a.ok).sort((a, b) => b.cur / b.goal - a.cur / a.goal).slice(0, 3);
+    const next = families().filter((f) => !f.max).sort((a, b) => b.v / b.next - a.v / a.next).slice(0, 3);
     return `<div class="card vx-achcard" onclick="go('vx:ach')" role="button" tabindex="0"><div class="row sp"><b>🏅 ${t('ach')}</b><span class="mu">${t('achSub', { a: n, b: L.length })} ›</span></div>` +
       `<div class="vx-achbar"><i style="width:${Math.round((n / L.length) * 100)}%"></i></div>` +
-      `<div class="row vx-achnext">${next.map((a) => `<div class="vx-badge sm" title="${esc(a.name)}"><span>${a.icon}</span><i style="--p:${a.cur / a.goal}"></i></div>`).join('')}</div></div>`;
+      `<div class="row vx-achnext">${next.map((f) => `<div class="vx-badge sm" title="${esc(f.name + ' ' + ROMAN[f.lvl])}" style="--m:${medal(f.lvl, f.tiers.length)}"><span>${f.icon}</span><i style="--p:${Math.min(1, f.v / f.next)}"></i></div>`).join('')}</div></div>`;
   }
   V['vx:ach'] = function () {
-    const L = achList(), n = L.filter((a) => a.ok).length;
-    const fmt = (v) => (v >= 10000 ? Math.round(v / 1000).toLocaleString(S.lang) + 'k' : Math.round(v).toLocaleString(S.lang));
-    return `<div class="row"><button class="back" onclick="back()">‹</button><h1 style="font-size:22px">${t('ach')}</h1></div>` +
+    const F = families(), L = achList(), n = L.filter((a) => a.ok).length;
+    const fmt = (v) => (v >= 1e6 ? (v / 1e6).toLocaleString(S.lang, { maximumFractionDigits: 1 }) + 'M' : v >= 10000 ? Math.round(v / 1000).toLocaleString(S.lang) + 'k' : nf(v));
+    const lvT = [t('level'), t('maxLevel')];
+    return `<div class="row"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">${t('ach')}</h1></div>` +
       `<div class="mu" style="margin:6px 0 14px">${t('achSub', { a: n, b: L.length })}</div><div class="vx-achbar big"><i style="width:${Math.round((n / L.length) * 100)}%"></i></div>` +
-      `<div class="vx-achgrid">${L.map((a) => `<div class="vx-ach${a.ok ? ' ok' : ''}"><div class="vx-badge"><span>${a.icon}</span>${a.ok ? '' : `<i style="--p:${a.cur / a.goal}"></i>`}</div><b>${esc(a.name)}</b><div class="mu">${esc(a.desc)}</div>${a.ok ? '' : `<div class="vx-achp">${fmt(a.cur)} / ${fmt(a.goal)}</div>`}</div>`).join('')}</div>` +
+      `<div class="vx-famlist">${F.map((f) => {
+        const c = f.lvl ? medal(f.lvl - 1, f.tiers.length) : 'var(--ln)';
+        const p = f.max ? 1 : Math.min(1, f.v / f.next);
+        return `<div class="card vx-fam${f.lvl ? ' ok' : ''}" style="--m:${c}"><div class="row" style="gap:12px;align-items:center">` +
+          `<div class="vx-badge" style="--m:${c}"><span>${f.icon}</span>${f.lvl ? `<em class="vx-tier">${ROMAN[f.lvl - 1]}</em>` : ''}</div>` +
+          `<div class="g"><div class="row sp"><b>${esc(f.name)}</b><span class="mu" style="font-size:12px">${f.max ? '👑 ' + lvT[1] : lvT[0] + ' ' + f.lvl + '/' + f.tiers.length}</span></div>` +
+          `<div class="mu" style="font-size:12px;margin-top:2px">${esc(f.max ? descN(f.desc, f.tiers[f.tiers.length - 1], fmt(f.tiers[f.tiers.length - 1])) : descN(f.desc, f.next, fmt(f.next)))}</div>` +
+          `<div class="vx-fambar"><i style="width:${(p * 100).toFixed(1)}%"></i></div>` +
+          `<div class="row sp" style="margin-top:4px"><span class="vx-dots" aria-hidden="true">${f.tiers.map((g, i) => `<i class="${i < f.lvl ? 'on' : ''}" style="--d:${medal(i, f.tiers.length)}"></i>`).join('')}</span><span class="mu" style="font-size:12px">${f.max ? '' : fmt(f.v) + ' / ' + fmt(f.next)}</span></div>` +
+          '</div></div></div>';
+      }).join('')}</div>` +
       heatmapCard();
   };
 
@@ -6538,6 +6655,17 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
   window.vxGuardStreak = guardStreak; // para pruebas
 
   setTimeout(() => { try { checkAchievements(); } catch (e) { /* sin logros */ } }, 1500);
+  // Algunos logros cambian fuera de las series (rutinas creadas, Trabajos, Oráculo, agua…): se revisan también al
+  // moverse por la app, como mucho una vez cada 5 s
+  {
+    let lastChk = 0, chkT = 0;
+    const _Rch = R;
+    R = function () {
+      const out = _Rch.apply(this, arguments);
+      if (!chkT && Date.now() - lastChk > 5000) chkT = setTimeout(() => { chkT = 0; lastChk = Date.now(); try { checkAchievements(); } catch (e) { /* sin logros */ } }, 1200);
+      return out;
+    };
+  }
   try { R(); } catch (e) { /* la app ya está pintada */ }
 })();
 
