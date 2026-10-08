@@ -3041,10 +3041,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
    bloque se usan siempre los colores del tema oscuro. */
 
 /* ───── Avatar del ejercicio ───── */
-.vx-avatar{position:relative;border-radius:14px;overflow:hidden;background:#11161a}
+.vx-avatar{position:relative;border-radius:14px;overflow:hidden;background:#c4cfc9}
+.vx-avatar .vx-av-tag{background:rgba(255,255,255,.75);color:#2c3a33}
 .vx-avatar + .vx-avatar,img + .vx-avatar{margin-top:6px}
 .vx-av-tag{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:10px;background:rgba(0,0,0,.45);color:#9dff2e;font-size:11px;font-weight:800;letter-spacing:.3px}
-.ex-img.vx-av-thumb{background:#d6ddd8}
+.ex-img.vx-av-thumb{background:#c4cfc9}
 .ex-img.vx-av-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 60%;outline:0}
 
 /* ───── Técnica correcta ───── */
@@ -5385,6 +5386,7 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     const key = e[0] + '|' + (opts.still ? 's' : 'a') + (opts.crop ? 'c' : '') + (opts.zoom ? 'z' : '') + (opts.dur || '');
     if (cache[key]) return cache[key];
     const qa = pose(P0.a), qb = pose(P0.b), A = frame(qa), B = frame(qb);
+    const REF = !!(opts.crop || opts.zoom); // estilo de referencia: el de la imagen del press banca
     const still = opts.still || reduceMotion(), dur = opts.dur || 2.6, id = 'av' + Math.abs([...e[0]].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36);
     // En miniaturas estáticas se dibuja la posición final (la más reconocible)
     const pick = (a, b) => (still ? b : a);
@@ -5404,18 +5406,22 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
       vb = `${f(x0)} ${f(y0)} ${f(w)} ${f(h)}`;
     }
     let s = `<svg viewBox="${vb}" role="img" aria-label="${String(e[0]).replace(/"/g, '&quot;')}" style="width:100%;height:auto;display:block">` +
-      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="${opts.crop ? '#eef2ef' : '#26323a'}"/><stop offset="1" stop-color="${opts.crop ? '#c3ccc6' : '#11161a'}"/></radialGradient>` +
+      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="${REF ? '#cbd5cf' : '#26323a'}"/><stop offset="1" stop-color="${REF ? '#bfcbc4' : '#11161a'}"/></radialGradient>` +
+      // Textura de fibras musculares (como la ilustración anatómica del press banca)
+      (REF ? `<pattern id="${id}fb" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(28)"><path d="M0 1H2" stroke="#414c44" stroke-width=".3" opacity=".22"/></pattern>` : '') +
       `<linearGradient id="${id}sk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8c6d1"/><stop offset=".55" stop-color="#7d8f9d"/><stop offset="1" stop-color="#4c5d6b"/></linearGradient>` +
       `<linearGradient id="${id}fr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c7d8a"/><stop offset="1" stop-color="#3a4752"/></linearGradient>` +
       `<linearGradient id="${id}sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46525b"/><stop offset="1" stop-color="#1f262c"/></linearGradient>` +
       `<filter id="${id}gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>` +
       `<rect x="-60" y="-60" width="360" height="280" fill="url(#${id}bg)"/>`;
     // Miniaturas en estudio claro (como las fotos reales); la ficha grande mantiene el escenario oscuro
-    const floor = opts.crop ? ['#aab4ae', '#b9c3bd', '#98a39c'] : ['#2a3a44', '#151c21', '#3a4a54'];
-    for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="${floor[0]}" stroke-width=".6"/>`;
-    s += `<rect x="-60" y="146" width="360" height="60" fill="${floor[1]}"/><path d="M-60 146H300" stroke="${floor[2]}" stroke-width="1"/>`;
+    // Referencia (press banca): fondo liso, sin suelo dibujado; solo una sombra suave bajo el deportista
+    if (!REF) {
+      for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="#2a3a44" stroke-width=".6"/>`;
+      s += `<rect x="-60" y="146" width="360" height="60" fill="#151c21"/><path d="M-60 146H300" stroke="#3a4a54" stroke-width="1"/>`;
+    }
     // Sombra en el suelo
-    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#000" opacity="${opts.crop ? .18 : .4}"/>`;
+    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#2c3a33" opacity="${REF ? .16 : .4}"/>`;
     s += '<g transform="translate(34 40) scale(.73)">';
     s += props(P0.props, eq, pat);
     // Cable
@@ -5425,14 +5431,18 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     s += layer('far', `url(#${id}fr)`);
     s += layer('body', `url(#${id}sk)`);
     s += layer('shirt', `url(#${id}sh)`);
+    if (REF) { s += layer('body', `url(#${id}fb)`, 'stroke="none"'); s += layer('shirt', `url(#${id}fb)`, 'stroke="none"'); }
     // Cabeza
     const h1 = A.head, h2 = B.head;
     s += `<circle cx="${f(pick(h1, h2)[0])}" cy="${f(pick(h1, h2)[1])}" r="${L.head}" fill="url(#${id}sk)" stroke="#202a31" stroke-width=".8">${still ? '' : anim('cx', [f(h1[0]), f(h2[0]), f(h1[0])], dur) + anim('cy', [f(h1[1]), f(h2[1]), f(h1[1])], dur)}</circle>`;
     s += layer('near', `url(#${id}sk)`);
-    s += layer('shoes', '#1b1f22', 'stroke="#9dff2e" stroke-width=".7"');
+    if (REF) s += layer('near', `url(#${id}fb)`, 'stroke="none"');
+    s += REF ? layer('shoes', `url(#${id}sk)`) : layer('shoes', '#1b1f22', 'stroke="#9dff2e" stroke-width=".7"');
     // Músculo trabajado (brillo verde que late)
     const m1 = musclePaths(e[1], qa), m2 = musclePaths(e[1], qb);
-    s += `<g filter="url(#${id}gl)" opacity=".92">${m1.map((d, i) => animPath(pick(d, m2[i]), m2[i], 'fill="#9dff2e"', dur, still)).join('')}${still ? '' : anim('opacity', ['.65', '1', '.65'], dur)}</g>`;
+    s += REF
+      ? `<g opacity=".88">${m1.map((d, i) => animPath(pick(d, m2[i]), m2[i], 'fill="#82be97" stroke="#42604d" stroke-width=".5"', dur, still)).join('')}${still ? '' : anim('opacity', ['.7', '.95', '.7'], dur)}</g>`
+      : `<g filter="url(#${id}gl)" opacity=".92">${m1.map((d, i) => animPath(pick(d, m2[i]), m2[i], 'fill="#9dff2e"', dur, still)).join('')}${still ? '' : anim('opacity', ['.65', '1', '.65'], dur)}</g>`;
     // Material en las manos
     const g1 = gear(eq, qa), g2 = gear(eq, qb);
     const mv = eq === 'hipbar' ? [qb.hip[0] - qa.hip[0], qb.hip[1] - qa.hip[1]] : [qb.w[0] - qa.w[0], qb.w[1] - qa.w[1]];
@@ -5445,6 +5455,18 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
       if (Math.hypot(a2[0] - a1[0], a2[1] - a1[1]) > 8) s += `<path d="M${f(a1[0] + 16)} ${f(a1[1])}Q${f(mx)} ${f(my)} ${f(a2[0] + 16)} ${f(a2[1])}" stroke="#9dff2e" stroke-width="1.6" fill="none" stroke-dasharray="3 3" opacity=".75" marker-end="url(#${id}ar)"/><defs><marker id="${id}ar" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L8 4L0 8z" fill="#9dff2e"/></marker></defs>`;
     }
     s += '</g></svg>';
+    if (REF) {
+      const MAPC = {
+        '#b8c6d1': '#a6b1aa', '#7d8f9d': '#8e9a92', '#4c5d6b': '#6c7871', // piel
+        '#6c7d8a': '#7f8a84', '#3a4752': '#5f6a64', // brazo/pierna lejanos
+        '#46525b': '#9aa59e', '#1f262c': '#78837d', // sin camiseta: mismo gris que la piel
+        '#202a31': '#414c44', // contorno
+        '#2a3238': '#4d5c55', '#46535c': '#5d6b64', '#5c6b75': '#6f7d76', '#6e7d88': '#85938b', '#232a30': '#45524b',
+        '#1c2227': '#4d5c55', '#8796a0': '#bfccc5', '#3a444c': '#56635c', '#9aa8b2': '#5d6b64', '#26402a': '#42604d',
+        '#9dff2e': '#42604d', // flecha de dirección
+      };
+      s = s.replace(/#[0-9a-f]{6}\b/gi, (c) => MAPC[c.toLowerCase()] || c);
+    }
     return (cache[key] = s);
   }
   window.vxAvatar = render;
