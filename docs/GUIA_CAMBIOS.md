@@ -95,7 +95,7 @@ Archivo: `frontend/temas.js`.
   grande y el lector de pantalla lo anuncia como «Guía de rangos».
 - **León de bienvenida**: «Siguiente» no avanzaba porque el cuestionario inicial redefine `obGo`. La guía usa ahora su
   propia función, `obTour`.
-- **Perfil → Cuestionario inicial** (`vxEditQuiz`): vuelve a abrir las 10 preguntas con tus respuestas, y ✕ cancela sin
+- **Perfil → Cuestionario** (`vxEditQuiz`): vuelve a abrir las 10 preguntas con tus respuestas, y ✕ cancela sin
   cambiar nada.
   - Al terminar solo se actualizan tus datos.
   - Las rutinas, el plan y el historial se conservan.

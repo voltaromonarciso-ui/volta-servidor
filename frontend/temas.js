@@ -144,7 +144,7 @@
     V.prof = function () {
       let h = _prof.apply(this, arguments);
       try {
-        const row = `<div class="li" onclick="go('vx:themes')"><div class="g">🎨 ${tr(T2.title)}</div><span class="mu" style="margin-right:6px">${tr(cur ? THEMES[cur].n : T2.green)}</span><span class="arr">›</span></div>`;
+        const row = `<div class="li" onclick="go('vx:themes')"><div class="g">${tr(T2.title)}</div><span class="arr">›</span></div>`;
         const mk = `<div class="li" onclick="go('p:settings')">`;
         h = h.indexOf(mk) !== -1 ? h.replace(mk, row + mk) : h;
       } catch (e) { /* Perfil original */ }

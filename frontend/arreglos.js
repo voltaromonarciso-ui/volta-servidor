@@ -204,8 +204,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
 (function () {
   if (typeof V !== 'object' || typeof V.prof !== 'function') return;
   const TX = {
-    t: ['Cuestionario inicial', 'Initial questionnaire', 'Questionnaire initial', 'Questionário inicial'],
-    s: ['Corrige tus respuestas', 'Fix your answers', 'Corrige tes réponses', 'Corrige as tuas respostas'],
+    t: ['Cuestionario', 'Questionnaire', 'Questionnaire', 'Questionário'],
   };
   const L = () => ({ en: 1, fr: 2, pt: 3 }[S.lang] || 0);
   const _prof = V.prof;
@@ -213,7 +212,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     let h = _prof.apply(this, arguments);
     try {
       if (typeof window.vxEditQuiz !== 'function') return h;
-      const row = `<div class="li" onclick="vxEditQuiz()"><div class="g">📝 ${TX.t[L()]}<div class="mu" style="font-size:12px">${TX.s[L()]}</div></div><span class="arr">›</span></div>`;
+      const row = `<div class="li" onclick="vxEditQuiz()"><div class="g">${TX.t[L()]}</div><span class="arr">›</span></div>`;
       const m = h.match(/<div class="li" onclick="go\('p:profile'\)">[\s\S]*?<span class="arr">›<\/span><\/div>/);
       if (m) h = h.replace(m[0], m[0] + row);
     } catch (e) { /* Perfil original */ }
