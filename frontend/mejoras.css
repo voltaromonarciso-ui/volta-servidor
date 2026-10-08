@@ -298,3 +298,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-lab.ok .vx-lab-ic{filter:none;opacity:1}
 .vx-lab.ok .vx-lab-v{color:#e0b13a}
 .vx-lab.ok .bar i{background:#e0b13a}
+
+/* Controles de la animación del ejercicio */
+.vx-av-ctl{display:flex;gap:8px;margin:8px 0 2px;flex-wrap:wrap}
+.vx-av-ctl .chip{cursor:pointer;font-variant-numeric:tabular-nums}
+.vx-av-tempo{font-size:12px;margin:2px 0 8px}

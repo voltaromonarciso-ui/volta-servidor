@@ -211,21 +211,25 @@
   function render(e, opts) {
     opts = opts || {};
     const pat = patternOf(e), P0 = PAT[pat], eq = equipOf(e, pat);
-    const key = e[0] + '|' + (opts.still ? 's' : 'a') + (opts.crop ? 'c' : '');
+    const key = e[0] + '|' + (opts.still ? 's' : 'a') + (opts.crop ? 'c' : '') + (opts.zoom ? 'z' : '') + (opts.dur || '');
     if (cache[key]) return cache[key];
     const qa = pose(P0.a), qb = pose(P0.b), A = frame(qa), B = frame(qb);
-    const still = opts.still || reduceMotion(), dur = 2.6, id = 'av' + Math.abs([...e[0]].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36);
+    const still = opts.still || reduceMotion(), dur = opts.dur || 2.6, id = 'av' + Math.abs([...e[0]].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36);
     // En miniaturas estáticas se dibuja la posición final (la más reconocible)
     const pick = (a, b) => (still ? b : a);
     // Miniatura: encuadre ajustado al deportista (y su material), con proporción 4:3
     let vb = '0 0 240 160';
-    if (opts.crop) {
-      const pts = Object.keys(qb).map((k) => qb[k]).concat([qb.w, qb.w2]);
+    if (opts.crop || opts.zoom) {
+      const AR = opts.zoom ? 16 / 10 : 4 / 3;
+      // Encuadre que contiene las dos posiciones del movimiento: animada, la figura no se sale del cuadro
+      const pose2 = opts.still ? [qb] : [qa, qb];
+      const pts = pose2.flatMap((q) => Object.keys(q).map((k) => q[k]).concat([q.w, q.w2])).filter((pt) => Array.isArray(pt));
       let x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
       // Encuadre ceñido: poco margen y el suelo justo bajo los pies, para que la figura llene la miniatura
       x0 = x0 * .73 + 34 - 9; x1 = x1 * .73 + 34 + 9; y0 = y0 * .73 + 40 - 9; y1 = Math.min(Math.max(y1 * .73 + 40 + 7, 120), 152);
       let w = x1 - x0, h = y1 - y0;
-      if (w / h < 4 / 3) { const nw = h * 4 / 3; x0 -= (nw - w) / 2; w = nw; } else { const nh = w * 3 / 4; y0 -= (nh - h); h = nh; }
+      if (opts.zoom) { y0 -= 6; h += 6; x0 -= 6; w += 12; } // la ficha deja algo más de aire alrededor
+      if (w / h < AR) { const nw = h * AR; x0 -= (nw - w) / 2; w = nw; } else { const nh = w / AR; y0 -= (nh - h); h = nh; }
       vb = `${f(x0)} ${f(y0)} ${f(w)} ${f(h)}`;
     }
     let s = `<svg viewBox="${vb}" role="img" aria-label="${String(e[0]).replace(/"/g, '&quot;')}" style="width:100%;height:auto;display:block">` +
@@ -290,7 +294,9 @@
       const e = byName[el.getAttribute('aria-label')];
       if (!e || !e.image || hasReal(e)) return;
       el.classList.add('real', 'vx-av-thumb');
-      el.innerHTML = `<img src="${e.image}" alt="" loading="lazy" decoding="async" draggable="false">`;
+      // Miniatura en movimiento (se genera la primera vez que hace falta); fija si el sistema pide reducir movimiento
+      if (!reduceMotion() && !e.imageAnim) { try { e.imageAnim = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(render(e, { noArrow: true, crop: true }).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')); } catch (err) { e.imageAnim = ''; } }
+      el.innerHTML = `<img src="${(!reduceMotion() && e.imageAnim) || e.image}" alt="" loading="lazy" decoding="async" draggable="false">`;
     });
   }
   const _R = R;
@@ -299,13 +305,39 @@
 
   // 2) Ficha: el reproductor de vídeo vacío se cambia por la animación (y la foto real si existe)
   const MOV = ['Así se hace', 'How it’s done', 'Comment le faire', 'Como se faz'];
+  const CTL = {
+    label: ['Control de la animación', 'Animation controls', 'Contrôle de l’animation', 'Controlo da animação'],
+    pause: ['Pausa', 'Pause', 'Pause', 'Pausa'], play: ['Seguir', 'Play', 'Lecture', 'Continuar'],
+    slow: ['Lento 0,5×', 'Slow 0.5×', 'Lent 0,5×', 'Lento 0,5×'],
+    tempo: ['Ritmo recomendado: 2–3 s en la fase de bajada y 1 s subiendo, sin rebotes.', 'Recommended tempo: 2–3 s lowering and 1 s lifting, no bouncing.', 'Tempo conseillé : 2–3 s en descente et 1 s en montée, sans rebond.', 'Ritmo recomendado: 2–3 s a descer e 1 s a subir, sem ressaltos.'],
+  };
+  // Pausa / cámara lenta / velocidad normal de la animación de la ficha
+  window.vxAv = function (i, mode, btn) {
+    const box = document.querySelector('.vx-avatar[data-ex="' + i + '"]'), e = EX[i];
+    if (!box || !e) return;
+    const x = { es: 0, en: 1, fr: 2, pt: 3 }[S.lang] || 0, bar = btn && btn.parentElement;
+    const svg = () => box.querySelector('svg');
+    if (mode === 'pause') {
+      const s2 = svg(); if (!s2 || !s2.pauseAnimations) return;
+      const paused = s2.animationsPaused();
+      if (paused) s2.unpauseAnimations(); else s2.pauseAnimations();
+      btn.setAttribute('aria-pressed', String(!paused)); btn.classList.toggle('on', !paused);
+      btn.textContent = (paused ? '⏸ ' + CTL.pause[x] : '▶ ' + CTL.play[x]);
+      return;
+    }
+    const tag = box.querySelector('.vx-av-tag');
+    box.innerHTML = render(e, { zoom: true, dur: mode === 'slow' ? 5.6 : 2.6 }); if (tag) box.appendChild(tag);
+    if (bar) bar.querySelectorAll('button').forEach((b, k) => { b.classList.toggle('on', (mode === 'slow' && k === 1) || (mode === 'normal' && k === 2)); if (k === 0) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); b.textContent = '⏸ ' + CTL.pause[x]; } });
+  };
   if (typeof V.ex === 'function') {
     const _ex = V.ex;
     V.ex = function (i) {
       let h = _ex.apply(this, arguments);
       try {
         const e = EX[i], x = { es: 0, en: 1, fr: 2, pt: 3 }[S.lang] || 0;
-        const anim2 = `<div class="vx-avatar">${render(e)}<span class="vx-av-tag">▶ ${MOV[x]}</span></div>`;
+        const anim2 = `<div class="vx-avatar" data-ex="${i}">${render(e, { zoom: true })}<span class="vx-av-tag">▶ ${MOV[x]}</span></div>` +
+          (reduceMotion() ? '' : `<div class="vx-av-ctl" role="group" aria-label="${CTL.label[x]}"><button class="chip" onclick="vxAv(${i},'pause',this)" aria-pressed="false">⏸ ${CTL.pause[x]}</button><button class="chip" onclick="vxAv(${i},'slow',this)">🐢 ${CTL.slow[x]}</button><button class="chip on" onclick="vxAv(${i},'normal',this)">1×</button></div>`) +
+          `<div class="mu vx-av-tempo">⏱ ${CTL.tempo[x]}</div>`;
         h = h.replace(/<video[^>]*poster="([^"]*)"[^>]*>[\s\S]*?<\/video>/, (m, poster) => (hasReal(e) ? `<img src="${poster}" alt="" style="width:100%;border-radius:14px;display:block">` + anim2 : anim2));
         if (h.indexOf('vx-avatar') === -1) h = h.replace(/<div class="ex-img"[^>]*>[\s\S]*?<\/svg><\/div>/, anim2);
       } catch (err) { /* ficha original */ }
