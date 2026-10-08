@@ -380,3 +380,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-dots i{width:8px;height:8px;border-radius:50%;background:var(--card2);box-shadow:inset 0 0 0 1px var(--ln)}
 .vx-dots i.on{background:var(--d);box-shadow:none}
 .vx-badge.sm[style*="--m"]{box-shadow:0 0 0 2px color-mix(in srgb,var(--m) 60%,transparent)}
+
+/* Atleta 3D de la ficha */
+.vx3{position:relative;border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,#26313a 0%,#141a1f 62%,#0d1114 100%);min-height:180px}
+.vx3 .vx3-cv{display:block;width:100%;height:auto;cursor:grab;touch-action:pan-y}
+.vx3.vx3-wait::after{content:attr(data-load);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9dff2e;font-size:13px;font-weight:700}
+.vx3-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;background:rgba(8,11,13,.55)}
+.vx3-bar button{min-height:32px;min-width:36px;padding:4px 10px;border-radius:10px;border:1px solid rgba(157,255,46,.35);background:rgba(10,14,17,.72);color:#e9f5ee;font-size:12px;font-weight:700;cursor:pointer}
+.vx3-bar button[aria-pressed="true"]{background:#9dff2e;color:#0d1114}
+.vx3-bar button:focus-visible{outline:2px solid #9dff2e;outline-offset:2px}
+.vx3-hint{margin-left:auto;color:rgba(233,245,238,.62);font-size:11px}
+.vx3-leg{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:10px;background:rgba(10,14,17,.6);color:#c9f7a0;font-size:11px;font-weight:700}
+.vx3-leg i{display:inline-block;width:18px;border-top:2px dashed #9dff2e}
+.vx3-see{margin:0 0 6px}
+@media (max-width:360px){.vx3-hint{display:none}}

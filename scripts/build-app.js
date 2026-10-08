@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..');
 const file = path.join(root, 'Volta-app.html');
 const css = fs.readFileSync(path.join(root, 'frontend/mejoras.css'), 'utf8');
 // Orden importante: engage.js se apoya en lo que define mejoras.js (vxTr, vxCelebrate)
-const js = ['platos.js', 'mejoras.js', 'recetas.js', 'ejercicios.js', 'catalogo.js', 'imagenes.js', 'avatar.js', 'tecnica.js', 'engage.js', 'compete.js', 'olimpo.js', 'rutinas.js', 'arreglos.js', 'textos.js', 'temas.js', 'a11y.js'].map((f) => fs.readFileSync(path.join(root, 'frontend', f), 'utf8')).join('\n');
+const js = ['platos.js', 'mejoras.js', 'recetas.js', 'ejercicios.js', 'catalogo.js', 'imagenes.js', 'avatar.js', 'atleta3d.js', 'tecnica.js', 'engage.js', 'compete.js', 'olimpo.js', 'rutinas.js', 'arreglos.js', 'textos.js', 'temas.js', 'a11y.js'].map((f) => fs.readFileSync(path.join(root, 'frontend', f), 'utf8')).join('\n');
 
 const START = '<!-- VOLTA-MEJORAS:START -->';
 const END = '<!-- VOLTA-MEJORAS:END -->';
