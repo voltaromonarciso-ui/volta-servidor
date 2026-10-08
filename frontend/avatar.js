@@ -54,6 +54,9 @@
     Isquiosurales: [['hip', 'k', .15, .9, 3.2, 5.6]],
     Glúteos: [['hip', 'k', -.12, .25, 5, 7.4]],
     Gemelos: [['k', 'an', .08, .55, 2.6, 4.4]],
+    Aductores: [['hip', 'k', .08, .7, 0, 4.6]],
+    Abductores: [['hip', 'k', -.15, .22, 4, 6.4]],
+    Lumbar: [['sho', 'hip', .55, .95, -6.5, 5.6]],
   };
 
   // ── Poses por patrón de movimiento: [inicio, final] + material y apoyos ──
@@ -93,12 +96,18 @@
     carry: { a: P({ th: 82, th2: 98, sh: 92, sh2: 90 }), b: P({ th: 98, th2: 82, sh: 90, sh2: 92 }), props: [], eq: 'db' },
     jump: { a: P({ x: 118, y: 96, t: -70, th: 20, sh: 118, ua: 130, fa: 110 }), b: P({ y: 68, ft: 50, ua: -100, fa: -95 }), props: [], eq: '' },
     swing: { a: P({ x: 108, y: 86, t: -25, th: 98, sh: 85, ua: 120, fa: 120 }), b: P({ ua: -10, fa: -10 }), props: [], eq: 'kb' },
+    sidelie: { a: P({ x: 104, y: 128, t: 180, th: 0, sh: 0, ft: 80, ua: 150, fa: 120 }), b: P({ x: 104, y: 128, t: 180, th: -38, sh: -38, ft: 50, ua: 150, fa: 120 }), props: ['mat'], eq: '' },
+    prone: { a: P({ x: 104, y: 132, t: 180, th: 0, sh: 0, ft: 80, ua: 180, fa: 180 }), b: P({ x: 104, y: 130, t: 168, th: -12, sh: -12, ft: 70, ua: 196, fa: 196 }), props: ['mat'], eq: '' },
+    backext: { a: P({ x: 112, y: 96, t: 120, th: 6, sh: 20, ua: 150, fa: 120 }), b: P({ x: 112, y: 96, t: 186, th: 6, sh: 20, ua: 170, fa: 120 }), props: ['benchlow'], eq: '' },
+    hang: { a: P({ y: 82, t: -90, th: 92, sh: 100, ua: -88, fa: -90 }), b: P({ y: 80, t: -90, th: 94, sh: 102, ua: -90, fa: -90 }), props: ['highbar'], eq: '' },
     wrist: { a: P({ y: 92, t: -100, th: 0, sh: 90, ua: 60, fa: 10 }), b: P({ y: 92, t: -100, th: 0, sh: 90, ua: 60, fa: -25 }), props: ['seat'], eq: 'db' },
   };
 
   // ── Qué patrón usa cada ejercicio ──
   const RULES = [
-    [/jalón con brazos rectos/i, 'pushdown'], [/tibial/i, 'calf'], [/v-ups|crunch inverso|elevación de piernas tumbado|rodilla al codo/i, 'crunch'], [/prensa/i, 'legpress'], [/press cubano/i, 'ohp'],
+    [/jalón con brazos rectos/i, 'pushdown'], [/plancha copenhague|plancha lateral con abducción/i, 'plank'], [/aducción|abducción|almeja|elevación lateral de pierna/i, 'sidelie'],
+    [/paso lateral|paseo de puntillas/i, 'carry'], [/superman|natación en el suelo/i, 'prone'], [/hiperextensi|extensión lumbar|extensión de cadera en banco/i, 'backext'], [/jefferson/i, 'hinge'],
+    [/suspensión|dominadas escapulares/i, 'hang'], [/elevaciones en t /i, 'reardelt'], [/tirón alto/i, 'reardelt'], [/tumbado con mancuernas|press tate/i, 'skull'], [/tibial/i, 'calf'], [/v-ups|crunch inverso|elevación de piernas tumbado|rodilla al codo/i, 'crunch'], [/prensa/i, 'legpress'], [/press cubano/i, 'ohp'],
     [/fondos en banco/i, 'dip'], [/fondos|dips/i, 'dip'],
     [/flexion|push-up|pushup/i, 'pushup'],
     [/apertura|cruce|peck|pec deck|fly|pullover/i, 'fly'],
@@ -135,7 +144,7 @@
     [/russian twist|leñador|pallof/i, 'twist'],
     [/paseo de granjero/i, 'carry'],
   ];
-  const GROUP_DEFAULT = { Pecho: 'bench', Espalda: 'row', Hombros: 'ohp', Bíceps: 'curl', Tríceps: 'pushdown', Cuádriceps: 'squat', Isquiosurales: 'hinge', Glúteos: 'thrust', Gemelos: 'calf', Core: 'crunch', Trapecio: 'shrug', Antebrazo: 'wrist' };
+  const GROUP_DEFAULT = { Pecho: 'bench', Espalda: 'row', Hombros: 'ohp', Bíceps: 'curl', Tríceps: 'pushdown', Cuádriceps: 'squat', Isquiosurales: 'hinge', Glúteos: 'thrust', Gemelos: 'calf', Core: 'crunch', Trapecio: 'shrug', Antebrazo: 'wrist', Aductores: 'sidelie', Abductores: 'sidelie', Lumbar: 'backext' };
   function patternOf(e) {
     const n = e[0] || '';
     for (const [re, k] of RULES) if (re.test(n)) return k;

@@ -181,6 +181,20 @@
       err: [['Hacer una sentadilla en vez de bisagra', 'Squatting instead of hinging'], ['Levantar con los brazos', 'Lifting with your arms'], ['Redondear la espalda', 'Rounding your back']],
       tip: ['Los brazos solo guían: la fuerza sale de los glúteos.', 'Your arms only guide: the power comes from your glutes.'],
     },
+    hipside: {
+      set: ['Cadera y tronco quietos y alineados; solo se mueve la pierna desde la cadera.', 'Keep your hips and torso still and aligned; only your leg moves from the hip.'],
+      steps: [['Activa el abdomen y coloca la pierna en la posición inicial sin tensión de más.', 'Brace your core and set your leg in the start position.'], ['Lleva la pierna hacia fuera (abducción) o hacia dentro (aducción) despacio, sin girar la cadera.', 'Move your leg out (abduction) or in (adduction) slowly, without rotating your hips.'], ['Aguanta 1 s en la posición final y vuelve controlando.', 'Hold 1 s at the end and return under control.']],
+      br: ['Suelta el aire al llevar la pierna y cógelo al volver.', 'Breathe out as you move the leg, in as you return.'],
+      err: [['Girar o inclinar la cadera para llegar más lejos', 'Rotating or tilting your hips to go further'], ['Usar impulso', 'Using momentum'], ['Recorrido corto', 'Short range']],
+      tip: ['Con poco peso y despacio se nota mucho más: es un músculo pequeño.', 'Light and slow works far better: it is a small muscle.'],
+    },
+    lumbar: {
+      set: ['Apoyo firme en la cadera o el banco, espalda neutra y cuello alineado.', 'Firm support at your hips or bench, neutral back and neck in line.'],
+      steps: [['Baja el tronco (o las piernas) despacio sin redondear la espalda.', 'Lower your torso (or legs) slowly without rounding your back.'], ['Sube apretando glúteos y lumbares hasta alinear el cuerpo.', 'Rise by squeezing your glutes and lower back until your body is straight.'], ['No pases de la línea recta: arriba, pausa de 1 s.', 'Do not go past straight: pause for 1 s at the top.']],
+      br: ['Suelta el aire al subir y cógelo al bajar.', 'Breathe out as you rise, in as you lower.'],
+      err: [['Arquear la lumbar de más arriba', 'Over-arching at the top'], ['Subir con tirones', 'Jerking up'], ['Tensar el cuello', 'Straining your neck']],
+      tip: ['Empieza sin peso; la espalda baja agradece las series largas y controladas.', 'Start without weight; your lower back loves long, controlled sets.'],
+    },
     wrist: {
       set: ['Antebrazos apoyados sobre los muslos o un banco, muñecas por fuera del borde.', 'Forearms resting on your thighs or a bench, wrists past the edge.'],
       steps: [['Mueve solo la muñeca para subir el peso.', 'Move only your wrist to lift the weight.'], ['Aprieta arriba un segundo.', 'Squeeze at the top for a second.'], ['Baja despacio todo el recorrido.', 'Lower slowly through the full range.']],
@@ -189,7 +203,7 @@
       tip: ['Series largas (15–20) funcionan muy bien aquí.', 'High reps (15–20) work very well here.'],
     },
   };
-  const FAM = { bench: 'press', incline: 'press', pushup: 'pushup', fly: 'fly', dip: 'dip', ohp: 'ohp', lateral: 'raise', front: 'raise', reardelt: 'reardelt', shrug: 'shrug', squat: 'squat', lunge: 'lunge', hinge: 'hinge', row: 'row', pulldown: 'vpull', pullup: 'vpull', curl: 'curl', pushdown: 'triceps', overhead: 'triceps', skull: 'triceps', legext: 'legext', legcurl: 'legcurl', legpress: 'legpress', thrust: 'glute', bridge: 'glute', calf: 'calf', plank: 'plank', crunch: 'crunch', legraise: 'crunch', twist: 'crunch', carry: 'carry', jump: 'jump', swing: 'swing', wrist: 'wrist' };
+  const FAM = { bench: 'press', incline: 'press', pushup: 'pushup', fly: 'fly', dip: 'dip', ohp: 'ohp', lateral: 'raise', front: 'raise', reardelt: 'reardelt', shrug: 'shrug', squat: 'squat', lunge: 'lunge', hinge: 'hinge', row: 'row', pulldown: 'vpull', pullup: 'vpull', curl: 'curl', pushdown: 'triceps', overhead: 'triceps', skull: 'triceps', legext: 'legext', legcurl: 'legcurl', legpress: 'legpress', thrust: 'glute', bridge: 'glute', calf: 'calf', plank: 'plank', crunch: 'crunch', legraise: 'crunch', twist: 'crunch', carry: 'carry', jump: 'jump', swing: 'swing', wrist: 'wrist', sidelie: 'hipside', prone: 'lumbar', backext: 'lumbar', hang: 'vpull' };
   const fam = (e) => T[FAM[window.vxPattern(e)] || 'curl'];
   window.vxTech = fam;
 
@@ -227,7 +241,7 @@
         h = h.replace('Sugerencia inicial de carga: No especificado.', 'Sugerencia inicial de carga: ' + LOAD[k]);
         h = h.replace('Declinado (ángulo: No especificado)', 'Declinado (−15° a −30°)').replace('Inclinado (ángulo: No especificado)', 'Inclinado (30° a 45°)').replace(' (ángulo: No especificado)', '');
         h = h.replace('<b>3 errores que debes evitar</b><div style="margin-top:6px">No especificado</div>', '<b>3 errores que debes evitar</b><div style="margin-top:6px">' + t.err.map((x) => `<div style="margin:5px 0">• ${esc(x[0])}</div>`).join('') + '</div>');
-        const ISO = ['fly', 'raise', 'reardelt', 'shrug', 'curl', 'triceps', 'legext', 'legcurl', 'calf', 'plank', 'crunch', 'wrist'];
+        const ISO = ['hipside', 'lumbar', 'fly', 'raise', 'reardelt', 'shrug', 'curl', 'triceps', 'legext', 'legcurl', 'calf', 'plank', 'crunch', 'wrist'];
         h = h.replace(/(<span class="pill">[^<]*<\/span>)No especificado/, '$1' + (ISO.includes(FAM[window.vxPattern(e)]) ? 'Aislamiento' : 'Compuesto'));
         h = h.replace('<span class="pill">No especificado</span>', '<span class="pill">' + (ISO.includes(FAM[window.vxPattern(e)]) ? 'Aislamiento' : 'Compuesto') + '</span>');
         // Justo después del avatar (o de la primera tarjeta si no hay)

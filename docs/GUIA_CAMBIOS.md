@@ -147,6 +147,40 @@ Archivo: `frontend/engage.js`.
     registrar el peso, batir un récord, entrenar antes de las 10:00 y finalizar un entreno.
   - El **día perfecto** (que da congeladores de racha) se gana con las 3 fijas; las del día son un extra.
 
+## 8. Revisión del catálogo de ejercicios
+
+Archivo nuevo: `frontend/catalogo.js`. Se carga justo después de `ejercicios.js`. Ahora hay **252 ejercicios**; antes había 218.
+
+- **Ningún ejercicio se borra ni cambia de posición.** El historial guarda cada ejercicio por su posición.
+  - Un ejercicio repetido se convierte en otro que faltaba, en la misma posición.
+  - Ejemplo: «Flexiones con pies elevados» era igual que «Flexiones declinadas» y ahora es «Flexiones con palmada».
+- **41 correcciones de nombre, grupo, músculo o material.** Algunos ejemplos:
+  - «Encogimientos de trapecio» estaba en Espalda y repetía otro ejercicio. Ahora es «Encogimientos con barra por detrás»,
+    en Trapecio.
+  - «Face pull» pasa a Hombros (deltoides posterior).
+  - «Peso muerto», «Rack pull» y «Superman» ya no dicen «Dorsal ancho»: ahora indican los erectores de la columna.
+    «Superman» pasa al grupo Lumbar.
+  - «Rotación externa en polea» y «Press cubano» trabajan el manguito rotador.
+  - Las abducciones pasan a Abductores (glúteo medio).
+  - «Gemelos tibial anterior» pasa a ser «Elevación de tibial anterior».
+  - Nombres más claros, por ejemplo «Press de banca en Smith», «Sentadilla con barra baja», «Press Tate» y
+    «Suspensión en barra».
+  - Se quitan tres ejercicios repetidos de tríceps sobre la cabeza: ahora hay uno con polea, uno con mancuerna y uno
+    tumbado.
+- **34 ejercicios nuevos**, con su técnica y su nombre en los 4 idiomas:
+  - Aductores: 7 (antes 0);
+  - Abductores: 9 (antes 0);
+  - Lumbar: 7 (antes 0);
+  - Antebrazo: 11 (antes 6);
+  - Trapecio: 12 (antes 7);
+  - Gemelos: 15 (antes 10).
+- **Animaciones**:
+  - posturas nuevas para tumbado de lado, boca abajo, banco de lumbares y colgado de la barra;
+  - músculo resaltado de Aductores, Abductores y Lumbar.
+- **Técnica**: familias nuevas, una de abducción y aducción de cadera y otra de lumbares.
+- **Volumen semanal y mapa muscular**: incluyen los grupos nuevos.
+- **Rutinas predefinidas**: usan los nombres nuevos.
+
 ## Pruebas
 
 Navegador (Playwright), con capturas en todas las pantallas:
@@ -158,4 +192,4 @@ Navegador (Playwright), con capturas en todas las pantallas:
 - auditoría completa con axe-core: 20 pantallas × 4 colores × claro/oscuro, **0 fallos**;
 - el resto de suites anteriores, todas en verde.
 
-Servidor: `npm test`, 20/20.
+Servidor: `npm test`, 22/22.
