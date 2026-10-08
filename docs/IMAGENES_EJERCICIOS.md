@@ -39,6 +39,13 @@ Al recibir cada imagen, se comprueba con esta lista:
 
 ## Cómo añadir una imagen definitiva
 
+**Con la skill `volta-imagenes-ejercicios`** (`.claude/skills/volta-imagenes-ejercicios/`):
+- genera las imágenes con Gemini usando la del press banca como referencia;
+- las guarda en `public/assets/ejercicios/`;
+- con `integrar.mjs`, las conecta con su ejercicio.
+
+A mano:
+
 Hay que añadir la imagen (data URL o ruta) al ejercicio en `EMB` o en `e.image`. La app detecta automáticamente que
 ya tiene foto real (`hasReal`) y la muestra en la lista y en la ficha. En la ficha la animación sigue apareciendo
 debajo, como referencia del movimiento.

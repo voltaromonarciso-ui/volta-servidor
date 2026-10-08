@@ -1,6 +1,6 @@
 # Skills del proyecto Volta
 
-**87 skills activas**, elegidas por su aporte a Volta. Cubren el stack del proyecto (app web en un solo HTML, PWA,
+**88 skills activas**, elegidas por su aporte a Volta. Cubren el stack del proyecto (app web en un solo HTML, PWA,
 Node/Express, PostgreSQL y Redis, Playwright) y sus objetivos: diseño, animación, rendimiento, seguridad, idiomas y
 competición sin trampas. Claude Code las carga al abrir una sesión en este repo.
 
@@ -23,6 +23,7 @@ Cada carpeta conserva la licencia de su repositorio. `.origen.json` indica de qu
 | Seguridad | `security-review`, `security-scan`, `differential-review`⁴, `owasp-top-10-testing`, `api-security-testing`, `application-security-testing`, `find-security-vulnerabilities-in-code`, `git-safety-net` |
 | Idiomas | `i18n-expert`, `i18n-sync` |
 | Producto | `product-lens`, `competitors-analysis` |
+| Propias de Volta | `volta-imagenes-ejercicios`: genera las imágenes de los ejercicios con el estilo del «Press de banca» (Gemini) y las mete en la app |
 | Método de trabajo | `brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `git-workflow`, `coding-standards`, `search-first`, `dispatching-parallel-agents`, `subagent-driven-development`, `using-superpowers`, `strategic-compact`, `context-budget` |
 
 **Nuevas desde GitHub:**
