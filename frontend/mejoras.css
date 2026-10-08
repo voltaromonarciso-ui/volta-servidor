@@ -156,3 +156,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-av-tag{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:10px;background:rgba(0,0,0,.45);color:#9dff2e;font-size:11px;font-weight:800;letter-spacing:.3px}
 .ex-img.vx-av-thumb{background:#11161a}
 .ex-img.vx-av-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 70%;outline:0}
+
+/* ───── Técnica correcta ───── */
+.vx-tech{border-color:rgba(157,255,46,.45)}
+.vx-tech-s{margin-top:12px}
+.vx-tech-h{display:block;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.vx-tech p{margin:0;line-height:1.45}
+.vx-tech ol,.vx-tech ul{margin:4px 0 0;padding-left:20px;line-height:1.45}
+.vx-tech li{margin:3px 0}
+.vx-tech ul li::marker{color:#ff8a5c}
+.vx-tech-tip{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(157,255,46,.08);line-height:1.4}
