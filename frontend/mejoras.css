@@ -322,3 +322,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-or-rank{color:#e0b13a;font-weight:800}
 :root[data-t="light"] .vx-or-rank{color:#a87a08}
 .vx-oracle a{color:var(--ac)}
+
+/* Temas de color (Perfil) */
+.vx-th-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.vx-th{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border-radius:16px;border:1.5px solid var(--ln);background:var(--card2);color:var(--tx);font:600 13px inherit;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+.vx-th:active{transform:scale(.97)}
+.vx-th-sw{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--b),var(--a));box-shadow:0 4px 12px color-mix(in srgb,var(--a) 45%,transparent)}
+.vx-th.on{border-color:var(--a);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 35%,transparent)}
+.vx-th.on .vx-th-sw{outline:2px solid var(--card);outline-offset:-6px}
+@media (prefers-reduced-motion:reduce){.vx-th{transition:none}}

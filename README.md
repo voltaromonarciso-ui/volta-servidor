@@ -180,3 +180,5 @@ confeti y vibración al batir un récord, resumen de la sesión con imagen para 
 ## Escalado
 
 Con una instancia basta `npm start`. Para varias instancias o todos los núcleos (`npm run start:cluster`) configura `REDIS_URL`. Medidas, arquitectura para el millón de usuarios y lista de comprobación en [ESCALADO.md](ESCALADO.md).
+
+Guía de los cambios de diseño (Inicio/Entrenos, imágenes de ejercicios, Oráculo y temas): [docs/GUIA_CAMBIOS.md](docs/GUIA_CAMBIOS.md).
