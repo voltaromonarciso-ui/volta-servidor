@@ -46,7 +46,20 @@ Respuestas del equipo, del 8 de octubre de 2026. Este documento es la referencia
 
    De paso se arregla la tarjeta «Hoy» de Entrenos, cuyo texto no se leía en modo claro. Detalles en `GUIA_CAMBIOS.md` §5.
 3. **Fallos y estabilidad**: repaso completo de todas las pantallas en móvil pequeño y grande, sin conexión y con datos antiguos.
+   **Hecho (8 oct)**:
+   - 55 pantallas en 4 anchos (320–768 px): la cabecera y la guía de rangos ya caben en 320 px.
+   - Si una pantalla falla al abrirse, se vuelve atrás con un aviso en vez de dejar la app en blanco.
+   - Datos guardados antiguos o dañados: **0 de 118 campos** rompen la app (antes eran 14, algunos ya al arrancar).
+   - Sin conexión se abren todas las pestañas sin errores.
 4. **Textos**: botones, avisos y mensajes claros en los cuatro idiomas.
+   **Hecho (8 oct)**: con la app en inglés seguían en español unos 300 textos (25 de 55 pantallas), y bastantes más en
+   francés y portugués. Ahora están traducidos los tres idiomas, en el módulo nuevo `frontend/textos.js`. Además:
+   - el traductor prueba primero el texto entero, con su emoji o cifra delante;
+   - traduce por partes los textos separados por «·»;
+   - admite patrones dentro de patrones.
+
+   Lo que queda igual en otro idioma es correcto tal cual: nombres propios, «vs», o palabras que se escriben igual en
+   portugués.
 5. **Seguridad**: revisión del servidor (autenticación, límites, antitrampas) con pruebas aleatorias de la puntuación.
 
 ### Fase 2 · Preparar las tiendas (semanas 3–6)

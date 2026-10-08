@@ -612,17 +612,36 @@ calabaza|pumpkin|courge|abóbora
       const txt = d.toLocaleDateString(S.lang, { weekday: 'long', day: 'numeric', month: 'long' });
       return txt.charAt(0).toUpperCase() + txt.slice(1);
     }
+    // "≈ mismas calorías · ↑ más proteína (+4 g) · …": se traduce cada trozo por separado
+    if (s.indexOf(' · ') !== -1) {
+      let any = false;
+      const o = s.split(' · ').map((p) => { const r = trPart(p, x); if (r !== p) any = true; return r; }).join(' · ');
+      if (any) return o;
+    }
     return null;
+  }
+  function trPart(p, x) {
+    const full = trText(p, x);
+    if (full && full !== p) return full;
+    const m = /^(\s*[^A-Za-zÀ-ÿ¿¡]*)([\s\S]*?)(\s*)$/.exec(p);
+    if (!m || !m[2] || m[2] === p) return p;
+    const r = trText(m[2], x);
+    return r ? m[1] + r + m[3] : p;
   }
   // Traduce nombres de ejercicio dentro de un texto más largo ("Press de banca 80 kg")
   function trInner(s, x) {
     if (D[s]) return D[s][x];
+    // un hueco puede ser a su vez un texto con patrón ("Pecho medio (…)", "Hombros · deltoides…")
+    if (s && s.length < 400) { const r = trText(s, x); if (r) return r; }
     for (const n of exNames()) if (s.indexOf(n) !== -1) return s.replace(n, D[n][x]);
     return s;
   }
   window.vxTr = function (str) {
     const x = LANGS[S.lang];
     if (!x || typeof str !== 'string') return str;
+    // primero el texto entero (con su emoji, cifra o signo delante); si no, sin lo que va delante
+    const whole = str.trim();
+    if (whole) { const r0 = trText(whole, x); if (r0 && r0 !== whole) return str.replace(whole, r0); }
     const m = /^(\s*[^A-Za-zÀ-ÿ¿¡]*)([\s\S]*?)(\s*)$/.exec(str);
     if (!m || !m[2]) return str;
     const r = trText(m[2], x);
