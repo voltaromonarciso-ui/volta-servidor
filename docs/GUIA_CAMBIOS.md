@@ -181,6 +181,34 @@ Archivo nuevo: `frontend/catalogo.js`. Se carga justo después de `ejercicios.js
 - **Volumen semanal y mapa muscular**: incluyen los grupos nuevos.
 - **Rutinas predefinidas**: usan los nombres nuevos.
 
+## 9. Atleta 3D propio de Volta
+
+Archivo: `frontend/atleta3d.js`. El modelo está en `public/assets/models/atleta.bin` y pesa unos 480 KB. La skill
+`volta-atleta-3d` explica cómo rehacerlo y cómo revisar las posturas.
+
+- **Personaje propio y gratuito**:
+  - el cuerpo sale del modelo base de MakeHuman, con licencia CC0, con físico atlético y esqueleto de 53 huesos;
+  - el estilo es de Volta: piel gris grafito, pantalón corto negro y una plataforma con aro verde;
+  - no copia el personaje de ninguna otra app.
+- **Cómo se ve en la ficha**:
+  - El atleta sustituye a la animación 2D en la ficha de cada ejercicio, en cuanto termina de cargar.
+  - El músculo principal brilla en verde y los secundarios, más suave.
+  - Una línea discontinua marca el **recorrido completo**, con un punto al inicio y otro al final.
+- **Controles**:
+  - botones Pausa, Lento, Frente y Lado;
+  - se gira arrastrando con el dedo;
+  - con «reducir movimiento» empieza en pausa;
+  - con «ahorro de datos» no se descarga solo: sale un botón para cargarlo.
+- **Movimientos**:
+  - 52 patrones de movimiento con su postura inicial y final, más las variantes por nombre (goblet, frontal, sumo,
+    cosaca, face pull, remo sentado, etc.);
+  - el material sale de cada ejercicio: barra, mancuernas, kettlebell, polea con su cable, bandas o Smith;
+  - bancos, paralelas, barra de dominadas, escalón, prensa y banco de lumbares se colocan solos bajo el cuerpo.
+- **Rendimiento**:
+  - Three.js y el modelo se descargan solo al abrir una ficha;
+  - la animación se para fuera de pantalla y con la pestaña oculta.
+- **Si falla**: sin WebGL, o si falla la descarga, se queda la animación 2D de siempre.
+
 ## Pruebas
 
 Navegador (Playwright), con capturas en todas las pantallas:

@@ -6423,7 +6423,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
 
     // ── Cámara ──
     const box3 = new T.Box3();
-    [0, 1].forEach((t) => { pose(lerpPose(P.A, P.B, t)); placeGear(); root.updateMatrixWorld(true); skinned.forEach(() => {}); ['head', 'hand_l', 'hand_r', 'ball_l', 'ball_r', 'pelvis', 'foot_l', 'foot_r'].forEach((k) => box3.expandByPoint(wp(B[k]))); });
+    [0, 1].forEach((t) => { pose(lerpPose(P.A, P.B, t)); placeGear(); root.updateMatrixWorld(true); skinned.forEach(() => {}); ['head', 'hand_l', 'hand_r', 'ball_l', 'ball_r', 'pelvis', 'foot_l', 'foot_r'].forEach((k) => box3.expandByPoint(wp(B[k]))); box3.expandByPoint(wp(B.head).add(new T.Vector3(0, .16, 0))); });
     props.children.forEach((o) => box3.expandByObject(o));
     if (bar) box3.expandByObject(bar);
     const ctr = box3.getCenter(new T.Vector3()), size = box3.getSize(new T.Vector3());
