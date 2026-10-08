@@ -2205,6 +2205,7 @@ function obGen(){const a=S.userProfile,rk=LR.indexOf(S.lvl),EQ={gym:null,home:["
 
 /* --- Reinicio / cierre de sesión → vuelve a saltar el cuestionario --- */
 window.obReset=full=>{if(full&&!confirm(t("resetq")))return;
+ try{if(window.VoltaAPI)VoltaAPI.logout();if(S.soc)S.soc.me=null;if(full)localStorage.removeItem("volta.lastLogin")}catch(x){}
  S.onboarded=false;S.obq={i:0,a:{}};S.name="";S.obi=null;
  if(full){S.userProfile=null;S.routines=[];S.plan=[];S.cur=0;S.planSrc="";delete S.ng}
  S.stack=[];S.tab="home";sv();R()};
@@ -2214,7 +2215,7 @@ window.delAcc=async()=>{const on=!!(window.VoltaAPI&&VoltaAPI.isLoggedIn()&&S.so
  if(!confirm("¿Eliminar la cuenta de forma permanente? Se borrarán todos tus datos de este dispositivo"+(on?" y tu cuenta de la comunidad (mensajes y amigos)":"")+". No se puede deshacer."))return;
  if(on){const pw=prompt("Escribe tu contraseña para confirmar:");if(pw==null)return;
   try{await VoltaAPI.deleteAccount(pw)}catch(x){toast(x.message||"No se pudo eliminar la cuenta.");return}}
- try{localStorage.removeItem(K);localStorage.removeItem(K+"_PREV")}catch(x){}
+ try{localStorage.removeItem(K);localStorage.removeItem(K+"_PREV");localStorage.removeItem("volta.token");localStorage.removeItem("volta.lastLogin")}catch(x){}
  location.reload()};
 
 /* --- Pantallas de Ajustes: selector de idioma (4) y cuenta --- */
@@ -2418,10 +2419,10 @@ window.socX=X;
 /* ---- vistas ---- */
 const frH=()=>{const f=X.fr;return `${f.inReq.length?`<div class="card"><b>Solicitudes recibidas</b>${f.inReq.map(u=>`<div class="row sp" style="margin:8px 0"><span>${e(u)}</span><span><button class="chip" onclick="socRs('${e(u)}',true)">Aceptar</button> <button class="chip" onclick="socRs('${e(u)}',false)">Rechazar</button></span></div>`).join("")}</div>`:""}<div class="card"><b>Amigos (${f.friends.length})</b>${f.friends.length?f.friends.map(u=>`<div class="row" style="margin:10px 0"><span style="width:10px;height:10px;border-radius:50%;background:${on(u.last)?"var(--ac)":"var(--mu)"};box-shadow:${on(u.last)?"0 0 8px var(--ac)":"none"};margin-right:10px"></span><div class="g"><b>${e(u.u)}</b>${u.demo?' <span class="pill">demo</span>':""}<div class="mu">${on(u.last)?"En línea":(u.last?"Última vez "+ago(u.last):"Sin conexión reciente")}</div></div><button class="chip" onclick="socView('${e(u.u)}')">Ver progreso</button></div>`).join(""):'<div class="mu" style="margin-top:6px">Aún no tienes amigos. Busca a alguien por su nombre de usuario.</div>'}</div>${f.outReq.length?`<div class="card"><b>Enviadas (pendientes)</b>${f.outReq.map(u=>`<div class="mu" style="margin-top:6px">${e(u)}</div>`).join("")}</div>`:""}`};
 const fdH=()=>X.feed.length?X.feed.slice(-60).reverse().map(m=>`<div class="card" style="margin:8px 0"><div class="row sp"><b>${e(m.u)}${m.u==(SO().me||{}).u?' <span class="mu">(tú)</span>':""}</b><span class="mu">${hm(m.t)}</span></div>${m.text?`<div style="margin-top:4px;white-space:pre-wrap;word-break:break-word">${e(m.text)}</div>`:""}${m.card?rc(m.card):""}</div>`).join(""):'<div class="mu" style="margin:10px 0">Todavía no hay mensajes. Sé el primero en escribir.</div>';
-V.socname=function(){const reg=X.mode!="login";
+V.socname=function(){const reg=X.mode?X.mode!="login":!(window.VoltaAPI&&VoltaAPI.lastLogin&&VoltaAPI.lastLogin());
 return bk(reg?"Crea tu cuenta":"Inicia sesión")+`<div class="card"><div class="chips" style="margin-bottom:10px"><div class="chip ${reg?"on":""}" onclick="socMode('reg')">Crear cuenta</div><div class="chip ${reg?"":"on"}" onclick="socMode('login')">Ya tengo cuenta</div></div>`+
 (reg?`<div class="mu">Tu nombre de usuario será tu identificador único en VOLTA. De 3 a 20 caracteres: letras, números, _ y .</div><input id="snin" placeholder="Nombre de usuario (p. ej. ana.fit)" maxlength="20" autocomplete="username" autocapitalize="off" oninput="socNm(this.value)" style="margin-top:10px"><div id="snmsg" style="margin-top:8px;min-height:20px"></div><input id="sem" type="email" placeholder="Correo electrónico" autocomplete="email" autocapitalize="off" style="margin-top:6px"><input id="spw" type="password" placeholder="Contraseña (mín. 8 caracteres)" autocomplete="new-password" style="margin-top:10px">`
-:`<input id="sli" placeholder="Correo o nombre de usuario" autocomplete="username" autocapitalize="off" style="margin-top:6px"><input id="spw" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:10px">`)+
+:`<input id="sli" placeholder="Correo o nombre de usuario" autocomplete="username" autocapitalize="off" style="margin-top:6px" value="${e(window.VoltaAPI&&VoltaAPI.lastLogin?VoltaAPI.lastLogin():"")}"><input id="spw" type="password" placeholder="Contraseña" autocomplete="current-password" style="margin-top:10px">`)+
 `<div id="sauth" style="margin-top:8px;min-height:20px;color:#ff7a59"></div><button class="btn" id="sgo" style="margin-top:6px" onclick="${reg?"socMk()":"socLogin()"}">${reg?"Crear cuenta":"Entrar"}</button></div>`};
 V.soc=function(){const s=SO();if(!s.me||!window.VoltaAPI||!VoltaAPI.isLoggedIn())return V.socname();const t=s.tab;
 let h=`<div style="animation:socin .28s ease-out"><div class="row sp"><div class="row"><button class="back" onclick="back()">‹</button><h1 style="font-size:22px">Social</h1></div><button class="chip" onclick="go('socme')">@${e(s.me.u)}</button></div><div class="chips"><div class="chip ${t=="friends"?"on":""}" onclick="socTab('friends')">👥 Amigos</div><div class="chip ${t=="forum"?"on":""}" onclick="socTab('forum')">💬 Foro</div></div>${X.msg&&t=="friends"?`<div class="mu" style="color:#ff7a59">${e(X.msg)}</div>`:""}`;
@@ -2531,6 +2532,7 @@ R();
   var DEFAULT_BASE = "https://volta-servidor.onrender.com";
   var TIMEOUT_MS = 45000; // el plan gratuito de Render puede tardar en "despertar"
   var TOKEN_KEY = "volta.token";
+  var LAST_KEY = "volta.lastLogin";
 
   /* ---------- RUTAS DEL BACKEND (ajusta aquí si hace falta) ---------- */
   var ROUTES = {
@@ -2539,6 +2541,7 @@ R();
     register: "/api/auth/register",
     login: "/api/auth/login",
     me: "/api/auth/me",
+    refresh: "/api/auth/refresh",
     searchUsers: "/api/users/search",
     friends: "/api/friends",
     friendRequest: "/api/friends/request",
@@ -2802,14 +2805,24 @@ R();
       return request("POST", ROUTES.register, {
         body: { username: f.username, email: f.email, password: f.password },
         noAuth: true
-      }).then(saveAuth);
+      }).then(function (d) { store.set(LAST_KEY, f.email || f.username || ""); return saveAuth(d); });
     },
 
     login: function (identifier, password) {
       return request("POST", ROUTES.login, {
         body: { identifier: identifier, password: password },
         noAuth: true
-      }).then(saveAuth);
+      }).then(function (d) { store.set(LAST_KEY, identifier || ""); return saveAuth(d); });
+    },
+
+    // correo o usuario de la última vez (para rellenar el formulario si alguna vez se cierra la sesión)
+    lastLogin: function () { return store.get(LAST_KEY) || ""; },
+
+    // Renueva la sesión: la app lo hace sola al abrirse, así la cuenta se recuerda para siempre
+    // (hasta cerrar sesión, borrar los datos o borrar la cuenta)
+    refresh: function () {
+      if (!getToken()) return Promise.resolve(null);
+      return request("POST", ROUTES.refresh, { body: {} }).then(saveAuth);
     },
 
     me: function () {
@@ -2892,6 +2905,23 @@ R();
   };
 
   global.VoltaAPI = VoltaAPI;
+
+  /* ---------- sesión recordada para siempre ---------- */
+  function tokenAge() {
+    try { var p = JSON.parse(atob(getToken().split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); return Date.now() / 1000 - (p.iat || 0); }
+    catch (e) { return Infinity; }
+  }
+  var renewing = false;
+  function renew() {
+    if (renewing || !getToken() || tokenAge() < 12 * 3600) return;
+    renewing = true;
+    // sin conexión no pasa nada: la sesión sigue y se renueva la próxima vez
+    VoltaAPI.refresh().catch(function () {}).then(function () { renewing = false; });
+  }
+  if (global.document) {
+    setTimeout(renew, 3000);
+    global.document.addEventListener("visibilitychange", function () { if (!global.document.hidden) renew(); });
+  }
 })(typeof window !== "undefined" ? window : globalThis);
 
 </script>
@@ -7286,6 +7316,12 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     } catch (e) { /* Perfil original */ }
     return h;
   };
+})();
+
+// Memoria: se pide al navegador que guarde los datos de Volta de forma persistente (no los borra para liberar
+// espacio). Así el progreso y la sesión se recuerdan hasta que el usuario los borre.
+(function () {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then((p) => { if (!p) navigator.storage.persist().catch(() => {}); }).catch(() => {}); } catch (e) { /* no disponible */ }
 })();
 
 /* VOLTA · Textos que se quedaban en español con la app en inglés, francés o portugués.

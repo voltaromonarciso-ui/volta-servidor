@@ -10,7 +10,7 @@ const config = {
   databaseUrl: need('DATABASE_URL'),
   pgSsl: process.env.PGSSL === 'true',
   jwtSecret: need('JWT_SECRET'),
-  jwtExpires: process.env.JWT_EXPIRES || '7d',
+  jwtExpires: process.env.JWT_EXPIRES || '180d', // la app la renueva al abrirse (POST /api/auth/refresh)
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS) || 12,
   corsOrigins: (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
   trustProxy: process.env.TRUST_PROXY === '1',

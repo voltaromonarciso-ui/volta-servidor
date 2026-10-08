@@ -82,6 +82,14 @@ router.get('/me', requireAuth, ah(async (req, res) => {
   res.json({ user: publicUser(rows[0]) });
 }));
 
+// POST /api/auth/refresh  → sesión nueva para quien ya tiene una válida (la app la renueva sola al abrirse,
+// así la cuenta queda recordada mientras se use; solo se cierra al salir, borrar los datos o borrar la cuenta)
+router.post('/refresh', requireAuth, ah(async (req, res) => {
+  const { rows } = await query('SELECT id, username, email, created_at FROM users WHERE id = $1', [req.user.id]);
+  if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  res.json({ token: sign(rows[0]), user: publicUser(rows[0]) });
+}));
+
 // DELETE /api/auth/me   { password }  → borra la cuenta, sus mensajes y amistades (ON DELETE CASCADE)
 router.delete('/me', authLimiter, requireAuth, ah(async (req, res) => {
   const { password } = z.object({ password: z.string().min(1).max(200) }).parse(req.body ?? {});

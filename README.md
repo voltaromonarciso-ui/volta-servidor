@@ -46,6 +46,7 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 |---|---|---|
 | `POST /api/auth/register` | `{username, email, password}` | `201 {token, user}` · `400` nombre malsonante o formato · `409` usuario/correo en uso |
 | `POST /api/auth/login` | `{identifier, password}` (correo **o** usuario) | `200 {token, user}` · `401` |
+| `POST /api/auth/refresh` | Bearer | `200 {token, user}` (sesión renovada) · `401` si la cuenta ya no existe |
 | 🔒 `GET /api/auth/me` | | `{user}` |
 | 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `403` contraseña incorrecta (la sesión sigue abierta) |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
@@ -126,7 +127,7 @@ Además, dentro de la transacción se toma un candado por usuario (`pg_advisory_
 ## 4. Seguridad: lo que hay y lo que debes saber
 
 - Contraseñas con **bcrypt** (coste 12); límite de 72 bytes porque bcrypt ignora el resto.
-- **JWT** HS256 con caducidad (`JWT_EXPIRES`). `JWT_SECRET` ≥ 32 caracteres; cámbialo → se invalidan todas las sesiones.
+- **JWT** HS256 con caducidad (`JWT_EXPIRES`, 180 días). La app la renueva sola al abrirse (`POST /api/auth/refresh`), así la cuenta queda recordada hasta que el usuario cierre sesión o borre sus datos. `JWT_SECRET` ≥ 32 caracteres; cámbialo → se invalidan todas las sesiones.
 - Login con tiempos igualados (no revela si el usuario existe) y límite de 20 intentos / 15 min por IP. Detrás de proxy pon `TRUST_PROXY=1`.
 - Todas las consultas van parametrizadas; entrada validada con zod; cuerpo máx. 16 KB; tarjeta de progreso máx. 4 KB.
 - Usernames únicos sin distinguir mayúsculas (índice `lower(username)`).

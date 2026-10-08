@@ -38,6 +38,25 @@ test('check-username informa de nombres ocupados o malsonantes', async () => {
   assert.equal((await api('GET', '/api/users/check-username?username=libre_99')).body.available, true);
 });
 
+test('refresh renueva la sesión y falla si la cuenta ya no existe', async () => {
+  const jwt = require('jsonwebtoken');
+  const reg = await (await fetch(base() + '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'refresco1', email: 'refresco1@volta.test', password: 'secreta123' }) })).json();
+  // una sesión antigua (de hace 100 días) sigue sirviendo para renovarse
+  const p = jwt.decode(reg.token);
+  const old = jwt.sign({ username: p.username, iat: Math.floor(Date.now() / 1000) - 100 * 86400 }, process.env.JWT_SECRET, { subject: p.sub, algorithm: 'HS256', expiresIn: '180d' });
+  const r = await fetch(base() + '/api/auth/refresh', { method: 'POST', headers: { Authorization: 'Bearer ' + old, 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(r.status, 200);
+  const d = await r.json();
+  assert.equal(d.user.username, 'refresco1');
+  const n = jwt.decode(d.token);
+  assert.ok(n.iat > p.iat - 5 && n.exp - n.iat >= 179 * 86400, 'token nuevo, con 180 días');
+  // sin sesión → 401
+  assert.equal((await fetch(base() + '/api/auth/refresh', { method: 'POST' })).status, 401);
+  // cuenta borrada → 401
+  await fetch(base() + '/api/auth/me', { method: 'DELETE', headers: { Authorization: 'Bearer ' + d.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'secreta123' }) });
+  assert.equal((await fetch(base() + '/api/auth/refresh', { method: 'POST', headers: { Authorization: 'Bearer ' + d.token } })).status, 401);
+});
+
 test('un token de una cuenta borrada devuelve 401, no 500', async () => {
   const u = await newUser();
   await pool.query('DELETE FROM users WHERE id = $1', [u.id]);

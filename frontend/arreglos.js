@@ -220,3 +220,9 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     return h;
   };
 })();
+
+// Memoria: se pide al navegador que guarde los datos de Volta de forma persistente (no los borra para liberar
+// espacio). Así el progreso y la sesión se recuerdan hasta que el usuario los borre.
+(function () {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then((p) => { if (!p) navigator.storage.persist().catch(() => {}); }).catch(() => {}); } catch (e) { /* no disponible */ }
+})();

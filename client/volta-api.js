@@ -51,6 +51,12 @@
       const d = await http('/api/auth/login', { method: 'POST', body: { identifier, password }, auth: false });
       setToken(d.token); return d.user;
     },
+    /** Renueva la sesión (llámalo al abrir la app): la cuenta se recuerda mientras se use. */
+    async refresh() {
+      if (!S.token) return null;
+      const d = await http('/api/auth/refresh', { method: 'POST', body: {} });
+      setToken(d.token); return d.user;
+    },
     logout() { setToken(''); VoltaAPI.disconnect(); },
     me: () => http('/api/auth/me').then((d) => d.user),
     /** Borra la cuenta en el servidor (pide la contraseña) y cierra la sesión. */
