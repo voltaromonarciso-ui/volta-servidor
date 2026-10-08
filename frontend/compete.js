@@ -54,14 +54,16 @@
     see: ['Ver Arena', 'Open Arena', "Voir l'Arène", 'Ver Arena'],
   };
   const t = (k) => (T[k] || [k])[LI[S.lang] || 0];
+  // Ligas del Olimpo: cada una con su dios, su lema y su emblema (dibujos propios, sin imágenes externas)
   const LEAGUES = [
-    { id: 'bronce', min: 0, n: ['Bronce', 'Bronze', 'Bronze', 'Bronze'], c: ['#f0a868', '#9a5426'] },
-    { id: 'plata', min: 1500, n: ['Plata', 'Silver', 'Argent', 'Prata'], c: ['#eef2f6', '#8a96a3'] },
-    { id: 'oro', min: 5000, n: ['Oro', 'Gold', 'Or', 'Ouro'], c: ['#ffe27a', '#c08a12'] },
-    { id: 'platino', min: 12000, n: ['Platino', 'Platinum', 'Platine', 'Platina'], c: ['#b9fff4', '#2aa597'] },
-    { id: 'diamante', min: 25000, n: ['Diamante', 'Diamond', 'Diamant', 'Diamante'], c: ['#cfe0ff', '#3f6fe0'] },
-    { id: 'elite', min: 50000, n: ['Élite', 'Elite', 'Élite', 'Elite'], c: ['#e6c8ff', '#7a2fd0'] },
+    { id: 'hermes', min: 0, n: ['Hermes', 'Hermes', 'Hermès', 'Hermes'], m: ['El mensajero veloz', 'The swift messenger', 'Le messager rapide', 'O mensageiro veloz'], c: ['#f2b27a', '#9a5426'], sym: 'wing' },
+    { id: 'artemisa', min: 1500, n: ['Artemisa', 'Artemis', 'Artémis', 'Ártemis'], m: ['La cazadora incansable', 'The tireless huntress', 'La chasseresse infatigable', 'A caçadora incansável'], c: ['#f1f5fa', '#8291a3'], sym: 'moon', sy: '#3e4c5e' },
+    { id: 'ares', min: 5000, n: ['Ares', 'Ares', 'Arès', 'Ares'], m: ['El guerrero indomable', 'The untamed warrior', 'Le guerrier indomptable', 'O guerreiro indomável'], c: ['#ff9a7a', '#a3261b'], sym: 'helm' },
+    { id: 'atenea', min: 12000, n: ['Atenea', 'Athena', 'Athéna', 'Atena'], m: ['La estratega sabia', 'The wise strategist', 'La stratège sage', 'A estratega sábia'], c: ['#bff7ea', '#2a9a86'], sym: 'owl' },
+    { id: 'poseidon', min: 25000, n: ['Poseidón', 'Poseidon', 'Poséidon', 'Poseidon'], m: ['El señor de los mares', 'Lord of the seas', 'Le seigneur des mers', 'O senhor dos mares'], c: ['#b8d4ff', '#2756c9'], sym: 'trident' },
+    { id: 'zeus', min: 50000, n: ['Zeus', 'Zeus', 'Zeus', 'Zeus'], m: ['El rey del Olimpo', 'King of Olympus', 'Le roi de l’Olympe', 'O rei do Olimpo'], c: ['#fff1a8', '#c79212'], sym: 'bolt' },
   ];
+
   const lgIdx = (id) => Math.max(0, LEAGUES.findIndex((l) => l.id === id));
   const lgOfXp = (xp) => { let i = 0; LEAGUES.forEach((l, j) => { if (xp >= l.min) i = j; }); return i; };
   const lgName = (i) => LEAGUES[i].n[LI[S.lang] || 0];
@@ -72,17 +74,36 @@
   const online = () => !!(window.vxSocialOn && window.vxSocialOn());
 
   // Insignia original: escudo facetado con el color de la liga y estrellas según el nivel dentro de ella
+  // Símbolo de cada dios, centrado en (32,32)
+  const SYM = {
+    wing: '<path d="M19 37c3-9 13-15 26-13-4 1.5-6.5 3.5-8 5.5 3.4-.3 6.6.2 9 1.2-3.2 1.6-6.4 2.6-9.6 2.8 2.2.9 4.2 2.2 5.6 3.8-8.4 1.8-16 1.2-23-.3z" fill="var(--sy,#fff)"/><path d="M21 40.5h16" stroke="var(--sy,#fff)" stroke-width="2.2" stroke-linecap="round"/>',
+    moon: '<path d="M38 19.5a12.5 12.5 0 1 0 0 25a15 15 0 0 1 0-25z" fill="var(--sy,#fff)"/><path d="M22 42l20-20M38.5 22H42v3.5M22 42l-1 3.5 3.5-1" stroke="var(--sy,#fff)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+    helm: '<path d="M21.5 42c0-13 4.5-20.5 10.5-20.5S42.5 29 42.5 42h-5.2v-8.3h-2.6V42h-5.4v-8.3h-2.6V42z" fill="var(--sy,#fff)"/><path d="M23 24.5c2.6-6.3 15.4-6.3 18 0" stroke="var(--sy,#fff)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-dasharray="1.6 1.4"/>',
+    owl: '<path d="M23 25l3 3.5M41 25l-3 3.5" stroke="var(--sy,#fff)" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="32" cy="35" rx="9.5" ry="11" fill="var(--sy,#fff)"/><circle cx="28.3" cy="32" r="3.2" fill="var(--bd,#2a9a86)"/><circle cx="35.7" cy="32" r="3.2" fill="var(--bd,#2a9a86)"/><circle cx="28.3" cy="32" r="1.2" fill="var(--sy,#fff)"/><circle cx="35.7" cy="32" r="1.2" fill="var(--sy,#fff)"/><path d="M30.6 36.2h2.8L32 38.6z" fill="var(--bd,#2a9a86)"/>',
+    trident: '<path d="M32 47V21M25 21.5v5.5q0 5 7 5t7-5v-5.5" stroke="var(--sy,#fff)" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M32 15.5l-2.8 5.5h5.6zM25 16.5l-2.3 5h4.6zM39 16.5l-2.3 5h4.6z" fill="var(--sy,#fff)"/>',
+    bolt: '<path d="M35.5 16.5l-11 16.5h6.8l-3.6 14.5 12.8-19h-7.2l4.7-12z" fill="var(--sy,#fff)"/>',
+  };
+  // Insignia original: medallón con corona de laurel, greca y el símbolo del dios de la liga
   function badge(i, size, stars) {
-    const L = LEAGUES[i], id = 'lg' + i + '_' + size;
+    const L = LEAGUES[i], id = 'lg' + i + '_' + size + '_' + Math.random().toString(36).slice(2, 6);
     const st = Math.max(0, Math.min(3, stars || 0));
-    return `<svg class="vx-badge" width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="${t('league')} ${lgName(i)}">` +
-      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${L.c[0]}"/><stop offset="1" stop-color="${L.c[1]}"/></linearGradient></defs>` +
-      `<path d="M32 3l24 9v18c0 15-10 25-24 31C18 55 8 45 8 30V12z" fill="url(#${id})" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>` +
-      `<path d="M32 3l24 9v18c0 15-10 25-24 31z" fill="#000" opacity=".12"/>` +
-      `<path d="M32 9l18 7v14c0 11-7 19-18 24C21 49 14 41 14 30V16z" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.4"/>` +
-      `<path d="M32 18l4.2 8.6 9.4 1.3-6.8 6.6 1.6 9.4L32 39.5l-8.4 4.4 1.6-9.4-6.8-6.6 9.4-1.3z" fill="#fff" fill-opacity=".92"/>` +
-      (i >= 4 ? '<path d="M32 18l4.2 8.6 9.4 1.3-6.8 6.6 1.6 9.4L32 39.5z" fill="#000" opacity=".12"/>' : '') +
-      Array.from({ length: st }, (_, k) => `<circle cx="${32 + (k - (st - 1) / 2) * 9}" cy="55" r="2.6" fill="#fff" stroke="rgba(0,0,0,.3)" stroke-width=".8"/>`).join('') +
+    let laurel = '';
+    for (let k = 0; k < 7; k++) {
+      const a = (118 + k * 19) * Math.PI / 180, x = 32 + 27 * Math.cos(a), y = 33 + 27 * Math.sin(a), rot = (a * 180 / Math.PI) + 90;
+      laurel += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="2.3" ry="4.6" transform="rotate(${(rot - 25).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})" fill="url(#${id}l)"/>`;
+      const x2 = 64 - x;
+      laurel += `<ellipse cx="${x2.toFixed(1)}" cy="${y.toFixed(1)}" rx="2.3" ry="4.6" transform="rotate(${(-(rot - 25)).toFixed(0)} ${x2.toFixed(1)} ${y.toFixed(1)})" fill="url(#${id}l)"/>`;
+    }
+    return `<svg class="vx-badge" width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="${t('league')} ${lgName(i)}" style="--bd:${L.c[1]};--sy:${L.sy || '#fff'}">` +
+      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${L.c[0]}"/><stop offset="1" stop-color="${L.c[1]}"/></linearGradient>` +
+      `<linearGradient id="${id}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9e9a4"/><stop offset="1" stop-color="#6f8f2a"/></linearGradient></defs>` +
+      laurel +
+      `<path d="M28 57.5c1.5-1.4 2.7-2 4-2s2.5.6 4 2" stroke="#6f8f2a" stroke-width="1.6" fill="none" stroke-linecap="round"/>` +
+      `<circle cx="32" cy="32" r="21" fill="url(#${id})" stroke="rgba(0,0,0,.35)" stroke-width="1.4"/>` +
+      `<path d="M32 11a21 21 0 0 1 0 42z" fill="#000" opacity=".1"/>` +
+      `<circle cx="32" cy="32" r="17.6" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.6" stroke-dasharray="3 1.6 1 1.6"/>` +
+      `<g transform="translate(32 32) scale(.82) translate(-32 -32)" filter="drop-shadow(0 1px 1px rgba(0,0,0,.35))">${SYM[L.sym]}</g>` +
+      Array.from({ length: st }, (_, k) => `<path transform="translate(${(32 + (k - (st - 1) / 2) * 8).toFixed(1)} 6.5) scale(.55)" d="M0-5l1.5 3.2 3.5.4-2.6 2.4.7 3.5L0 2.8-3.1 4.5l.7-3.5L-5-1.4l3.5-.4z" fill="#ffe27a" stroke="rgba(0,0,0,.35)" stroke-width=".8"/>`).join('') +
       '</svg>';
   }
   window.vxBadge = badge;
@@ -166,7 +187,7 @@
     if (!entries.length) return `<div class="mu" style="padding:10px 0">${t('empty')}</div>`;
     const medal = ['🥇', '🥈', '🥉'];
     return entries.map((e, i) => {
-      const rk = e.rank || i + 1, lg = lgIdx(e.league || 'bronce');
+      const rk = e.rank || i + 1, lg = lgIdx(e.league || 'hermes');
       const mine = e.me || (myName && e.username === myName);
       return `<div class="row vx-ar-row${mine ? ' me' : ''}${rk <= 3 ? ' podium' : ''}" onclick="vxArenaUser('${safe(e.username)}')" role="button" tabindex="0">` +
         `<span class="vx-ar-pos">${medal[rk - 1] || rk}</span>${badge(lg, 26)}` +
@@ -185,7 +206,7 @@
     let h = `<div class="row" style="margin-bottom:6px"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">🏆 ${t('arena')}</h1></div>`;
     h += `<div class="card vx-ar-hero lg-${cur.id}"><div class="vx-ar-glow" aria-hidden="true"></div>` +
       `<div class="row" style="gap:16px;align-items:center">${badge(m.league, 86, Math.min(3, Math.floor(pct / 34)))}` +
-      `<div class="g"><div class="mu">${t('league')}</div><div class="vx-ar-lg">${lgName(m.league)}</div><div>${t('level')} <b>${m.level}</b> · ${fmt(tot)} XP</div></div></div>` +
+      `<div class="g"><div class="mu">${t('league')}</div><div class="vx-ar-lg">${lgName(m.league)}</div><div class="vx-ar-motto">${LEAGUES[m.league].m[LI[S.lang] || 0]}</div><div>${t('level')} <b>${m.level}</b> · ${fmt(tot)} XP</div></div></div>` +
       `<div class="bar vx-xpbar" style="margin-top:14px"><i style="width:${pct.toFixed(1)}%"></i></div>` +
       `<div class="mu" style="margin-top:6px">${next ? `${fmt(next.min - tot)} ${t('toNext')} ${lgName(m.league + 1)}` : t('top')}</div>` +
       `<div class="grid2 vx-ar-stats" style="grid-template-columns:repeat(3,1fr);margin-top:12px;text-align:center">` +

@@ -145,6 +145,23 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     };
   }
 
+  // Rango máximo: "Kratos" es un personaje de videojuego, no un dios griego. Se muestra Cronos, el titán del tiempo.
+  const RENAME = [[/Leyenda de Kratos/g, 'Leyenda de Cronos'], [/Kratos/g, 'Cronos'], [/KRATOS/g, 'CRONOS'], [/El Destructor/g, 'Señor del Tiempo']];
+  function renameRanks(root) {
+    if (!root) return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) if (/Kratos|KRATOS|El Destructor/.test(n.nodeValue)) RENAME.forEach(([re, to]) => { n.nodeValue = n.nodeValue.replace(re, to); });
+  }
+  {
+    const _R2 = R;
+    R = function () { const out = _R2.apply(this, arguments); try { renameRanks(document.body); } catch (e) { /* textos originales */ } return out; };
+  }
+  window.vxRenameRanks = renameRanks;
+  try {
+    const _toast = toast;
+    toast = function (m) { if (typeof m === 'string') RENAME.forEach(([re, to]) => { m = m.replace(re, to); }); return _toast.call(this, m); };
+  } catch (e) { /* toast no reasignable: se queda el original */ }
+
   // Red de seguridad: si algún botón apunta a una pantalla que no existe, se vuelve atrás con un aviso
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
   const known = (v) => /^(ex|anat|meal)\d+$/.test(v) || typeof V[v] === 'function';

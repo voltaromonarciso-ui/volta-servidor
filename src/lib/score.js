@@ -1,14 +1,14 @@
 // Puntuación de la competición, calculada SIEMPRE en el servidor.
 // El cliente solo envía cifras brutas de la semana (días, series, volumen); aquí se validan y se puntúan.
 
-// Ligas por experiencia acumulada (XP de semanas cerradas). Umbral mínimo de cada liga.
+// Ligas del Olimpo por experiencia acumulada (XP de semanas cerradas). Umbral mínimo de cada liga.
 const LEAGUES = [
-  { id: 'bronce', min: 0 },
-  { id: 'plata', min: 1500 },
-  { id: 'oro', min: 5000 },
-  { id: 'platino', min: 12000 },
-  { id: 'diamante', min: 25000 },
-  { id: 'elite', min: 50000 },
+  { id: 'hermes', min: 0 }, // el mensajero: los primeros pasos
+  { id: 'artemisa', min: 1500 }, // la cazadora: constancia
+  { id: 'ares', min: 5000 }, // el guerrero
+  { id: 'atenea', min: 12000 }, // la estratega
+  { id: 'poseidon', min: 25000 }, // el señor de los mares
+  { id: 'zeus', min: 50000 }, // el rey del Olimpo
 ];
 
 // Límites de lo humanamente posible. Holgados: un atleta real nunca los toca, un bot o un cliente trucado sí.

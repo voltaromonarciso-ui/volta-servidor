@@ -209,7 +209,7 @@ test('stats: el servidor calcula los puntos y rechaza cifras imposibles', async 
   const ok = await api('POST', '/api/users/stats', { token: u.token, body: { days: 1, sets: 20, volume: 12000 } });
   assert.equal(ok.status, 200);
   assert.equal(ok.body.score, 100 + 20 * 5 + Math.round(40 * Math.log2(1 + 12)));
-  assert.equal(ok.body.league, 'bronce');
+  assert.equal(ok.body.league, 'hermes');
   // el cliente no puede mandar su propia puntuación
   const forged = await api('POST', '/api/users/stats', { token: u.token, body: { days: 1, sets: 20, volume: 12000, score: 999999 } });
   assert.equal(forged.body.score, ok.body.score);
@@ -241,7 +241,7 @@ test('stats: al cambiar de semana la anterior suma XP, sube de liga y premia la 
   const r = await api('POST', '/api/users/stats', { token: u.token, body: { days: 2, sets: 10, volume: 15000 } });
   assert.equal(r.status, 200);
   assert.equal(r.body.xp, 5000);
-  assert.equal(r.body.league, 'oro');
+  assert.equal(r.body.league, 'ares');
   // +50 % de volumen frente a la semana anterior → bonus máximo de progresión (200)
   const base = 200 + 50 + Math.round(40 * Math.log2(1 + 15));
   assert.equal(r.body.score, base + 200);
@@ -261,7 +261,7 @@ test('ranking global y de liga con mi posición, y perfil público sin datos pri
   assert.deepEqual(g.body.entries.map((e) => e.username), ['charlie', 'bravo', 'alpha']);
   assert.equal(g.body.me.rank, 3);
   assert.equal(g.body.entries[2].me, true);
-  assert.equal(g.body.me.nextLeague.id, 'plata');
+  assert.equal(g.body.me.nextLeague.id, 'artemisa');
 
   const l = await api('GET', '/api/compete/leaderboard?scope=league', { token: a.token });
   assert.deepEqual(l.body.entries.map((e) => e.username), ['bravo', 'alpha']);

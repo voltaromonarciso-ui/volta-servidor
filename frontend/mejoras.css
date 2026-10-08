@@ -181,8 +181,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-xpbar{height:8px;border-radius:99px;overflow:hidden}
 .vx-xpbar i{background:linear-gradient(90deg,var(--ac2),var(--ac));box-shadow:0 0 12px color-mix(in srgb,var(--ac) 60%,transparent)}
 .vx-badge{flex:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
-.vx-ar-hero{position:relative;overflow:hidden;--lg:#f0a868}
-.vx-ar-hero.lg-plata{--lg:#c9d1d9}.vx-ar-hero.lg-oro{--lg:#f5c542}.vx-ar-hero.lg-platino{--lg:#7fe0d6}.vx-ar-hero.lg-diamante{--lg:#7aa8ff}.vx-ar-hero.lg-elite{--lg:#b46bff}
+.vx-ar-hero{position:relative;overflow:hidden;--lg:#e59a5c}
+.vx-ar-hero.lg-hermes{--lg:#e59a5c}.vx-ar-hero.lg-artemisa{--lg:#c9d1d9}.vx-ar-hero.lg-ares{--lg:#ef5b45}.vx-ar-hero.lg-atenea{--lg:#4fd1b5}.vx-ar-hero.lg-poseidon{--lg:#5b8cff}.vx-ar-hero.lg-zeus{--lg:#f5c542}
+.vx-ar-motto{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);margin:-2px 0 4px}
 .vx-ar-glow{position:absolute;inset:-40% -20% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--lg) 45%,transparent),transparent 70%);pointer-events:none;animation:vxGlow 4s ease-in-out infinite alternate}
 @keyframes vxGlow{to{transform:translate(-20px,10px) scale(1.1)}}
 .vx-ar-hero>*:not(.vx-ar-glow){position:relative}

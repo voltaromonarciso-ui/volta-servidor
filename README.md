@@ -169,7 +169,7 @@ confeti y vibración al batir un récord, resumen de la sesión con imagen para 
 - **La puntuación la calcula el servidor** (`src/lib/score.js`): el cliente solo envía días, series y volumen de la semana.
   Puntos = 100 por día entrenado + 5 por serie (máx. 30 series/día) + volumen en escala logarítmica + hasta 200 por
   progresar frente a tu semana anterior. Así compiten igual un principiante y alguien que levanta el triple.
-- **Ligas por XP** (suma de semanas cerradas): Bronce 0 · Plata 1 500 · Oro 5 000 · Platino 12 000 · Diamante 25 000 · Élite 50 000.
+- **Ligas del Olimpo por XP** (suma de semanas cerradas): Hermes 0 · Artemisa 1 500 · Ares 5 000 · Atenea 12 000 · Poseidón 25 000 · Zeus 50 000.
 - **Antitrampas**: límites físicos (días ≤ días transcurridos, ≤ 60 series/día, ≤ 3 000 kg·reps/serie); cada envío imposible
   se rechaza con `422` y suma un aviso; con 3 avisos en la semana la cuenta sale del ranking hasta el lunes y esa semana no suma XP.
   Con 3 denuncias de trampas de personas distintas en 14 días, la cuenta se aparta del ranking para revisión.
