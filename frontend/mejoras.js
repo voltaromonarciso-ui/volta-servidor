@@ -585,6 +585,7 @@ calabaza|pumpkin|courge|abóbora
     [/^NUEVO RANGO: (.+)$/, ['NEW RANK: $1', 'NOUVEAU RANG : $1', 'NOVO NÍVEL: $1']],
     [/^NUEVO RÉCORD PERSONAL · (.+)$/, ['NEW PERSONAL RECORD · $1', 'NOUVEAU RECORD PERSONNEL · $1', 'NOVO RECORDE PESSOAL · $1']],
   ];
+  window.vxAddTrPat = (re, outs) => P.push([re, outs]); // patrones con huecos ($1…) desde otros módulos
   const DAYS = { Lun: ['Mon', 'lun.', 'Seg'], Mar: ['Tue', 'mar.', 'Ter'], 'Mié': ['Wed', 'mer.', 'Qua'], Jue: ['Thu', 'jeu.', 'Qui'], Vie: ['Fri', 'ven.', 'Sex'], 'Sáb': ['Sat', 'sam.', 'Sáb'], Dom: ['Sun', 'dim.', 'Dom'] };
   const LETTERS = { en: 'MTWTFSS', fr: 'LMMJVSD', pt: 'STQQSSD' };
 

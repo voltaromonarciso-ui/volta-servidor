@@ -4021,6 +4021,7 @@ calabaza|pumpkin|courge|abóbora
     [/^NUEVO RANGO: (.+)$/, ['NEW RANK: $1', 'NOUVEAU RANG : $1', 'NOVO NÍVEL: $1']],
     [/^NUEVO RÉCORD PERSONAL · (.+)$/, ['NEW PERSONAL RECORD · $1', 'NOUVEAU RECORD PERSONNEL · $1', 'NOVO RECORDE PESSOAL · $1']],
   ];
+  window.vxAddTrPat = (re, outs) => P.push([re, outs]); // patrones con huecos ($1…) desde otros módulos
   const DAYS = { Lun: ['Mon', 'lun.', 'Seg'], Mar: ['Tue', 'mar.', 'Ter'], 'Mié': ['Wed', 'mer.', 'Qua'], Jue: ['Thu', 'jeu.', 'Qui'], Vie: ['Fri', 'ven.', 'Sex'], 'Sáb': ['Sat', 'sam.', 'Sáb'], Dom: ['Sun', 'dim.', 'Dom'] };
   const LETTERS = { en: 'MTWTFSS', fr: 'LMMJVSD', pt: 'STQQSSD' };
 
@@ -6525,6 +6526,51 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
           .replace(/Declinado \(ángulo: No especificado\)/g, 'Declinado (−15°–−30°)')
           .replace(/No especificado/g, '—');
       } catch (e) { /* comparador original */ }
+      return h;
+    };
+  }
+
+  // Traducciones que faltaban (ficha de ejercicio, entreno, receta)
+  if (window.vxAddTr) window.vxAddTr(`
+Registrar serie ✓|Log set ✓|Enregistrer la série ✓|Registar série ✓
+Finalizar entrenamiento|Finish workout|Terminer la séance|Terminar treino
+Series efectivas|Effective sets|Séries efficaces|Séries efetivas
+series →|sets →|séries →|séries →
+Añadir a mi plan|Add to my plan|Ajouter à mon plan|Adicionar ao meu plano
+Cantidades estimadas a partir de los macros de la receta (por 100 g, valores medios). Las sustituciones recalculan toda la comida y la lista de la compra.|Amounts estimated from the recipe macros (per 100 g, average values). Swaps recalculate the whole meal and the shopping list.|Quantités estimées à partir des macros de la recette (pour 100 g, valeurs moyennes). Les substitutions recalculent tout le repas et la liste de courses.|Quantidades estimadas a partir dos macros da receita (por 100 g, valores médios). As substituições recalculam toda a refeição e a lista de compras.
+Resto del día|Rest of the day|Reste de la journée|Resto do dia
+Músculo principal|Main muscle|Muscle principal|Músculo principal
+Compuesto|Compound|Polyarticulaire|Composto
+Aislamiento|Isolation|Isolation|Isolamento
+Bilateral|Bilateral|Bilatéral|Bilateral
+Unilateral|Unilateral|Unilatéral|Unilateral
+Dificultad según complejidad técnica, estabilidad, coordinación y control, no según el peso.|Difficulty reflects technique, stability, coordination and control, not the weight.|La difficulté dépend de la technique, de la stabilité, de la coordination et du contrôle, pas de la charge.|A dificuldade depende da técnica, estabilidade, coordenação e controlo, não do peso.
+BANCO: No necesita banco|BENCH: no bench needed|BANC : pas besoin de banc|BANCO: não precisa de banco
+BANCO: Plano — 0°|BENCH: flat — 0°|BANC : plat — 0°|BANCO: plano — 0°
+Otras inclinaciones son variantes con ficha propia.|Other angles are separate variations with their own page.|Les autres inclinaisons sont des variantes avec leur propre fiche.|Outras inclinações são variantes com ficha própria.
+Tu última vez|Your last session|Ta dernière séance|A tua última vez
+Sugerencia: intenta|Suggestion: try|Suggestion : essaie|Sugestão: tenta
+si mantienes la técnica.|if your technique holds.|si ta technique tient.|se mantiveres a técnica.
+Ver información avanzada|See advanced info|Voir les infos avancées|Ver informação avançada
+Añadir al entrenamiento|Add to workout|Ajouter à la séance|Adicionar ao treino
+Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre exercice|Comparar com outro exercício
+`);
+  if (window.vxAddTrPat) {
+    window.vxAddTrPat(/^(.+) · (\d+) series · ([\d–-]+) reps · descanso (\d+)s · (.+): (\d+) series efectivas \((\d+) d\)$/, ['$1 · $2 sets · $3 reps · rest $4s · $5: $6 effective sets ($7 d)', '$1 · $2 séries · $3 reps · repos $4s · $5 : $6 séries efficaces ($7 j)', '$1 · $2 séries · $3 reps · descanso $4s · $5: $6 séries efetivas ($7 d)']);
+    window.vxAddTrPat(/^(\d+) series →$/, ['$1 sets →', '$1 séries →', '$1 séries →']);
+    window.vxAddTrPat(/^Secundarios: (.+)$/, ['Secondary: $1', 'Secondaires : $1', 'Secundários: $1']);
+    window.vxAddTrPat(/^Ayer: (.+)$/, ['Yesterday: $1', 'Hier : $1', 'Ontem: $1']);
+    window.vxAddTrPat(/^con esta comida · objetivo (\d+) kcal$/, ['with this meal · target $1 kcal', 'avec ce repas · objectif $1 kcal', 'com esta refeição · objetivo $1 kcal']);
+  }
+  // Ficha de ejercicio en otros idiomas: las tarjetas antiguas de técnica solo existen en español
+  // y repiten lo que ya explica la tarjeta "Técnica correcta" (traducida), así que se ocultan.
+  if (typeof V.ex === 'function') {
+    const _ex = V.ex;
+    V.ex = function () {
+      let h = _ex.apply(this, arguments);
+      if (S.lang && S.lang !== 'es' && h.indexOf('vx-tech') !== -1) {
+        h = h.replace(/<div class="card"><b>(Preparación|Ejecución|3 errores que debes evitar)<\/b><div style="margin-top:6px">[\s\S]*?<\/div><\/div>/g, '');
+      }
       return h;
     };
   }
