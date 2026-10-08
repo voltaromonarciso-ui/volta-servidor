@@ -20,9 +20,9 @@
   };
   const RGB = { b: ['157,255,46', '0,255,102'], m: ['34,197,94', '88,184,0', '75,208,26'], d: ['63,145,0'] };
   const THEMES = {
-    amarillo: { n: ['Amarillo', 'Yellow', 'Jaune', 'Amarelo'], b: 'ffd84d', m: 'f5b800', d: 'b38600', k: '3d3208', o: '1d1600', light: ['b38600', '8a6700'], hue: -42 },
-    azul: { n: ['Azul', 'Blue', 'Bleu', 'Azul'], b: '5cb2ff', m: '2f86f0', d: '1c5fb8', k: '0f2a4d', o: '021226', light: ['1a6fd6', '155ab0'], hue: 122 },
-    rojo: { n: ['Rojo', 'Red', 'Rouge', 'Vermelho'], b: 'ff6262', m: 'e53935', d: 'b3261e', k: '4d1414', o: '230404', light: ['d62828', 'b01e1e'], hue: -92 },
+    amarillo: { n: ['Amarillo', 'Yellow', 'Jaune', 'Amarelo'], b: 'ffd84d', m: 'f5b800', d: 'b38600', k: '3d3208', o: '1d1600', light: ['8a6500', '6e5000'], hue: -42 },
+    azul: { n: ['Azul', 'Blue', 'Bleu', 'Azul'], b: '5cb2ff', m: '2f86f0', d: '1c5fb8', k: '0f2a4d', o: '021226', light: ['1660c4', '104e9e'], hue: 122 },
+    rojo: { n: ['Rojo', 'Red', 'Rouge', 'Vermelho'], b: 'ff6262', m: 'e53935', d: 'b3261e', k: '4d1414', o: '230404', light: ['c41e1e', '9e1818'], hue: -92 },
   };
   const hexToRgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
   const MAP = {}, RMAP = {};

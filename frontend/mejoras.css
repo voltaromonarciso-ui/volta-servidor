@@ -331,3 +331,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-th.on{border-color:var(--a);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 35%,transparent)}
 .vx-th.on .vx-th-sw{outline:2px solid var(--card);outline-offset:-6px}
 @media (prefers-reduced-motion:reduce){.vx-th{transition:none}}
+
+/* ── Accesibilidad: verde original más oscuro en tema claro (contraste 4,5:1 como texto y como fondo) ── */
+:root[data-t="light"]:not([data-accent]){--ac:#3b7700;--ac2:#2c5c00}
+@media(prefers-color-scheme:light){:root[data-t="auto"]:not([data-accent]){--ac:#3b7700;--ac2:#2c5c00}}
+/* foco visible solo al usar el teclado */
+:focus-visible{outline:2px solid var(--ac)!important;outline-offset:2px}
+[role="button"]{cursor:pointer}
+/* La tarjeta "Hoy" de Entrenos es oscura en los dos modos: lleva siempre los colores del tema oscuro
+   (en modo claro heredaba el texto oscuro y no se leía) */
+.hero2{--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;--card:#0e130e;--card2:#151b15;--ln:#1f291f;color:var(--tx)}

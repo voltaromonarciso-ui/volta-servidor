@@ -38,6 +38,13 @@ Respuestas del equipo, del 8 de octubre de 2026. Este documento es la referencia
 
    Minificar el JS apenas ahorra un 1,5 %, así que no se hace. Pendiente: medio segundo de bloqueo al arrancar.
 2. **Accesibilidad** (WCAG 2.2 AA): contraste en los tres temas, tamaño de los botones táctiles, lector de pantalla y teclado.
+   **Hecho (8 oct)**: la auditoría con axe-core (20 pantallas, 4 colores, claro y oscuro) pasa de 436 fallos a **0**.
+   - Contraste en modo claro.
+   - Botones que no se podían usar con el teclado.
+   - Campos sin etiqueta.
+   - Iconos sin nombre.
+
+   De paso se arregla la tarjeta «Hoy» de Entrenos, cuyo texto no se leía en modo claro. Detalles en `GUIA_CAMBIOS.md` §5.
 3. **Fallos y estabilidad**: repaso completo de todas las pantallas en móvil pequeño y grande, sin conexión y con datos antiguos.
 4. **Textos**: botones, avisos y mensajes claros en los cuatro idiomas.
 5. **Seguridad**: revisión del servidor (autenticación, límites, antitrampas) con pruebas aleatorias de la puntuación.

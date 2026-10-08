@@ -7,7 +7,7 @@ El patrón es siempre el mismo: cada módulo envuelve una vista (`V.home`, `V.tr
 que devuelve. Nunca se edita el núcleo de la app.
 
 ```
-platos → mejoras → recetas → ejercicios → avatar → tecnica → engage → compete → olimpo → rutinas → arreglos → temas
+platos → mejoras → recetas → ejercicios → avatar → tecnica → engage → compete → olimpo → rutinas → arreglos → temas → a11y
 ```
 
 ## 1. Inicio y secciones
@@ -77,6 +77,33 @@ Archivo: `frontend/temas.js`.
 - **Nuevo código**: los colores de acento deben usar `var(--ac)` / `var(--ac2)`, nunca un hexadecimal fijo. Si alguno
   se cuela, basta con añadirlo a `GREENS`.
 
+## 5. Accesibilidad (WCAG 2.2 AA)
+
+Archivo: `frontend/a11y.js`, que se carga el último. Revisa la pantalla después de cada pintado y al cambiar de tema.
+
+- **Teclado y lector de pantalla**:
+  - los `<div>`/`<span>` con `onclick` reciben foco (Tab) y se activan con Intro o Espacio;
+  - si no llevan otros botones dentro, también tienen rol de botón;
+  - los chips de un grupo indican si están elegidos (`aria-pressed`);
+  - la lupa se anuncia como «Buscar»;
+  - los puntos de la gráfica de peso se anuncian con su fecha y su valor.
+- **Formularios**: cada `<label>` suelto se asocia al campo que tiene detrás.
+- **Contraste**: si un texto no llega a 4,5:1 (3:1 si es grande) sobre su fondo real, se oscurece o se aclara sin cambiar
+  su tono.
+  - Se mide cuando termina el fundido de entrada o el cambio de tema, porque a mitad de una animación los colores engañan.
+  - Los textos sobre degradados o imágenes no se tocan: hay que darles colores legibles en CSS, como en `.hero2`.
+- **Acentos del tema claro**, todos ≥ 4,5:1 sobre blanco y sobre las tarjetas:
+
+  | Tema | Acento claro |
+  |---|---|
+  | Verde | `#3b7700` |
+  | Amarillo | `#8a6500` |
+  | Azul | `#1660c4` |
+  | Rojo | `#c41e1e` |
+- **Foco visible**: un contorno del color del tema, solo al usar el teclado (`:focus-visible`).
+- **Nuevo código**: usa `<button>` para lo que se toca, pon `<label for>` en los campos y `aria-label` en los botones que
+  solo llevan un icono. El módulo es una red de seguridad, no un sustituto.
+
 ## Pruebas
 
 Navegador (Playwright), con capturas en todas las pantallas:
@@ -84,6 +111,8 @@ Navegador (Playwright), con capturas en todas las pantallas:
 - `layout_test` (Inicio / Entrenos / Perfil): 14 comprobaciones;
 - `oracle2` (XP y recomendaciones): 11;
 - `theme` (tres temas, sin verdes restantes en ninguna pantalla, comida intacta, persistencia y tema claro): 14;
+- `a11ytest` (WCAG 2.2 AA con axe-core en verde/amarillo/rojo, claro y oscuro; teclado, etiquetas, foco y que no corrige de más): 15;
+- auditoría completa con axe-core: 20 pantallas × 4 colores × claro/oscuro, **0 fallos**;
 - el resto de suites anteriores, todas en verde.
 
 Servidor: `npm test`, 20/20.
