@@ -10,7 +10,26 @@ Cada imagen nueva se pide a Gemini con esa referencia y la descripción del ejer
 `docs/IMAGENES_EJERCICIOS.md`: la guía de estilo y la tabla de los 182 ejercicios sin imagen, con su músculo, material,
 movimiento y vista.
 
-## Antes de empezar
+## Dos maneras de hacer las imágenes
+
+1. **Ilustrador propio** (`dibujar.mjs`):
+   - no necesita clave ni internet, y es lo que usa la app ahora mismo;
+   - toma la postura de cada ejercicio de `avatar.js` (`window.vxPoseData`) y la dibuja con `ilustrador.js`;
+   - cada músculo va por separado, con volumen y fibras orientadas;
+   - el músculo trabajado va en verde, y el material y los apoyos con detalle, en el estilo de la referencia;
+   - para mejorarlo se tocan las formas de `ilustrador.js` (`leg`, `arm`, tronco, `PROPS` y `GEAR`) y se ejecuta
+     `dibujar.mjs --todos --rehacer`.
+2. **Gemini y Veo** (`generar.mjs` y `animar.mjs`): imágenes con más detalle anatómico y vídeos en bucle. Necesitan
+   `GEMINI_API_KEY` y gastan saldo de la API. Una imagen de Gemini sustituye a la dibujada en cuanto se integra.
+
+```bash
+NODE_PATH=$(npm root -g) node .claude/skills/volta-imagenes-ejercicios/scripts/dibujar.mjs --todos --rehacer
+node .claude/skills/volta-imagenes-ejercicios/scripts/integrar.mjs && npm run build:app
+```
+
+Después de dibujar, se revisa con hojas de contacto: 30 imágenes por hoja, con el nombre de cada ejercicio debajo.
+
+## Antes de usar Gemini
 
 1. **Clave de la API**: hace falta `GEMINI_API_KEY`.
    - Se consigue en https://aistudio.google.com/apikey con una cuenta de Google.

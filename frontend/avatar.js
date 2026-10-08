@@ -298,6 +298,8 @@
     return (cache[key] = s);
   }
   window.vxAvatar = render;
+  // Datos de la postura (para el ilustrador de la skill volta-imagenes-ejercicios): patrón, material, apoyos y articulaciones
+  window.vxPoseData = (e) => { const pat = patternOf(e), P0 = PAT[pat]; return { pat, eq: equipOf(e, pat), props: P0.props.slice(), A: pose(P0.a), B: pose(P0.b), L, W }; };
   window.vxPattern = patternOf;
 
   // ── Uso en la app ──
