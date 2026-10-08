@@ -6748,6 +6748,38 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     window.doneSet = doneSet;
   }
 
+  // Saludo de Inicio: neutro (antes decía "Bienvenido" a todo el mundo) y según la hora y tu día
+  const GREET = [['Buenos días', 'Good morning', 'Bonjour', 'Bom dia'], ['Buenas tardes', 'Good afternoon', 'Bon après-midi', 'Boa tarde'], ['Buenas noches', 'Good evening', 'Bonsoir', 'Boa noite']];
+  const SUB = {
+    done: ['Entreno de hoy hecho 💪 Ahora toca comer bien y descansar.', 'Today’s workout done 💪 Now eat well and rest.', 'Séance du jour faite 💪 Maintenant, bien manger et récupérer.', 'Treino de hoje feito 💪 Agora come bem e descansa.'],
+    streak: ['🔥 {n} días seguidos. ¡No rompas la racha!', '🔥 {n} days in a row. Keep the streak alive!', '🔥 {n} jours d’affilée. Ne casse pas la série !', '🔥 {n} dias seguidos. Não quebres a sequência!'],
+    tips: [
+      ['Tu mejor versión empieza hoy. Vamos a por ello.', 'Your best self starts today. Let’s go.', 'Ta meilleure version commence aujourd’hui. Allons-y.', 'A tua melhor versão começa hoje. Vamos a isso.'],
+      ['Un poco cada día gana a mucho de vez en cuando.', 'A little every day beats a lot once in a while.', 'Un peu chaque jour vaut mieux que beaucoup de temps en temps.', 'Um pouco todos os dias vence muito de vez em quando.'],
+      ['Hoy cuenta. Aunque sean 20 minutos.', 'Today counts. Even if it’s 20 minutes.', 'Aujourd’hui compte. Même 20 minutes.', 'Hoje conta. Mesmo que sejam 20 minutos.'],
+      ['La técnica primero; el peso llega solo.', 'Technique first; the weight will follow.', 'La technique d’abord ; la charge suivra.', 'A técnica primeiro; o peso vem depois.'],
+    ],
+  };
+  if (typeof V.home === 'function') {
+    const _home = V.home;
+    V.home = function () {
+      let h = _home.apply(this, arguments);
+      try {
+        const L = LI[S.lang] || 0, hr = new Date().getHours();
+        const gi = hr >= 6 && hr < 13 ? 0 : hr >= 13 && hr < 21 ? 1 : 2;
+        const today = new Date().toDateString();
+        const log = window.vxRealLog ? window.vxRealLog() : (S.log || []);
+        const trained = log.some((l) => new Date(l.t).toDateString() === today);
+        const st = +S.streakCount || 0;
+        const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 864e5);
+        const sub = trained ? SUB.done[L] : st >= 2 ? SUB.streak[L].replace('{n}', st) : SUB.tips[doy % SUB.tips.length][L];
+        h = h.replace(/<h1 style="font-size:32px">(?:Bienvenido, (<span class="ac">[^<]*<\/span>)|¡Bienvenido a Volta!)<\/h1><div class="mu" style="margin:6px 0 16px">Tu mejor versión empieza hoy\. Vamos a por ello\.<\/div>/,
+          (m, name) => `<h1 style="font-size:32px" class="vx-greet">${GREET[gi][L]}${name ? ', ' + name : ''}</h1><div class="mu vx-greet-sub" style="margin:6px 0 16px">${sub}</div>`);
+      } catch (e) { /* saludo original */ }
+      return h;
+    };
+  }
+
   // Red de seguridad: si algún botón apunta a una pantalla que no existe, se vuelve atrás con un aviso
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
   const known = (v) => /^(ex|anat|meal)\d+$/.test(v) || typeof V[v] === 'function';
