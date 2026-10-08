@@ -254,3 +254,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 
 /* Perfil: la tarjeta de logros ya no tapa las cifras de arriba */
 .grid2 + .vx-achcard{margin-top:18px}
+
+/* Los avisos flotantes no bloquean los botones que tienen debajo */
+.toast{pointer-events:none}

@@ -90,6 +90,29 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     };
   }
 
+  // Registrar serie: no se aceptan series vacías ("0 kg × 0") ni cifras imposibles por error de tecleo.
+  // Antes contaban para la Arena, las misiones y los logros sin haber entrenado.
+  const MSG = {
+    reps: ['Indica cuántas repeticiones has hecho (mínimo 1).', 'Enter how many reps you did (at least 1).', 'Indique combien de répétitions tu as faites (au moins 1).', 'Indica quantas repetições fizeste (mínimo 1).'],
+    big: ['Revisa los datos: más de 100 repeticiones o 1000 kg no es posible en una serie.', 'Check your numbers: over 100 reps or 1000 kg isn’t possible in one set.', 'Vérifie : plus de 100 répétitions ou 1000 kg n’est pas possible en une série.', 'Revê os dados: mais de 100 repetições ou 1000 kg não é possível numa série.'],
+  };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  if (typeof doneSet === 'function') {
+    const _done = doneSet;
+    doneSet = function () {
+      const x = S.wk || {}, num = (v) => +String(v == null ? '' : v).replace(',', '.');
+      const r = num(x.r), w = num(x.w || 0);
+      const why = !(r >= 1) ? 'reps' : r > 100 || w > 1000 || w < 0 || !isFinite(w) ? 'big' : '';
+      if (why) {
+        try { navigator.vibrate && navigator.vibrate([60, 40, 60]); } catch (e) { /* sin vibración */ }
+        if (typeof toast === 'function') toast('⚠️ ' + MSG[why][LI[S.lang] || 0]);
+        return;
+      }
+      return _done.apply(this, arguments);
+    };
+    window.doneSet = doneSet;
+  }
+
   // Red de seguridad: si algún botón apunta a una pantalla que no existe, se vuelve atrás con un aviso
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
   const known = (v) => /^(ex|anat|meal)\d+$/.test(v) || typeof V[v] === 'function';
