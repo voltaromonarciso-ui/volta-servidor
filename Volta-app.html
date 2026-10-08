@@ -6007,8 +6007,8 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     incline: { A: S({ pel: { u: [0, .55, -.83], f: [0, .83, .55], p: [0, .66, 0] }, ground: false, sp: [0, .7, -.7], hd: [0, .85, -.4], ua: [.5, 1, .25], fa: [.05, 1, .1], grip: 1, th: [.2, 0, 1], sh: [.1, -1, 0] }),
       B: S({ pel: { u: [0, .55, -.83], f: [0, .83, .55], p: [0, .66, 0] }, ground: false, sp: [0, .7, -.7], hd: [0, .85, -.4], ua: [.95, .05, -.15], fa: [0, 1, .2], grip: 1, th: [.2, 0, 1], sh: [.1, -1, 0] }), props: ['incline'], eq: 'bar', fx: 'bar' },
     fly: { A: lie(Object.assign({ ua: [.3, 1, 0], fa: [.15, 1, 0], grip: 1 }, BENCH_LEGS)), B: lie(Object.assign({ ua: [1, -.2, 0], fa: [1, .25, 0], grip: 1 }, BENCH_LEGS)), props: ['bench'], eq: 'db', fx: 'hand' },
-    pushup: { A: S({ pel: { u: [0, .3, -1], f: [0, -1, .3], p: [0, .5, 0] }, ground: false, sp: [0, .3, -1], hd: [0, .2, -1], ua: [.22, -1, -.05], fa: [.05, -1, 0], pm: [0, -1, 0], th: [.05, -.3, 1], sh: [.02, -.3, 1], ft: [0, -1, .1] }),
-      B: S({ pel: { u: [0, .12, -1], f: [0, -1, .12], p: [0, .26, 0] }, ground: false, sp: [0, .1, -1], hd: [0, .12, -1], ua: [.65, .55, .5], fa: [.05, -1, -.1], pm: [0, -1, 0], th: [.05, -.12, 1], sh: [.02, -.12, 1], ft: [0, -1, .1] }), props: [], eq: '', fx: 'chest' },
+    pushup: { A: S({ pel: { u: [0, .3, -1], f: [0, -1, .3], p: [0, .5, 0] }, ground: false, sp: [0, .3, -1], hd: [0, .2, -1], ua: [.22, -1, -.05], fa: [.05, -1, 0], hn: [0, -.15, -1], pm: [0, -1, 0], th: [.05, -.3, 1], sh: [.02, -.3, 1], ft: [0, -1, .1] }),
+      B: S({ pel: { u: [0, .12, -1], f: [0, -1, .12], p: [0, .26, 0] }, ground: false, sp: [0, .1, -1], hd: [0, .12, -1], ua: [.65, .55, .5], fa: [.05, -1, -.1], hn: [0, -.15, -1], pm: [0, -1, 0], th: [.05, -.12, 1], sh: [.02, -.12, 1], ft: [0, -1, .1] }), props: [], eq: '', fx: 'chest' },
     dip: { A: S({ ground: false, pel: { u: [0, 1, .05], f: [0, -.05, 1], p: [0, 1.3, 0] }, sp: [0, 1, .15], ua: [.08, -1, .05], fa: [.05, -1, .02], th: [.05, -.7, .3], sh: [0, -.7, -.7] }),
       B: S({ ground: false, pel: { u: [0, 1, .2], f: [0, -.2, 1], p: [0, 1.05, 0] }, sp: [0, 1, .4], ua: [.1, -.25, -1], fa: [.04, -1, .08], th: [.05, -.7, .3], sh: [0, -.7, -.7] }), props: ['dipbar'], eq: '', fx: 'chest' },
     ohp: { A: S({ ua: [.55, -.3, .55], fa: [.05, 1, -.05], grip: 1, pm: [0, 0, 1] }), B: S({ ua: [.12, 1, .05], fa: [.05, 1, .05], grip: 1, pm: [0, 0, 1] }), props: [], eq: 'bar', fx: 'bar' },
@@ -6072,7 +6072,57 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     A: S({ sp: [0, 1, .18], ua: [1, .35, -.05], fa: [1, .3, .15], grip: 1, pm: [0, 0, 1], th: [.06, -1, .1], sh: [.02, -1, -.05], thR: [.06, -1, -.15], shR: [.02, -1, -.1] }),
     B: S({ sp: [0, 1, .18], ua: [.25, -.45, 1], fa: [-.15, -.4, 1], grip: 1, pm: [-1, 0, 0], th: [.06, -1, .1], sh: [.02, -1, -.05], thR: [.06, -1, -.15], shR: [.02, -1, -.1] }), props: [], eq: '', fx: 'hand',
   };
-  const CAM = { cfly: 25, // giro de la cámara (grados) por patrón: 3/4 o de lado según dónde se vea mejor el recorrido
+  const ALL = { ground: 'all' };
+  const sup = (o) => S(Object.assign({ pel: { u: [0, 0, -1], f: [0, 1, 0] }, sp: [0, .02, -1], hd: [0, .15, -1] }, ALL, o)); // boca arriba en el suelo
+  const quad = (o) => S(Object.assign({ pel: { u: [0, 0, -1], f: [0, -1, 0] }, sp: [0, .05, -1], hd: [0, .15, -1], ua: [.1, -1, 0], fa: [.05, -1, 0], hn: [0, -.15, -1], pm: [0, -1, 0], th: [.06, -1, 0], sh: [.02, 0, 1], ft: [0, -.2, 1] }, ALL, o)); // a cuatro patas
+  Object.assign(PATS, {
+    facepull: { A: S({ sp: [0, 1, -.05], ua: [.15, .02, 1], fa: [.08, .05, 1], grip: 1, pm: [-1, 0, 0], th: [.06, -1, .12], sh: [.02, -1, -.05], thR: [.06, -1, -.18], shR: [.02, -1, -.12] }),
+      B: S({ sp: [0, 1, -.08], ua: [1, .15, -.25], fa: [.1, .85, .45], grip: 1, pm: [0, 0, 1], th: [.06, -1, .12], sh: [.02, -1, -.05], thR: [.06, -1, -.18], shR: [.02, -1, -.12] }), props: [], eq: 'cable', fx: 'hand' },
+    kneelcrunch: { A: S({ pel: { u: [0, 1, .15], f: [0, -.15, 1] }, sp: [0, 1, .3], hd: [0, .7, .7], ua: [.2, .5, .8], fa: [-.4, .85, -.3], grip: 1, th: [.06, -1, .05], sh: [.02, 0, -1], ft: [0, -.3, -1] }),
+      B: S({ pel: { u: [0, .85, .55], f: [0, -.55, .85] }, sp: [0, -.2, 1], hd: [0, -.6, .8], ua: [.2, -.3, 1], fa: [-.4, .5, -.6], grip: 1, th: [.06, -.85, .5], sh: [.02, 0, -1], ft: [0, -.3, -1] }), props: ['mat'], eq: 'cable', fx: 'chest' },
+    seatrow: { A: S({ ground: false, pel: { u: [0, 1, .3], f: [0, -.3, 1], p: [0, .45, 0] }, sp: [0, .75, .65], hd: [0, .5, .85], ua: [.1, -.25, 1], fa: [.05, -.1, 1], grip: 1, pm: [-1, 0, 0], th: [.12, .05, 1], sh: [.05, -.25, 1], ft: [0, .9, .4] }),
+      B: S({ ground: false, pel: { u: [0, 1, -.05], f: [0, .05, 1], p: [0, .45, 0] }, sp: [0, 1, -.05], hd: [0, 1, .15], ua: [.2, -.8, -.55], fa: [.05, -.05, 1], grip: 1, pm: [-1, 0, 0], th: [.12, .05, 1], sh: [.05, -.25, 1], ft: [0, .9, .4] }), props: ['seat'], eq: 'cable', fx: 'hand' },
+    seatcalf: { A: S({ ground: false, pel: { u: [0, 1, 0], f: [0, 0, 1], p: [0, .58, 0] }, ua: [.15, -.4, .9], fa: [.05, -1, .05], th: [.08, 0, 1], sh: [.03, -1, 0], ft: [0, -.2, 1] }),
+      B: S({ ground: false, pel: { u: [0, 1, 0], f: [0, 0, 1], p: [0, .64, 0] }, ua: [.15, -.4, .9], fa: [.05, -1, .05], th: [.08, 0, 1], sh: [.03, -1, 0], ft: [0, -1, .5] }), props: ['seat', 'step'], eq: '', fx: 'hip' },
+    seatlegcurl: { A: S({ ground: false, pel: { u: [0, 1, -.08], f: [0, .08, 1], p: [0, .62, 0] }, sp: [0, 1, -.1], ua: [.35, -1, -.1], fa: [.05, -.3, 1], grip: 1, th: [.08, 0, 1], sh: [.03, .05, 1], ft: [0, .5, .8] }),
+      B: S({ ground: false, pel: { u: [0, 1, -.08], f: [0, .08, 1], p: [0, .62, 0] }, sp: [0, 1, -.1], ua: [.35, -1, -.1], fa: [.05, -.3, 1], grip: 1, th: [.08, 0, 1], sh: [.03, -1, -.35], ft: [0, -.2, 1] }), props: ['seat'], eq: '', fx: 'foot' },
+    sideplank: { A: S(Object.assign({ pel: { u: [-1, -.08, 0], f: [0, 0, 1] }, sp: [-1, .02, 0], hd: [-1, .12, 0], uaR: [.25, -1, 0], faR: [-.05, 0, 1], ua: [-.1, .2, .3], fa: [.2, -.5, .5], th: [.98, -.1, .02], sh: [.98, -.1, .02], thR: [-.98, -.1, -.02], shR: [-.98, -.1, -.02] }, ALL)),
+      B: S(Object.assign({ pel: { u: [-1, .12, 0], f: [0, 0, 1] }, sp: [-1, .12, 0], hd: [-1, .2, 0], uaR: [.25, -1, 0], faR: [-.05, 0, 1], ua: [-.1, .2, .3], fa: [.2, -.5, .5], th: [.98, -.12, .02], sh: [.98, -.12, .02], thR: [-.98, -.12, -.02], shR: [-.98, -.12, -.02] }, ALL)), props: ['mat'], eq: '', fx: 'hip' },
+    birddog: { A: quad({}), B: quad({ ua: [.1, .05, -1], fa: [.05, .05, -1], thR: [.06, .05, 1], shR: [.02, .05, 1] }), props: ['mat'], eq: '', fx: 'hand' },
+    climber: { A: S(Object.assign({}, PATS.pushup.A, ALL, { th: [.05, -.3, 1], sh: [.02, -.3, 1], thR: [.05, -1, -.2], shR: [.02, -.2, 1] })),
+      B: S(Object.assign({}, PATS.pushup.A, ALL, { thR: [.05, -.3, 1], shR: [.02, -.3, 1], th: [.05, -1, -.2], sh: [.02, -.2, 1] })), props: ['mat'], eq: '', fx: 'foot' },
+    deadbug: { A: sup({ ua: [.15, 1, 0], fa: [.1, 1, 0], th: [.1, 1, .05], sh: [.05, 0, 1] }), B: sup({ ua: [.15, .1, -1], fa: [.1, .1, -1], thR: [.1, .12, 1], shR: [.05, .12, 1], th: [.1, 1, .05], sh: [.05, 0, 1] }), props: ['mat'], eq: '', fx: 'hand' },
+    hollow: { A: sup({ sp: [0, .2, -1], hd: [0, .4, -1], ua: [.12, .25, -1], fa: [.1, .25, -1], th: [.06, .2, 1], sh: [.02, .2, 1] }), B: sup({ sp: [0, .26, -1], hd: [0, .45, -1], ua: [.12, .3, -1], fa: [.1, .3, -1], th: [.06, .26, 1], sh: [.02, .26, 1] }), props: ['mat'], eq: '', fx: 'foot' },
+    cossack: { A: S({ ua: [.15, -.2, 1], fa: [.1, -.1, 1], th: [.35, -1, 0], sh: [.12, -1, 0], ft: [.3, -.25, 1] }),
+      B: S({ pel: { u: [-.25, .9, .3], f: [0, -.3, .95] }, sp: [-.1, .85, .5], ua: [.15, -.2, 1], fa: [.1, -.1, 1], th: [.25, -.1, 1], sh: [.05, -1, .35], thR: [.75, -.6, 0], shR: [.85, -.5, 0], ftR: [0, .9, .4] }), props: [], eq: '', fx: 'hip' },
+  });
+  PATS.sidelie = {
+    A: S(Object.assign({ pel: { u: [-1, 0, 0], f: [0, 0, 1] }, sp: [-1, .03, 0], hd: [-1, .12, 0], uaR: [1, -.05, 0], faR: [.6, -.05, .6], ua: [-.1, -.55, .8], fa: [-.3, -.7, .65], pm: [0, -1, 0], th: [.97, 0, .05], sh: [.97, 0, .05], thR: [-.97, -.05, .05], shR: [-.97, -.05, .05] }, ALL)),
+    B: S(Object.assign({ pel: { u: [-1, 0, 0], f: [0, 0, 1] }, sp: [-1, .03, 0], hd: [-1, .12, 0], uaR: [1, -.05, 0], faR: [.6, -.05, .6], ua: [-.1, -.55, .8], fa: [-.3, -.7, .65], pm: [0, -1, 0], th: [.78, .62, .05], sh: [.78, .62, .05], thR: [-.97, -.05, .05], shR: [-.97, -.05, .05] }, ALL)), props: ['mat'], eq: '', fx: 'foot',
+  };
+  ['pushup', 'plank', 'crunch', 'bridge', 'twist', 'prone'].forEach((k) => { PATS[k].A.ground = PATS[k].B.ground = 'all'; });
+  // Variantes por nombre o material del ejercicio
+  function variant(pat, e) {
+    const n = String(e[0] || '').toLowerCase(), q = e[4];
+    if (/face pull/.test(n)) return 'facepull';
+    if (/crunch en polea/.test(n)) return 'kneelcrunch';
+    if (pat === 'row' && ((q === 'Polea' && !/unilateral|pecho apoyado/.test(n)) || /remo en máquina|remo sentado/.test(n))) return 'seatrow';
+    if (pat === 'calf' && /sentado/.test(n)) return 'seatcalf';
+    if (pat === 'legcurl' && /sentado/.test(n)) return 'seatlegcurl';
+    if (/plancha lateral|copenhague/.test(n)) return 'sideplank';
+    if (/bird dog|cuadrupedia/.test(n)) return 'birddog';
+    if (/mountain|escalador/.test(n)) return 'climber';
+    if (/dead bug/.test(n)) return 'deadbug';
+    if (/hollow/.test(n)) return 'hollow';
+    if (/cosaca|zancada lateral/.test(n)) return 'cossack';
+    return pat;
+  }
+  const ARMS = { // brazos de las variantes de sentadilla
+    goblet: { ua: [.22, -.8, .55], fa: [-.65, .6, .4], pm: [-1, 0, 0] },
+    front: { ua: [.32, .1, 1], fa: [-.3, .3, -.9], pm: [0, 1, 0] },
+    sumo: { ua: [.05, -1, .12], fa: [-.12, -1, .1], pm: [-1, 0, 0] },
+  };
+  const CAM = { cfly: 25, facepull: 60, kneelcrunch: 75, seatrow: 80, seatcalf: 60, seatlegcurl: 75, sideplank: 15, birddog: 70, climber: 70, deadbug: 70, hollow: 72, cossack: 20, // giro de la cámara (grados) por patrón: 3/4 o de lado según dónde se vea mejor el recorrido
     bench: 38, incline: 45, fly: 30, skull: 45, pushup: 72, dip: 55, pullup: 28, hang: 28, legraise: 60, pulldown: 40,
     lateral: 15, front: 60, reardelt: 40, curl: 55, pushdown: 60, overhead: 65, row: 70, hinge: 70, swing: 75, squat: 50, lunge: 72,
     legext: 70, legcurl: 75, legpress: 75, thrust: 70, bridge: 70, crunch: 72, twist: 20, plank: 70, prone: 72, backext: 80, sidelie: 10,
@@ -6101,8 +6151,16 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     const T = THREE, e = EX[i];
     let pat = (window.vxPattern && window.vxPattern(e)) || 'curl';
     if (pat === 'fly' && e[4] === 'Polea') pat = 'cfly';
+    pat = variant(pat, e);
     if (!PATS[pat]) pat = 'curl';
-    const P = PATS[pat];
+    let P = PATS[pat];
+    const nmv = String(e[0]).toLowerCase(), arms = pat === 'squat' && (/goblet/.test(nmv) ? 'goblet' : /frontal|zercher/.test(nmv) ? 'front' : /sumo/.test(nmv) ? 'sumo' : '');
+    if (arms) {
+      const wide = arms === 'sumo' ? { th: [.4, -1, .02], sh: [.18, -1, 0], ft: [.5, -.25, 1] } : {};
+      const wideB = arms === 'sumo' ? { th: [.75, -.2, .75], sh: [.3, -1, .1], ft: [.5, -.25, 1] } : {};
+      P = Object.assign({}, P, { A: S(Object.assign({}, P.A, ARMS[arms], wide)), B: S(Object.assign({}, P.B, ARMS[arms], wideB)), eq: arms === 'front' ? 'bar' : 'db1c' });
+      if (arms === 'sumo') P.eq = 'db1';
+    }
     const W = () => Math.max(200, el.clientWidth), H = () => Math.round(W() * .9);
     const r = new T.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
     r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); r.setSize(W(), H(), false);
@@ -6179,7 +6237,9 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     function lerpPose(a, b, t) {
       const o = {};
       Object.keys(Object.assign({}, a, b)).forEach((k) => {
-        const x = a[k] !== undefined ? a[k] : b[k], y = b[k] !== undefined ? b[k] : a[k];
+        // un lado sin «xxR» usa su propio «xx» (no el del otro lado)
+        const own = (o, other) => (o[k] !== undefined ? o[k] : (/R$/.test(k) && o[k.slice(0, -1)] !== undefined ? o[k.slice(0, -1)] : other[k]));
+        const x = own(a, b), y = own(b, a);
         if (Array.isArray(x)) o[k] = x.map((v, j) => v + (y[j] - v) * t);
         else if (typeof x === 'number') o[k] = x + (y - x) * t;
         else if (x && typeof x === 'object') o[k] = lerpPose(x, y, t);
@@ -6233,7 +6293,13 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
       const d = want.sub(pel);
       B.Root.position.add(B.Root.parent.worldToLocal(wp(B.Root).add(d)).sub(B.Root.position));
       root.updateMatrixWorld(true);
-      if (p.ground) {
+      if (p.ground === 'all') { // tumbado o apoyado: el punto más bajo del cuerpo toca el suelo
+        const R0 = { ball_l: .012, ball_r: .012, foot_l: .06, foot_r: .06, lowerarm_l: .04, lowerarm_r: .04, calf_l: .06, calf_r: .06, pelvis: .1, spine_01: .11, spine_02: .11, spine_03: .11, head: .1, neck_01: .06 };
+        let lo = Infinity; Object.keys(R0).forEach((k) => { lo = Math.min(lo, wp(B[k]).y - R0[k]); });
+        ['l', 'r'].forEach((s) => { lo = Math.min(lo, wp(B['middle_01_' + s]).y - .02, wp(B['hand_' + s]).y - .03); });
+        B.Root.position.add(B.Root.parent.worldToLocal(wp(B.Root).add(new T.Vector3(0, -lo, 0))).sub(B.Root.position));
+        root.updateMatrixWorld(true);
+      } else if (p.ground) {
         const ys = ['foot_l', 'foot_r', 'ball_l', 'ball_r'].map((k) => wp(B[k]).y - (k.startsWith('foot') ? .075 : .012));
         let lo = Math.min.apply(null, ys);
         if (p.tip) lo = Math.min(wp(B.ball_l).y, wp(B.ball_r).y) - .03; // de puntillas sobre el escalón
@@ -6261,7 +6327,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     const q = String(e[4] || ''), nm = String(e[0] || '').toLowerCase();
     let eq = P.eq;
     if (/mancuerna/i.test(q)) eq = ['bar', 'backbar', 'hipbar', 'kb', 'cablebar'].includes(eq) ? 'db' : eq || 'db';
-    else if (q === 'Barra') eq = eq === 'db' || eq === 'db1' || eq === 'kb' ? 'bar' : eq;
+    else if (q === 'Barra' || q === 'Smith') eq = eq === 'db' || eq === 'db1' || eq === 'kb' || eq === 'cable' ? 'bar' : eq;
     else if (q === 'Kettlebell') eq = eq === 'kb' ? 'kb' : 'kb2';
     else if (q === 'Polea') eq = ['bar', 'cablebar', 'backbar'].includes(eq) ? 'cablebar' : 'cable';
     else if (q === 'Bandas') eq = 'band';
@@ -6282,7 +6348,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
       if (k === 'seat') { const s0 = lo(A0.pelvis, .12); at(box(.4, .07, .42, pad), 0, s0.y, s0.z + .04); leg(0, s0.z + .04, s0.y - .035); const bk = A0.spine_03.clone().add(new T.Vector3(0, -.05, -.15)); at(box(.4, .6, .07, pad), 0, bk.y, bk.z); }
       if (k === 'highbar') { const y = Math.max(A0.hand_l.y, A0.hand_r.y) + .03, z = A0.hand_l.z; const b = at(cyl(.016, 1.3, steel), 0, y, z); b.rotation.z = Math.PI / 2; at(cyl(.03, y, dark), .66, y / 2, z); at(cyl(.03, y, dark), -.66, y / 2, z); }
       if (k === 'dipbar') { [A0.hand_l, A0.hand_r].forEach((h) => { const y = h.y - .03; const b = at(cyl(.02, .7, steel), h.x * 1.05, y, h.z); b.rotation.x = Math.PI / 2; at(cyl(.025, y, dark), h.x * 1.05, y / 2, h.z + .3); at(cyl(.025, y, dark), h.x * 1.05, y / 2, h.z - .3); }); }
-      if (k === 'step') { const z = (A0.ball_l.z + A0.foot_l.z) / 2 + .03; at(box(.7, .07, .32, dark), 0, .035, z); at(box(.72, .012, .34, accent), 0, .076, z); }
+      if (k === 'step') { const z = (A0.ball_l.z + A0.foot_l.z) / 2 + .03; at(box(.7, .07, .32, dark), 0, .035, z); at(box(.72, .012, .02, accent), 0, .066, z + .165); }
       if (k === 'mat') at(box(.75, .012, 1.95, matM), 0, .006, (A0.head.z + A0.ball_l.z) / 2);
       if (k === 'legpress') { const bk = A0.spine_02.clone().add(new T.Vector3(0, -.12, -.1)); padSeg(lo(A0.pelvis, .14), bk.clone().add(A0.neck_01.clone().sub(A0.pelvis).multiplyScalar(.45)), .42, .08); leg(0, A0.pelvis.z, A0.pelvis.y - .18); }
       if (k === 'roman') { const fr = A0.pelvis.clone().add(new T.Vector3(0, -.13, .08)); const pd = at(box(.4, .07, .3, pad), 0, fr.y, fr.z); pd.rotation.x = .75; leg(0, fr.z + .1, fr.y - .1); const an = A0.foot_l.clone(); at(cyl(.04, .4, pad), 0, an.y + .06, an.z - .02).rotation.z = Math.PI / 2; }
@@ -6290,11 +6356,12 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     // Polea: dónde está el cable según el ejercicio
     let pulleys = [];
     if (eq === 'cablebar' || eq === 'cable' || P.props.includes('cabletop')) {
-      const high = ['pushdown', 'pulldown', 'crunch', 'overhead'].includes(pat) || /alto a bajo|polea alta/.test(nm), face = pat === 'reardelt' && /face pull/.test(nm);
+      const high = ['pushdown', 'pulldown', 'crunch', 'kneelcrunch', 'overhead'].includes(pat) || /alto a bajo|polea alta/.test(nm), face = pat === 'facepull';
       const zc = pat === 'pulldown' ? A0.hand_l.z : pat === 'overhead' ? -.6 : .55;
-      const p0 = face ? new T.Vector3(0, 1.62, .95) : high ? new T.Vector3(0, 2.2, zc) : new T.Vector3(0, .18, .75);
+      const side = pat === 'lateral' || /aducción|abducción/.test(nm);
+      const p0 = face ? new T.Vector3(0, 1.62, .95) : pat === 'kneelcrunch' ? new T.Vector3(0, 2.1, .45) : high ? new T.Vector3(0, 2.2, zc) : side ? new T.Vector3(-.55, .15, 0) : pat === 'seatrow' ? new T.Vector3(0, .45, 1.25) : new T.Vector3(0, .18, .75);
       pulleys = [p0];
-      const tw = at(box(.14, 2.3, .14, dark), 0, 1.15, p0.z + (p0.z > 0 ? .12 : -.12)); tw.receiveShadow = true;
+      const tw = side ? at(box(.12, 2.1, .12, dark), p0.x - .1, 1.05, p0.z) : at(box(.12, 2.1, .12, dark), 0, 1.05, p0.z + (p0.z > 0 ? .12 : -.12)); tw.receiveShadow = true;
       at(cyl(.05, .04, steel), 0, p0.y, p0.z).rotation.x = Math.PI / 2;
     }
     if (pat === 'cfly') {
@@ -6308,8 +6375,9 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     let bar = null, dbs = [], kb = null, cables = [], sled = null;
     if (['bar', 'backbar', 'cablebar', 'hipbar'].includes(eq)) {
       bar = new T.Group();
-      const shaft = cyl(.014, eq === 'cablebar' ? .55 : 1.9, steel); shaft.rotation.z = Math.PI / 2; bar.add(shaft);
-      if (eq !== 'cablebar') [-.72, .72].forEach((x) => { const p1 = plate(.21); p1.position.x = x; bar.add(p1); const p2 = plate(.16); p2.position.x = x + Math.sign(x) * .055; bar.add(p2); const c1 = cyl(.035, .03, accent, 20); c1.rotation.z = Math.PI / 2; c1.position.x = x - Math.sign(x) * .045; bar.add(c1); });
+      const shaft = cyl(.014, eq === 'cablebar' ? (pat === 'pulldown' ? 1.25 : .5) : (pat === 'wrist' || pat === 'curl' ? 1.3 : 1.9), steel); shaft.rotation.z = Math.PI / 2; bar.add(shaft);
+      const big = !['curl', 'wrist', 'skull', 'shrug', 'front', 'lateral', 'reardelt', 'overhead'].includes(pat) && !/curl|press francés|jm/.test(nm), r1 = big ? .21 : .13, r2 = big ? .16 : .1;
+      if (eq !== 'cablebar') [pat === 'wrist' || pat === 'curl' ? -.5 : -.72, pat === 'wrist' || pat === 'curl' ? .5 : .72].forEach((x) => { const p1 = plate(r1); p1.position.x = x; bar.add(p1); const p2 = plate(r2); p2.position.x = x + Math.sign(x) * .055; bar.add(p2); const c1 = cyl(.035, .03, accent, 20); c1.rotation.z = Math.PI / 2; c1.position.x = x - Math.sign(x) * .045; bar.add(c1); });
       sc.add(bar);
     }
     const dumb = () => { const g = new T.Group(); const h = cyl(.016, .15, steel); h.rotation.z = Math.PI / 2; g.add(h); [-.095, .095].forEach((x) => { const hb = cyl(.058, .05, dark, 6); hb.rotation.z = Math.PI / 2; hb.position.x = x; g.add(hb); }); sc.add(g); return g; };
@@ -6339,7 +6407,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
       if (cables.length) {
         if (eq === 'band') { const fl = wp(B.ball_l), fr = wp(B.ball_r); cables[0].geometry.setFromPoints([fl, L]); cables[1].geometry.setFromPoints([fr, R]); }
         else if (pat === 'cfly') { cables[0].geometry.setFromPoints([pulleys[0], L]); cables[1].geometry.setFromPoints([pulleys[1], R]); }
-        else cables[0].geometry.setFromPoints([pulleys[0], bar && eq === 'cablebar' ? bar.position : (pat === 'legext' || pat === 'legcurl' ? wp(B.foot_l) : M)]);
+        else cables[0].geometry.setFromPoints([pulleys[0], bar && eq === 'cablebar' ? bar.position : (pat === 'legext' || pat === 'legcurl' ? wp(B.foot_l) : (pat === 'lateral' || /unilateral|patada/.test(nm)) ? L : M)]);
       }
       if (sled) { const f = wp(B.ball_l).lerp(wp(B.ball_r), .5).lerp(wp(B.foot_l).lerp(wp(B.foot_r), .5), .5); const dir = f.clone().sub(wp(B.pelvis)).normalize(); sled.position.copy(f.add(dir.clone().multiplyScalar(.06))); sled.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir.negate()); }
     }
@@ -6360,6 +6428,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     if (bar) box3.expandByObject(bar);
     const ctr = box3.getCenter(new T.Vector3()), size = box3.getSize(new T.Vector3());
     ctr.y = Math.max(ctr.y, .5);
+    [floor, ring, disc].forEach((o) => { o.position.x = ctr.x; o.position.z = ctr.z; });
     const view = { yaw: (CAM[pat] || 45) * Math.PI / 180, pitch: .16, auto: true };
     const dist = () => { const s = Math.max(size.y + .22, (Math.max(size.x, size.z) + .2) / (W() / H())); return s / (2 * Math.tan(cam.fov * Math.PI / 360)) + .25; };
     function place() { const d = dist(); cam.position.set(ctr.x + Math.sin(view.yaw) * Math.cos(view.pitch) * d, ctr.y + Math.sin(view.pitch) * d, ctr.z + Math.cos(view.yaw) * Math.cos(view.pitch) * d); cam.lookAt(ctr); }
