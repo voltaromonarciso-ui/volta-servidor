@@ -25,21 +25,14 @@
     title: ['Título', 'Title', 'Titre', 'Título'],
     titles: [['Mortal', 'Mortal', 'Mortel', 'Mortal'], ['Aspirante a héroe', 'Hero in training', 'Apprenti héros', 'Aspirante a herói'], ['Semidiós', 'Demigod', 'Demi-dieu', 'Semideus'], ['Héroe del Olimpo', 'Hero of Olympus', 'Héros de l’Olympe', 'Herói do Olimpo'], ['Hércules', 'Hercules', 'Hercule', 'Hércules']],
     oracle: ['El Oráculo de Delfos', 'The Oracle of Delphi', 'L’Oracle de Delphes', 'O Oráculo de Delfos'],
-    today: ['Hoy los dioses te piden', 'Today the gods ask for', 'Aujourd’hui, les dieux demandent', 'Hoje os deuses pedem'],
-    train: ['Entrenar esto', 'Train this', 'Entraîner ça', 'Treinar isto'],
-    rest: ['Descansa, guerrero. Ya entrenaste hoy: los dioses premian la recuperación. Prioriza proteína y 7–9 h de sueño.', 'Rest, warrior. You trained today: the gods reward recovery. Prioritise protein and 7–9 h of sleep.', 'Repose-toi, guerrier. Tu t’es entraîné aujourd’hui : les dieux récompensent la récupération. Protéines et 7–9 h de sommeil.', 'Descansa, guerreiro. Já treinaste hoje: os deuses premeiam a recuperação. Prioriza proteína e 7–9 h de sono.'],
-    fresh: ['recuperado', 'recovered', 'récupéré', 'recuperado'],
-    never: ['aún sin entrenar', 'not trained yet', 'pas encore entraîné', 'ainda por treinar'],
-    ago: ['hace {h} h', '{h} h ago', 'il y a {h} h', 'há {h} h'],
-    days: ['hace {d} días', '{d} days ago', 'il y a {d} jours', 'há {d} dias'],
     favor: ['Favor del Oráculo', 'Oracle’s favour', 'Faveur de l’Oracle', 'Favor do Oráculo'],
     lvl: ['Nivel', 'Level', 'Niveau', 'Nível'],
-    bonus: ['profecía cumplida', 'prophecy fulfilled', 'prophétie accomplie', 'profecia cumprida'],
     lastXP: ['Último entreno', 'Last workout', 'Dernière séance', 'Último treino'],
-    howXP: ['Gana XP con cualquier entreno que finalices: de la IA, tuyo o libre. Si entrenas lo que pide el Oráculo, +30 XP.', 'Earn XP from any workout you finish: AI, your own or free. Train what the Oracle asks for +30 XP.', 'Gagne de l’XP avec chaque séance terminée : IA, la tienne ou libre. Suis l’Oracle pour +30 XP.', 'Ganha XP com qualquer treino que termines: da IA, teu ou livre. Se treinares o que o Oráculo pede, +30 XP.'],
-    yourRoutine: ['Tu rutina con los músculos más descansados', 'Your routine with the most rested muscles', 'Ta routine aux muscles les plus reposés', 'A tua rotina com os músculos mais descansados'],
-    startR: ['Empezar esta rutina', 'Start this routine', 'Commencer cette routine', 'Começar esta rotina'],
-    genAI: ['…o genera una rutina con IA', '…or generate a routine with AI', '…ou génère une routine avec l’IA', '…ou gera uma rotina com IA'],
+    howT: ['¿Cómo funciona?', 'How does it work?', 'Comment ça marche ?', 'Como funciona?'],
+    how: ['Cada entreno que <b>finalizas</b> te da Favor: <b>40 XP</b>, más <b>4 XP por serie</b> (hasta 30 series) y <b>1 XP por cada 250 kg</b> de volumen (hasta 80). Cuenta cualquier entreno, venga de donde venga. Las series sueltas sin finalizar no cuentan.', 'Every workout you <b>finish</b> earns Favour: <b>40 XP</b>, plus <b>4 XP per set</b> (up to 30 sets) and <b>1 XP per 250 kg</b> of volume (up to 80). Any workout counts. Loose sets you don’t finish don’t.', 'Chaque séance <b>terminée</b> te donne de la Faveur : <b>40 XP</b>, plus <b>4 XP par série</b> (jusqu’à 30) et <b>1 XP par 250 kg</b> de volume (jusqu’à 80). Toute séance compte. Les séries isolées non terminées ne comptent pas.', 'Cada treino que <b>terminas</b> dá-te Favor: <b>40 XP</b>, mais <b>4 XP por série</b> (até 30) e <b>1 XP por cada 250 kg</b> de volume (até 80). Qualquer treino conta. Séries soltas sem terminar não contam.'],
+    how2: ['Con el Favor subes de nivel y de título: Peregrino → Devoto → Iniciado → Sacerdote → Profeta → Pitia. Cada nivel pide 100 XP más que el anterior.', 'Favour levels you up and changes your title: Pilgrim → Devotee → Initiate → Priest → Prophet → Pythia. Each level needs 100 XP more than the last.', 'La Faveur te fait monter de niveau et de titre : Pèlerin → Fidèle → Initié → Prêtre → Prophète → Pythie. Chaque niveau demande 100 XP de plus.', 'O Favor faz-te subir de nível e de título: Peregrino → Devoto → Iniciado → Sacerdote → Profeta → Pítia. Cada nível pede mais 100 XP que o anterior.'],
+    sess: ['Entrenos', 'Workouts', 'Séances', 'Treinos'],
+    toNext: ['para el nivel', 'to level', 'pour le niveau', 'para o nível'],
     see: ['Ver los 12 Trabajos', 'See the 12 Labours', 'Voir les 12 Travaux', 'Ver os 12 Trabalhos'],
   };
   const PROPH = [
@@ -115,29 +108,9 @@
       (nx ? `<div class="row" style="gap:10px;margin-top:8px;align-items:center"><span style="font-size:24px">${nx.lb.ic}</span><div class="g"><div><b>${tr(T.next)}:</b> ${tr(nx.lb.n)}</div><div class="bar" style="margin-top:6px"><i style="width:${nx.pct.toFixed(1)}%"></i></div><div class="mu" style="margin-top:4px">${tr(nx.lb.d)}</div></div></div>` : `<div class="mu" style="margin-top:6px">${titleOf(12)} 🏆</div>`) + '</div>';
   }
 
-  // ── El Oráculo de Delfos ──
-  // Nada predefinido: lee tu recuperación real y TUS rutinas (generadas por la IA o creadas por ti).
-  const BIG = ['Pecho', 'Espalda', 'Cuádriceps', 'Hombros', 'Glúteos', 'Isquiosurales', 'Bíceps', 'Tríceps', 'Gemelos', 'Core'];
-  const RECOVER = 48 * 36e5;
-  const lastByGroup = (L) => { const last = {}; L.forEach((l) => { const g = grp(l); last[g] = Math.max(last[g] || 0, l.t); }); return last; };
-  const readiness = (g, last, now) => Math.min(96, last[g] ? (now - last[g]) / 36e5 : 96); // horas de descanso (tope 4 días)
-  function routineGroups(r) { return [...new Set((r.ex || []).map((x) => EX[x.i] && EX[x.i][1]).filter(Boolean))]; }
-  function oracle() {
-    const L = log(), now = Date.now(), last = lastByGroup(L);
-    const trainedToday = L.some((l) => dayKey(l.t) === dayKey(now));
-    const routines = (Array.isArray(S.routines) ? S.routines : []).filter((r) => r && r.ex && r.ex.length);
-    let routine = null;
-    if (routines.length) {
-      // La rutina cuyos músculos están más descansados (y que no repite lo de ayer)
-      routine = routines.map((r) => { const gs = routineGroups(r); const sc = gs.reduce((a, g) => a + readiness(g, last, now), 0) / Math.max(1, gs.length); return { r, gs, sc }; }).sort((x, y) => y.sc - x.sc)[0];
-    }
-    const groups = routine ? routine.gs.slice(0, 3) : BIG.slice().sort((x, y) => readiness(y, last, now) - readiness(x, last, now)).slice(0, 2);
-    const doy = Math.floor(now / 864e5);
-    return { trainedToday, routine: routine && routine.r, groups, main: groups[0], second: groups[1], last, proph: PROPH[doy % PROPH.length] };
-  }
-
+  // ── El Oráculo de Delfos: tus avances (Favor) con cada entreno finalizado ──
   // Favor del Oráculo (XP): se gana con CUALQUIER entrenamiento finalizado, venga de una rutina de la IA,
-  // de una rutina tuya o de una sesión libre. Bonus si entrenaste lo que el Oráculo profetizó ese día.
+  // de una rutina tuya o de una sesión libre.
   const OKEY = 'vx:oracle';
   const ost = () => { try { return JSON.parse(localStorage.getItem(OKEY) || '{}'); } catch (e) { return {}; } };
   const oput = (o) => { try { localStorage.setItem(OKEY, JSON.stringify(o)); } catch (e) { /* sin almacenamiento */ } };
@@ -154,49 +127,37 @@
       return { k, t, sets: +d.sets || sets.length, vol: +d.vol || sets.reduce((a, l) => a + vol(l), 0), groups: [...new Set(sets.map(grp))], day };
     }).filter((x) => x.sets > 0).sort((a, b) => a.t - b.t);
   }
-  function sessionXP(x, proph) {
-    let xp = 40 + Math.min(30, x.sets) * 4 + Math.min(80, Math.round(x.vol / 250));
-    const pg = proph && proph[x.day];
-    const bonus = !!(pg && x.groups.some((g) => pg.includes(g)));
-    return { xp: xp + (bonus ? 30 : 0), bonus };
+  function sessionXP(x) {
+    return { xp: 40 + Math.min(30, x.sets) * 4 + Math.min(80, Math.round(x.vol / 250)) };
   }
   function favor() {
-    const o = ost(), proph = o.proph || {};
-    const S2 = sessions().map((x) => Object.assign(x, sessionXP(x, proph)));
+    const S2 = sessions().map((x) => Object.assign(x, sessionXP(x)));
     const xp = S2.reduce((a, x) => a + x.xp, 0), lv = lvOf(xp);
     return { xp, lv, name: lvName(lv), into: xp - lvNeed(lv), span: lvNeed(lv + 1) - lvNeed(lv), last: S2[S2.length - 1] || null, n: S2.length };
   }
-  // Recuerda la profecía del día (para el bonus) y avisa de la XP ganada con cada entreno nuevo
-  function remember(o) {
-    const st = ost(); st.proph = st.proph || {};
-    const k = dayKey(Date.now());
-    if (!o.trainedToday && o.groups.length && !st.proph[k]) { st.proph[k] = o.groups; const keys = Object.keys(st.proph); if (keys.length > 60) delete st.proph[keys[0]]; }
+  // Avisa de la XP ganada con cada entreno nuevo
+  function remember() {
+    const st = ost(); delete st.proph;
     const f = favor();
     if (st.seenN == null) st.seenN = f.n;
     else if (f.n > st.seenN && f.last) {
       st.seenN = f.n;
-      const msg = `🏛️ +${f.last.xp} XP ${tr(T.favor)}${f.last.bonus ? ' · ' + tr(T.bonus) : ''}`;
+      const msg = `🏛️ +${f.last.xp} XP ${tr(T.favor)}`;
       setTimeout(() => { if (typeof toast === 'function') toast(msg); if (window.vxPushInbox) window.vxPushInbox('🏛️', msg, "tab('home')"); }, 900);
       if (st.lv && f.lv > st.lv && window.vxCelebrate) setTimeout(window.vxCelebrate, 1200);
     }
     st.lv = f.lv; oput(st);
     return f;
   }
-  const since = (t) => { if (!t) return tr(T.never); const h = Math.round((Date.now() - t) / 36e5); return h < 48 ? tr(T.ago).replace('{h}', h) : tr(T.days).replace('{d}', Math.round(h / 24)); };
-  const gName = (g) => (window.vxTr ? window.vxTr(g) : g);
-  window.vxOracleGo = (g) => { S.cat = g; S.xn = 30; S.q = ''; S.stack = S.stack || []; go('lib'); };
+  // Solo avances: nivel, título, XP y cómo se gana. Ningún entrenamiento recomendado.
   function oracleCard() {
-    const o = oracle(), f = remember(o);
-    const head = `<div class="row" style="gap:10px;align-items:center"><span class="vx-or-ic" aria-hidden="true">${ORACLE_SVG}</span><div class="g"><b>${tr(T.oracle)}</b><div class="mu vx-or-proph">“${tr(o.proph)}”</div></div></div>`;
+    const f = remember(), doy = Math.floor(Date.now() / 864e5);
+    const head = `<div class="row" style="gap:10px;align-items:center"><span class="vx-or-ic" aria-hidden="true">${ORACLE_SVG}</span><div class="g"><b>${tr(T.oracle)}</b><div class="mu vx-or-proph">“${tr(PROPH[doy % PROPH.length])}”</div></div></div>`;
     const fav = `<div class="vx-or-fav"><div class="row sp"><span><b>${tr(T.favor)}</b> · ${tr(T.lvl)} ${f.lv} · <span class="vx-or-rank">${f.name}</span></span><span class="mu">${fmt(f.xp)} XP</span></div>` +
       `<div class="bar" style="margin-top:6px"><i style="width:${Math.min(100, (f.into / f.span) * 100).toFixed(1)}%"></i></div>` +
-      `<div class="mu" style="font-size:12px;margin-top:4px">${f.last ? `${tr(T.lastXP)}: +${f.last.xp} XP${f.last.bonus ? ' (' + tr(T.bonus) + ')' : ''}` : tr(T.howXP)}</div></div>`;
-    if (o.trainedToday) return `<div class="card vx-oracle rest">${head}<div style="margin-top:10px">🌙 ${tr(T.rest)}</div>${fav}</div>`;
-    const tiles = o.groups.slice(0, 2).map((g) => `<div class="vx-or-g"><b>${gName(g)}</b><span class="mu">${since(o.last[g])}${o.last[g] && Date.now() - o.last[g] >= RECOVER ? ' · ' + tr(T.fresh) : ''}</span></div>`).join('<span class="vx-or-plus">+</span>');
-    const action = o.routine
-      ? `<div class="mu" style="margin-top:10px">${tr(T.yourRoutine)}: <b>${esc(o.routine.name)}</b></div><button class="btn" style="margin-top:8px" onclick="event.stopPropagation();startR(${o.routine.id})">⚡ ${tr(T.startR)}</button>`
-      : `<button class="btn" style="margin-top:12px" onclick="event.stopPropagation();vxOracleGo('${o.main}')">⚡ ${tr(T.train)}</button><div class="mu" style="font-size:12px;margin-top:6px;text-align:center"><a href="#" onclick="event.preventDefault();go('ai')">${tr(T.genAI)}</a></div>`;
-    return `<div class="card vx-oracle">${head}<div class="mu" style="margin-top:10px">${tr(T.today)}:</div><div class="vx-or-groups">${tiles}</div>${action}${fav}</div>`;
+      `<div class="row sp mu" style="font-size:12px;margin-top:4px"><span>${tr(T.sess)}: ${f.n}${f.last ? ` · ${tr(T.lastXP)}: +${f.last.xp} XP` : ''}</span><span>${fmt(f.span - f.into)} XP ${tr(T.toNext)} ${f.lv + 1}</span></div></div>`;
+    const how = `<details class="vx-or-how"><summary>${tr(T.howT)}</summary><p>${tr(T.how)}</p><p>${tr(T.how2)}</p></details>`;
+    return `<div class="card vx-oracle">${head}${fav}${how}</div>`;
   }
   // Templo de Delfos (dibujo propio)
   const ORACLE_SVG = '<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="vxorg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#c79212"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#vxorg)" opacity=".18"/><path d="M8 15L20 8l12 7z" fill="url(#vxorg)"/><rect x="9" y="15.5" width="22" height="2" rx=".6" fill="url(#vxorg)"/><g fill="url(#vxorg)"><rect x="10.5" y="18.5" width="2.6" height="11"/><rect x="16" y="18.5" width="2.6" height="11"/><rect x="21.4" y="18.5" width="2.6" height="11"/><rect x="26.9" y="18.5" width="2.6" height="11"/></g><rect x="8" y="30" width="24" height="2.4" rx=".6" fill="url(#vxorg)"/><path d="M20 3c1.6 1.8 1.6 3.4 0 5-1.6-1.6-1.6-3.2 0-5z" fill="#ffb648"/></svg>';
@@ -225,5 +186,5 @@
       return h;
     };
   }
-  window.vxLabors = laborState; window.vxOracle = oracle; window.vxFavor = favor; // para pruebas
+  window.vxLabors = laborState; window.vxFavor = favor; // para pruebas
 })();

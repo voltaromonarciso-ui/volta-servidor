@@ -41,29 +41,40 @@ Si se quiere mover una tarjeta, basta con cambiar el marcador de texto donde se 
 > Las ilustraciones de la app son vectoriales y dibujadas por código. Una imagen *idéntica* en detalle a la del press
 > banca exige producirla con un ilustrador o un generador de imágenes siguiendo esa especificación.
 
-## 3. Oráculo de Delfos: XP dinámica
+## 3. Oráculo de Delfos: tus avances
 
-Archivo: `frontend/olimpo.js` (`oracle`, `favor`, `sessions`, `sessionXP`, `remember`).
+Archivo: `frontend/olimpo.js` (`oracleCard`, `favor`, `sessions`, `sessionXP`, `remember`).
 
-- **Nada predefinido**:
-  - si el usuario tiene rutinas (las genere la IA o las cree él), el Oráculo recomienda la que tiene los músculos más descansados y ofrece **Empezar esta rutina**;
-  - si no tiene ninguna, propone los dos grupos más recuperados y enlaza al generador con IA.
+- **Solo avances, ningún entrenamiento.** No hay grupos recomendados, ni "Entrenar esto", ni "Empezar esta rutina", ni
+  enlace a la IA.
+- **Qué muestra la tarjeta:**
+  - el nivel y el título;
+  - la barra de XP;
+  - cuántos entrenos cuentan;
+  - la XP del último entreno;
+  - la XP que falta para el siguiente nivel;
+  - un desplegable **¿Cómo funciona?**.
 - **Favor del Oráculo (XP)**:
-  - se gana con **cualquier entrenamiento finalizado** (`S.done`), sea de una rutina de la IA, de una rutina propia o una sesión libre;
+  - se gana con **cualquier entrenamiento finalizado** (`S.done`);
   - por sesión: 40 + 4 por serie (hasta 30 series) + volumen/250 (hasta 80);
-  - **+30 XP** si se entrenó alguno de los grupos que el Oráculo profetizó ese día; la profecía se guarda en `localStorage` como `vx:oracle`;
-  - las series sueltas sin finalizar no cuentan.
-- **Niveles**: el nivel *n* necesita `100·n·(n−1)/2` XP, con los títulos Peregrino → Devoto → Iniciado → Sacerdote → Profeta → Pitia.
+  - las series sueltas sin finalizar no cuentan;
+  - ya no hay bonus por "profecía".
+- **Niveles**: el nivel *n* necesita `100·n·(n−1)/2` XP, con los títulos Peregrino → Devoto → Iniciado → Sacerdote →
+  Profeta → Pitia.
 - Cada sesión nueva muestra un aviso "+X XP Favor del Oráculo" y lo deja en la campana de Actividad.
-
-Para cambiar el reparto de XP, basta con tocar `sessionXP`. Lo demás se recalcula solo a partir del historial.
 
 ## 4. Temas de color (Perfil → Temas)
 
 Archivo: `frontend/temas.js`.
 
-- Hay exactamente tres opciones: **Amarillo, Azul y Rojo**. El cambio es inmediato y se recuerda en `localStorage` (`vx:accent`).
-  Mientras no se elige ninguna, la app mantiene su verde original.
+- **Temas** es una opción más de la lista de Perfil y muestra el color actual. Al tocarla se abre `vx:themes` con cuatro
+  opciones:
+  - **Verde** (predeterminado);
+  - **Azul**;
+  - **Amarillo**;
+  - **Rojo**.
+- El cambio es inmediato y se recuerda en `localStorage` (`vx:accent`). Elegir Verde borra esa clave y vuelve al color
+  de serie.
 - **Cómo recolorea toda la interfaz**: sustituye los verdes *de la interfaz* (lista `GREENS`, agrupados por intensidad) por los
   tonos del tema en estos sitios:
   1. todas las hojas de estilo, guardando el original para poder cambiar de tema sin recargar;
@@ -77,7 +88,19 @@ Archivo: `frontend/temas.js`.
 - **Nuevo código**: los colores de acento deben usar `var(--ac)` / `var(--ac2)`, nunca un hexadecimal fijo. Si alguno
   se cuela, basta con añadirlo a `GREENS`.
 
-## 5. Accesibilidad (WCAG 2.2 AA)
+## 5. Otros cambios del 8 de octubre
+
+- **Rango máximo: Kratos**, el dios griego de la fuerza, con el lema «Dios de la Fuerza». Se quita el renombrado a Cronos.
+- **Guía de rangos**: el botón (i) quedaba tapado por el nombre del rango y no se podía tocar. Ahora está encima, es más
+  grande y el lector de pantalla lo anuncia como «Guía de rangos».
+- **León de bienvenida**: «Siguiente» no avanzaba porque el cuestionario inicial redefine `obGo`. La guía usa ahora su
+  propia función, `obTour`.
+- **Perfil → Cuestionario inicial** (`vxEditQuiz`): vuelve a abrir las 10 preguntas con tus respuestas, y ✕ cancela sin
+  cambiar nada.
+  - Al terminar solo se actualizan tus datos.
+  - Las rutinas, el plan y el historial se conservan.
+
+## 6. Accesibilidad (WCAG 2.2 AA)
 
 Archivo: `frontend/a11y.js`, que se carga el último. Revisa la pantalla después de cada pintado y al cambiar de tema.
 

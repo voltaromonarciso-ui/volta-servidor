@@ -145,22 +145,18 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     };
   }
 
-  // Rango máximo: "Kratos" es un personaje de videojuego, no un dios griego. Se muestra Cronos, el titán del tiempo.
-  const RENAME = [[/Leyenda de Kratos/g, 'Leyenda de Cronos'], [/Kratos/g, 'Cronos'], [/KRATOS/g, 'CRONOS'], [/El Destructor/g, 'Señor del Tiempo']];
+  // Rango máximo: Kratos, dios griego de la fuerza (hijo de Estigia). Su lema es "Dios de la Fuerza".
+  const RENAME = [[/El Destructor/g, 'Dios de la Fuerza']];
   function renameRanks(root) {
     if (!root) return;
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
-    while ((n = w.nextNode())) if (/Kratos|KRATOS|El Destructor/.test(n.nodeValue)) RENAME.forEach(([re, to]) => { n.nodeValue = n.nodeValue.replace(re, to); });
+    while ((n = w.nextNode())) if (/El Destructor/.test(n.nodeValue)) RENAME.forEach(([re, to]) => { n.nodeValue = n.nodeValue.replace(re, to); });
   }
   {
     const _R2 = R;
     R = function () { const out = _R2.apply(this, arguments); try { renameRanks(document.body); } catch (e) { /* textos originales */ } return out; };
   }
   window.vxRenameRanks = renameRanks;
-  try {
-    const _toast = toast;
-    toast = function (m) { if (typeof m === 'string') RENAME.forEach(([re, to]) => { m = m.replace(re, to); }); return _toast.call(this, m); };
-  } catch (e) { /* toast no reasignable: se queda el original */ }
 
   // Red de seguridad: si algún botón apunta a una pantalla que no existe, se vuelve atrás con un aviso
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
@@ -202,4 +198,25 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   });
   new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach((n) => { if (n.nodeType === 1) glue(n.parentElement || n); }); })
     .observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+// Perfil → "Cuestionario inicial": volver a responderlo para corregir datos (las rutinas, el plan y el historial se conservan)
+(function () {
+  if (typeof V !== 'object' || typeof V.prof !== 'function') return;
+  const TX = {
+    t: ['Cuestionario inicial', 'Initial questionnaire', 'Questionnaire initial', 'Questionário inicial'],
+    s: ['Corrige tus respuestas', 'Fix your answers', 'Corrige tes réponses', 'Corrige as tuas respostas'],
+  };
+  const L = () => ({ en: 1, fr: 2, pt: 3 }[S.lang] || 0);
+  const _prof = V.prof;
+  V.prof = function () {
+    let h = _prof.apply(this, arguments);
+    try {
+      if (typeof window.vxEditQuiz !== 'function') return h;
+      const row = `<div class="li" onclick="vxEditQuiz()"><div class="g">📝 ${TX.t[L()]}<div class="mu" style="font-size:12px">${TX.s[L()]}</div></div><span class="arr">›</span></div>`;
+      const m = h.match(/<div class="li" onclick="go\('p:profile'\)">[\s\S]*?<span class="arr">›<\/span><\/div>/);
+      if (m) h = h.replace(m[0], m[0] + row);
+    } catch (e) { /* Perfil original */ }
+    return h;
+  };
 })();

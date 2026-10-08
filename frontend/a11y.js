@@ -12,6 +12,7 @@
   const tr = (a) => a[LI[S.lang] || 0];
   const T = {
     search: ['Buscar', 'Search', 'Rechercher', 'Pesquisar'],
+    ranks: ['Guía de rangos', 'Rank guide', 'Guide des rangs', 'Guia de rangos'],
   };
 
   // ── 1) Botones y chips ──
@@ -33,6 +34,10 @@
       const oc = el.getAttribute('onclick') || '';
       // fondos de ventanas que se cierran al tocar fuera: no son botones
       if (/event\.target|===\s*this|this\s*===/.test(oc)) return;
+      // el panel interior de una ventana (solo frena el clic) y el fondo que la cierra no son botones
+      if (/^\s*event\.stopPropagation\(\);?\s*$/.test(oc)) return;
+      const fc = el.firstElementChild;
+      if (fc && /^\s*event\.stopPropagation\(\);?\s*$/.test(fc.getAttribute('onclick') || '')) return;
       if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
       el.dataset.vxk = '1';
       // una tarjeta que lleva otros botones dentro (★ favorito…) no puede ser "botón": solo recibe el foco
@@ -41,6 +46,7 @@
       if (el.classList.contains('chip') && el.parentElement && el.parentElement.classList.contains('chips')) {
         el.setAttribute('aria-pressed', el.classList.contains('on') ? 'true' : 'false');
       }
+      if (el.classList.contains('vinfo') && !el.hasAttribute('aria-label')) el.setAttribute('aria-label', tr(T.ranks));
       if (!el.hasAttribute('aria-label') && !el.textContent.trim()) {
         const n = nameFor(el);
         if (n) el.setAttribute('aria-label', n);

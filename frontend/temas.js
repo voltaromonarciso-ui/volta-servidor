@@ -111,32 +111,42 @@
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) { if (!meta.dataset.orig) meta.dataset.orig = meta.content; meta.content = cur ? '#' + THEMES[cur].m : meta.dataset.orig; }
   }
+  // 'verde' es el color de serie: quita el tema elegido y vuelve al verde original
   window.vxSetAccent = function (name) {
-    try { localStorage.setItem('vx:accent', name); } catch (e) { /* sin almacenamiento */ }
-    apply(name);
-    if (typeof toast === 'function') toast('🎨 ' + tr(T2.applied) + ': ' + tr(THEMES[name].n));
+    const n = THEMES[name] ? name : null;
+    try { if (n) localStorage.setItem('vx:accent', n); else localStorage.removeItem('vx:accent'); } catch (e) { /* sin almacenamiento */ }
+    apply(n);
+    if (typeof toast === 'function') toast('🎨 ' + tr(T2.applied) + ': ' + tr(n ? THEMES[n].n : T2.green));
     R();
   };
   window.vxAccent = () => cur;
 
-  // 3) Opción "Temas" en Perfil
+  // ── Perfil → Temas: una opción más de la lista; al tocarla se abre la pantalla con los cuatro colores ──
   const T2 = {
     title: ['Temas', 'Themes', 'Thèmes', 'Temas'],
     sub: ['Elige el color de toda la app. Cambia al instante.', 'Pick the colour for the whole app. It changes instantly.', 'Choisis la couleur de toute l’app. Changement instantané.', 'Escolhe a cor de toda a app. Muda na hora.'],
     applied: ['Tema aplicado', 'Theme applied', 'Thème appliqué', 'Tema aplicado'],
+    green: ['Verde', 'Green', 'Vert', 'Verde'],
+    def: ['Predeterminado', 'Default', 'Par défaut', 'Predefinido'],
   };
-  function themeCard() {
-    return `<div class="card vx-themes"><b>🎨 ${tr(T2.title)}</b><div class="mu" style="margin-top:2px">${tr(T2.sub)}</div><div class="vx-th-row" role="radiogroup" aria-label="${tr(T2.title)}">` +
-      Object.keys(THEMES).map((k) => { const T = THEMES[k], on = cur === k; return `<button class="vx-th${on ? ' on' : ''}" role="radio" aria-checked="${on}" onclick="vxSetAccent('${k}')" style="--a:#${T.m};--b:#${T.b}"><span class="vx-th-sw"></span><span>${tr(T.n)}</span></button>`; }).join('') +
-      '</div></div>';
-  }
+  // tonos fuera de la lista GREENS para que la muestra del verde no se recoloree con el tema activo
+  const GREEN = { n: T2.green, m: '57b801', b: '9cff2f' };
+  const OPTS = [['verde', GREEN], ['azul', THEMES.azul], ['amarillo', THEMES.amarillo], ['rojo', THEMES.rojo]];
+  V['vx:themes'] = function () {
+    const sel = cur || 'verde';
+    return `<div class="row" style="margin-bottom:14px"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">${tr(T2.title)}</h1></div>` +
+      `<div class="mu" style="margin:-4px 0 12px">${tr(T2.sub)}</div><div class="card vx-thlist" role="radiogroup" aria-label="${tr(T2.title)}">` +
+      OPTS.map(([k, T]) => `<button class="li vx-thr${sel === k ? ' on' : ''}" role="radio" aria-checked="${sel === k}" onclick="vxSetAccent('${k}')"><span class="vx-th-sw" style="--a:#${T.m};--b:#${T.b}"></span><div class="g"><b>${tr(T.n)}</b>${k === 'verde' ? `<div class="mu">${tr(T2.def)}</div>` : ''}</div><span class="vx-thk" aria-hidden="true">${sel === k ? '✓' : ''}</span></button>`).join('') +
+      '</div>';
+  };
   if (typeof V.prof === 'function') {
     const _prof = V.prof;
     V.prof = function () {
       let h = _prof.apply(this, arguments);
       try {
-        const i = h.indexOf('Mi perfil');
-        if (i !== -1) { const c = h.lastIndexOf('<div class="card', i); h = h.slice(0, c) + themeCard() + h.slice(c); } else h += themeCard();
+        const row = `<div class="li" onclick="go('vx:themes')"><div class="g">🎨 ${tr(T2.title)}</div><span class="mu" style="margin-right:6px">${tr(cur ? THEMES[cur].n : T2.green)}</span><span class="arr">›</span></div>`;
+        const mk = `<div class="li" onclick="go('p:settings')">`;
+        h = h.indexOf(mk) !== -1 ? h.replace(mk, row + mk) : h;
       } catch (e) { /* Perfil original */ }
       return h;
     };

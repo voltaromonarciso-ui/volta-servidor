@@ -506,11 +506,11 @@ const OB=[["¡Soy Volta Lion!","Te enseño Volta en 30 segundos. Puedes saltar l
 ["Progreso","Verás tu puntuación de atleta (0–1000) y un avatar anatómico cuyos músculos suben de rango con tus series efectivas.","prog"]];
 S.obi=S.hasSeenOnboarding?null:0;
 function obOpen(){S.obi=0;obDraw()}
-function obGo(d){const i=S.obi+d;if(i<0)return;if(i>=OB.length)return obEnd();S.obi=i;S.stack=[];S.tab=OB[i][2];R()}
+function obTour(d){const i=S.obi+d;if(i<0)return;if(i>=OB.length)return obEnd();S.obi=i;S.stack=[];S.tab=OB[i][2];R()}
 function obEnd(){S.obi=null;S.hasSeenOnboarding=true;S.tab="home";S.stack=[];R()}
 function obDraw(){let o=document.getElementById("ob");if(S.obi==null||!OB[S.obi]){S.obi=null;if(o)o.remove();return}
 if(!o){o=document.createElement("div");o.id="ob";document.body.appendChild(o)}const i=S.obi,x=OB[i];
-o.innerHTML=`<div style="position:fixed;left:0;right:0;bottom:calc(76px + var(--pb));z-index:30;display:flex;justify-content:center;padding:0 12px"><div class="card pg" style="max-width:456px;width:100%;margin:0;border-color:var(--ac);box-shadow:0 12px 36px rgba(0,0,0,.6)"><div class="row" style="align-items:flex-start">${LION(92)}<div class="g"><b>${x[0]}</b><div class="mu" style="color:var(--tx);margin-top:4px">${x[1]}</div></div></div><div class="row sp" style="margin-top:12px"><button class="chip" onclick="obEnd()">Saltar</button><span class="mu">${i+1}/${OB.length}</span><div class="row" style="gap:6px">${i?`<button class="chip" onclick="obGo(-1)">‹</button>`:""}<button class="chip on" onclick="obGo(1)">${i==OB.length-1?"¡Empezar!":"Siguiente ›"}</button></div></div></div></div>`}
+o.innerHTML=`<div style="position:fixed;left:0;right:0;bottom:calc(76px + var(--pb));z-index:30;display:flex;justify-content:center;padding:0 12px"><div class="card pg" style="max-width:456px;width:100%;margin:0;border-color:var(--ac);box-shadow:0 12px 36px rgba(0,0,0,.6)"><div class="row" style="align-items:flex-start">${LION(92)}<div class="g"><b>${x[0]}</b><div class="mu" style="color:var(--tx);margin-top:4px">${x[1]}</div></div></div><div class="row sp" style="margin-top:12px"><button class="chip" onclick="obEnd()">Saltar</button><span class="mu">${i+1}/${OB.length}</span><div class="row" style="gap:6px">${i?`<button class="chip" onclick="obTour(-1)" aria-label="Anterior">‹</button>`:""}<button class="chip on" onclick="obTour(1)">${i==OB.length-1?"¡Empezar!":"Siguiente ›"}</button></div></div></div></div>`}
 const _R=R;R=function(){_R();obDraw()};
 /* Coach IA */
 S.aiChatHistory=S.aiChatHistory||[];S.aiBusy=false;S.aiKey=S.aiKey||"";delete S.cm;
@@ -2090,7 +2090,7 @@ if(!L.includes(S.lang))S.lang="es";
 if(S.onboarded===undefined){
  const nl=(navigator.language||"es").slice(0,2);if(L.includes(nl)&&!S.name)S.lang=nl;
  S.onboarded=!!((S.name&&String(S.name).trim())||(S.routines&&S.routines.length)||(S.log&&S.log.length)||(S.wts&&S.wts.length))}
-S.onboarded=!!S.onboarded;
+S.onboarded=!!S.onboarded;S.obEdit=false;
 if(!S.obq||typeof S.obq!=="object")S.obq={i:0,a:{}};
 if(S.userProfile===undefined)S.userProfile=null;
 if(!S.onboarded)S.obi=null;
@@ -2129,9 +2129,9 @@ function body(i){const s=STEPS[i],a=S.obq.a,q=qOf(i);let b=`<h1>${t(q+"t")}</h1>
 /* --- Estructura y transiciones --- */
 let busy=false;const $=id=>document.getElementById(id);
 function obBuild(){let o=$("vob");if(o)o.remove();o=document.createElement("div");o.id="vob";
- o.innerHTML=`<div class="obw"><div class="obp"><i id="obbar"></i></div><div class="obh"><button class="back" id="obbk" onclick="obGo(-1)" style="visibility:hidden">‹</button><span class="mu" id="obcnt"></span><div class="obl">${L.map(l=>`<b class="${S.lang===l?"on":""}" onclick="obLang('${l}')">${l.toUpperCase()}</b>`).join("")}</div></div><div id="obc" class="obc"></div><div id="obf" class="obf"><button id="obn" class="btn" onclick="obGo(1)"></button></div></div>`;
+ o.innerHTML=`<div class="obw"><div class="obp"><i id="obbar"></i></div><div class="obh">${S.obEdit?`<button class="back" onclick="obEditCancel()" aria-label="✕">✕</button>`:""}<button class="back" id="obbk" onclick="obGo(-1)" style="visibility:hidden">‹</button><span class="mu" id="obcnt"></span><div class="obl">${L.map(l=>`<b class="${S.lang===l?"on":""}" onclick="obLang('${l}')">${l.toUpperCase()}</b>`).join("")}</div></div><div id="obc" class="obc"></div><div id="obf" class="obf"><button id="obn" class="btn" onclick="obGo(1)"></button></div></div>`;
  document.body.appendChild(o);S.obq.i=Math.max(0,Math.min(N,+S.obq.i||0));
- if(S.obq.i>=N){obApply();obPlan()}else obStep()}
+ if(S.obq.i>=N){if(S.obEdit)obEditDone();else{obApply();obPlan()}}else obStep()}
 function obStep(){const i=S.obq.i,c=$("obc");if(!c)return;
  $("obbar").style.width=(i+1)/N*100+"%";$("obcnt").textContent=fill(t("qn"),{n:i+1,m:N});$("obbk").style.visibility=i?"visible":"hidden";
  const n=$("obn");n.textContent=t("next")+" ›";n.disabled=!ok(i);$("obf").style.display="";
@@ -2139,12 +2139,20 @@ function obStep(){const i=S.obq.i,c=$("obc");if(!c)return;
 function obFocus(){setTimeout(()=>{const x=document.querySelector("#obc input");if(x)x.focus({preventScroll:true})},360)}
 window.obGo=d=>{const q=S.obq;if(busy)return;if(d>0&&q.i<N&&!ok(q.i))return;const n=q.i+d;if(n<0||n>N)return;
  busy=true;const c=$("obc");c.className="obc "+(d>0?"ol":"or");
- setTimeout(()=>{q.i=n;sv();if(n>=N){obApply();obPlan()}else obStep();c.className="obc "+(d>0?"il":"ir");busy=false;if(n<N)obFocus()},170)};
+ setTimeout(()=>{q.i=n;sv();if(n>=N){if(S.obEdit)obEditDone();else{obApply();obPlan()}}else obStep();c.className="obc "+(d>0?"il":"ir");busy=false;if(n<N)obFocus()},170)};
 const obBtn=()=>{const b=$("obn");if(b)b.disabled=!ok(S.obq.i)};
 window.obIn=(k,v)=>{S.obq.a[k]=v;sv();obBtn()};
 window.obPick=(k,v)=>{const i=S.obq.i;S.obq.a[k]=v;sv();$("obc").innerHTML=body(i);obBtn();setTimeout(()=>{if(S.obq.i===i&&!busy)obGo(1)},300)};
 window.obDay=n=>{S.obq.a.days=n;sv();$("obc").innerHTML=body(S.obq.i);obBtn()};
 window.obTog=(k,v)=>{const a=S.obq.a;let c=(a[k]||[]).slice();if(v==="none")c=c.includes("none")?[]:["none"];else{c=c.filter(x=>x!=="none");c=c.includes(v)?c.filter(x=>x!==v):c.concat(v)}a[k]=c;sv();$("obc").innerHTML=body(S.obq.i);obBtn()};
+window.vxEditQuiz=()=>{const u=S.userProfile&&typeof S.userProfile==="object"?S.userProfile:{},L2=v=>Array.isArray(v)&&v.length?v.slice():["none"];
+ S.obq={i:0,a:{name:S.name||u.name||"",age:u.age||+S.age||"",sex:u.gender||S.sex||"",w:u.weight||+S.wt||"",h:u.height||+S.h||"",lvl:u.level||S.lvl||"",goal:u.goal||"",days:u.days||(S.ai&&S.ai.days)||"",inj:L2(u.injuries),alg:L2(u.allergies),eq:u.equipment||""}};
+ S.obEdit=true;sv();obBuild()};
+function obEditClose(){S.obEdit=false;S.obq={i:0,a:{}};sv();const o=$("vob");if(o){o.dataset.closing="1";o.classList.add("bye");setTimeout(()=>o.remove(),420)}busy=false;R()}
+/* Editar desde Perfil: se guardan las respuestas nuevas; las rutinas, el plan y el historial se conservan */
+function obEditDone(){const keep=S.userProfile&&S.userProfile.plan;obApply();if(keep&&S.userProfile)S.userProfile.plan=keep;obEditClose();
+ toast(["Datos actualizados ✓","Details updated ✓","Données mises à jour ✓","Dados atualizados ✓"][{en:1,fr:2,pt:3}[S.lang]||0])}
+window.obEditCancel=()=>{obEditClose()};
 window.obLang=l=>{S.lang=l;document.documentElement.lang=l;sv();obBuild()};
 window.setLang=l=>{S.lang=l;sv();R()};
 
@@ -2221,7 +2229,7 @@ V["s:acc"]=()=>bk("Cuenta")+li("Cambiar correo","")+li("Cambiar contraseña","")
 /* --- Envoltorio final de R: overlay obligatorio + traducción de la interfaz heredada --- */
 const _R8=R;
 R=function(){_R8.apply(this,arguments);
- const o=$("vob");if(S.onboarded){if(o&&!o.dataset.closing)o.remove()}else if(!o)obBuild();
+ const o=$("vob");if(S.onboarded){if(o&&!o.dataset.closing&&!S.obEdit)o.remove()}else if(!o)obBuild();
  try{tr($("m"));tr($("nav"))}catch(e){}};
 })();
 
@@ -3165,15 +3173,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 
 /* El Olimpo: Oráculo de Delfos y 12 Trabajos de Heracles */
 .vx-oracle{position:relative;overflow:hidden;border-color:color-mix(in srgb,#e0b13a 45%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#e0b13a 16%,transparent),transparent 60%),var(--card)}
-.vx-oracle.rest{border-color:color-mix(in srgb,#7aa8ff 40%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#7aa8ff 14%,transparent),transparent 60%),var(--card)}
 .vx-or-ic{flex:none;display:flex}
 .vx-or-proph{font-style:italic;margin-top:2px}
-.vx-or-groups{display:flex;align-items:stretch;gap:8px;margin-top:8px}
-.vx-or-g{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--ln)}
-.vx-or-g b{font-size:16px}
-.vx-or-g .mu{font-size:12px}
-.vx-or-plus{align-self:center;color:var(--mu);font-weight:800}
-.vx-oracle .btn{width:100%}
 .vx-lab-card{cursor:pointer}
 .vx-lab-hero{display:flex;gap:16px;align-items:center;background:radial-gradient(120% 100% at 0 0,color-mix(in srgb,#e0b13a 18%,transparent),transparent 60%),var(--card)}
 .vx-lab-ring{--p:0;flex:none;width:84px;height:84px;border-radius:50%;display:flex;align-items:baseline;justify-content:center;padding-top:26px;box-sizing:border-box;background:radial-gradient(closest-side,var(--card) 76%,transparent 78% 100%),conic-gradient(#e0b13a calc(var(--p)*1%),var(--card2) 0)}
@@ -3213,7 +3214,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-or-fav{margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)}
 .vx-or-rank{color:#e0b13a;font-weight:800}
 :root[data-t="light"] .vx-or-rank{color:#a87a08}
-.vx-oracle a{color:var(--ac)}
 
 /* Temas de color (Perfil) */
 .vx-th-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
@@ -3244,6 +3244,25 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
   .vrk .xp{white-space:normal;text-align:right;font-size:12px;max-width:42%;flex:none}
   .vrk .xp + *{flex:none}
 }
+/* Oráculo: "¿Cómo funciona?" desplegable */
+.vx-or-how{margin-top:10px;border-top:1px solid var(--ln);padding-top:8px}
+.vx-or-how summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--ac);list-style:none;display:flex;align-items:center;gap:6px;min-height:28px}
+.vx-or-how summary::-webkit-details-marker{display:none}
+.vx-or-how summary::after{content:'›';transition:transform .2s}
+.vx-or-how[open] summary::after{transform:rotate(90deg)}
+.vx-or-how p{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--mu)}
+.vx-or-how p b{color:var(--tx)}
+/* Rangos: el botón (i) de la guía quedaba debajo del nombre del rango y no respondía al tocarlo */
+.vhero .vinfo{z-index:10!important;width:36px;height:36px;top:10px;right:10px;font-size:17px;box-shadow:0 0 10px color-mix(in srgb,currentColor 35%,transparent);transition:transform .12s}
+.vhero .vinfo:active{transform:scale(.92)}
+.vhero .nm{pointer-events:none;padding-right:44px}
+/* Perfil → Temas: lista de colores */
+.vx-thlist{padding:4px 0}
+.vx-thr{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:12px 14px;min-height:56px;cursor:pointer}
+.vx-thr + .vx-thr{border-top:1px solid var(--ln)}
+.vx-thr .vx-th-sw{width:30px;height:30px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,var(--b),var(--a));box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ln)}
+.vx-thr.on .vx-th-sw{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--a)}
+.vx-thk{font-weight:800;color:var(--ac);font-size:18px;min-width:20px;text-align:right}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -6790,21 +6809,14 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     title: ['Título', 'Title', 'Titre', 'Título'],
     titles: [['Mortal', 'Mortal', 'Mortel', 'Mortal'], ['Aspirante a héroe', 'Hero in training', 'Apprenti héros', 'Aspirante a herói'], ['Semidiós', 'Demigod', 'Demi-dieu', 'Semideus'], ['Héroe del Olimpo', 'Hero of Olympus', 'Héros de l’Olympe', 'Herói do Olimpo'], ['Hércules', 'Hercules', 'Hercule', 'Hércules']],
     oracle: ['El Oráculo de Delfos', 'The Oracle of Delphi', 'L’Oracle de Delphes', 'O Oráculo de Delfos'],
-    today: ['Hoy los dioses te piden', 'Today the gods ask for', 'Aujourd’hui, les dieux demandent', 'Hoje os deuses pedem'],
-    train: ['Entrenar esto', 'Train this', 'Entraîner ça', 'Treinar isto'],
-    rest: ['Descansa, guerrero. Ya entrenaste hoy: los dioses premian la recuperación. Prioriza proteína y 7–9 h de sueño.', 'Rest, warrior. You trained today: the gods reward recovery. Prioritise protein and 7–9 h of sleep.', 'Repose-toi, guerrier. Tu t’es entraîné aujourd’hui : les dieux récompensent la récupération. Protéines et 7–9 h de sommeil.', 'Descansa, guerreiro. Já treinaste hoje: os deuses premeiam a recuperação. Prioriza proteína e 7–9 h de sono.'],
-    fresh: ['recuperado', 'recovered', 'récupéré', 'recuperado'],
-    never: ['aún sin entrenar', 'not trained yet', 'pas encore entraîné', 'ainda por treinar'],
-    ago: ['hace {h} h', '{h} h ago', 'il y a {h} h', 'há {h} h'],
-    days: ['hace {d} días', '{d} days ago', 'il y a {d} jours', 'há {d} dias'],
     favor: ['Favor del Oráculo', 'Oracle’s favour', 'Faveur de l’Oracle', 'Favor do Oráculo'],
     lvl: ['Nivel', 'Level', 'Niveau', 'Nível'],
-    bonus: ['profecía cumplida', 'prophecy fulfilled', 'prophétie accomplie', 'profecia cumprida'],
     lastXP: ['Último entreno', 'Last workout', 'Dernière séance', 'Último treino'],
-    howXP: ['Gana XP con cualquier entreno que finalices: de la IA, tuyo o libre. Si entrenas lo que pide el Oráculo, +30 XP.', 'Earn XP from any workout you finish: AI, your own or free. Train what the Oracle asks for +30 XP.', 'Gagne de l’XP avec chaque séance terminée : IA, la tienne ou libre. Suis l’Oracle pour +30 XP.', 'Ganha XP com qualquer treino que termines: da IA, teu ou livre. Se treinares o que o Oráculo pede, +30 XP.'],
-    yourRoutine: ['Tu rutina con los músculos más descansados', 'Your routine with the most rested muscles', 'Ta routine aux muscles les plus reposés', 'A tua rotina com os músculos mais descansados'],
-    startR: ['Empezar esta rutina', 'Start this routine', 'Commencer cette routine', 'Começar esta rotina'],
-    genAI: ['…o genera una rutina con IA', '…or generate a routine with AI', '…ou génère une routine avec l’IA', '…ou gera uma rotina com IA'],
+    howT: ['¿Cómo funciona?', 'How does it work?', 'Comment ça marche ?', 'Como funciona?'],
+    how: ['Cada entreno que <b>finalizas</b> te da Favor: <b>40 XP</b>, más <b>4 XP por serie</b> (hasta 30 series) y <b>1 XP por cada 250 kg</b> de volumen (hasta 80). Cuenta cualquier entreno, venga de donde venga. Las series sueltas sin finalizar no cuentan.', 'Every workout you <b>finish</b> earns Favour: <b>40 XP</b>, plus <b>4 XP per set</b> (up to 30 sets) and <b>1 XP per 250 kg</b> of volume (up to 80). Any workout counts. Loose sets you don’t finish don’t.', 'Chaque séance <b>terminée</b> te donne de la Faveur : <b>40 XP</b>, plus <b>4 XP par série</b> (jusqu’à 30) et <b>1 XP par 250 kg</b> de volume (jusqu’à 80). Toute séance compte. Les séries isolées non terminées ne comptent pas.', 'Cada treino que <b>terminas</b> dá-te Favor: <b>40 XP</b>, mais <b>4 XP por série</b> (até 30) e <b>1 XP por cada 250 kg</b> de volume (até 80). Qualquer treino conta. Séries soltas sem terminar não contam.'],
+    how2: ['Con el Favor subes de nivel y de título: Peregrino → Devoto → Iniciado → Sacerdote → Profeta → Pitia. Cada nivel pide 100 XP más que el anterior.', 'Favour levels you up and changes your title: Pilgrim → Devotee → Initiate → Priest → Prophet → Pythia. Each level needs 100 XP more than the last.', 'La Faveur te fait monter de niveau et de titre : Pèlerin → Fidèle → Initié → Prêtre → Prophète → Pythie. Chaque niveau demande 100 XP de plus.', 'O Favor faz-te subir de nível e de título: Peregrino → Devoto → Iniciado → Sacerdote → Profeta → Pítia. Cada nível pede mais 100 XP que o anterior.'],
+    sess: ['Entrenos', 'Workouts', 'Séances', 'Treinos'],
+    toNext: ['para el nivel', 'to level', 'pour le niveau', 'para o nível'],
     see: ['Ver los 12 Trabajos', 'See the 12 Labours', 'Voir les 12 Travaux', 'Ver os 12 Trabalhos'],
   };
   const PROPH = [
@@ -6880,29 +6892,9 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
       (nx ? `<div class="row" style="gap:10px;margin-top:8px;align-items:center"><span style="font-size:24px">${nx.lb.ic}</span><div class="g"><div><b>${tr(T.next)}:</b> ${tr(nx.lb.n)}</div><div class="bar" style="margin-top:6px"><i style="width:${nx.pct.toFixed(1)}%"></i></div><div class="mu" style="margin-top:4px">${tr(nx.lb.d)}</div></div></div>` : `<div class="mu" style="margin-top:6px">${titleOf(12)} 🏆</div>`) + '</div>';
   }
 
-  // ── El Oráculo de Delfos ──
-  // Nada predefinido: lee tu recuperación real y TUS rutinas (generadas por la IA o creadas por ti).
-  const BIG = ['Pecho', 'Espalda', 'Cuádriceps', 'Hombros', 'Glúteos', 'Isquiosurales', 'Bíceps', 'Tríceps', 'Gemelos', 'Core'];
-  const RECOVER = 48 * 36e5;
-  const lastByGroup = (L) => { const last = {}; L.forEach((l) => { const g = grp(l); last[g] = Math.max(last[g] || 0, l.t); }); return last; };
-  const readiness = (g, last, now) => Math.min(96, last[g] ? (now - last[g]) / 36e5 : 96); // horas de descanso (tope 4 días)
-  function routineGroups(r) { return [...new Set((r.ex || []).map((x) => EX[x.i] && EX[x.i][1]).filter(Boolean))]; }
-  function oracle() {
-    const L = log(), now = Date.now(), last = lastByGroup(L);
-    const trainedToday = L.some((l) => dayKey(l.t) === dayKey(now));
-    const routines = (Array.isArray(S.routines) ? S.routines : []).filter((r) => r && r.ex && r.ex.length);
-    let routine = null;
-    if (routines.length) {
-      // La rutina cuyos músculos están más descansados (y que no repite lo de ayer)
-      routine = routines.map((r) => { const gs = routineGroups(r); const sc = gs.reduce((a, g) => a + readiness(g, last, now), 0) / Math.max(1, gs.length); return { r, gs, sc }; }).sort((x, y) => y.sc - x.sc)[0];
-    }
-    const groups = routine ? routine.gs.slice(0, 3) : BIG.slice().sort((x, y) => readiness(y, last, now) - readiness(x, last, now)).slice(0, 2);
-    const doy = Math.floor(now / 864e5);
-    return { trainedToday, routine: routine && routine.r, groups, main: groups[0], second: groups[1], last, proph: PROPH[doy % PROPH.length] };
-  }
-
+  // ── El Oráculo de Delfos: tus avances (Favor) con cada entreno finalizado ──
   // Favor del Oráculo (XP): se gana con CUALQUIER entrenamiento finalizado, venga de una rutina de la IA,
-  // de una rutina tuya o de una sesión libre. Bonus si entrenaste lo que el Oráculo profetizó ese día.
+  // de una rutina tuya o de una sesión libre.
   const OKEY = 'vx:oracle';
   const ost = () => { try { return JSON.parse(localStorage.getItem(OKEY) || '{}'); } catch (e) { return {}; } };
   const oput = (o) => { try { localStorage.setItem(OKEY, JSON.stringify(o)); } catch (e) { /* sin almacenamiento */ } };
@@ -6919,49 +6911,37 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
       return { k, t, sets: +d.sets || sets.length, vol: +d.vol || sets.reduce((a, l) => a + vol(l), 0), groups: [...new Set(sets.map(grp))], day };
     }).filter((x) => x.sets > 0).sort((a, b) => a.t - b.t);
   }
-  function sessionXP(x, proph) {
-    let xp = 40 + Math.min(30, x.sets) * 4 + Math.min(80, Math.round(x.vol / 250));
-    const pg = proph && proph[x.day];
-    const bonus = !!(pg && x.groups.some((g) => pg.includes(g)));
-    return { xp: xp + (bonus ? 30 : 0), bonus };
+  function sessionXP(x) {
+    return { xp: 40 + Math.min(30, x.sets) * 4 + Math.min(80, Math.round(x.vol / 250)) };
   }
   function favor() {
-    const o = ost(), proph = o.proph || {};
-    const S2 = sessions().map((x) => Object.assign(x, sessionXP(x, proph)));
+    const S2 = sessions().map((x) => Object.assign(x, sessionXP(x)));
     const xp = S2.reduce((a, x) => a + x.xp, 0), lv = lvOf(xp);
     return { xp, lv, name: lvName(lv), into: xp - lvNeed(lv), span: lvNeed(lv + 1) - lvNeed(lv), last: S2[S2.length - 1] || null, n: S2.length };
   }
-  // Recuerda la profecía del día (para el bonus) y avisa de la XP ganada con cada entreno nuevo
-  function remember(o) {
-    const st = ost(); st.proph = st.proph || {};
-    const k = dayKey(Date.now());
-    if (!o.trainedToday && o.groups.length && !st.proph[k]) { st.proph[k] = o.groups; const keys = Object.keys(st.proph); if (keys.length > 60) delete st.proph[keys[0]]; }
+  // Avisa de la XP ganada con cada entreno nuevo
+  function remember() {
+    const st = ost(); delete st.proph;
     const f = favor();
     if (st.seenN == null) st.seenN = f.n;
     else if (f.n > st.seenN && f.last) {
       st.seenN = f.n;
-      const msg = `🏛️ +${f.last.xp} XP ${tr(T.favor)}${f.last.bonus ? ' · ' + tr(T.bonus) : ''}`;
+      const msg = `🏛️ +${f.last.xp} XP ${tr(T.favor)}`;
       setTimeout(() => { if (typeof toast === 'function') toast(msg); if (window.vxPushInbox) window.vxPushInbox('🏛️', msg, "tab('home')"); }, 900);
       if (st.lv && f.lv > st.lv && window.vxCelebrate) setTimeout(window.vxCelebrate, 1200);
     }
     st.lv = f.lv; oput(st);
     return f;
   }
-  const since = (t) => { if (!t) return tr(T.never); const h = Math.round((Date.now() - t) / 36e5); return h < 48 ? tr(T.ago).replace('{h}', h) : tr(T.days).replace('{d}', Math.round(h / 24)); };
-  const gName = (g) => (window.vxTr ? window.vxTr(g) : g);
-  window.vxOracleGo = (g) => { S.cat = g; S.xn = 30; S.q = ''; S.stack = S.stack || []; go('lib'); };
+  // Solo avances: nivel, título, XP y cómo se gana. Ningún entrenamiento recomendado.
   function oracleCard() {
-    const o = oracle(), f = remember(o);
-    const head = `<div class="row" style="gap:10px;align-items:center"><span class="vx-or-ic" aria-hidden="true">${ORACLE_SVG}</span><div class="g"><b>${tr(T.oracle)}</b><div class="mu vx-or-proph">“${tr(o.proph)}”</div></div></div>`;
+    const f = remember(), doy = Math.floor(Date.now() / 864e5);
+    const head = `<div class="row" style="gap:10px;align-items:center"><span class="vx-or-ic" aria-hidden="true">${ORACLE_SVG}</span><div class="g"><b>${tr(T.oracle)}</b><div class="mu vx-or-proph">“${tr(PROPH[doy % PROPH.length])}”</div></div></div>`;
     const fav = `<div class="vx-or-fav"><div class="row sp"><span><b>${tr(T.favor)}</b> · ${tr(T.lvl)} ${f.lv} · <span class="vx-or-rank">${f.name}</span></span><span class="mu">${fmt(f.xp)} XP</span></div>` +
       `<div class="bar" style="margin-top:6px"><i style="width:${Math.min(100, (f.into / f.span) * 100).toFixed(1)}%"></i></div>` +
-      `<div class="mu" style="font-size:12px;margin-top:4px">${f.last ? `${tr(T.lastXP)}: +${f.last.xp} XP${f.last.bonus ? ' (' + tr(T.bonus) + ')' : ''}` : tr(T.howXP)}</div></div>`;
-    if (o.trainedToday) return `<div class="card vx-oracle rest">${head}<div style="margin-top:10px">🌙 ${tr(T.rest)}</div>${fav}</div>`;
-    const tiles = o.groups.slice(0, 2).map((g) => `<div class="vx-or-g"><b>${gName(g)}</b><span class="mu">${since(o.last[g])}${o.last[g] && Date.now() - o.last[g] >= RECOVER ? ' · ' + tr(T.fresh) : ''}</span></div>`).join('<span class="vx-or-plus">+</span>');
-    const action = o.routine
-      ? `<div class="mu" style="margin-top:10px">${tr(T.yourRoutine)}: <b>${esc(o.routine.name)}</b></div><button class="btn" style="margin-top:8px" onclick="event.stopPropagation();startR(${o.routine.id})">⚡ ${tr(T.startR)}</button>`
-      : `<button class="btn" style="margin-top:12px" onclick="event.stopPropagation();vxOracleGo('${o.main}')">⚡ ${tr(T.train)}</button><div class="mu" style="font-size:12px;margin-top:6px;text-align:center"><a href="#" onclick="event.preventDefault();go('ai')">${tr(T.genAI)}</a></div>`;
-    return `<div class="card vx-oracle">${head}<div class="mu" style="margin-top:10px">${tr(T.today)}:</div><div class="vx-or-groups">${tiles}</div>${action}${fav}</div>`;
+      `<div class="row sp mu" style="font-size:12px;margin-top:4px"><span>${tr(T.sess)}: ${f.n}${f.last ? ` · ${tr(T.lastXP)}: +${f.last.xp} XP` : ''}</span><span>${fmt(f.span - f.into)} XP ${tr(T.toNext)} ${f.lv + 1}</span></div></div>`;
+    const how = `<details class="vx-or-how"><summary>${tr(T.howT)}</summary><p>${tr(T.how)}</p><p>${tr(T.how2)}</p></details>`;
+    return `<div class="card vx-oracle">${head}${fav}${how}</div>`;
   }
   // Templo de Delfos (dibujo propio)
   const ORACLE_SVG = '<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="vxorg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#c79212"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#vxorg)" opacity=".18"/><path d="M8 15L20 8l12 7z" fill="url(#vxorg)"/><rect x="9" y="15.5" width="22" height="2" rx=".6" fill="url(#vxorg)"/><g fill="url(#vxorg)"><rect x="10.5" y="18.5" width="2.6" height="11"/><rect x="16" y="18.5" width="2.6" height="11"/><rect x="21.4" y="18.5" width="2.6" height="11"/><rect x="26.9" y="18.5" width="2.6" height="11"/></g><rect x="8" y="30" width="24" height="2.4" rx=".6" fill="url(#vxorg)"/><path d="M20 3c1.6 1.8 1.6 3.4 0 5-1.6-1.6-1.6-3.2 0-5z" fill="#ffb648"/></svg>';
@@ -6990,7 +6970,7 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
       return h;
     };
   }
-  window.vxLabors = laborState; window.vxOracle = oracle; window.vxFavor = favor; // para pruebas
+  window.vxLabors = laborState; window.vxFavor = favor; // para pruebas
 })();
 
 /* VOLTA · Plantillas de rutina: empezar a entrenar con un toque cuando aún no tienes rutinas */
@@ -7213,22 +7193,18 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     };
   }
 
-  // Rango máximo: "Kratos" es un personaje de videojuego, no un dios griego. Se muestra Cronos, el titán del tiempo.
-  const RENAME = [[/Leyenda de Kratos/g, 'Leyenda de Cronos'], [/Kratos/g, 'Cronos'], [/KRATOS/g, 'CRONOS'], [/El Destructor/g, 'Señor del Tiempo']];
+  // Rango máximo: Kratos, dios griego de la fuerza (hijo de Estigia). Su lema es "Dios de la Fuerza".
+  const RENAME = [[/El Destructor/g, 'Dios de la Fuerza']];
   function renameRanks(root) {
     if (!root) return;
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
-    while ((n = w.nextNode())) if (/Kratos|KRATOS|El Destructor/.test(n.nodeValue)) RENAME.forEach(([re, to]) => { n.nodeValue = n.nodeValue.replace(re, to); });
+    while ((n = w.nextNode())) if (/El Destructor/.test(n.nodeValue)) RENAME.forEach(([re, to]) => { n.nodeValue = n.nodeValue.replace(re, to); });
   }
   {
     const _R2 = R;
     R = function () { const out = _R2.apply(this, arguments); try { renameRanks(document.body); } catch (e) { /* textos originales */ } return out; };
   }
   window.vxRenameRanks = renameRanks;
-  try {
-    const _toast = toast;
-    toast = function (m) { if (typeof m === 'string') RENAME.forEach(([re, to]) => { m = m.replace(re, to); }); return _toast.call(this, m); };
-  } catch (e) { /* toast no reasignable: se queda el original */ }
 
   // Red de seguridad: si algún botón apunta a una pantalla que no existe, se vuelve atrás con un aviso
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
@@ -7270,6 +7246,27 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   });
   new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach((n) => { if (n.nodeType === 1) glue(n.parentElement || n); }); })
     .observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+// Perfil → "Cuestionario inicial": volver a responderlo para corregir datos (las rutinas, el plan y el historial se conservan)
+(function () {
+  if (typeof V !== 'object' || typeof V.prof !== 'function') return;
+  const TX = {
+    t: ['Cuestionario inicial', 'Initial questionnaire', 'Questionnaire initial', 'Questionário inicial'],
+    s: ['Corrige tus respuestas', 'Fix your answers', 'Corrige tes réponses', 'Corrige as tuas respostas'],
+  };
+  const L = () => ({ en: 1, fr: 2, pt: 3 }[S.lang] || 0);
+  const _prof = V.prof;
+  V.prof = function () {
+    let h = _prof.apply(this, arguments);
+    try {
+      if (typeof window.vxEditQuiz !== 'function') return h;
+      const row = `<div class="li" onclick="vxEditQuiz()"><div class="g">📝 ${TX.t[L()]}<div class="mu" style="font-size:12px">${TX.s[L()]}</div></div><span class="arr">›</span></div>`;
+      const m = h.match(/<div class="li" onclick="go\('p:profile'\)">[\s\S]*?<span class="arr">›<\/span><\/div>/);
+      if (m) h = h.replace(m[0], m[0] + row);
+    } catch (e) { /* Perfil original */ }
+    return h;
+  };
 })();
 
 /* VOLTA · Temas de color: Amarillo, Azul y Rojo (Perfil → Temas).
@@ -7385,32 +7382,42 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) { if (!meta.dataset.orig) meta.dataset.orig = meta.content; meta.content = cur ? '#' + THEMES[cur].m : meta.dataset.orig; }
   }
+  // 'verde' es el color de serie: quita el tema elegido y vuelve al verde original
   window.vxSetAccent = function (name) {
-    try { localStorage.setItem('vx:accent', name); } catch (e) { /* sin almacenamiento */ }
-    apply(name);
-    if (typeof toast === 'function') toast('🎨 ' + tr(T2.applied) + ': ' + tr(THEMES[name].n));
+    const n = THEMES[name] ? name : null;
+    try { if (n) localStorage.setItem('vx:accent', n); else localStorage.removeItem('vx:accent'); } catch (e) { /* sin almacenamiento */ }
+    apply(n);
+    if (typeof toast === 'function') toast('🎨 ' + tr(T2.applied) + ': ' + tr(n ? THEMES[n].n : T2.green));
     R();
   };
   window.vxAccent = () => cur;
 
-  // 3) Opción "Temas" en Perfil
+  // ── Perfil → Temas: una opción más de la lista; al tocarla se abre la pantalla con los cuatro colores ──
   const T2 = {
     title: ['Temas', 'Themes', 'Thèmes', 'Temas'],
     sub: ['Elige el color de toda la app. Cambia al instante.', 'Pick the colour for the whole app. It changes instantly.', 'Choisis la couleur de toute l’app. Changement instantané.', 'Escolhe a cor de toda a app. Muda na hora.'],
     applied: ['Tema aplicado', 'Theme applied', 'Thème appliqué', 'Tema aplicado'],
+    green: ['Verde', 'Green', 'Vert', 'Verde'],
+    def: ['Predeterminado', 'Default', 'Par défaut', 'Predefinido'],
   };
-  function themeCard() {
-    return `<div class="card vx-themes"><b>🎨 ${tr(T2.title)}</b><div class="mu" style="margin-top:2px">${tr(T2.sub)}</div><div class="vx-th-row" role="radiogroup" aria-label="${tr(T2.title)}">` +
-      Object.keys(THEMES).map((k) => { const T = THEMES[k], on = cur === k; return `<button class="vx-th${on ? ' on' : ''}" role="radio" aria-checked="${on}" onclick="vxSetAccent('${k}')" style="--a:#${T.m};--b:#${T.b}"><span class="vx-th-sw"></span><span>${tr(T.n)}</span></button>`; }).join('') +
-      '</div></div>';
-  }
+  // tonos fuera de la lista GREENS para que la muestra del verde no se recoloree con el tema activo
+  const GREEN = { n: T2.green, m: '57b801', b: '9cff2f' };
+  const OPTS = [['verde', GREEN], ['azul', THEMES.azul], ['amarillo', THEMES.amarillo], ['rojo', THEMES.rojo]];
+  V['vx:themes'] = function () {
+    const sel = cur || 'verde';
+    return `<div class="row" style="margin-bottom:14px"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">${tr(T2.title)}</h1></div>` +
+      `<div class="mu" style="margin:-4px 0 12px">${tr(T2.sub)}</div><div class="card vx-thlist" role="radiogroup" aria-label="${tr(T2.title)}">` +
+      OPTS.map(([k, T]) => `<button class="li vx-thr${sel === k ? ' on' : ''}" role="radio" aria-checked="${sel === k}" onclick="vxSetAccent('${k}')"><span class="vx-th-sw" style="--a:#${T.m};--b:#${T.b}"></span><div class="g"><b>${tr(T.n)}</b>${k === 'verde' ? `<div class="mu">${tr(T2.def)}</div>` : ''}</div><span class="vx-thk" aria-hidden="true">${sel === k ? '✓' : ''}</span></button>`).join('') +
+      '</div>';
+  };
   if (typeof V.prof === 'function') {
     const _prof = V.prof;
     V.prof = function () {
       let h = _prof.apply(this, arguments);
       try {
-        const i = h.indexOf('Mi perfil');
-        if (i !== -1) { const c = h.lastIndexOf('<div class="card', i); h = h.slice(0, c) + themeCard() + h.slice(c); } else h += themeCard();
+        const row = `<div class="li" onclick="go('vx:themes')"><div class="g">🎨 ${tr(T2.title)}</div><span class="mu" style="margin-right:6px">${tr(cur ? THEMES[cur].n : T2.green)}</span><span class="arr">›</span></div>`;
+        const mk = `<div class="li" onclick="go('p:settings')">`;
+        h = h.indexOf(mk) !== -1 ? h.replace(mk, row + mk) : h;
       } catch (e) { /* Perfil original */ }
       return h;
     };
@@ -7436,6 +7443,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   const tr = (a) => a[LI[S.lang] || 0];
   const T = {
     search: ['Buscar', 'Search', 'Rechercher', 'Pesquisar'],
+    ranks: ['Guía de rangos', 'Rank guide', 'Guide des rangs', 'Guia de rangos'],
   };
 
   // ── 1) Botones y chips ──
@@ -7457,6 +7465,10 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
       const oc = el.getAttribute('onclick') || '';
       // fondos de ventanas que se cierran al tocar fuera: no son botones
       if (/event\.target|===\s*this|this\s*===/.test(oc)) return;
+      // el panel interior de una ventana (solo frena el clic) y el fondo que la cierra no son botones
+      if (/^\s*event\.stopPropagation\(\);?\s*$/.test(oc)) return;
+      const fc = el.firstElementChild;
+      if (fc && /^\s*event\.stopPropagation\(\);?\s*$/.test(fc.getAttribute('onclick') || '')) return;
       if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
       el.dataset.vxk = '1';
       // una tarjeta que lleva otros botones dentro (★ favorito…) no puede ser "botón": solo recibe el foco
@@ -7465,6 +7477,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
       if (el.classList.contains('chip') && el.parentElement && el.parentElement.classList.contains('chips')) {
         el.setAttribute('aria-pressed', el.classList.contains('on') ? 'true' : 'false');
       }
+      if (el.classList.contains('vinfo') && !el.hasAttribute('aria-label')) el.setAttribute('aria-label', tr(T.ranks));
       if (!el.hasAttribute('aria-label') && !el.textContent.trim()) {
         const n = nameFor(el);
         if (n) el.setAttribute('aria-label', n);

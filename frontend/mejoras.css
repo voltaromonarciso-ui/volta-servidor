@@ -273,15 +273,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 
 /* El Olimpo: Oráculo de Delfos y 12 Trabajos de Heracles */
 .vx-oracle{position:relative;overflow:hidden;border-color:color-mix(in srgb,#e0b13a 45%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#e0b13a 16%,transparent),transparent 60%),var(--card)}
-.vx-oracle.rest{border-color:color-mix(in srgb,#7aa8ff 40%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#7aa8ff 14%,transparent),transparent 60%),var(--card)}
 .vx-or-ic{flex:none;display:flex}
 .vx-or-proph{font-style:italic;margin-top:2px}
-.vx-or-groups{display:flex;align-items:stretch;gap:8px;margin-top:8px}
-.vx-or-g{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--ln)}
-.vx-or-g b{font-size:16px}
-.vx-or-g .mu{font-size:12px}
-.vx-or-plus{align-self:center;color:var(--mu);font-weight:800}
-.vx-oracle .btn{width:100%}
 .vx-lab-card{cursor:pointer}
 .vx-lab-hero{display:flex;gap:16px;align-items:center;background:radial-gradient(120% 100% at 0 0,color-mix(in srgb,#e0b13a 18%,transparent),transparent 60%),var(--card)}
 .vx-lab-ring{--p:0;flex:none;width:84px;height:84px;border-radius:50%;display:flex;align-items:baseline;justify-content:center;padding-top:26px;box-sizing:border-box;background:radial-gradient(closest-side,var(--card) 76%,transparent 78% 100%),conic-gradient(#e0b13a calc(var(--p)*1%),var(--card2) 0)}
@@ -321,7 +314,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-or-fav{margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)}
 .vx-or-rank{color:#e0b13a;font-weight:800}
 :root[data-t="light"] .vx-or-rank{color:#a87a08}
-.vx-oracle a{color:var(--ac)}
 
 /* Temas de color (Perfil) */
 .vx-th-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
@@ -352,3 +344,22 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
   .vrk .xp{white-space:normal;text-align:right;font-size:12px;max-width:42%;flex:none}
   .vrk .xp + *{flex:none}
 }
+/* Oráculo: "¿Cómo funciona?" desplegable */
+.vx-or-how{margin-top:10px;border-top:1px solid var(--ln);padding-top:8px}
+.vx-or-how summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--ac);list-style:none;display:flex;align-items:center;gap:6px;min-height:28px}
+.vx-or-how summary::-webkit-details-marker{display:none}
+.vx-or-how summary::after{content:'›';transition:transform .2s}
+.vx-or-how[open] summary::after{transform:rotate(90deg)}
+.vx-or-how p{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--mu)}
+.vx-or-how p b{color:var(--tx)}
+/* Rangos: el botón (i) de la guía quedaba debajo del nombre del rango y no respondía al tocarlo */
+.vhero .vinfo{z-index:10!important;width:36px;height:36px;top:10px;right:10px;font-size:17px;box-shadow:0 0 10px color-mix(in srgb,currentColor 35%,transparent);transition:transform .12s}
+.vhero .vinfo:active{transform:scale(.92)}
+.vhero .nm{pointer-events:none;padding-right:44px}
+/* Perfil → Temas: lista de colores */
+.vx-thlist{padding:4px 0}
+.vx-thr{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:12px 14px;min-height:56px;cursor:pointer}
+.vx-thr + .vx-thr{border-top:1px solid var(--ln)}
+.vx-thr .vx-th-sw{width:30px;height:30px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,var(--b),var(--a));box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ln)}
+.vx-thr.on .vx-th-sw{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--a)}
+.vx-thk{font-weight:800;color:var(--ac);font-size:18px;min-width:20px;text-align:right}
