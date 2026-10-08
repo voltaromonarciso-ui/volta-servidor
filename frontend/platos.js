@@ -67,6 +67,10 @@
     cheesecake: () => `<path d="M-14 9l14 -24l14 24z" fill="#f7ecc9"/><path d="M-14 9h28l-1.6 3.2h-24.8z" fill="#b9874a"/><path d="M-12.6 6.6h25.2" stroke="#e8d7a8" stroke-width=".8"/><path d="M-6 -4c3 2 6 2 9 0" stroke="#e8d7a8" stroke-width=".6" fill="none"/><path d="M-3 -12c2 1 4 1 6 0l2 4c-3 2 -7 2 -10 0z" fill="#c8263a"/>`,
     dollop: (c) => `<circle r="9" fill="${c || '#f7f4ec'}"/><path d="M-5 -2c3 -4 8 -1 6 2c-1.6 2.4 -6 1.4 -4 -1.4" stroke="#e4ded0" stroke-width="1" fill="none"/><circle cx="-3" cy="-3" r="2.6" fill="#fff" opacity=".7"/>`,
     pancake: () => `<ellipse rx="13" ry="12" fill="#b97a34"/><ellipse rx="12" ry="11" fill="#dba25a"/><ellipse cx="-2" cy="-2" rx="7" ry="6" fill="#e9bb72" opacity=".7"/>`,
+    mushroom: () => `<path d="M-4.4 0c0 -3.6 8.8 -3.6 8.8 0z" fill="#8a6a4a"/><path d="M-4.4 0h8.8" stroke="#5e4630" stroke-width=".5"/><rect x="-1.1" y="0" width="2.2" height="3" rx=".8" fill="#efe2c8"/><path d="M-3 -1.2c1.6 -1.2 4.4 -1.2 6 0" stroke="#b08e6a" stroke-width=".4" fill="none"/>`,
+    ring: () => `<circle r="3" fill="none" stroke="#f3e7d6" stroke-width="1.6"/><circle r="3" fill="none" stroke="#d9b98f" stroke-width=".35" opacity=".8"/>`,
+    date: () => `<ellipse rx="2.6" ry="1.4" fill="#5a3218"/><ellipse cx="-.6" cy="-.5" rx="1" ry=".4" fill="#8a5a32" opacity=".7"/>`,
+    seed: (c) => `<ellipse rx=".5" ry=".35" fill="${c || '#2e2e2e'}"/>`,
     herb: () => `<path d="M-1 0c.6 -1.4 1.6 -1.4 2 0c-.4 1.4 -1.4 1.4 -2 0z" fill="#3f8a2a"/>`,
   };
 
@@ -123,9 +127,16 @@
     [/^berenjena$/, 'aubergine', null, 'single'],
     [/^(avena|muesli|granola|cereales integrales|copos de maíz|harina de avena)$/, 'flake', null, 'scatter'],
     [/^aceitunas$/, 'olive', null, 'scatter'],
+    [/^(champiñones|setas)$/, 'mushroom', null, 'chunks'],
+    [/^calamar$/, 'ring', null, 'chunks'],
+    [/^dátiles$/, 'date', null, 'scatter'],
+    [/^chía$/, 'seed', '#3a3a3a', 'scatter'],
+    [/^sésamo$/, 'seed', '#f1e6c8', 'scatter'],
+    [/^cacao$/, 'tiny', '#4a2c1e', 'scatter'],
+    [/^(perejil|albahaca|menta|cilantro)$/, 'herb', null, 'scatter'],
   ];
   // Bases cremosas o líquidas (cuenco / vaso)
-  const BASE = { yogur: '#f7f4ec', 'yogur griego': '#f7f4ec', 'yogur griego 0 %': '#f7f4ec', skyr: '#f6f3ee', kéfir: '#f3f0e6', requesón: '#f6f2e8', cottage: '#f4f1e6', 'queso fresco batido': '#f7f4ec', 'yogur alto en proteína': '#f7f4ec', leche: '#f3eee2', 'bebida de avena': '#efe4cc', 'bebida de almendras': '#f1e8d8', 'bebida de soja': '#efe8d4', avena: '#dcc39a', 'crema de arroz': '#efe6d0' };
+  const BASE = { hummus: '#d6b98a', 'crema de cacahuete': '#b0783e', yogur: '#f7f4ec', 'yogur griego': '#f7f4ec', 'yogur griego 0 %': '#f7f4ec', skyr: '#f6f3ee', kéfir: '#f3f0e6', requesón: '#f6f2e8', cottage: '#f4f1e6', 'queso fresco batido': '#f7f4ec', 'yogur alto en proteína': '#f7f4ec', leche: '#f3eee2', 'bebida de avena': '#efe4cc', 'bebida de almendras': '#f1e8d8', 'bebida de soja': '#efe8d4', avena: '#dcc39a', 'crema de arroz': '#efe6d0' };
   const shapeOf = (ing) => { for (const [re, sh, col, lay] of MAP) if (re.test(ing)) return { sh, col, lay }; return null; };
 
   // ── Recipiente ──

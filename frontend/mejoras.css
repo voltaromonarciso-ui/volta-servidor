@@ -166,3 +166,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-tech li{margin:3px 0}
 .vx-tech ul li::marker{color:#ff8a5c}
 .vx-tech-tip{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(157,255,46,.08);line-height:1.4}
+
+/* Temporizador de cocina y raciones */
+.vx-tmr{display:inline-flex;margin:6px 0 0 4px;padding:4px 10px;font-size:12px;vertical-align:middle;cursor:pointer}
+.vx-cook{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;border-radius:999px;background:var(--card,#16181d);color:var(--tx,#fff);border:1px solid var(--ac,#c6ff3d);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;max-width:calc(100vw - 32px)}
+.vx-cook b{font-variant-numeric:tabular-nums;font-size:18px;color:var(--ac,#c6ff3d)}
+.vx-cook button{background:none;border:0;color:inherit;font-size:16px;cursor:pointer;padding:2px 6px}
+.vx-cook.done{animation:vxPulse 1s ease-in-out 3}
+@keyframes vxPulse{50%{transform:translateX(-50%) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.vx-cook.done{animation:none}}
+.vx-srv{margin-top:10px}
+.vx-srv .btn[disabled]{opacity:.4;pointer-events:none}
