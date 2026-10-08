@@ -141,9 +141,13 @@
 
   // ── Recipiente ──
   function vesselOf(m) {
+    if (/paella/i.test(m.n || '')) return 'paella';
+    if (/shakshuka|fajitas/i.test(m.n || '')) return 'pan';
     if (m.v) return m.v;
     const n = (m.n || '').toLowerCase();
     if (/batido|smoothie/.test(n)) return 'glass';
+    if (/paella/.test(n)) return 'paella';
+    if (/shakshuka|fajitas/.test(n)) return 'pan';
     if (/gazpacho|crema de|sopa|lentejas estofadas|curry|porridge|yogur|skyr|bowl|poke|avena con|avena nocturna|helado|edamame|mix de|hummus/.test(n)) return 'bowl';
     return 'plate';
   }
@@ -255,6 +259,65 @@
     return s + `<g filter="url(#ds${k})">${body}</g>`;
   }
 
+
+  // Sartén de hierro (shakshuka, fajitas): se sirve en la propia sartén, con mango
+  function pan(m, k) {
+    const cx = 44, cy = 50, n = (m.n || '').toLowerCase(), ings = (m.ing || []).filter(Boolean);
+    const sauce = /shakshuka/.test(n);
+    let s = `<g transform="rotate(32 ${cx} ${cy})"><rect x="${cx + 34}" y="${cy - 5.5}" width="30" height="11" rx="5.5" fill="#1d1d20"/><rect x="${cx + 34}" y="${cy - 5.5}" width="30" height="4" rx="2" fill="#fff" opacity=".07"/><circle cx="${cx + 58}" cy="${cy}" r="2.2" fill="#0d0d0f"/></g>`;
+    s += `<ellipse cx="${cx + 2}" cy="${cy + 5}" rx="41" ry="40" fill="url(#sh${k})"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="38" fill="#2a2a2e"/><circle cx="${cx}" cy="${cy}" r="38" fill="none" stroke="#45454b" stroke-width="1.4"/><circle cx="${cx}" cy="${cy}" r="33.5" fill="#18181b"/>`;
+    s += `<path d="M${cx - 30} ${cy - 16}a34 34 0 0 1 22 -17" stroke="#fff" stroke-width="1.2" fill="none" opacity=".18" stroke-linecap="round"/>`;
+    if (sauce) {
+      s += `<circle cx="${cx}" cy="${cy}" r="32" fill="#b02f1b"/><circle cx="${cx}" cy="${cy}" r="32" fill="url(#gLit)" opacity=".16"/>`;
+      for (let i = 0; i < 26; i++) { const [x, y] = place(1, 0, 6.283, 2, 30, cx, cy)[0]; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(R(.8, 2.2))}" fill="${['#8f2414', '#d0492d', '#7c1f12'][i % 3]}" opacity=".7"/>`; }
+      let top = '';
+      top += drawIng('pimiento', [.3, 2.4], cx, cy, 29, '') + drawIng('cebolla', [2.6, 5.6], cx, cy, 29, '');
+      [[cx - 11, cy - 9], [cx + 12, cy - 4], [cx - 2, cy + 13]].forEach(([x, y]) => { top += g(x, y, R(0, 360), 1.55, SH.eggFried()); });
+      for (let i = 0; i < 9; i++) { const [x, y] = place(1, 0, 6.283, 4, 28, cx, cy)[0]; top += g(x, y, R(0, 360), 1.2, SH.herb()); }
+      s += `<g filter="url(#ds${k})">${top}</g>`;
+      // Pan de centeno al lado de la sartén
+      if (ings.some((x) => /^pan/.test(x))) s += `<g filter="url(#ds${k})">${g(14, 86, -28, 1.05, SH.toast('#b8915e'))}</g>`;
+      return s;
+    }
+    // Fajitas: tiras salteadas que chisporrotean
+    let body = '';
+    const pieces = [];
+    if (ings.some((x) => /pollo|pavo|ternera/.test(x))) for (let i = 0; i < 9; i++) pieces.push(() => SH[ings.some((x) => /ternera/.test(x)) ? 'beef' : 'chicken']());
+    if (ings.includes('pimiento')) for (let i = 0; i < 12; i++) pieces.push(() => SH.strip(['#d9442f', '#f2b51e', '#4f9a34'][i % 3]));
+    if (ings.includes('cebolla')) for (let i = 0; i < 6; i++) pieces.push(() => SH.onion());
+    pieces.sort(() => R(-1, 1));
+    const spots = place(pieces.length, 0, 6.283, 3, 27, cx, cy);
+    pieces.forEach((mk, i) => { const [x, y] = spots[i]; body += g(x, y, R(0, 360), R(.95, 1.25), mk()); });
+    if (ings.includes('aguacate')) body += g(cx + 18, cy + 16, -30, 1.2, SH.avocado());
+    s += `<g filter="url(#ds${k})">${body}</g>`;
+    for (let i = 0; i < 5; i++) { const x = cx - 18 + i * 9; s += `<path d="M${x} ${cy - 30}c-3 -5 3 -8 0 -13" stroke="#fff" stroke-width="1" fill="none" opacity=".22" stroke-linecap="round"/>`; }
+    if (ings.some((x) => /tortilla/.test(x))) s += `<g filter="url(#ds${k})">${g(15, 85, 0, .9, SH.tortilla())}${g(17, 82, 0, .8, SH.tortilla())}</g>`;
+    return s;
+  }
+
+  // Paellera: ancha y baja, con dos asas; arroz con azafrán y el marisco encima
+  function paella(m, k) {
+    const cx = 48, cy = 50, ings = (m.ing || []).filter(Boolean);
+    let s = `<ellipse cx="${cx + 2}" cy="${cy + 5}" rx="47" ry="45" fill="url(#sh${k})"/>`;
+    s += [-1, 1].map((d) => `<path d="M${cx + d * 41} ${cy - 7}c${d * 9} 0 ${d * 9} 14 0 14" stroke="#8b8f96" stroke-width="3.2" fill="none" stroke-linecap="round"/>`).join('');
+    s += `<circle cx="${cx}" cy="${cy}" r="43" fill="#6d7178"/><circle cx="${cx}" cy="${cy}" r="43" fill="none" stroke="#a7abb2" stroke-width="1.2"/><circle cx="${cx}" cy="${cy}" r="40" fill="#3c3f44"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="39" fill="#e3a72f"/><circle cx="${cx}" cy="${cy}" r="39" fill="url(#gLit)" opacity=".2"/>`;
+    // socarrat (borde tostado)
+    s += `<circle cx="${cx}" cy="${cy}" r="37" fill="none" stroke="#b5741c" stroke-width="3" opacity=".55"/>`;
+    let rice = '';
+    place(420, 0, 6.283, 1, 37, cx, cy).forEach(([x, y]) => { rice += g(x, y, R(0, 180), 1.1, SH.grain(R(0, 1) > .5 ? '#f2c24e' : '#e9b03a')); });
+    s += rice;
+    let top = '';
+    place(6, 0, 6.283, 14, 31, cx, cy).forEach(([x, y]) => { top += g(x, y, R(0, 360), 1.6, SH.prawn()); });
+    if (ings.includes('calamar')) place(5, 0, 6.283, 6, 30, cx, cy).forEach(([x, y]) => { top += g(x, y, 0, 1.3, SH.ring()); });
+    if (ings.includes('pimiento')) place(5, 0, 6.283, 6, 30, cx, cy).forEach(([x, y]) => { top += g(x, y, R(0, 360), 1.5, SH.strip('#d9442f')); });
+    if (ings.includes('guisantes')) place(22, 0, 6.283, 3, 34, cx, cy).forEach(([x, y]) => { top += g(x, y, 0, 1.1, SH.pea()); });
+    top += g(cx + 26, cy - 22, 40, 1.5, SH.lemon()) + g(cx - 27, cy + 21, 220, 1.5, SH.lemon());
+    for (let i = 0; i < 6; i++) { const [x, y] = place(1, 0, 6.283, 4, 33, cx, cy)[0]; top += g(x, y, R(0, 360), 1.1, SH.herb()); }
+    return s + `<g filter="url(#ds${k})">${top}</g>`;
+  }
+
   function glass(m, k) {
     const col = (m.col || [])[0] || '#f0e6c8', ings = m.ing || [];
     const liquid = /espinacas|kale/.test(ings.join(',')) ? '#9cc76a' : /fresas|frambuesas|arándanos/.test(ings.join(',')) ? '#d98aa0' : /plátano|mango/.test(ings.join(',')) ? '#f1dfa0' : col;
@@ -275,7 +338,7 @@
       seed = h || 1;
       const k = 'v' + h.toString(36);
       const v = vesselOf(m);
-      const body = v === 'glass' ? glass(m, k) : table(k) + (v === 'bowl' ? bowl(m, k) : plate(m, k));
+      const body = v === 'glass' ? glass(m, k) : table(k) + (v === 'bowl' ? bowl(m, k) : v === 'pan' ? pan(m, k) : v === 'paella' ? paella(m, k) : plate(m, k));
       return `<svg viewBox="0 0 100 100" role="img" aria-label="${String(m.n || '').replace(/"/g, '&quot;')}" style="width:100%;height:auto;display:block;${st || ''}">${DEFS(k)}${body}</svg>`;
     } catch (e) {
       return _orig.apply(this, arguments);
