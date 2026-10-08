@@ -177,3 +177,31 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 @media (prefers-reduced-motion:reduce){.vx-cook.done{animation:none}}
 .vx-srv{margin-top:10px}
 .vx-srv .btn[disabled]{opacity:.4;pointer-events:none}
+
+/* Arena: ligas y ranking */
+.vx-arena-card{cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 12%,var(--card)),var(--card));border-color:color-mix(in srgb,var(--ac) 40%,var(--ln))}
+.vx-xpbar{height:8px;border-radius:99px;overflow:hidden}
+.vx-xpbar i{background:linear-gradient(90deg,var(--ac2),var(--ac));box-shadow:0 0 12px color-mix(in srgb,var(--ac) 60%,transparent)}
+.vx-badge{flex:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.vx-ar-hero{position:relative;overflow:hidden;--lg:#f0a868}
+.vx-ar-hero.lg-plata{--lg:#c9d1d9}.vx-ar-hero.lg-oro{--lg:#f5c542}.vx-ar-hero.lg-platino{--lg:#7fe0d6}.vx-ar-hero.lg-diamante{--lg:#7aa8ff}.vx-ar-hero.lg-elite{--lg:#b46bff}
+.vx-ar-glow{position:absolute;inset:-40% -20% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--lg) 45%,transparent),transparent 70%);pointer-events:none;animation:vxGlow 4s ease-in-out infinite alternate}
+@keyframes vxGlow{to{transform:translate(-20px,10px) scale(1.1)}}
+.vx-ar-hero>*:not(.vx-ar-glow){position:relative}
+.vx-ar-hero .vx-badge{animation:vxFloat 3.2s ease-in-out infinite}
+@keyframes vxFloat{50%{transform:translateY(-4px)}}
+.vx-ar-lg{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--lg)}
+:root[data-t="light"] .vx-ar-lg{color:color-mix(in srgb,var(--lg) 60%,#000)}
+.vx-ar-stats .big{font-size:22px}
+.vx-ar-tabs{margin:14px 0 4px}
+.vx-ar-row{gap:10px;align-items:center;padding:9px 6px;border-radius:12px;cursor:pointer}
+.vx-ar-row+.vx-ar-row{border-top:1px solid var(--ln)}
+.vx-ar-row.me{background:color-mix(in srgb,var(--ac) 14%,transparent);border-top-color:transparent}
+.vx-ar-row.podium .vx-ar-pos{font-size:20px}
+.vx-ar-pos{width:28px;text-align:center;font-weight:800;color:var(--mu)}
+.vx-ar-pts{white-space:nowrap;color:var(--ac)}
+.vx-ar-join{border-color:var(--ac)}
+@media (prefers-reduced-motion:reduce){.vx-ar-glow,.vx-ar-hero .vx-badge{animation:none}}
+.vx-ar-center{display:flex;justify-content:center}
+.vx-pu-act>.btn{flex:1;white-space:nowrap}
+.vx-pu-act>.btn.s.g:last-child{flex:0 0 auto;padding-left:16px;padding-right:16px}

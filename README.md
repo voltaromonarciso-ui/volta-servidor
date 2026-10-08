@@ -50,8 +50,12 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 | 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `403` contraseña incorrecta (la sesión sigue abierta) |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
 | 🔒 `GET /api/users/search?q=an` | mín. 2 letras | `{users:[{username}]}` |
-| 🔒 `POST /api/users/stats` | `{days, sets, volume}` (semana en curso) | `204` |
+| 🔒 `POST /api/users/stats` | `{days, sets, volume}` (semana en curso) | `{score, xp, league, level, flagged}` · `422 implausible` si las cifras son imposibles |
 | 🔒 `GET /api/friends/leaderboard` | | `{week, entries:[{username, days, sets, volume, me}]}` tú + amigos, por volumen |
+| 🔒 `GET /api/compete/leaderboard?scope=league\|global&limit=50` | | `{week, league, entries:[{rank, username, days, sets, score, league, level, me}], me:{rank, score, xp, level, league, nextLeague, flagged}}` |
+| 🔒 `GET /api/compete/profile/:username` | | Perfil público: `{username, memberSince, online, friendship, xp, level, league, week:{days, sets, score, rank}}` (sin correo) |
+| 🔒 `POST /api/compete/report` | `{username, reason: cheating\|offensive_name\|offensive_content\|other, details?}` | `201` |
+| 🔒 `GET /api/compete/leagues` | | Umbrales de XP de cada liga |
 | 🔒 `POST /api/users/heartbeat` | | `204` (actualiza "en línea") |
 | 🔒 `GET /api/friends` | | `{friends, incoming, outgoing}` |
 | 🔒 `POST /api/friends/request` | `{username}` | `201 {status:"pending"}` · `200 {status:"accepted"}` si ya te había invitado · `404` · `409` |
@@ -159,3 +163,16 @@ npm run build:app      # las inyecta en Volta-app.html (entre los marcadores VOL
 Qué añaden: series prerrellenadas con el objetivo de sobrecarga progresiva, pantalla siempre encendida al entrenar,
 confeti y vibración al batir un récord, resumen de la sesión con imagen para compartir, traducción completa
 (EN/FR/PT, incluidos los 145 ejercicios), imágenes incrustadas sin 404, etiquetas accesibles y foco visible.
+
+## Competición y juego limpio
+
+- **La puntuación la calcula el servidor** (`src/lib/score.js`): el cliente solo envía días, series y volumen de la semana.
+  Puntos = 100 por día entrenado + 5 por serie (máx. 30 series/día) + volumen en escala logarítmica + hasta 200 por
+  progresar frente a tu semana anterior. Así compiten igual un principiante y alguien que levanta el triple.
+- **Ligas por XP** (suma de semanas cerradas): Bronce 0 · Plata 1 500 · Oro 5 000 · Platino 12 000 · Diamante 25 000 · Élite 50 000.
+- **Antitrampas**: límites físicos (días ≤ días transcurridos, ≤ 60 series/día, ≤ 3 000 kg·reps/serie); cada envío imposible
+  se rechaza con `422` y suma un aviso; con 3 avisos en la semana la cuenta sale del ranking hasta el lunes y esa semana no suma XP.
+  Con 3 denuncias de trampas de personas distintas en 14 días, la cuenta se aparta del ranking para revisión.
+  Envíos limitados a 20/min por usuario; denuncias a 20/hora.
+- **Sin mal lenguaje**: nombres de usuario, mensajes del foro y texto de las denuncias pasan por `src/lib/moderation.js`.
+- Tras actualizar, ejecuta `npm run migrate` (añade columnas, índices de ranking y la tabla `reports`).

@@ -32,6 +32,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/forum', require('./routes/forum'));
+app.use('/api/compete', require('./routes/compete'));
 
 // ── App web (Volta-app.html) + archivos para instalarla como app (PWA) ──
 // La meta "volta-api" le indica a la app que use este mismo servidor como API.

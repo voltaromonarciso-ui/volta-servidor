@@ -341,7 +341,7 @@
     clearTimeout(pushT);
     pushT = setTimeout(() => {
       apiCall('POST', '/api/users/stats', thisWeek())
-        .then(() => { lbAt = 0; if (document.querySelector('.vx-lb-body')) loadLeaderboard(); }) // la tarjeta visible refleja tu última serie
+        .then((d) => { lbAt = 0; if (d && window.vxArenaServer) window.vxArenaServer(d); if (document.querySelector('.vx-lb-body')) loadLeaderboard(); }) // la tarjeta visible refleja tu última serie
         .catch(() => {});
     }, 1500);
   }
@@ -361,6 +361,9 @@
   }
   const lbCard = () => `<div class="card vx-lb"><div class="row sp"><b>🏁 ${lb('title')}</b><span class="mu">${lb('resets')}</span></div><div class="vx-lb-body">${lbRows(lbCache)}</div></div>`;
   window.vxLeaderboard = () => lbCache; // para pruebas
+  // Compartido con compete.js (Arena)
+  window.vxApiCall = apiCall; window.vxSocialOn = socialOn; window.vxThisWeek = thisWeek; window.vxRealLog = realLog;
+  window.vxPushInbox = (icon, text, act) => pushInbox(icon, text, act);
   if (typeof V.soc === 'function') {
     const _soc = V.soc;
     V.soc = function () { const h = _soc.apply(this, arguments); try { if (socialOn()) { setTimeout(loadLeaderboard, 0); return h + lbCard(); } } catch (e) { /* idem */ } return h; };

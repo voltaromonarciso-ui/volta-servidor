@@ -29,7 +29,7 @@ async function stop() {
   await pool.end();
 }
 
-const reset = () => pool.query('TRUNCATE forum_posts, friends, users CASCADE');
+const reset = () => pool.query('TRUNCATE reports, forum_posts, friends, users CASCADE');
 
 async function api(method, url, { token, body } = {}) {
   const headers = {};

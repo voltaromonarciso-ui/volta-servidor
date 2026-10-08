@@ -68,6 +68,9 @@
     submitStats: (s) => http('/api/users/stats', { method: 'POST', body: s }),
     /** → { week, entries: [{ username, days, sets, volume, me }] } (tú + amigos, por volumen) */
     leaderboard: () => http('/api/friends/leaderboard'),
+    arena: (scope = 'league', limit = 50) => http(`/api/compete/leaderboard?scope=${encodeURIComponent(scope)}&limit=${limit}`),
+    publicProfile: (username) => http('/api/compete/profile/' + encodeURIComponent(username)),
+    report: (username, reason, details) => http('/api/compete/report', { method: 'POST', body: { username, reason, details } }),
 
     // ── Amigos ──
     friends: () => http('/api/friends'),                       // { friends, incoming, outgoing }
