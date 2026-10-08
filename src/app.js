@@ -22,7 +22,7 @@ app.use(cors({
   exposedHeaders: ['Retry-After'],
   maxAge: 600,
 }));
-app.use(compression()); // la app (≈1,3 MB sin el modelo 3D) viaja comprimida
+app.use(compression()); // la app (≈1,3 MB) viaja comprimida
 app.use(express.json({ limit: '16kb' }));
 app.use(limiter({ name: 'global', windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false, skip: () => config.rateLimitOff }));
 
@@ -37,28 +37,9 @@ app.use('/api/compete', require('./routes/compete'));
 // ── App web (Volta-app.html) + archivos para instalarla como app (PWA) ──
 // La meta "volta-api" le indica a la app que use este mismo servidor como API.
 const APP_FILE = path.join(__dirname, '..', 'Volta-app.html');
-let appHtml = fs.existsSync(APP_FILE)
+const appHtml = fs.existsSync(APP_FILE)
   ? fs.readFileSync(APP_FILE, 'utf8').replace('<head>', '<head><meta name="volta-api" content="same-origin">')
   : null;
-// El modelo anatómico 3D (≈450 KB) solo se usa al abrir la vista 3D. El archivo suelto lo lleva dentro para funcionar
-// sin servidor, pero desde aquí se sirve aparte y se descarga bajo demanda: la carga inicial pesa casi la mitad.
-const MODEL_RE = /const MODEL_B64="([A-Za-z0-9+/=]+)"/;
-const MODEL_USE = 'Uint8Array.from(atob(MODEL_B64),c=>c.charCodeAt(0))';
-let model3d = null;
-if (appHtml && MODEL_RE.test(appHtml) && appHtml.includes(MODEL_USE)) {
-  const bin = Buffer.from(appHtml.match(MODEL_RE)[1], 'base64');
-  const url = '/a/model3d.' + crypto.createHash('sha1').update(bin).digest('hex').slice(0, 12) + '.bin';
-  model3d = { url, bin };
-  appHtml = appHtml.replace(MODEL_RE, 'const MODEL_B64=""')
-    .replace(MODEL_USE, `(MODEL_B64?${MODEL_USE}:await fetch(${JSON.stringify(url)}).then(r=>{if(!r.ok)throw new Error("model "+r.status);return r.arrayBuffer()}).then(b=>new Uint8Array(b)))`);
-}
-if (model3d) {
-  app.get(model3d.url, (_req, res) => {
-    // ya va comprimido (deflate): no se vuelve a comprimir; el nombre cambia con el contenido
-    res.set({ 'Cache-Control': 'public, max-age=31536000, immutable', 'Content-Type': 'application/octet-stream' });
-    res.send(model3d.bin);
-  });
-}
 // La app usa scripts y estilos en línea y llama a la API de Anthropic desde el navegador (clave del usuario)
 const APP_CSP = [
   "default-src 'self'", "script-src 'self' 'unsafe-inline'", "script-src-attr 'unsafe-inline'",

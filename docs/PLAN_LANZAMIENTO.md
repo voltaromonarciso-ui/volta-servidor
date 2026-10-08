@@ -18,24 +18,25 @@ Respuestas del equipo, del 8 de octubre de 2026. Este documento es la referencia
 | Equipo | **Pequeño** (2–5 personas) |
 | Cuentas | **Nada todavía**: hay que crear las de Google Play (25 $, pago único) y Apple (99 $/año), y conseguir un Mac para la versión de iPhone, o un servicio de compilación en la nube |
 | Siguiente paso | **Pulir lo que hay** antes de añadir funciones nuevas |
+| Prioridad | **Acabar la aplicación.** El servidor es secundario: se pone en marcha después |
 
 ## Plan (2–3 meses)
 
 ### Fase 1 · Pulir (semanas 1–3), lo que toca ahora
 1. **Velocidad**: la app pesa unos 3 MB. Objetivo: carga inicial por debajo de 1 MB y bien puntuada en Core Web Vitals.
    Pasos: separar las imágenes, cargarlas bajo demanda y comprimirlas.
-   **Hecho (8 oct)**: imágenes integradas a WebP (1388 → 353 KB) y el modelo 3D (≈450 KB, hoy sin pantalla que lo use)
-   se sirve aparte, solo si se abre la vista 3D. Medido en 4G con CPU ×4 lenta:
+   **Hecho (8 oct)**: imágenes integradas a WebP (1388 → 353 KB). El modelo 3D (≈450 KB, hoy sin pantalla que lo use)
+   sale del HTML a `public/assets/models/body.bin` y solo se descarga si se abre la vista 3D. El archivo de la app pasa
+   de 3,3 MB a 1,3 MB. Medido en 4G con CPU ×4 lenta:
 
    | | Antes | Ahora |
    |---|---|---|
    | Transferido | 2026 KB | **572 KB** |
-   | Primer pintado | 2,5 s | **0,9 s** |
+   | Primer pintado | 2,5 s | **1,0 s** |
    | App lista | 3,1 s | **1,5 s** |
    | Memoria | 16 MB | 9 MB |
 
-   El archivo suelto `Volta-app.html` conserva el modelo dentro para funcionar sin servidor. Minificar el JS apenas
-   ahorra un 1,5 %, así que no se hace.
+   Minificar el JS apenas ahorra un 1,5 %, así que no se hace. Pendiente: medio segundo de bloqueo al arrancar.
 2. **Accesibilidad** (WCAG 2.2 AA): contraste en los tres temas, tamaño de los botones táctiles, lector de pantalla y teclado.
 3. **Fallos y estabilidad**: repaso completo de todas las pantallas en móvil pequeño y grande, sin conexión y con datos antiguos.
 4. **Textos**: botones, avisos y mensajes claros en los cuatro idiomas.
