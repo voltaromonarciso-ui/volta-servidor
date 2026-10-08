@@ -1,6 +1,6 @@
 # Skills del proyecto Volta
 
-**88 skills activas**, elegidas por su aporte a Volta. Cubren el stack del proyecto (app web en un solo HTML, PWA,
+**98 skills activas**, elegidas por su aporte a Volta. Cubren el stack del proyecto (app web en un solo HTML, PWA,
 Node/Express, PostgreSQL y Redis, Playwright) y sus objetivos: diseño, animación, rendimiento, seguridad, idiomas y
 competición sin trampas. Claude Code las carga al abrir una sesión en este repo.
 
@@ -15,6 +15,7 @@ Cada carpeta conserva la licencia de su repositorio. `.origen.json` indica de qu
 | Área | Skills |
 |---|---|
 | Diseño, UI/UX | `ui-ux-pro-max`, `ui-designer`, `ui-styling`, `design-system`, `design`, `frontend-design`¹, `web-design-guidelines`², `make-interfaces-feel-better`, `taste`, `taste-application`, `emil-design-eng`, `frontend-design-direction`, `frontend-patterns`, `frontend-visual-qa`, `interaction-design-board`, `break-ui`, `theme-factory`¹, `writing-guidelines`² |
+| 3D (personaje de los ejercicios) | `threejs-fundamentals`⁵, `threejs-animation`⁵, `threejs-loaders`⁵, `threejs-geometry`⁵, `threejs-materials`⁵, `threejs-lighting`⁵, `threejs-textures`⁵, `threejs-shaders`⁵, `threejs-postprocessing`⁵, `threejs-interaction`⁵ |
 | Accesibilidad | `accessibility`, `frontend-a11y` |
 | Animación | `animate`, `motion-foundations`, `motion-patterns`, `motion-advanced`, `improve-animations`, `review-animations`, `find-animation-opportunities`, `animation-vocabulary` |
 | Rendimiento y calidad web | `web-quality-audit`³, `core-web-vitals`³, `performance`³, `best-practices`³, `benchmark` |
@@ -30,7 +31,8 @@ Cada carpeta conserva la licencia de su repositorio. `.origen.json` indica de qu
 ¹ [anthropics/skills](https://github.com/anthropics/skills) (Apache-2.0) ·
 ² [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) (MIT) ·
 ³ [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) (MIT) ·
-⁴ [trailofbits/skills](https://github.com/trailofbits/skills) (CC BY-SA 4.0)
+⁴ [trailofbits/skills](https://github.com/trailofbits/skills) (CC BY-SA 4.0) ·
+⁵ [CloudAI-X/threejs-skills](https://github.com/CloudAI-X/threejs-skills) (MIT)
 
 El resto proceden de affaan-m/ECC, daymade/claude-code-skills, obra/superpowers, emilkowalski/skills,
 vercel-labs/agent-browser y microsoft/playwright (ver `.origen.json`).
