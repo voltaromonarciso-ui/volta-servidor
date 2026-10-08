@@ -1,6 +1,6 @@
 ---
 name: volta-imagenes-ejercicios
-description: Genera las imágenes de los ejercicios de Volta copiando el estilo de la imagen de «Press de banca» (ilustración anatómica gris, músculo objetivo en verde suave, fondo #c4cfc9) con la API de imágenes de Google Gemini, y las mete en la app. Úsala cuando pidan imágenes de ejercicios, «imágenes como la del press banca», rehacer o añadir la imagen de un ejercicio, o completar las imágenes que faltan.
+description: Genera las imágenes de los ejercicios de Volta copiando el estilo de la imagen de «Press de banca» (ilustración anatómica gris, músculo objetivo en verde suave, fondo #c4cfc9) con Google Gemini, las anima con Veo (vídeo corto en bucle) y las mete en la app. Úsala cuando pidan imágenes o animaciones de ejercicios, «imágenes como la del press banca», rehacer o añadir la imagen o el vídeo de un ejercicio, o completar los que faltan.
 ---
 
 # Imágenes de ejercicios con el estilo del «Press de banca»
@@ -31,7 +31,9 @@ node $S/generar.mjs --ejercicio "Sentadilla" --prueba   # ver el prompt sin gast
 node $S/generar.mjs --ejercicio "Sentadilla"        # una imagen (para probar el estilo)
 node $S/generar.mjs --todos --max 10                # por tandas; no rehace las que ya existen
 node $S/generar.mjs --ejercicio "Sentadilla" --rehacer  # repetir una que salió mal
-node $S/integrar.mjs                                # PNG → WebP 960×720 y frontend/imagenes.js
+node $S/animar.mjs --ejercicio "Sentadilla"          # vídeo en bucle con Veo a partir de su imagen
+node $S/animar.mjs --todos --max 5                  # por tandas (cada vídeo tarda 1-3 min y cuesta más que una imagen)
+node $S/integrar.mjs                                # PNG → WebP 960×720, vídeos y frontend/imagenes.js
 npm run build:app                                   # meterlas en Volta-app.html
 ```
 
@@ -40,6 +42,13 @@ npm run build:app                                   # meterlas en Volta-app.html
 - Si el archivo no carga (por ejemplo, con el HTML abierto suelto, sin la carpeta `assets`), la app vuelve sola al
   dibujo.
 - Las fotos que ya traía la app (pecho, espalda…) tienen prioridad y no se tocan.
+- **Vídeos (Veo, modelo `veo-3.0-fast-generate-001`; se cambia con `--modelo` o `VEO_MODEL`):**
+  - parten de la imagen ya generada, así que conservan su estilo;
+  - ffmpeg los deja en 4:3 640×480 y sin audio, en MP4 (H.264) y en WebM (VP9), unos 25-40 KB cada uno;
+  - la ficha del ejercicio reproduce el vídeo en bucle y debajo deja la animación con sus controles;
+  - si el vídeo no carga, se ve la imagen.
+- Al revisar un vídeo, se comprueba también que el movimiento sea correcto y que empiece y acabe en la misma postura,
+  para que el bucle no dé saltos.
 
 ## Revisión de cada imagen (obligatoria antes de integrarla)
 

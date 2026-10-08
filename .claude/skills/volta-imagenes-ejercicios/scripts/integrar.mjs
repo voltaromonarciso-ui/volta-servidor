@@ -39,12 +39,12 @@ for f in sys.argv[2:]:
   else console.log('Sin Python/Pillow: se usan los PNG tal cual.', (r.stderr || '').split('\n').slice(-2).join(' '));
 }
 
-const files = new Set(fs.readdirSync(DIR).filter((f) => /\.(webp|png|jpe?g)$/.test(f)));
+const files = new Set(fs.readdirSync(DIR).filter((f) => /\.(webp|png|jpe?g|mp4|webm)$/.test(f)));
 const map = {};
 for (const e of ejercicios()) {
   const s = slug(e.nombre);
   const f = ['webp', 'png', 'jpg', 'jpeg'].map((x) => s + '.' + x).find((x) => files.has(x));
-  if (f) map[e.nombre] = f;
+  if (f) map[e.nombre] = files.has(s + '.mp4') ? [f, s + '.mp4', files.has(s + '.webm') ? s + '.webm' : ''] : [f];
 }
 const js = `/* VOLTA · Imágenes de ejercicios generadas con la skill volta-imagenes-ejercicios (estilo «Press de banca»).
    Archivo generado por .claude/skills/volta-imagenes-ejercicios/scripts/integrar.mjs: no editar a mano.
@@ -54,20 +54,22 @@ const js = `/* VOLTA · Imágenes de ejercicios generadas con la skill volta-ima
   const M = ${JSON.stringify(map, null, 2).replace(/\n/g, '\n  ')};
   const done = [];
   EX.forEach((e) => {
-    const f = M[e[0]];
-    if (!f || (e.cid && EMB[e.cid])) return; // las fotos que ya trae la app tienen prioridad
+    const m = M[e[0]];
+    if (!m || (e.cid && EMB[e.cid])) return; // las fotos que ya trae la app tienen prioridad
+    const f = m[0];
     done.push([e, e.cid, e.image]);
     e.cid = 'gen_' + f.replace(/\\.\\w+$/, '');
     EMB[e.cid] = 'assets/ejercicios/' + f;
     e.image = EMB[e.cid];
+    if (m[1]) { e.vgen = 'assets/ejercicios/' + m[1]; if (m[2]) e.vgenW = 'assets/ejercicios/' + m[2]; } // vídeo en bucle (Veo) para la ficha
   });
   // Si las imágenes no están a mano (el HTML abierto suelto, sin la carpeta assets), se vuelve a los dibujos
   if (done.length) {
     const t = new Image();
-    t.onerror = () => { done.forEach(([e, cid, img]) => { delete EMB[e.cid]; e.cid = cid; e.image = img; }); try { R(); } catch (x) { /* sin pantalla */ } };
+    t.onerror = () => { done.forEach(([e, cid, img]) => { delete EMB[e.cid]; e.cid = cid; e.image = img; delete e.vgen; }); try { R(); } catch (x) { /* sin pantalla */ } };
     t.src = EMB[done[0][0].cid];
   }
 })();
 `;
 fs.writeFileSync(MOD, js);
-console.log(`frontend/imagenes.js: ${Object.keys(map).length} ejercicios con imagen. Ahora: npm run build:app`);
+console.log(`frontend/imagenes.js: ${Object.keys(map).length} ejercicios con imagen, ${Object.values(map).filter((m) => m[1]).length} con vídeo. Ahora: npm run build:app`);

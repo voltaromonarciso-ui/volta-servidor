@@ -6,17 +6,19 @@
   const M = {};
   const done = [];
   EX.forEach((e) => {
-    const f = M[e[0]];
-    if (!f || (e.cid && EMB[e.cid])) return; // las fotos que ya trae la app tienen prioridad
+    const m = M[e[0]];
+    if (!m || (e.cid && EMB[e.cid])) return; // las fotos que ya trae la app tienen prioridad
+    const f = m[0];
     done.push([e, e.cid, e.image]);
     e.cid = 'gen_' + f.replace(/\.\w+$/, '');
     EMB[e.cid] = 'assets/ejercicios/' + f;
     e.image = EMB[e.cid];
+    if (m[1]) { e.vgen = 'assets/ejercicios/' + m[1]; if (m[2]) e.vgenW = 'assets/ejercicios/' + m[2]; } // vídeo en bucle (Veo) para la ficha
   });
   // Si las imágenes no están a mano (el HTML abierto suelto, sin la carpeta assets), se vuelve a los dibujos
   if (done.length) {
     const t = new Image();
-    t.onerror = () => { done.forEach(([e, cid, img]) => { delete EMB[e.cid]; e.cid = cid; e.image = img; }); try { R(); } catch (x) { /* sin pantalla */ } };
+    t.onerror = () => { done.forEach(([e, cid, img]) => { delete EMB[e.cid]; e.cid = cid; e.image = img; delete e.vgen; }); try { R(); } catch (x) { /* sin pantalla */ } };
     t.src = EMB[done[0][0].cid];
   }
 })();

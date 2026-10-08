@@ -359,7 +359,13 @@
         const anim2 = `<div class="vx-avatar" data-ex="${i}">${render(e, { zoom: true })}<span class="vx-av-tag">▶ ${MOV[x]}</span></div>` +
           (reduceMotion() ? '' : `<div class="vx-av-ctl" role="group" aria-label="${CTL.label[x]}"><button class="chip" onclick="vxAv(${i},'pause',this)" aria-pressed="false">⏸ ${CTL.pause[x]}</button><button class="chip" onclick="vxAv(${i},'slow',this)">🐢 ${CTL.slow[x]}</button><button class="chip on" onclick="vxAv(${i},'normal',this)">1×</button></div>`) +
           `<div class="mu vx-av-tempo">⏱ ${CTL.tempo[x]}</div>`;
-        h = h.replace(/<video[^>]*poster="([^"]*)"[^>]*>[\s\S]*?<\/video>/, (m, poster) => (hasReal(e) ? `<img src="${poster}" alt="" style="width:100%;border-radius:14px;display:block">` + anim2 : anim2));
+        // con vídeo generado (Veo): el vídeo en bucle; si no carga, la imagen; y debajo, la animación de referencia
+        // WebM primero (navegadores sin H.264) y MP4 después; si ninguno carga, el último <source> pone la imagen
+        const fb = (poster) => `this.parentNode.outerHTML='<img src=&quot;${poster}&quot; alt=&quot;&quot; style=&quot;width:100%;border-radius:14px;display:block&quot;>'`;
+        const real = (poster) => e.vgen
+          ? `<video poster="${poster}" autoplay loop muted playsinline preload="metadata" aria-label="${esc(e[0])}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;display:block;background:#c4cfc9">${e.vgenW ? `<source src="${e.vgenW}" type="video/webm">` : ''}<source src="${e.vgen}" type="video/mp4" onerror="${fb(poster)}"></video>`
+          : `<img src="${poster}" alt="" style="width:100%;border-radius:14px;display:block">`;
+        h = h.replace(/<video[^>]*poster="([^"]*)"[^>]*>[\s\S]*?<\/video>/, (m, poster) => (hasReal(e) ? real(poster) + anim2 : anim2));
         if (h.indexOf('vx-avatar') === -1) h = h.replace(/<div class="ex-img"[^>]*>[\s\S]*?<\/svg><\/div>/, anim2);
       } catch (err) { /* ficha original */ }
       return h;
