@@ -257,3 +257,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 
 /* Los avisos flotantes no bloquean los botones que tienen debajo */
 .toast{pointer-events:none}
+
+/* Plantillas de rutina */
+.vx-tpl-head{text-align:center;padding:8px 6px 4px}
+.vx-tpl-hero{font-size:40px;line-height:1;filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--ac) 35%,transparent))}
+.vx-tpl{display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+.vx-tpl:hover{border-color:color-mix(in srgb,var(--ac) 50%,var(--ln))}
+.vx-tpl:active{transform:scale(.985)}
+.vx-tpl-ic{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:color-mix(in srgb,var(--ac) 14%,var(--card2))}
+.vx-tpl-ex{font-size:12px;color:var(--mu);margin-top:4px;line-height:1.35}
+.vx-tpl .chip{flex:none}
+@media (prefers-reduced-motion:reduce){.vx-tpl{transition:none}}
