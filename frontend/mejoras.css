@@ -341,3 +341,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 /* La tarjeta "Hoy" de Entrenos es oscura en los dos modos: lleva siempre los colores del tema oscuro
    (en modo claro heredaba el texto oscuro y no se leía) */
 .hero2{--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;--card:#0e130e;--card2:#151b15;--ln:#1f291f;color:var(--tx)}
+/* Móviles estrechos (≤ 360 px): logo e iconos de la cabecera más compactos para que quepan los cuatro */
+@media (max-width:360px){
+  #m .row.sp > img.vlogo-i{width:104px!important;height:auto!important}
+  #m .row.sp > .row:has(> .ib){gap:6px}
+  #m .row.sp > .row > .ib{width:34px;height:34px;min-width:34px}
+}
+/* Guía de rangos en móviles estrechos: el rango de XP pasa a dos líneas en vez de salirse de la tarjeta */
+@media (max-width:400px){
+  .vrk .xp{white-space:normal;text-align:right;font-size:12px;max-width:42%;flex:none}
+  .vrk .xp + *{flex:none}
+}

@@ -166,6 +166,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
   const known = (v) => /^(ex|anat|meal)\d+$/.test(v) || typeof V[v] === 'function';
   const _R = R;
+  let rescuing = false;
   R = function () {
     let guard = 0;
     while (S.stack && S.stack.length && !known(S.stack[S.stack.length - 1]) && guard++ < 10) {
@@ -175,6 +176,30 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     // Perfiles guardados por versiones antiguas o a medias: sin listas, Inicio se rompía entero
     const up = S.userProfile;
     if (up && typeof up === 'object') { if (!Array.isArray(up.injuries)) up.injuries = []; if (!Array.isArray(up.allergies)) up.allergies = []; }
-    return _R.apply(this, arguments);
+    try {
+      return _R.apply(this, arguments);
+    } catch (e) {
+      // Una pantalla que falla al dibujarse (datos incompletos, sesión caducada…) no deja la app en blanco:
+      // se vuelve a la anterior, o a Inicio, y se avisa.
+      console.error('[volta] error al dibujar', S.stack && S.stack[S.stack.length - 1], e);
+      if (rescuing) throw e;
+      rescuing = true;
+      try {
+        let out;
+        if (S.stack && S.stack.length) S.stack.pop(); else S.tab = 'home';
+        try { out = R.apply(this, arguments); } catch (e2) { S.stack = []; S.tab = 'home'; out = R.apply(this, arguments); }
+        if (typeof toast === 'function') toast(['No se pudo abrir esa pantalla', 'That screen could not be opened', 'Impossible d’ouvrir cet écran', 'Não foi possível abrir esse ecrã'][{ en: 1, fr: 2, pt: 3 }[S.lang] || 0]);
+        return out;
+      } finally { rescuing = false; }
+    }
   };
+})();
+
+// Guía de rangos: "7.000 XP – 11.999 XP" no debe partirse entre la cifra y "XP" en pantallas estrechas
+(function () {
+  const glue = (root) => root.querySelectorAll && root.querySelectorAll('.vrk .xp').forEach((el) => {
+    if (/ XP/.test(el.textContent)) el.textContent = el.textContent.replace(/ XP/g, ' XP');
+  });
+  new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach((n) => { if (n.nodeType === 1) glue(n.parentElement || n); }); })
+    .observe(document.documentElement, { childList: true, subtree: true });
 })();

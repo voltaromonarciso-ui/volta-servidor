@@ -265,7 +265,7 @@ function list(){const l=document.getElementById("lst");if(!l)return;const q=S.q.
 const K="VOLTA_STATE";
 const saveState=()=>{try{const{stack,...o}=S;localStorage.setItem(K,JSON.stringify(o))}catch(e){}};const sv=saveState;
 Object.assign(S,{routines:[],cur:0,wi:0,info:-1,vid:{},msg:"",dr:{name:"",days:3,focus:"Hipertrofia",ex:[]},rp:false,rq:"",wts:[],log:[],wk:{},mk:{},msb:{},w:{set:0,on:false,end:0,paused:false,rem:0,tot:90}});
-function loadState(){try{const o=JSON.parse(localStorage.getItem(K)||"null");if(o)Object.assign(S,o)}catch(e){}}loadState();S.demo=false;
+function loadState(){try{const o=JSON.parse(localStorage.getItem(K)||"null");if(o&&typeof o==="object"&&!Array.isArray(o)){const kind=v=>v===null?"null":Array.isArray(v)?"array":typeof v;for(const k in o){const d=S[k],v=o[k];if(d===undefined||d===null||kind(d)===kind(v))S[k]=v;else console.warn("[volta] dato guardado descartado:",k)}const T2={ld:"array",userProfile:"object",obi:"number",obq:"object"};for(const k in T2){const v=S[k];if(v!=null&&(kind(v)!==T2[k]))delete S[k]}if(!Array.isArray(S.ld))delete S.ld;const up=S.userProfile;if(up){if(!Array.isArray(up.injuries))up.injuries=[];if(!Array.isArray(up.allergies))up.allergies=[]}if(!["home","train","prog","nut","prof"].includes(S.tab))S.tab="home";if(!Array.isArray(S.stack))S.stack=[];S.stack=S.stack.filter(x=>typeof x==="string")}}catch(e){}}loadState();S.demo=false;
 /* ===== Temporizador con marcas de tiempo, sonido y háptica ===== */
 let iv,AC;
 const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
@@ -508,7 +508,7 @@ S.obi=S.hasSeenOnboarding?null:0;
 function obOpen(){S.obi=0;obDraw()}
 function obGo(d){const i=S.obi+d;if(i<0)return;if(i>=OB.length)return obEnd();S.obi=i;S.stack=[];S.tab=OB[i][2];R()}
 function obEnd(){S.obi=null;S.hasSeenOnboarding=true;S.tab="home";S.stack=[];R()}
-function obDraw(){let o=document.getElementById("ob");if(S.obi==null){if(o)o.remove();return}
+function obDraw(){let o=document.getElementById("ob");if(S.obi==null||!OB[S.obi]){S.obi=null;if(o)o.remove();return}
 if(!o){o=document.createElement("div");o.id="ob";document.body.appendChild(o)}const i=S.obi,x=OB[i];
 o.innerHTML=`<div style="position:fixed;left:0;right:0;bottom:calc(76px + var(--pb));z-index:30;display:flex;justify-content:center;padding:0 12px"><div class="card pg" style="max-width:456px;width:100%;margin:0;border-color:var(--ac);box-shadow:0 12px 36px rgba(0,0,0,.6)"><div class="row" style="align-items:flex-start">${LION(92)}<div class="g"><b>${x[0]}</b><div class="mu" style="color:var(--tx);margin-top:4px">${x[1]}</div></div></div><div class="row sp" style="margin-top:12px"><button class="chip" onclick="obEnd()">Saltar</button><span class="mu">${i+1}/${OB.length}</span><div class="row" style="gap:6px">${i?`<button class="chip" onclick="obGo(-1)">‹</button>`:""}<button class="chip on" onclick="obGo(1)">${i==OB.length-1?"¡Empezar!":"Siguiente ›"}</button></div></div></div></div>`}
 const _R=R;R=function(){_R();obDraw()};
@@ -3233,6 +3233,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 /* La tarjeta "Hoy" de Entrenos es oscura en los dos modos: lleva siempre los colores del tema oscuro
    (en modo claro heredaba el texto oscuro y no se leía) */
 .hero2{--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;--card:#0e130e;--card2:#151b15;--ln:#1f291f;color:var(--tx)}
+/* Móviles estrechos (≤ 360 px): logo e iconos de la cabecera más compactos para que quepan los cuatro */
+@media (max-width:360px){
+  #m .row.sp > img.vlogo-i{width:104px!important;height:auto!important}
+  #m .row.sp > .row:has(> .ib){gap:6px}
+  #m .row.sp > .row > .ib{width:34px;height:34px;min-width:34px}
+}
+/* Guía de rangos en móviles estrechos: el rango de XP pasa a dos líneas en vez de salirse de la tarjeta */
+@media (max-width:400px){
+  .vrk .xp{white-space:normal;text-align:right;font-size:12px;max-width:42%;flex:none}
+  .vrk .xp + *{flex:none}
+}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -7223,6 +7234,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   // en lugar de romper el dibujado (que dejaba la pantalla vacía).
   const known = (v) => /^(ex|anat|meal)\d+$/.test(v) || typeof V[v] === 'function';
   const _R = R;
+  let rescuing = false;
   R = function () {
     let guard = 0;
     while (S.stack && S.stack.length && !known(S.stack[S.stack.length - 1]) && guard++ < 10) {
@@ -7232,8 +7244,32 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     // Perfiles guardados por versiones antiguas o a medias: sin listas, Inicio se rompía entero
     const up = S.userProfile;
     if (up && typeof up === 'object') { if (!Array.isArray(up.injuries)) up.injuries = []; if (!Array.isArray(up.allergies)) up.allergies = []; }
-    return _R.apply(this, arguments);
+    try {
+      return _R.apply(this, arguments);
+    } catch (e) {
+      // Una pantalla que falla al dibujarse (datos incompletos, sesión caducada…) no deja la app en blanco:
+      // se vuelve a la anterior, o a Inicio, y se avisa.
+      console.error('[volta] error al dibujar', S.stack && S.stack[S.stack.length - 1], e);
+      if (rescuing) throw e;
+      rescuing = true;
+      try {
+        let out;
+        if (S.stack && S.stack.length) S.stack.pop(); else S.tab = 'home';
+        try { out = R.apply(this, arguments); } catch (e2) { S.stack = []; S.tab = 'home'; out = R.apply(this, arguments); }
+        if (typeof toast === 'function') toast(['No se pudo abrir esa pantalla', 'That screen could not be opened', 'Impossible d’ouvrir cet écran', 'Não foi possível abrir esse ecrã'][{ en: 1, fr: 2, pt: 3 }[S.lang] || 0]);
+        return out;
+      } finally { rescuing = false; }
+    }
   };
+})();
+
+// Guía de rangos: "7.000 XP – 11.999 XP" no debe partirse entre la cifra y "XP" en pantallas estrechas
+(function () {
+  const glue = (root) => root.querySelectorAll && root.querySelectorAll('.vrk .xp').forEach((el) => {
+    if (/ XP/.test(el.textContent)) el.textContent = el.textContent.replace(/ XP/g, ' XP');
+  });
+  new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach((n) => { if (n.nodeType === 1) glue(n.parentElement || n); }); })
+    .observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* VOLTA · Temas de color: Amarillo, Azul y Rojo (Perfil → Temas).
