@@ -29,5 +29,13 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
+  // Recursos bajo demanda (/a/, nombre con huella del contenido): se guardan al descargarlos para usarlos sin conexión
+  if (url.pathname.startsWith('/a/')) {
+    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+      return res;
+    })));
+    return;
+  }
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
 });

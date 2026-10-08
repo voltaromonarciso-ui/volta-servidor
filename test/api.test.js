@@ -203,6 +203,18 @@ test('la app se sirve precomprimida y responde 304 si no ha cambiado', async () 
   assert.equal(again.status, 304);
 });
 
+test('el modelo 3D no viaja con la app: se descarga aparte y bajo demanda', async () => {
+  const html = await (await fetch(base() + '/')).text();
+  assert.doesNotMatch(html, /const MODEL_B64="eN/);
+  const url = (html.match(/fetch\("(\/a\/model3d\.[0-9a-f]{12}\.bin)"\)/) || [])[1];
+  assert.ok(url, 'la app conoce la ruta del modelo');
+  const r = await fetch(base() + url);
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('cache-control'), /immutable/);
+  const glb = require('zlib').inflateSync(Buffer.from(await r.arrayBuffer()));
+  assert.equal(glb.subarray(0, 4).toString(), 'glTF');
+});
+
 // ───────────── competición ─────────────
 test('stats: el servidor calcula los puntos y rechaza cifras imposibles', async () => {
   const u = await newUser();
