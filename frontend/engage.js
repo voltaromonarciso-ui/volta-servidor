@@ -7,6 +7,14 @@
   const LI = { es: 0, en: 1, fr: 2, pt: 3 };
   const T = {
     missions: ['Misiones de hoy', "Today's missions", 'Missions du jour', 'Missões de hoje'],
+    stTitle: ['Tu racha', 'Your streak', 'Ta série', 'A tua sequência'],
+    stDays: ['días seguidos', 'days in a row', 'jours d’affilée', 'dias seguidos'],
+    stDay: ['día seguido', 'day in a row', 'jour d’affilée', 'dia seguido'],
+    stBest: ['Récord', 'Best', 'Record', 'Recorde'],
+    stFrz: ['congeladores', 'freezes', 'gels', 'congeladores'],
+    stStart: ['Abre Volta cada día para encender tu racha. Se reinicia tras 48 h sin abrir la app.', 'Open Volta every day to light your streak. It resets after 48 h without opening the app.', 'Ouvre Volta chaque jour pour allumer ta série. Elle repart à zéro après 48 h sans ouvrir l’app.', 'Abre o Volta todos os dias para acender a tua sequência. Reinicia após 48 h sem abrir a app.'],
+    stKeep: ['¡Sigue así! Vuelve mañana para sumar otro día.', 'Keep it up! Come back tomorrow for another day.', 'Continue ! Reviens demain pour un jour de plus.', 'Continua! Volta amanhã para somar outro dia.'],
+    stRecord: ['¡Estás en tu récord! 🏆', 'You’re at your record! 🏆', 'Tu es à ton record ! 🏆', 'Estás no teu recorde! 🏆'],
     mTrain: ['Entrena hoy', 'Work out today', "Entraîne-toi aujourd'hui", 'Treina hoje'],
     mMeals: ['Registra 2 comidas', 'Log 2 meals', 'Enregistre 2 repas', 'Regista 2 refeições'],
     mWater: ['Bebe 2 litros de agua', 'Drink 2 litres of water', "Bois 2 litres d'eau", 'Bebe 2 litros de água'],
@@ -242,16 +250,51 @@
     try {
       const due = weekDue();
       if (due && vx().weekNote !== lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5)) { vx().weekNote = lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5); pushInbox('📊', w('ready'), 'vxWeek()'); }
-      const block = (due ? weekCard(true) : '') + missionsCard() + recoveryCard();
+      // Misiones y recuperación viven en Entrenos; en Inicio queda el resumen semanal cuando toca
+      const block = due ? weekCard(true) : '';
+      h = streakIn(h);
       // Social pasa de flotar sobre el logo a la fila de iconos de la cabecera
       const soc = '<div class="chips"><div class="chip" onclick="socGo()" style="border-color:var(--ac)">👥 Social ›</div></div>';
       if (h.indexOf(soc) !== -1) h = h.replace(soc, '').replace('<div class="row" style="gap:8px"><div class="ib"', '<div class="row" style="gap:8px"><div class="ib vx-soc" onclick="socGo()">👥</div><div class="ib"');
-      h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
+      if (block) h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
       if (socialOn()) { h += lbCard(); setTimeout(loadLeaderboard, 0); }
-      h += achCard() + quoteCard();
+      h += quoteCard(); // los logros se muestran solo en Perfil
     } catch (e) { /* la pantalla original sigue intacta */ }
     return h;
   };
+  // Racha en Inicio: tarjeta propia, clara (antes se llamaba "Tu progreso empieza hoy")
+  function streakCard() {
+    const n = +S.streakCount || 0, best = Math.max(+S.bestStreak || 0, n), frz = vx().freezes || 0;
+    const days = Array.isArray(S.ld) ? S.ld : [];
+    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+    const L = 'LMXJVSD', today = (new Date().getDay() + 6) % 7;
+    const dots = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const on = days.includes(lk(d.getTime())); return `<div class="vx-st-d${on ? ' on' : ''}${i === today ? ' now' : ''}"><i>${on ? '🔥' : ''}</i><span>${L[i]}</span></div>`; }).join('');
+    const msg = n <= 1 ? t('stStart') : n >= best ? t('stRecord') : t('stKeep');
+    return `<div class="card vx-streak${n >= 2 ? ' hot' : ''}"><div class="row" style="gap:14px;align-items:center"><div class="vx-st-flame" aria-hidden="true">🔥</div>` +
+      `<div class="g"><div class="mu">${t('stTitle')}</div><div class="vx-st-n"><b>${n}</b> ${n === 1 ? t('stDay') : t('stDays')}</div>` +
+      `<div class="mu">${t('stBest')}: ${best}${frz ? ` · <span title="${esc(t('frzTip'))}">🧊 ${frz} ${t('stFrz')}</span>` : ''}</div></div></div>` +
+      `<div class="vx-st-week">${dots}</div><div class="mu" style="font-size:12px;margin-top:8px">${msg}</div></div>`;
+  }
+  function streakIn(h) {
+    const a = h.indexOf('<div class="card"><div class="row sp"><b>Tu progreso empieza hoy</b>');
+    if (a === -1) return streakCard() + h;
+    const endTxt = h.indexOf('</div></div>', h.indexOf('Abre Volta cada día', a));
+    return endTxt === -1 ? h : h.slice(0, a) + streakCard() + h.slice(endTxt + 12);
+  }
+  window.vxStreakCard = streakCard;
+
+  // Entrenos: misiones diarias y recuperación muscular, justo antes de la lista de ejercicios
+  if (typeof V.train === 'function') {
+    const _train = V.train;
+    V.train = function () {
+      let h = _train.apply(this, arguments);
+      try {
+        const blk = missionsCard() + recoveryCard(), mk = '<h2>Ejercicios</h2>';
+        h = h.indexOf(mk) !== -1 ? h.replace(mk, blk + mk) : h + blk;
+      } catch (e) { /* Entrenos original */ }
+      return h;
+    };
+  }
   if (typeof V.prog === 'function') {
     const _prog = V.prog;
     V.prog = function () {

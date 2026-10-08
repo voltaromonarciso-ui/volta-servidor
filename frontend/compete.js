@@ -268,8 +268,10 @@
       let h = _home.apply(this, arguments);
       try {
         if (online()) setTimeout(() => loadLb('global'), 0);
-        const card = homeCard(), i = h.indexOf('vx-missions');
-        if (i !== -1) { const c = h.lastIndexOf('<div class="card', i); h = h.slice(0, c) + card + h.slice(c); } else h = card + h;
+        // Tras la racha y antes de las calorías (las misiones ya no están en Inicio)
+        const card = homeCard();
+        let i = h.indexOf('vx-missions'); if (i === -1) i = h.indexOf('Calorías de hoy'); if (i === -1) i = h.indexOf('Tu plan de hoy');
+        if (i !== -1) { const c = h.lastIndexOf('<div class="card', i); h = h.slice(0, c) + card + h.slice(c); } else h += card;
       } catch (e) { /* la pantalla original sigue intacta */ }
       return h;
     };

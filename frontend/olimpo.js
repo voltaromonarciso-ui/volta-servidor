@@ -1,5 +1,5 @@
 /* VOLTA · El Olimpo: lo que solo tiene Volta.
-   - Los 12 Trabajos de Heracles: desafíos épicos medidos con tu registro real de entrenamientos.
+   - Los 12 Trabajos de Hércules: desafíos épicos medidos con tu registro real de entrenamientos.
    - El Oráculo de Delfos: cada día te dice qué entrenar según la recuperación de cada grupo muscular. */
 (function () {
   if (typeof V !== 'object' || typeof R !== 'function' || typeof EX === 'undefined') return;
@@ -16,14 +16,14 @@
   const e1 = (l) => (+l.w || 0) * (1 + (+l.r || 0) / 30);
 
   const T = {
-    labors: ['Los 12 Trabajos de Heracles', 'The 12 Labours of Heracles', 'Les 12 Travaux d’Héraclès', 'Os 12 Trabalhos de Héracles'],
-    laborsSub: ['Desafíos épicos medidos con tus entrenos reales. Complétalos todos y serás Heracles.', 'Epic challenges measured with your real workouts. Finish them all to become Heracles.', 'Des défis épiques mesurés sur tes vraies séances. Termine-les tous pour devenir Héraclès.', 'Desafios épicos medidos com os teus treinos reais. Completa-os todos e serás Héracles.'],
+    labors: ['Los 12 Trabajos de Hércules', 'The 12 Labours of Hercules', 'Les 12 Travaux d’Hercule', 'Os 12 Trabalhos de Hércules'],
+    laborsSub: ['Desafíos épicos medidos con tus entrenos reales. Complétalos todos y serás Hércules.', 'Epic challenges measured with your real workouts. Finish them all to become Hercules.', 'Des défis épiques mesurés sur tes vraies séances. Termine-les tous pour devenir Hercule.', 'Desafios épicos medidos com os teus treinos reais. Completa-os todos e serás Hércules.'],
     done: ['completados', 'completed', 'terminés', 'concluídos'],
     next: ['Siguiente', 'Next', 'Suivant', 'Seguinte'],
     many: ['Trabajos completados', 'Labours completed', 'Travaux accomplis', 'Trabalhos concluídos'],
     won: ['¡Trabajo completado!', 'Labour completed!', 'Travail accompli !', 'Trabalho concluído!'],
     title: ['Título', 'Title', 'Titre', 'Título'],
-    titles: [['Mortal', 'Mortal', 'Mortel', 'Mortal'], ['Aspirante a héroe', 'Hero in training', 'Apprenti héros', 'Aspirante a herói'], ['Semidiós', 'Demigod', 'Demi-dieu', 'Semideus'], ['Héroe del Olimpo', 'Hero of Olympus', 'Héros de l’Olympe', 'Herói do Olimpo'], ['Heracles', 'Heracles', 'Héraclès', 'Héracles']],
+    titles: [['Mortal', 'Mortal', 'Mortel', 'Mortal'], ['Aspirante a héroe', 'Hero in training', 'Apprenti héros', 'Aspirante a herói'], ['Semidiós', 'Demigod', 'Demi-dieu', 'Semideus'], ['Héroe del Olimpo', 'Hero of Olympus', 'Héros de l’Olympe', 'Herói do Olimpo'], ['Hércules', 'Hercules', 'Hercule', 'Hércules']],
     oracle: ['El Oráculo de Delfos', 'The Oracle of Delphi', 'L’Oracle de Delphes', 'O Oráculo de Delfos'],
     today: ['Hoy los dioses te piden', 'Today the gods ask for', 'Aujourd’hui, les dieux demandent', 'Hoje os deuses pedem'],
     train: ['Entrenar esto', 'Train this', 'Entraîner ça', 'Treinar isto'],
@@ -135,18 +135,27 @@
   // Templo de Delfos (dibujo propio)
   const ORACLE_SVG = '<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="vxorg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#c79212"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#vxorg)" opacity=".18"/><path d="M8 15L20 8l12 7z" fill="url(#vxorg)"/><rect x="9" y="15.5" width="22" height="2" rx=".6" fill="url(#vxorg)"/><g fill="url(#vxorg)"><rect x="10.5" y="18.5" width="2.6" height="11"/><rect x="16" y="18.5" width="2.6" height="11"/><rect x="21.4" y="18.5" width="2.6" height="11"/><rect x="26.9" y="18.5" width="2.6" height="11"/></g><rect x="8" y="30" width="24" height="2.4" rx=".6" fill="url(#vxorg)"/><path d="M20 3c1.6 1.8 1.6 3.4 0 5-1.6-1.6-1.6-3.2 0-5z" fill="#ffb648"/></svg>';
 
-  // ── Inserción en Inicio: Oráculo arriba, Trabajos junto a la Arena ──
+  // ── Inserción: Oráculo en Inicio (bajo la racha); los 12 Trabajos en Entrenos ──
   if (typeof V.home === 'function') {
     const _home = V.home;
     V.home = function () {
       let h = _home.apply(this, arguments);
       try {
-        const or = oracleCard(), lab = laborsCard();
-        const ia = h.indexOf('vx-arena-card');
-        if (ia !== -1) { const c = h.lastIndexOf('<div class="card', ia); h = h.slice(0, c) + or + h.slice(c); const ia2 = h.indexOf('vx-arena-card'); const end = h.indexOf('vx-missions', ia2); const c2 = end !== -1 ? h.lastIndexOf('<div class="card', end) : -1; if (c2 > ia2) h = h.slice(0, c2) + lab + h.slice(c2); else h += lab; }
-        else h += or + lab;
-        setTimeout(() => { try { checkLabors(laborState()); } catch (e) { /* sin aviso */ } }, 0);
+        const or = oracleCard(), ia = h.indexOf('vx-arena-card');
+        if (ia !== -1) { const c = h.lastIndexOf('<div class="card', ia); h = h.slice(0, c) + or + h.slice(c); } else h += or;
       } catch (e) { /* Inicio original */ }
+      return h;
+    };
+  }
+  if (typeof V.train === 'function') {
+    const _train = V.train;
+    V.train = function () {
+      let h = _train.apply(this, arguments);
+      try {
+        const lab = laborsCard(), mk = '<h2>Ejercicios</h2>';
+        h = h.indexOf(mk) !== -1 ? h.replace(mk, lab + mk) : h + lab;
+        setTimeout(() => { try { checkLabors(laborState()); } catch (e) { /* sin aviso */ } }, 0);
+      } catch (e) { /* Entrenos original */ }
       return h;
     };
   }
