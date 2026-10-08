@@ -13,7 +13,8 @@
     "migrate": "node scripts/migrate.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "mock": "node test/mock-server.js",
-    "build:app": "node scripts/build-app.js"
+    "build:app": "node scripts/build-app.js",
+    "start:cluster": "node src/cluster.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -25,6 +26,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.12.0",
+    "rate-limit-redis": "^4.2.0",
+    "redis": "^4.7.0",
     "ws": "^8.18.0",
     "zod": "^3.23.8"
   }

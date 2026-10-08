@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { z } = require('zod');
-const rateLimit = require('express-rate-limit');
+const { limiter } = require('../lib/limiter');
 const config = require('../config');
 const { query, tx } = require('../db');
 const score = require('../lib/score');
@@ -9,7 +9,7 @@ const VMOD = require('../lib/moderation');
 const { requireAuth } = require('../middleware/auth');
 
 // Comprobación "en tiempo real" mientras escribe: permitimos ráfagas, pero no scraping
-const checkLimiter = rateLimit({
+const checkLimiter = limiter({ name: 'check',
   windowMs: 60_000,
   limit: 60,
   standardHeaders: true,
@@ -53,7 +53,7 @@ const statsSchema = z.object({
   sets: z.number().int().min(0).max(5000),
   volume: z.number().min(0).max(10_000_000),
 });
-const statsLimiter = rateLimit({
+const statsLimiter = limiter({ name: 'stats',
   windowMs: 60_000,
   limit: 20,
   standardHeaders: true,
@@ -122,8 +122,18 @@ router.post('/stats', requireAuth, statsLimiter, ah(async (req, res) => {
 
 // POST /api/users/heartbeat   (marca "en línea"; llámalo cada ~30-60 s mientras la app esté abierta)
 router.post('/heartbeat', requireAuth, ah(async (req, res) => {
-  const { rowCount } = await query('UPDATE users SET last_seen_at = now() WHERE id = $1', [req.user.id]);
-  if (!rowCount) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  // Solo escribe si la última marca tiene más de 45 s: con varias pestañas o latidos seguidos
+  // no se reescribe la fila (cada escritura cuesta WAL y vacuum; las lecturas no).
+  const { rows } = await query(
+    `WITH upd AS (
+       UPDATE users SET last_seen_at = now()
+        WHERE id = $1 AND (last_seen_at IS NULL OR last_seen_at < now() - interval '45 seconds')
+       RETURNING 1
+     )
+     SELECT EXISTS (SELECT 1 FROM users WHERE id = $1) AS ok`,
+    [req.user.id]
+  );
+  if (!rows[0].ok) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
   res.status(204).end();
 }));
 

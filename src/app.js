@@ -6,7 +6,7 @@ const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
+const { limiter } = require('./lib/limiter');
 const { ZodError } = require('zod');
 const config = require('./config');
 
@@ -24,9 +24,9 @@ app.use(cors({
 }));
 app.use(compression()); // la app (≈2,8 MB) viaja comprimida
 app.use(express.json({ limit: '16kb' }));
-app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false, skip: () => config.rateLimitOff }));
+app.use(limiter({ name: 'global', windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false, skip: () => config.rateLimitOff }));
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/health', (_req, res) => res.json({ ok: true, pid: process.pid, ws: require('./ws').stats(), uptime: Math.round(process.uptime()) }));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -50,12 +50,20 @@ const APP_CSP = [
 if (appHtml) {
   // Se comprime una sola vez al arrancar (comprimir 2,9 MB en cada visita limitaba a ~20 cargas/s)
   const appGz = zlib.gzipSync(appHtml, { level: 9 });
+  // Brotli pesa bastante menos que gzip con texto: menos ancho de banda por cada visita
+  // Brotli 11 tarda varios segundos: se hace en segundo plano (hilo de libuv) para no bloquear el arranque;
+  // hasta que esté listo se sirve gzip.
+  let appBr = null;
+  zlib.brotliCompress(appHtml, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: Buffer.byteLength(appHtml) } },
+    (err, buf) => { if (!err) appBr = buf; });
   const etag = '"' + crypto.createHash('sha1').update(appHtml).digest('base64url').slice(0, 20) + '"';
   app.get(['/', '/index.html'], (req, res) => {
     res.set({ 'Content-Security-Policy': APP_CSP, 'Cache-Control': 'no-cache', ETag: etag, Vary: 'Accept-Encoding' });
     if (req.headers['if-none-match'] === etag) return res.status(304).end();
     res.type('html');
-    if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) return res.set('Content-Encoding', 'gzip').send(appGz);
+    const ae = req.headers['accept-encoding'] || '';
+    if (appBr && /\bbr\b/.test(ae)) return res.set('Content-Encoding', 'br').send(appBr);
+    if (/\bgzip\b/.test(ae)) return res.set('Content-Encoding', 'gzip').send(appGz);
     res.send(appHtml);
   });
 }

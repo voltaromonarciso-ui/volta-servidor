@@ -176,3 +176,7 @@ confeti y vibración al batir un récord, resumen de la sesión con imagen para 
   Envíos limitados a 20/min por usuario; denuncias a 20/hora.
 - **Sin mal lenguaje**: nombres de usuario, mensajes del foro y texto de las denuncias pasan por `src/lib/moderation.js`.
 - Tras actualizar, ejecuta `npm run migrate` (añade columnas, índices de ranking y la tabla `reports`).
+
+## Escalado
+
+Con una instancia basta `npm start`. Para varias instancias o todos los núcleos (`npm run start:cluster`) configura `REDIS_URL`. Medidas, arquitectura para el millón de usuarios y lista de comprobación en [ESCALADO.md](ESCALADO.md).

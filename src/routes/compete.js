@@ -2,7 +2,7 @@
 // Todo se lee de cifras que el servidor ya validó y puntuó (ver src/lib/score.js y POST /api/users/stats).
 const router = require('express').Router();
 const { z } = require('zod');
-const rateLimit = require('express-rate-limit');
+const { limiter } = require('../lib/limiter');
 const config = require('../config');
 const { query, tx } = require('../db');
 const { ah, HttpError } = require('../lib/http');
@@ -14,7 +14,7 @@ router.use(requireAuth);
 
 // El top de cada ranking es igual para todos: se cachea unos segundos para no repetir la consulta
 // con miles de usuarios abriendo la pantalla a la vez. Tu propia posición se calcula aparte.
-const TOP_TTL = config.rateLimitOff ? 0 : 15_000; // sin caché en los tests
+const TOP_TTL = config.isTest ? 0 : 15_000; // sin caché en los tests
 const topCache = new Map();
 async function top(scope, league, limit) {
   const key = `${scope}:${league}:${limit}`;
@@ -37,6 +37,8 @@ async function top(scope, league, limit) {
 // Una puntuación nueva que entraría en algún top cacheado lo invalida (así te ves subir al momento);
 // las demás no tocan la caché, que es lo que la mantiene barata con millones de envíos.
 function touch(points) {
+  // El histograma NO se toca: tu posición se calcula con tu puntuación nueva frente al de hace ≤ 15 s,
+  // así que ya es correcta; vaciarlo en cada envío lo recalcularía sin parar con millones de usuarios.
   for (const [key, v] of topCache) {
     const limit = +key.split(':')[2];
     if (v.rows.length < limit || points >= v.rows[v.rows.length - 1].score) topCache.delete(key);
@@ -44,6 +46,33 @@ function touch(points) {
 }
 
 // Empates: misma puntuación, misma posición (1, 1, 3…), igual que "tu posición"
+// Posición de cualquier puntuación sin contar filas cada vez: un histograma (puntos → cuántos) por ranking,
+// cacheado unos segundos. Con millones de usuarios, "count(*) WHERE score > X" recorrería medio índice
+// en cada petición; así es una búsqueda binaria en memoria.
+const histCache = new Map();
+async function rankOf(points, league) {
+  const key = league == null ? 'g' : 'l' + league;
+  let h = histCache.get(key);
+  if (!h || !TOP_TTL || h.at < Date.now() - TOP_TTL) {
+    const { rows } = await query(
+      `SELECT week_score AS s, count(*)::int AS n FROM users
+        WHERE week_key = date_trunc('week', now())::date AND NOT week_flagged AND week_score > 0
+          AND ($1::smallint IS NULL OR league = $1)
+        GROUP BY week_score ORDER BY week_score DESC`,
+      [league]
+    );
+    // above[i] = cuántos tienen MÁS puntos que rows[i].s
+    const above = []; let acc = 0;
+    for (const r of rows) { above.push(acc); acc += r.n; }
+    h = { at: Date.now(), scores: rows.map((r) => r.s), above, total: acc };
+    histCache.set(key, h);
+  }
+  // primera puntuación del histograma que es <= points (orden descendente)
+  let lo = 0, hi = h.scores.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (h.scores[mid] > points) lo = mid + 1; else hi = mid; }
+  return (lo < h.scores.length ? h.above[lo] : h.total) + 1;
+}
+
 const entry = (r, i, all) => ({
   rank: all.findIndex((x) => x.score === r.score) + 1,
   username: r.username,
@@ -72,13 +101,7 @@ router.get('/leaderboard', ah(async (req, res) => {
   const list = (await top(scope, me.league, limit)).map(entry);
   let rank = null;
   if (myScore > 0 && !me.week_flagged) {
-    const { rows: r } = await query(
-      `SELECT count(*)::int + 1 AS rank FROM users
-        WHERE week_key = date_trunc('week', now())::date AND NOT week_flagged AND week_score > $1
-          AND ($2::smallint IS NULL OR league = $2)`,
-      [myScore, scope === 'league' ? me.league : null]
-    );
-    rank = r[0].rank;
+    rank = await rankOf(myScore, scope === 'league' ? me.league : null);
   }
   const lg = score.LEAGUES[me.league], next = score.LEAGUES[me.league + 1];
   res.json({
@@ -112,12 +135,7 @@ router.get('/profile/:username', ah(async (req, res) => {
   if (!u) throw new HttpError(404, 'not_found', 'No existe ningún usuario con ese nombre.');
   let rank = null;
   if (u.score > 0 && !u.week_flagged) {
-    const { rows: r } = await query(
-      `SELECT count(*)::int + 1 AS rank FROM users
-        WHERE week_key = date_trunc('week', now())::date AND NOT week_flagged AND week_score > $1`,
-      [u.score]
-    );
-    rank = r[0].rank;
+    rank = await rankOf(u.score, null);
   }
   res.json({
     username: u.username,
@@ -133,7 +151,7 @@ router.get('/profile/:username', ah(async (req, res) => {
 }));
 
 // POST /api/compete/report   { username, reason, details? }
-const reportLimiter = rateLimit({
+const reportLimiter = limiter({ name: 'report',
   windowMs: 60 * 60_000,
   limit: 20,
   standardHeaders: true,
@@ -174,7 +192,7 @@ router.post('/report', reportLimiter, ah(async (req, res) => {
     await c.query('UPDATE users SET week_flagged = true WHERE id = $1', [target]);
     return true;
   });
-  topCache.clear();
+  topCache.clear(); histCache.clear();
   // No revelamos al denunciante si la cuenta ha quedado marcada
   void flagged;
   res.status(201).json({ ok: true, message: 'Gracias. Revisaremos la denuncia.' });

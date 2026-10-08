@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const { z } = require('zod');
-const rateLimit = require('express-rate-limit');
+const { limiter } = require('../lib/limiter');
 const config = require('../config');
 const { query } = require('../db');
 const { ah, HttpError } = require('../lib/http');
@@ -9,7 +9,7 @@ const VMOD = require('../lib/moderation');
 const { sign, requireAuth } = require('../middleware/auth');
 const ws = require('../ws');
 
-const authLimiter = rateLimit({
+const authLimiter = limiter({ name: 'auth',
   windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: true,

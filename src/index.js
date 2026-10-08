@@ -2,6 +2,7 @@ const http = require('http');
 const config = require('./config');
 const { pool } = require('./db');
 const ws = require('./ws');
+const redis = require('./redis');
 const app = require('./app');
 
 const server = http.createServer(app);
@@ -10,7 +11,7 @@ server.listen(config.port, () => console.log(`VOLTA API en http://localhost:${co
 
 const shutdown = () => {
   ws.close();
-  server.close(() => pool.end().finally(() => process.exit(0)));
+  server.close(() => Promise.all([pool.end(), redis.close()]).finally(() => process.exit(0)));
   setTimeout(() => process.exit(1), 10_000).unref();
 };
 process.on('SIGINT', shutdown);
