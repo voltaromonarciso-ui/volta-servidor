@@ -98,6 +98,7 @@
 
   // ── Qué patrón usa cada ejercicio ──
   const RULES = [
+    [/jalón con brazos rectos/i, 'pushdown'], [/tibial/i, 'calf'], [/v-ups|crunch inverso|elevación de piernas tumbado|rodilla al codo/i, 'crunch'], [/prensa/i, 'legpress'], [/press cubano/i, 'ohp'],
     [/fondos en banco/i, 'dip'], [/fondos|dips/i, 'dip'],
     [/flexion|push-up|pushup/i, 'pushup'],
     [/apertura|cruce|peck|pec deck|fly|pullover/i, 'fly'],

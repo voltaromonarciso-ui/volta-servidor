@@ -38,7 +38,49 @@ Saltos a la comba|Gemelos|Gastrocnemio|Gastrocnemio|Peso corporal|Principiante|C
 Rodillo de muñeca|Antebrazo|Antebrazo|Flexores de la muñeca|Barra|Principiante||Aislamiento||Brazos estirados al frente sujetando el rodillo~Enrolla la cuerda hasta arriba y desenróllala despacio
 Encogimientos en máquina|Trapecio|Trapecio|Trapecio superior|Máquina|Principiante||Aislamiento||Hombros bajo las almohadillas, brazos relajados~Sube los hombros hacia las orejas, pausa y baja despacio
 `.trim();
-  const added = xreg(ROWS);
+  const ROWS2 = `
+Press de banca con pausa|Pecho|Pectoral mayor|Pectoral esternal|Barra|Avanzado|Tríceps,Hombros|Compuesto||Baja la barra al pecho y detenla 1–2 s sin rebotar~Empuja explosivo manteniendo los glúteos en el banco
+Press inclinado con agarre neutro|Pecho|Pectoral mayor|Pectoral clavicular|Mancuernas|Intermedio|Tríceps,Hombros|Compuesto||Banco a 30°, palmas enfrentadas~Baja hasta la altura del pecho y empuja juntando las mancuernas arriba
+Aperturas en banco declinado|Pecho|Pectoral mayor|Pectoral inferior|Mancuernas|Intermedio|Hombros|Aislamiento||Banco declinado, mancuernas sobre el pecho~Abre en arco y cierra apretando la parte baja del pecho
+Flexiones con pies elevados|Pecho|Pectoral mayor|Pectoral clavicular|Peso corporal|Intermedio|Tríceps,Hombros|Compuesto||Pies sobre un banco y manos en el suelo~Baja el pecho sin hundir la cadera y empuja
+Flexiones arqueras|Pecho|Pectoral mayor|Pectoral esternal|Peso corporal|Avanzado|Tríceps|Compuesto||Manos muy separadas~Baja hacia un lado con ese brazo flexionado y el otro estirado, alterna
+Remo con mancuerna en banco inclinado|Espalda|Dorsal ancho|Dorsal medio / romboides|Mancuernas|Principiante|Bíceps|Compuesto||Pecho apoyado en un banco a 30°~Tira de los codos hacia atrás juntando las escápulas
+Remo Kroc|Espalda|Dorsal ancho|Dorsal ancho|Mancuernas|Avanzado|Bíceps,Antebrazo|Compuesto||Una mano y una rodilla apoyadas, mancuerna pesada~Tira con potencia hacia la cadera con ligero impulso controlado
+Jalón con brazos rectos|Espalda|Dorsal ancho|Dorsal ancho|Polea|Principiante|Tríceps|Aislamiento||Brazos estirados agarrando la barra alta~Lleva la barra hasta los muslos con los brazos rectos, sin doblar codos
+Dominadas lastradas|Espalda|Dorsal ancho|Dorsal (fibras verticales)|Barra de dominadas|Avanzado|Bíceps|Compuesto||Peso colgado de un cinturón~Sube hasta pasar la barbilla y baja hasta estirar del todo
+Remo gorila|Espalda|Dorsal ancho|Dorsal medio / romboides|Kettlebell|Intermedio|Bíceps,Core|Compuesto||Dos kettlebells en el suelo, cadera atrás~Rema alternando brazos sin girar el tronco
+Peso muerto sumo|Isquiosurales|Isquiosurales|Bíceps femoral / glúteo|Barra|Intermedio|Glúteos,Espalda,Cuádriceps|Compuesto||Pies muy abiertos, agarre entre las piernas~Empuja el suelo hacia fuera y sube con el pecho alto
+Peso muerto con barra hexagonal|Isquiosurales|Isquiosurales|Bíceps femoral / glúteo|Barra|Principiante|Glúteos,Cuádriceps,Trapecio|Compuesto||Colócate dentro de la barra con agarre neutro~Empuja con las piernas y sube con la espalda neutra
+Press militar sentado|Hombros|Deltoides|Deltoides anterior|Mancuernas|Principiante|Tríceps|Compuesto||Sentado con respaldo, mancuernas a la altura de los hombros~Empuja arriba sin chocar las mancuernas
+Elevaciones laterales inclinado|Hombros|Deltoides|Deltoides lateral|Mancuernas|Intermedio||Aislamiento||Apoyado de lado en un banco inclinado~Eleva el brazo hasta la horizontal con control
+Remo al mentón con polea|Hombros|Deltoides|Deltoides lateral / trapecio|Polea|Intermedio|Trapecio|Compuesto||Barra recta en polea baja, agarre algo ancho~Lleva los codos hacia arriba hasta la altura de los hombros
+Press cubano|Hombros|Deltoides|Deltoides posterior|Mancuernas|Intermedio|Trapecio|Compuesto||Codos a la altura de los hombros~Gira los antebrazos hacia arriba y empuja sobre la cabeza
+Curl de arrastre|Bíceps|Bíceps braquial|Bíceps cabeza larga|Barra|Intermedio|Antebrazo|Aislamiento||Barra pegada al cuerpo~Sube la barra rozando el torso llevando los codos atrás
+Curl martillo cruzado|Bíceps|Bíceps braquial|Braquial / braquiorradial|Mancuernas|Principiante|Antebrazo|Aislamiento||Agarre neutro~Sube la mancuerna en diagonal hacia el hombro contrario
+Curl en banco Scott con mancuerna|Bíceps|Bíceps braquial|Bíceps cabeza corta|Mancuernas|Intermedio||Aislamiento||Brazo apoyado en el pupitre~Sube sin despegar el tríceps y baja hasta casi estirar
+Curl de concentración en polea|Bíceps|Bíceps braquial|Bíceps cabeza corta|Polea|Principiante||Aislamiento||Sentado, codo apoyado en el muslo~Sube despacio y aprieta arriba
+Extensión de tríceps en polea por encima de la cabeza|Tríceps|Tríceps braquial|Tríceps cabeza larga|Polea|Intermedio||Aislamiento||De espaldas a la polea con la cuerda tras la cabeza~Extiende los brazos hacia delante y arriba sin mover los codos
+Press de banca agarre cerrado en Smith|Tríceps|Tríceps braquial|Tríceps braquial|Smith|Intermedio|Pecho,Hombros|Compuesto||Manos al ancho de los hombros~Baja con los codos pegados y empuja
+Flexiones en banco para tríceps|Tríceps|Tríceps braquial|Tríceps cabeza lateral / medial|Peso corporal|Principiante|Pecho|Compuesto||Manos en un banco, cuerpo recto~Baja con los codos pegados y empuja
+Sentadilla con barra a la espalda baja|Cuádriceps|Cuádriceps|Recto femoral / vasto medial|Barra|Avanzado|Glúteos,Isquiosurales|Compuesto||Barra más baja sobre los deltoides posteriores~Inclina un poco más el torso y baja hasta la paralela
+Sentadilla Zercher|Cuádriceps|Cuádriceps|Vasto medial / glúteo|Barra|Avanzado|Glúteos,Core|Compuesto||Barra en el pliegue de los codos~Baja manteniendo el pecho alto y sube
+Sentadilla pistol asistida|Cuádriceps|Cuádriceps|Vasto lateral / glúteo|Peso corporal|Avanzado|Glúteos,Core|Compuesto||A una pierna, agarrado a un apoyo~Baja controlando con la otra pierna estirada al frente
+Zancadas caminando|Cuádriceps|Cuádriceps|Vasto medial / glúteo|Mancuernas|Intermedio|Glúteos|Compuesto||Mancuernas a los lados~Avanza alternando zancadas largas sin pausa
+Prensa con pies altos|Glúteos|Glúteo mayor|Glúteo mayor|Máquina|Principiante|Isquiosurales|Compuesto||Pies altos y separados en la plataforma~Baja hasta 90° y empuja con los talones
+Hip thrust con banda|Glúteos|Glúteo mayor|Glúteo medio|Bandas|Principiante||Aislamiento||Banda sobre las rodillas~Sube la cadera abriendo un poco las rodillas
+Patada de glúteo en máquina|Glúteos|Glúteo mayor|Glúteo mayor|Máquina|Principiante|Isquiosurales|Aislamiento||Rodilla apoyada y pie en la plataforma~Empuja hacia atrás y arriba sin arquear la espalda
+Peso muerto rumano a una pierna con mancuerna|Isquiosurales|Isquiosurales|Bíceps femoral / glúteo|Mancuernas|Intermedio|Glúteos,Core|Compuesto||Mancuerna en la mano contraria a la pierna de apoyo~Inclina el tronco con la cadera nivelada y vuelve
+Curl femoral con fitball|Isquiosurales|Isquiosurales|Semitendinoso / semimembranoso|Peso corporal|Intermedio|Glúteos|Aislamiento||Talones sobre el balón y cadera elevada~Lleva el balón hacia los glúteos y estira despacio
+Gemelos en máquina de prensa a una pierna|Gemelos|Gastrocnemio|Gastrocnemio|Máquina|Principiante||Aislamiento||Punta del pie en el borde de la plataforma~Empuja con la punta y baja hasta estirar
+Gemelos tibial anterior|Gemelos|Gastrocnemio|Sóleo|Peso corporal|Principiante||Aislamiento||Espalda en la pared y talones adelantados~Sube las puntas de los pies hacia la espinilla
+Crunch inverso|Core|Recto abdominal|Recto abdominal inferior|Peso corporal|Principiante||Aislamiento||Tumbado con las rodillas a 90°~Lleva las rodillas al pecho despegando la pelvis
+V-ups|Core|Recto abdominal|Recto abdominal|Peso corporal|Avanzado||Aislamiento||Tumbado con brazos y piernas estirados~Sube a la vez tronco y piernas hasta tocar los pies
+Plancha con rodilla al codo|Core|Recto abdominal|Oblicuos|Peso corporal|Intermedio||Aislamiento||Plancha alta~Lleva cada rodilla al codo del mismo lado alternando
+Elevación de piernas tumbado|Core|Recto abdominal|Recto abdominal inferior|Peso corporal|Principiante||Aislamiento||Tumbado con la lumbar pegada al suelo~Sube las piernas rectas a 90° y baja sin tocar el suelo
+Encogimientos en polea|Trapecio|Trapecio|Trapecio superior|Polea|Principiante||Aislamiento||Polea baja con barra o agarres~Sube los hombros en vertical y baja despacio
+Curl inverso con barra Z|Antebrazo|Antebrazo|Extensores de la muñeca|Barra|Intermedio|Bíceps|Aislamiento||Agarre en pronación~Sube la barra con los codos pegados y baja controlando
+`.trim();
+  const added = xreg(ROWS) + xreg(ROWS2);
   window.vxExAdded = added; // para pruebas
 
   // ── Silueta con el grupo muscular correcto resaltado ──
@@ -108,5 +150,45 @@ Plancha con toque de hombro|Plank shoulder taps|Gainage avec touches d'épaule|P
 Saltos a la comba|Jump rope|Corde à sauter|Saltar à corda
 Rodillo de muñeca|Wrist roller|Rouleau de poignet|Rolo de punho
 Encogimientos en máquina|Machine shrugs|Haussements d'épaules à la machine|Encolhimentos na máquina
+Press de banca con pausa|Paused bench press|Développé couché avec pause|Supino com pausa
+Press inclinado con agarre neutro|Neutral-grip incline press|Développé incliné prise neutre|Supino inclinado pega neutra
+Aperturas en banco declinado|Decline dumbbell fly|Écartés sur banc décliné|Aberturas em banco declinado
+Flexiones con pies elevados|Feet-elevated push-ups|Pompes pieds surélevés|Flexões com pés elevados
+Flexiones arqueras|Archer push-ups|Pompes archer|Flexões arqueiro
+Remo con mancuerna en banco inclinado|Incline bench dumbbell row|Rowing haltères sur banc incliné|Remada com halter em banco inclinado
+Remo Kroc|Kroc row|Rowing Kroc|Remada Kroc
+Jalón con brazos rectos|Straight-arm pulldown|Tirage bras tendus|Puxada com braços estendidos
+Dominadas lastradas|Weighted pull-ups|Tractions lestées|Elevações com peso
+Remo gorila|Gorilla row|Rowing gorille|Remada gorila
+Peso muerto sumo|Sumo deadlift|Soulevé de terre sumo|Peso morto sumo
+Peso muerto con barra hexagonal|Trap bar deadlift|Soulevé de terre barre hexagonale|Peso morto com barra hexagonal
+Press militar sentado|Seated shoulder press|Développé épaules assis|Desenvolvimento sentado
+Elevaciones laterales inclinado|Lean-away lateral raise|Élévations latérales penché|Elevações laterais inclinado
+Remo al mentón con polea|Cable upright row|Tirage menton à la poulie|Remada alta na polia
+Press cubano|Cuban press|Développé cubain|Press cubano
+Curl de arrastre|Drag curl|Curl traîné|Rosca arrastada
+Curl martillo cruzado|Cross-body hammer curl|Curl marteau croisé|Rosca martelo cruzada
+Curl en banco Scott con mancuerna|Dumbbell preacher curl|Curl pupitre haltère|Rosca Scott com halter
+Curl de concentración en polea|Cable concentration curl|Curl concentré à la poulie|Rosca concentrada na polia
+Extensión de tríceps en polea por encima de la cabeza|Overhead cable triceps extension|Extension triceps à la poulie au-dessus de la tête|Extensão de tríceps na polia acima da cabeça
+Press de banca agarre cerrado en Smith|Smith close-grip bench press|Développé serré à la Smith|Supino pega fechada na Smith
+Flexiones en banco para tríceps|Bench triceps push-ups|Pompes triceps sur banc|Flexões no banco para tríceps
+Sentadilla con barra a la espalda baja|Low-bar back squat|Squat barre basse|Agachamento barra baixa
+Sentadilla Zercher|Zercher squat|Squat Zercher|Agachamento Zercher
+Sentadilla pistol asistida|Assisted pistol squat|Pistol squat assisté|Agachamento pistol assistido
+Zancadas caminando|Walking lunges|Fentes marchées|Afundos a caminhar
+Prensa con pies altos|High-foot leg press|Presse pieds hauts|Leg press com pés altos
+Hip thrust con banda|Banded hip thrust|Hip thrust avec élastique|Hip thrust com banda
+Patada de glúteo en máquina|Machine glute kickback|Kickback fessier à la machine|Coice de glúteo na máquina
+Peso muerto rumano a una pierna con mancuerna|Single-leg dumbbell RDL|Soulevé de terre roumain unijambe haltère|Peso morto romeno unilateral com halter
+Curl femoral con fitball|Stability ball hamstring curl|Leg curl sur ballon|Curl femoral com bola
+Gemelos en máquina de prensa a una pierna|Single-leg press calf raise|Mollets unijambe à la presse|Gémeos unilateral na leg press
+Gemelos tibial anterior|Tibialis raise|Relevés du tibial|Elevação do tibial
+Crunch inverso|Reverse crunch|Crunch inversé|Abdominal invertido
+V-ups|V-ups|V-ups|V-ups
+Plancha con rodilla al codo|Plank knee-to-elbow|Gainage genou au coude|Prancha joelho ao cotovelo
+Elevación de piernas tumbado|Lying leg raise|Relevé de jambes allongé|Elevação de pernas deitado
+Encogimientos en polea|Cable shrugs|Haussements d'épaules à la poulie|Encolhimentos na polia
+Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca inversa com barra W
 `);
 })();
