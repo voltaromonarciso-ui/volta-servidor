@@ -222,22 +222,25 @@
     if (opts.crop) {
       const pts = Object.keys(qb).map((k) => qb[k]).concat([qb.w, qb.w2]);
       let x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
-      x0 = x0 * .73 + 34 - 16; x1 = x1 * .73 + 34 + 16; y0 = y0 * .73 + 40 - 16; y1 = Math.max(y1 * .73 + 40 + 10, 150);
+      // Encuadre ceñido: poco margen y el suelo justo bajo los pies, para que la figura llene la miniatura
+      x0 = x0 * .73 + 34 - 9; x1 = x1 * .73 + 34 + 9; y0 = y0 * .73 + 40 - 9; y1 = Math.min(Math.max(y1 * .73 + 40 + 7, 120), 152);
       let w = x1 - x0, h = y1 - y0;
       if (w / h < 4 / 3) { const nw = h * 4 / 3; x0 -= (nw - w) / 2; w = nw; } else { const nh = w * 3 / 4; y0 -= (nh - h); h = nh; }
       vb = `${f(x0)} ${f(y0)} ${f(w)} ${f(h)}`;
     }
     let s = `<svg viewBox="${vb}" role="img" aria-label="${String(e[0]).replace(/"/g, '&quot;')}" style="width:100%;height:auto;display:block">` +
-      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#26323a"/><stop offset="1" stop-color="#11161a"/></radialGradient>` +
+      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="${opts.crop ? '#eef2ef' : '#26323a'}"/><stop offset="1" stop-color="${opts.crop ? '#c3ccc6' : '#11161a'}"/></radialGradient>` +
       `<linearGradient id="${id}sk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8c6d1"/><stop offset=".55" stop-color="#7d8f9d"/><stop offset="1" stop-color="#4c5d6b"/></linearGradient>` +
       `<linearGradient id="${id}fr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c7d8a"/><stop offset="1" stop-color="#3a4752"/></linearGradient>` +
       `<linearGradient id="${id}sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46525b"/><stop offset="1" stop-color="#1f262c"/></linearGradient>` +
       `<filter id="${id}gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>` +
       `<rect x="-60" y="-60" width="360" height="280" fill="url(#${id}bg)"/>`;
-    for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="#2a3a44" stroke-width=".6"/>`;
-    s += `<rect y="146" width="240" height="14" fill="#151c21"/><path d="M0 146H240" stroke="#3a4a54" stroke-width="1"/>`;
+    // Miniaturas en estudio claro (como las fotos reales); la ficha grande mantiene el escenario oscuro
+    const floor = opts.crop ? ['#aab4ae', '#b9c3bd', '#98a39c'] : ['#2a3a44', '#151c21', '#3a4a54'];
+    for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="${floor[0]}" stroke-width=".6"/>`;
+    s += `<rect x="-60" y="146" width="360" height="60" fill="${floor[1]}"/><path d="M-60 146H300" stroke="${floor[2]}" stroke-width="1"/>`;
     // Sombra en el suelo
-    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#000" opacity=".4"/>`;
+    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#000" opacity="${opts.crop ? .18 : .4}"/>`;
     s += '<g transform="translate(34 40) scale(.73)">';
     s += props(P0.props, eq, pat);
     // Cable

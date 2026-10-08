@@ -3039,15 +3039,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 
 /* Progreso tiene un fondo oscuro fijo: en tema claro su texto quedaba invisible. Dentro de ese
    bloque se usan siempre los colores del tema oscuro. */
-:root[data-t="light"] .vx.vp{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;color:var(--tx)}
-@media (prefers-color-scheme:light){:root[data-t="auto"] .vx.vp{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;color:var(--tx)}}
 
 /* ───── Avatar del ejercicio ───── */
 .vx-avatar{position:relative;border-radius:14px;overflow:hidden;background:#11161a}
 .vx-avatar + .vx-avatar,img + .vx-avatar{margin-top:6px}
 .vx-av-tag{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:10px;background:rgba(0,0,0,.45);color:#9dff2e;font-size:11px;font-weight:800;letter-spacing:.3px}
-.ex-img.vx-av-thumb{background:#11161a}
-.ex-img.vx-av-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 70%;outline:0}
+.ex-img.vx-av-thumb{background:#d6ddd8}
+.ex-img.vx-av-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 60%;outline:0}
 
 /* ───── Técnica correcta ───── */
 .vx-tech{border-color:rgba(157,255,46,.45)}
@@ -3097,6 +3095,57 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-ar-center{display:flex;justify-content:center}
 .vx-pu-act>.btn{flex:1;white-space:nowrap}
 .vx-pu-act>.btn.s.g:last-child{flex:0 0 auto;padding-left:16px;padding-right:16px}
+
+/* Nutrición y Tu progreso en tema claro: fondo, tarjetas y textos claros (antes los títulos quedaban invisibles) */
+:root[data-t="light"] .vx{background:var(--bg)}
+:root[data-t="light"] .vx .card,:root[data-t="light"] .vx .li,:root[data-t="light"] .vcnt div{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="light"] .vx .chip{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="light"] .vx .chip.on{color:#fff;background:var(--ac);border-color:var(--ac);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="light"] .vx .btn.sm{color:#fff;background:linear-gradient(90deg,#4bb800,#2f9e00);box-shadow:0 4px 12px rgba(88,184,0,.3)}
+:root[data-t="light"] .vx .btn.sm.s{background:var(--card);color:var(--tx);border-color:var(--ln)}
+:root[data-t="light"] .vx .days>div.on{color:#fff;box-shadow:0 4px 12px rgba(88,184,0,.4)}
+:root[data-t="light"] .vcnt div{color:var(--mu)}
+:root[data-t="light"] .mb{background:var(--card2)}
+:root[data-t="light"] .vm>div{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="light"] .vp .chip{background:var(--card);color:var(--mu)}
+:root[data-t="light"] .vp .chip.on{color:#fff;background:linear-gradient(180deg,#5ccc0a,#3f9100);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="light"] .vp .rs,:root[data-t="light"] .vp .vch{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="light"] .vp .vch:after{background:none}
+:root[data-t="light"] .vp .vsm.k{color:var(--tx)}
+:root[data-t="light"] .vp .vcnt b{text-shadow:none}
+:root[data-t="light"] .vlogo img,:root[data-t="light"] img.vlogo-i{filter:invert(1) hue-rotate(180deg) saturate(1.5) brightness(.85) drop-shadow(0 2px 6px rgba(60,140,0,.25))!important}
+:root[data-t="light"] .vx .card[onclick="go('explore')"]{background:linear-gradient(135deg,#f4ffe6,#ffffff)!important;border-color:color-mix(in srgb,var(--ac) 45%,var(--ln))}
+:root[data-t="light"] .vcard span{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+:root[data-t="light"] .vx circle[stroke="#222"]{stroke:var(--card2)}
+:root[data-t="light"] .vx circle[stroke="#00FF66"]{stroke:#3fbf00;filter:none!important}
+:root[data-t="light"] .vhero{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;color:var(--tx)}
+@media (prefers-color-scheme:light){
+:root[data-t="auto"] .vx{background:var(--bg)}
+:root[data-t="auto"] .vx .card,:root[data-t="auto"] .vx .li,:root[data-t="auto"] .vcnt div{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="auto"] .vx .chip{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="auto"] .vx .chip.on{color:#fff;background:var(--ac);border-color:var(--ac);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="auto"] .vx .btn.sm{color:#fff;background:linear-gradient(90deg,#4bb800,#2f9e00);box-shadow:0 4px 12px rgba(88,184,0,.3)}
+:root[data-t="auto"] .vx .btn.sm.s{background:var(--card);color:var(--tx);border-color:var(--ln)}
+:root[data-t="auto"] .vx .days>div.on{color:#fff;box-shadow:0 4px 12px rgba(88,184,0,.4)}
+:root[data-t="auto"] .vcnt div{color:var(--mu)}
+:root[data-t="auto"] .mb{background:var(--card2)}
+:root[data-t="auto"] .vm>div{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="auto"] .vp .chip{background:var(--card);color:var(--mu)}
+:root[data-t="auto"] .vp .chip.on{color:#fff;background:linear-gradient(180deg,#5ccc0a,#3f9100);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="auto"] .vp .rs,:root[data-t="auto"] .vp .vch{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="auto"] .vp .vch:after{background:none}
+:root[data-t="auto"] .vp .vsm.k{color:var(--tx)}
+:root[data-t="auto"] .vp .vcnt b{text-shadow:none}
+:root[data-t="auto"] .vlogo img,:root[data-t="auto"] img.vlogo-i{filter:invert(1) hue-rotate(180deg) saturate(1.5) brightness(.85) drop-shadow(0 2px 6px rgba(60,140,0,.25))!important}
+:root[data-t="auto"] .vx .card[onclick="go('explore')"]{background:linear-gradient(135deg,#f4ffe6,#ffffff)!important;border-color:color-mix(in srgb,var(--ac) 45%,var(--ln))}
+:root[data-t="auto"] .vcard span{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+:root[data-t="auto"] .vx circle[stroke="#222"]{stroke:var(--card2)}
+:root[data-t="auto"] .vx circle[stroke="#00FF66"]{stroke:#3fbf00;filter:none!important}
+:root[data-t="auto"] .vhero{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;color:var(--tx)}
+}
+
+/* Perfil: la tarjeta de logros ya no tapa las cifras de arriba */
+.grid2 + .vx-achcard{margin-top:18px}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -5231,22 +5280,25 @@ Curl inverso con barra Z|EZ-bar reverse curl|Curl inversé barre EZ|Rosca invers
     if (opts.crop) {
       const pts = Object.keys(qb).map((k) => qb[k]).concat([qb.w, qb.w2]);
       let x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0])), y0 = Math.min(...pts.map((p) => p[1])), y1 = Math.max(...pts.map((p) => p[1]));
-      x0 = x0 * .73 + 34 - 16; x1 = x1 * .73 + 34 + 16; y0 = y0 * .73 + 40 - 16; y1 = Math.max(y1 * .73 + 40 + 10, 150);
+      // Encuadre ceñido: poco margen y el suelo justo bajo los pies, para que la figura llene la miniatura
+      x0 = x0 * .73 + 34 - 9; x1 = x1 * .73 + 34 + 9; y0 = y0 * .73 + 40 - 9; y1 = Math.min(Math.max(y1 * .73 + 40 + 7, 120), 152);
       let w = x1 - x0, h = y1 - y0;
       if (w / h < 4 / 3) { const nw = h * 4 / 3; x0 -= (nw - w) / 2; w = nw; } else { const nh = w * 3 / 4; y0 -= (nh - h); h = nh; }
       vb = `${f(x0)} ${f(y0)} ${f(w)} ${f(h)}`;
     }
     let s = `<svg viewBox="${vb}" role="img" aria-label="${String(e[0]).replace(/"/g, '&quot;')}" style="width:100%;height:auto;display:block">` +
-      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#26323a"/><stop offset="1" stop-color="#11161a"/></radialGradient>` +
+      `<defs><radialGradient id="${id}bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="${opts.crop ? '#eef2ef' : '#26323a'}"/><stop offset="1" stop-color="${opts.crop ? '#c3ccc6' : '#11161a'}"/></radialGradient>` +
       `<linearGradient id="${id}sk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8c6d1"/><stop offset=".55" stop-color="#7d8f9d"/><stop offset="1" stop-color="#4c5d6b"/></linearGradient>` +
       `<linearGradient id="${id}fr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c7d8a"/><stop offset="1" stop-color="#3a4752"/></linearGradient>` +
       `<linearGradient id="${id}sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46525b"/><stop offset="1" stop-color="#1f262c"/></linearGradient>` +
       `<filter id="${id}gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>` +
       `<rect x="-60" y="-60" width="360" height="280" fill="url(#${id}bg)"/>`;
-    for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="#2a3a44" stroke-width=".6"/>`;
-    s += `<rect y="146" width="240" height="14" fill="#151c21"/><path d="M0 146H240" stroke="#3a4a54" stroke-width="1"/>`;
+    // Miniaturas en estudio claro (como las fotos reales); la ficha grande mantiene el escenario oscuro
+    const floor = opts.crop ? ['#aab4ae', '#b9c3bd', '#98a39c'] : ['#2a3a44', '#151c21', '#3a4a54'];
+    for (let i = 0; i < 9; i++) s += `<path d="M${i * 30} 146L${120 + (i * 30 - 120) * 1.8} 160" stroke="${floor[0]}" stroke-width=".6"/>`;
+    s += `<rect x="-60" y="146" width="360" height="60" fill="${floor[1]}"/><path d="M-60 146H300" stroke="${floor[2]}" stroke-width="1"/>`;
     // Sombra en el suelo
-    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#000" opacity=".4"/>`;
+    s += `<ellipse cx="${f(qa.hip[0] * .73 + 34)}" cy="147" rx="36" ry="3.6" fill="#000" opacity="${opts.crop ? .18 : .4}"/>`;
     s += '<g transform="translate(34 40) scale(.73)">';
     s += props(P0.props, eq, pat);
     // Cable
