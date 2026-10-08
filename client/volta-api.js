@@ -51,14 +51,32 @@
       const d = await http('/api/auth/login', { method: 'POST', body: { identifier, password }, auth: false });
       setToken(d.token); return d.user;
     },
+    /** Renueva la sesión (llámalo al abrir la app): la cuenta se recuerda mientras se use. */
+    async refresh() {
+      if (!S.token) return null;
+      const d = await http('/api/auth/refresh', { method: 'POST', body: {} });
+      setToken(d.token); return d.user;
+    },
     logout() { setToken(''); VoltaAPI.disconnect(); },
     me: () => http('/api/auth/me').then((d) => d.user),
+    /** Borra la cuenta en el servidor (pide la contraseña) y cierra la sesión. */
+    async deleteAccount(password) {
+      await http('/api/auth/me', { method: 'DELETE', body: { password } });
+      VoltaAPI.logout();
+    },
 
     // ── Usuarios ──
     /** → { available, reason?, message? }  (reason: banned | format | taken) */
     checkUsername: (username) => http('/api/users/check-username?' + qs({ username }), { auth: false }),
     searchUsers: (q) => http('/api/users/search?' + qs({ q })).then((d) => d.users),
     heartbeat: () => http('/api/users/heartbeat', { method: 'POST', body: {} }),
+    /** Resumen de la semana en curso: { days, sets, volume } */
+    submitStats: (s) => http('/api/users/stats', { method: 'POST', body: s }),
+    /** → { week, entries: [{ username, days, sets, volume, me }] } (tú + amigos, por volumen) */
+    leaderboard: () => http('/api/friends/leaderboard'),
+    arena: (scope = 'league', limit = 50) => http(`/api/compete/leaderboard?scope=${encodeURIComponent(scope)}&limit=${limit}`),
+    publicProfile: (username) => http('/api/compete/profile/' + encodeURIComponent(username)),
+    report: (username, reason, details) => http('/api/compete/report', { method: 'POST', body: { username, reason, details } }),
 
     // ── Amigos ──
     friends: () => http('/api/friends'),                       // { friends, incoming, outgoing }

@@ -1,0 +1,396 @@
+/* VOLTA · mejoras de interfaz (se inyecta con `npm run build:app`) */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%}
+
+/* Títulos sin palabras huérfanas; textos cortos con mejor corte */
+h1,h2,h3{text-wrap:balance}
+.mu,.card p,label{text-wrap:pretty}
+
+/* Números que se actualizan: no "bailan" al cambiar de cifra */
+#tm,.w9c input,input[type=number],.num,nav button,.setc,.chip,b,strong{font-variant-numeric:tabular-nums}
+
+/* Foco visible solo con teclado (no al tocar) */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:12px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0;border-color:var(--ac)}
+
+/* Campos numéricos del entreno: sin flechas del navegador, cifra grande centrada */
+.w9c input::-webkit-outer-spin-button,.w9c input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.w9c input{-moz-appearance:textfield}
+
+/* Áreas táctiles mínimas de 44 px en controles con icono */
+.w9b,.back{min-width:44px;min-height:44px}
+
+/* Confeti de récord personal */
+.vx-confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+
+@media (prefers-reduced-motion:reduce){.vx-confetti{display:none}}
+
+/* Resumen de la sesión al terminar */
+.vx-sum{margin-top:12px;text-align:left}
+.vx-sum-row{padding:9px 0;border-top:1px solid var(--ln);gap:10px}
+.vx-sum-row:first-of-type{margin-top:8px}
+.vx-pr{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:8px;background:#ffd23f;color:#1a1400;font-size:11px;font-weight:800;letter-spacing:.3px;vertical-align:1px}
+
+/* ───── Misiones diarias ───── */
+.vx-missions .vx-count{font-weight:800;color:var(--ac)}
+.vx-missions.vx-perfect{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac),0 0 24px rgba(157,255,46,.18)}
+.vx-mrow{gap:12px;padding:10px 0;border-top:1px solid var(--ln)}
+.vx-mrow:first-of-type{margin-top:8px}
+.vx-mrow.done .vx-ml{color:var(--mu);text-decoration:line-through;text-decoration-color:rgba(157,255,46,.6)}
+.vx-mic{position:relative;width:38px;height:38px;flex:none;display:grid;place-items:center}
+.vx-mic span{position:relative;font-size:16px;font-weight:800;color:var(--ac)}
+.vx-ring{position:absolute;inset:0;width:38px;height:38px;transform:rotate(-90deg)}
+.vx-ring-bg{fill:none;stroke:var(--card2);stroke-width:3.5}
+.vx-ring-fg{fill:none;stroke:var(--ac);stroke-width:3.5;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1)}
+.vx-ml{font-weight:700}
+.vx-water{border-color:#3fb7ff;color:#7fd0ff}
+
+/* ───── Logros ───── */
+.vx-achcard{cursor:pointer}
+.vx-achbar{height:8px;border-radius:8px;background:var(--card2);overflow:hidden;margin-top:10px}
+.vx-achbar.big{height:10px;margin-bottom:16px}
+.vx-achbar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.vx-achnext{gap:10px;margin-top:12px}
+.vx-badge{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--card2);font-size:28px;flex:none}
+.vx-badge.sm{width:42px;height:42px;font-size:20px}
+.vx-badge i{position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p)*360deg),transparent 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 0)}
+.vx-achgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.vx-ach{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.vx-ach b{font-size:14px;text-wrap:balance}
+.vx-ach .mu{font-size:12px}
+.vx-ach:not(.ok) .vx-badge span{filter:grayscale(1);opacity:.45}
+.vx-ach.ok{border-color:rgba(157,255,46,.55);background:linear-gradient(180deg,rgba(157,255,46,.08),var(--card) 60%)}
+.vx-ach.ok .vx-badge{background:radial-gradient(circle at 30% 30%,rgba(157,255,46,.35),var(--card2));box-shadow:0 0 18px rgba(157,255,46,.25)}
+.vx-achp{font-size:12px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums}
+
+/* ───── Recuperación muscular ───── */
+.vx-recgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.vx-recm{position:relative;overflow:hidden;border-radius:12px;background:var(--card2);padding:8px 8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.vx-recm span{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vx-recm em{font-style:normal;font-size:11px;color:var(--mu);font-variant-numeric:tabular-nums}
+.vx-recm i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px}
+.vx-recm.ok i{background:var(--ac)}.vx-recm.ok em{color:var(--ac)}
+.vx-recm.mid i{background:#ffc53d}
+.vx-recm.low i{background:#ff5c5c}
+
+/* ───── Calendario de actividad ───── */
+.vx-heatgrid{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px}
+.vx-heatgrid i,.vx-heatleg i{display:block;aspect-ratio:1;border-radius:3px;background:var(--card2)}
+.vx-heatleg{gap:4px;justify-content:flex-end;margin-top:8px}
+.vx-heatleg i{width:11px}
+.vx-heatgrid .l1,.vx-heatleg .l1{background:rgba(157,255,46,.28)}
+.vx-heatgrid .l2,.vx-heatleg .l2{background:rgba(157,255,46,.5)}
+.vx-heatgrid .l3,.vx-heatleg .l3{background:rgba(157,255,46,.75)}
+.vx-heatgrid .l4,.vx-heatleg .l4{background:var(--ac)}
+.vx-heatgrid .lf{background:transparent;border:1px dashed var(--ln)}
+
+/* ───── Frase del día ───── */
+.vx-quote{padding:6px 4px 18px;text-align:center}
+.vx-quote p{margin-top:6px;font-size:16px;font-weight:700;font-style:italic;text-wrap:balance}
+
+/* Entrada suave de las tarjetas nuevas */
+@keyframes vxIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.vx-missions,.vx-rec,.vx-achcard,.vx-heat{animation:vxIn .35s cubic-bezier(.2,.8,.2,1) both}
+
+/* ───── Cronómetro de sesión y siguiente ejercicio ───── */
+.vx-clock{margin-left:auto;padding:6px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--ln);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vx-next{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;padding:12px 14px;border:1px dashed var(--ln);border-radius:16px}
+.vx-next b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ───── Resumen semanal en historias ───── */
+.vx-weekcard{cursor:pointer}
+.vx-weekcard.hl{border-color:var(--ac);background:linear-gradient(135deg,rgba(157,255,46,.16),var(--card) 70%)}
+.vx-story{position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 80% at 50% 0%,#24461a 0%,#0a1208 55%,#050805 100%);color:var(--tx);display:flex;flex-direction:column;padding:calc(14px + var(--pd)) 22px calc(30px + var(--pb));outline:none;animation:vxIn .25s ease both;user-select:none}
+.vx-st-bars{display:flex;gap:5px}
+.vx-st-bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;position:relative}
+.vx-st-bars i.done{background:#f2f6f0}
+.vx-st-bars i.on::after{content:"";position:absolute;inset:0;background:#f2f6f0;transform-origin:left;animation:vxBar 5s linear forwards}
+@keyframes vxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.vx-st-x{position:absolute;top:calc(26px + var(--pd));right:16px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;font-size:18px;cursor:pointer}
+.vx-st-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;animation:vxIn .35s cubic-bezier(.2,.8,.2,1) both}
+.vx-st-body h2{font-size:34px;line-height:1.1;margin:0}
+.vx-st-body p{font-size:18px;color:var(--mu)}
+.vx-st-k{font-size:14px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ac)}
+.vx-st-big{font-size:88px;font-weight:900;line-height:1;color:var(--ac);font-variant-numeric:tabular-nums;letter-spacing:-2px}
+.vx-st-big small{font-size:30px;font-weight:800;letter-spacing:0}
+.vx-st-l{font-size:18px;color:var(--mu)}
+.vx-st-row{font-size:20px;margin-top:8px}
+.vx-st-delta{font-size:22px;font-weight:800;margin-top:6px}.vx-st-delta span{font-size:14px;font-weight:600;color:var(--mu)}
+.vx-st-delta.up{color:var(--ac)}.vx-st-delta.down{color:#ff8a5c}
+.vx-st-body .btn{margin-top:20px}
+@media (prefers-reduced-motion:reduce){.vx-st-bars i.on::after{animation:none;transform:none}}
+.vx-st-big{white-space:nowrap}
+.vx-st-big.m{font-size:68px}
+.vx-st-big.s{font-size:52px;letter-spacing:-1px}
+.vx-st-big.s small,.vx-st-big.m small{font-size:24px}
+
+/* ───── Actividad (campana) ───── */
+.vx-bell{position:relative}
+.vx-dot{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 2px var(--bg),0 0 8px var(--ac)}
+.vx-soc{font-size:18px}
+.vx-inbox{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.vx-ibi{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--ln)}
+.vx-ibi[onclick]{cursor:pointer}
+.vx-ibi.new{border-color:rgba(157,255,46,.55);background:linear-gradient(90deg,rgba(157,255,46,.08),var(--card) 60%)}
+.vx-ibic{width:40px;height:40px;flex:none;border-radius:12px;background:var(--card2);display:grid;place-items:center;font-size:20px}
+.vx-empty{text-align:center;padding:60px 20px}.vx-empty div{font-size:44px}.vx-empty p{margin-top:10px}
+.ib:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+
+/* ───── Clasificación semanal ───── */
+.vx-lb-body{margin-top:10px}
+.vx-lbr{gap:10px;padding:9px 6px;border-top:1px solid var(--ln)}
+.vx-lbr:first-child{border-top:0}
+.vx-lbr.me{background:rgba(157,255,46,.08);border-radius:12px}
+.vx-lbp{width:28px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+.vx-lbv{color:var(--ac);font-variant-numeric:tabular-nums;white-space:nowrap}
+.vx-frz{padding:3px 9px;border-radius:10px;background:rgba(120,200,255,.14);border:1px solid rgba(120,200,255,.45);color:#9fdcff;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+
+/* Progreso tiene un fondo oscuro fijo: en tema claro su texto quedaba invisible. Dentro de ese
+   bloque se usan siempre los colores del tema oscuro. */
+
+/* ───── Avatar del ejercicio ───── */
+.vx-avatar{position:relative;border-radius:14px;overflow:hidden;background:#c4cfc9}
+.vx-avatar .vx-av-tag{background:rgba(255,255,255,.75);color:#2c3a33}
+.vx-avatar + .vx-avatar,img + .vx-avatar{margin-top:6px}
+.vx-av-tag{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:10px;background:rgba(0,0,0,.45);color:#9dff2e;font-size:11px;font-weight:800;letter-spacing:.3px}
+.ex-img.vx-av-thumb{background:#c4cfc9}
+.ex-img.vx-av-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 60%;outline:0}
+
+/* ───── Técnica correcta ───── */
+.vx-tech{border-color:rgba(157,255,46,.45)}
+.vx-tech-s{margin-top:12px}
+.vx-tech-h{display:block;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.vx-tech p{margin:0;line-height:1.45}
+.vx-tech ol,.vx-tech ul{margin:4px 0 0;padding-left:20px;line-height:1.45}
+.vx-tech li{margin:3px 0}
+.vx-tech ul li::marker{color:#ff8a5c}
+.vx-tech-tip{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(157,255,46,.08);line-height:1.4}
+
+/* Temporizador de cocina y raciones */
+.vx-tmr{display:inline-flex;margin:6px 0 0 4px;padding:4px 10px;font-size:12px;vertical-align:middle;cursor:pointer}
+.vx-cook{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;border-radius:999px;background:var(--card,#16181d);color:var(--tx,#fff);border:1px solid var(--ac,#c6ff3d);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;max-width:calc(100vw - 32px)}
+.vx-cook b{font-variant-numeric:tabular-nums;font-size:18px;color:var(--ac,#c6ff3d)}
+.vx-cook button{background:none;border:0;color:inherit;font-size:16px;cursor:pointer;padding:2px 6px}
+.vx-cook.done{animation:vxPulse 1s ease-in-out 3}
+@keyframes vxPulse{50%{transform:translateX(-50%) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.vx-cook.done{animation:none}}
+.vx-srv{margin-top:10px}
+.vx-srv .btn[disabled]{opacity:.4;pointer-events:none}
+
+/* Arena: ligas y ranking */
+.vx-arena-card{cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 12%,var(--card)),var(--card));border-color:color-mix(in srgb,var(--ac) 40%,var(--ln))}
+.vx-xpbar{height:8px;border-radius:99px;overflow:hidden}
+.vx-xpbar i{background:linear-gradient(90deg,var(--ac2),var(--ac));box-shadow:0 0 12px color-mix(in srgb,var(--ac) 60%,transparent)}
+.vx-badge{flex:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.vx-ar-hero{position:relative;overflow:hidden;--lg:#e59a5c}
+.vx-ar-hero.lg-hermes{--lg:#e59a5c}.vx-ar-hero.lg-artemisa{--lg:#c9d1d9}.vx-ar-hero.lg-ares{--lg:#ef5b45}.vx-ar-hero.lg-atenea{--lg:#4fd1b5}.vx-ar-hero.lg-poseidon{--lg:#5b8cff}.vx-ar-hero.lg-zeus{--lg:#f5c542}
+.vx-ar-motto{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);margin:-2px 0 4px}
+.vx-ar-glow{position:absolute;inset:-40% -20% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--lg) 45%,transparent),transparent 70%);pointer-events:none;animation:vxGlow 4s ease-in-out infinite alternate}
+@keyframes vxGlow{to{transform:translate(-20px,10px) scale(1.1)}}
+.vx-ar-hero>*:not(.vx-ar-glow){position:relative}
+.vx-ar-hero .vx-badge{animation:vxFloat 3.2s ease-in-out infinite}
+@keyframes vxFloat{50%{transform:translateY(-4px)}}
+.vx-ar-lg{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--lg)}
+:root[data-t="light"] .vx-ar-lg{color:color-mix(in srgb,var(--lg) 60%,#000)}
+.vx-ar-stats .big{font-size:22px}
+.vx-ar-tabs{margin:14px 0 4px}
+.vx-ar-row{gap:10px;align-items:center;padding:9px 6px;border-radius:12px;cursor:pointer}
+.vx-ar-row+.vx-ar-row{border-top:1px solid var(--ln)}
+.vx-ar-row.me{background:color-mix(in srgb,var(--ac) 14%,transparent);border-top-color:transparent}
+.vx-ar-row.podium .vx-ar-pos{font-size:20px}
+.vx-ar-pos{width:28px;text-align:center;font-weight:800;color:var(--mu)}
+.vx-ar-pts{white-space:nowrap;color:var(--ac)}
+.vx-ar-join{border-color:var(--ac)}
+@media (prefers-reduced-motion:reduce){.vx-ar-glow,.vx-ar-hero .vx-badge{animation:none}}
+.vx-ar-center{display:flex;justify-content:center}
+.vx-pu-act>.btn{flex:1;white-space:nowrap}
+.vx-pu-act>.btn.s.g:last-child{flex:0 0 auto;padding-left:16px;padding-right:16px}
+
+/* Nutrición y Tu progreso en tema claro: fondo, tarjetas y textos claros (antes los títulos quedaban invisibles) */
+:root[data-t="light"] .vx{background:var(--bg)}
+:root[data-t="light"] .vx .card,:root[data-t="light"] .vx .li,:root[data-t="light"] .vcnt div{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="light"] .vx .chip{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="light"] .vx .chip.on{color:#fff;background:var(--ac);border-color:var(--ac);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="light"] .vx .btn.sm{color:#fff;background:linear-gradient(90deg,#4bb800,#2f9e00);box-shadow:0 4px 12px rgba(88,184,0,.3)}
+:root[data-t="light"] .vx .btn.sm.s{background:var(--card);color:var(--tx);border-color:var(--ln)}
+:root[data-t="light"] .vx .days>div.on{color:#fff;box-shadow:0 4px 12px rgba(88,184,0,.4)}
+:root[data-t="light"] .vcnt div{color:var(--mu)}
+:root[data-t="light"] .mb{background:var(--card2)}
+:root[data-t="light"] .vm>div{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="light"] .vp .chip{background:var(--card);color:var(--mu)}
+:root[data-t="light"] .vp .chip.on{color:#fff;background:linear-gradient(180deg,#5ccc0a,#3f9100);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="light"] .vp .rs,:root[data-t="light"] .vp .vch{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="light"] .vp .vch:after{background:none}
+:root[data-t="light"] .vp .vsm.k{color:var(--tx)}
+:root[data-t="light"] .vp .vcnt b{text-shadow:none}
+:root[data-t="light"] .vlogo img,:root[data-t="light"] img.vlogo-i{filter:invert(1) hue-rotate(180deg) saturate(1.5) brightness(.85) drop-shadow(0 2px 6px rgba(60,140,0,.25))!important}
+:root[data-t="light"] .vx .card[onclick="go('explore')"]{background:linear-gradient(135deg,#f4ffe6,#ffffff)!important;border-color:color-mix(in srgb,var(--ac) 45%,var(--ln))}
+:root[data-t="light"] .vcard span{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+:root[data-t="light"] .vx circle[stroke="#222"]{stroke:var(--card2)}
+:root[data-t="light"] .vx circle[stroke="#00FF66"]{stroke:#3fbf00;filter:none!important}
+:root[data-t="light"] .vhero{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;color:var(--tx)}
+@media (prefers-color-scheme:light){
+:root[data-t="auto"] .vx{background:var(--bg)}
+:root[data-t="auto"] .vx .card,:root[data-t="auto"] .vx .li,:root[data-t="auto"] .vcnt div{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="auto"] .vx .chip{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="auto"] .vx .chip.on{color:#fff;background:var(--ac);border-color:var(--ac);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="auto"] .vx .btn.sm{color:#fff;background:linear-gradient(90deg,#4bb800,#2f9e00);box-shadow:0 4px 12px rgba(88,184,0,.3)}
+:root[data-t="auto"] .vx .btn.sm.s{background:var(--card);color:var(--tx);border-color:var(--ln)}
+:root[data-t="auto"] .vx .days>div.on{color:#fff;box-shadow:0 4px 12px rgba(88,184,0,.4)}
+:root[data-t="auto"] .vcnt div{color:var(--mu)}
+:root[data-t="auto"] .mb{background:var(--card2)}
+:root[data-t="auto"] .vm>div{background:var(--card);border-color:var(--ln);color:var(--tx)}
+:root[data-t="auto"] .vp .chip{background:var(--card);color:var(--mu)}
+:root[data-t="auto"] .vp .chip.on{color:#fff;background:linear-gradient(180deg,#5ccc0a,#3f9100);box-shadow:0 4px 12px rgba(88,184,0,.35)}
+:root[data-t="auto"] .vp .rs,:root[data-t="auto"] .vp .vch{background:var(--card);border-color:var(--ln);box-shadow:0 4px 16px rgba(20,40,10,.07)}
+:root[data-t="auto"] .vp .vch:after{background:none}
+:root[data-t="auto"] .vp .vsm.k{color:var(--tx)}
+:root[data-t="auto"] .vp .vcnt b{text-shadow:none}
+:root[data-t="auto"] .vlogo img,:root[data-t="auto"] img.vlogo-i{filter:invert(1) hue-rotate(180deg) saturate(1.5) brightness(.85) drop-shadow(0 2px 6px rgba(60,140,0,.25))!important}
+:root[data-t="auto"] .vx .card[onclick="go('explore')"]{background:linear-gradient(135deg,#f4ffe6,#ffffff)!important;border-color:color-mix(in srgb,var(--ac) 45%,var(--ln))}
+:root[data-t="auto"] .vcard span{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+:root[data-t="auto"] .vx circle[stroke="#222"]{stroke:var(--card2)}
+:root[data-t="auto"] .vx circle[stroke="#00FF66"]{stroke:#3fbf00;filter:none!important}
+:root[data-t="auto"] .vhero{--bg:#050805;--card:#0e130e;--card2:#151b15;--ln:#1f291f;--tx:#f2f6f0;--mu:#8a968a;color:var(--tx)}
+}
+
+/* Perfil: la tarjeta de logros ya no tapa las cifras de arriba */
+.grid2 + .vx-achcard{margin-top:18px}
+
+/* Los avisos flotantes no bloquean los botones que tienen debajo */
+.toast{pointer-events:none}
+
+/* Plantillas de rutina */
+.vx-tpl-head{text-align:center;padding:8px 6px 4px}
+.vx-tpl-hero{font-size:40px;line-height:1;filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--ac) 35%,transparent))}
+.vx-tpl{display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+.vx-tpl:hover{border-color:color-mix(in srgb,var(--ac) 50%,var(--ln))}
+.vx-tpl:active{transform:scale(.985)}
+.vx-tpl-ic{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:color-mix(in srgb,var(--ac) 14%,var(--card2))}
+.vx-tpl-ex{font-size:12px;color:var(--mu);margin-top:4px;line-height:1.35}
+.vx-tpl .chip{flex:none}
+@media (prefers-reduced-motion:reduce){.vx-tpl{transition:none}}
+
+/* El Olimpo: Oráculo de Delfos y 12 Trabajos de Heracles */
+.vx-oracle{position:relative;overflow:hidden;border-color:color-mix(in srgb,#e0b13a 45%,var(--ln));background:radial-gradient(120% 90% at 100% 0,color-mix(in srgb,#e0b13a 16%,transparent),transparent 60%),var(--card)}
+.vx-or-ic{flex:none;display:flex}
+.vx-or-proph{font-style:italic;margin-top:2px}
+.vx-lab-card{cursor:pointer}
+.vx-lab-hero{display:flex;gap:16px;align-items:center;background:radial-gradient(120% 100% at 0 0,color-mix(in srgb,#e0b13a 18%,transparent),transparent 60%),var(--card)}
+.vx-lab-ring{--p:0;flex:none;width:84px;height:84px;border-radius:50%;display:flex;align-items:baseline;justify-content:center;padding-top:26px;box-sizing:border-box;background:radial-gradient(closest-side,var(--card) 76%,transparent 78% 100%),conic-gradient(#e0b13a calc(var(--p)*1%),var(--card2) 0)}
+.vx-lab-ring b{font-size:26px;line-height:1}
+.vx-lab-ring span{color:var(--mu);font-size:13px}
+.vx-lab-title{font-size:22px;font-weight:800;color:#e0b13a;letter-spacing:-.01em}
+:root[data-t="light"] .vx-lab-title{color:#a87a08}
+.vx-lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.vx-lab{position:relative;margin:0;display:flex;flex-direction:column;gap:3px;padding:14px 12px}
+.vx-lab .mu{font-size:12px;line-height:1.35}
+.vx-lab-n{position:absolute;top:10px;right:12px;font:700 11px Georgia,serif;letter-spacing:.08em;color:var(--mu)}
+.vx-lab-ic{font-size:28px;line-height:1.1;filter:grayscale(.6);opacity:.75}
+.vx-lab-v{font-size:12px;font-weight:700;color:var(--mu);margin-top:4px;font-variant-numeric:tabular-nums}
+.vx-lab.ok{border-color:#e0b13a;box-shadow:0 0 0 1px color-mix(in srgb,#e0b13a 40%,transparent),0 6px 18px color-mix(in srgb,#e0b13a 18%,transparent)}
+.vx-lab.ok .vx-lab-ic{filter:none;opacity:1}
+.vx-lab.ok .vx-lab-v{color:#e0b13a}
+.vx-lab.ok .bar i{background:#e0b13a}
+
+/* Controles de la animación del ejercicio */
+.vx-av-ctl{display:flex;gap:8px;margin:8px 0 2px;flex-wrap:wrap}
+.vx-av-ctl .chip{cursor:pointer;font-variant-numeric:tabular-nums}
+.vx-av-tempo{font-size:12px;margin:2px 0 8px}
+
+/* Racha en Inicio */
+.vx-streak{position:relative;overflow:hidden}
+.vx-streak.hot{border-color:color-mix(in srgb,#ff8a2a 45%,var(--ln));background:radial-gradient(110% 90% at 0 0,color-mix(in srgb,#ff8a2a 16%,transparent),transparent 60%),var(--card)}
+.vx-st-flame{flex:none;width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;background:color-mix(in srgb,#ff8a2a 14%,var(--card2))}
+.vx-streak.hot .vx-st-flame{animation:vxFlick 2.4s ease-in-out infinite}
+@keyframes vxFlick{50%{transform:scale(1.07) rotate(-3deg)}}
+.vx-st-n{font-size:15px}.vx-st-n b{font-size:28px;font-weight:800;line-height:1.1}
+.vx-st-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.vx-st-d{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--mu)}
+.vx-st-d i{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:15px;background:var(--card2);border:1px solid var(--ln)}
+.vx-st-d.on i{background:color-mix(in srgb,#ff8a2a 22%,var(--card2));border-color:color-mix(in srgb,#ff8a2a 55%,transparent)}
+.vx-st-d.now span{color:var(--tx);font-weight:800}
+@media (prefers-reduced-motion:reduce){.vx-streak.hot .vx-st-flame{animation:none}}
+.vx-or-fav{margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)}
+.vx-or-rank{color:#e0b13a;font-weight:800}
+:root[data-t="light"] .vx-or-rank{color:#a87a08}
+
+/* Temas de color (Perfil) */
+.vx-th-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.vx-th{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border-radius:16px;border:1.5px solid var(--ln);background:var(--card2);color:var(--tx);font:600 13px inherit;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+.vx-th:active{transform:scale(.97)}
+.vx-th-sw{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--b),var(--a));box-shadow:0 4px 12px color-mix(in srgb,var(--a) 45%,transparent)}
+.vx-th.on{border-color:var(--a);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 35%,transparent)}
+.vx-th.on .vx-th-sw{outline:2px solid var(--card);outline-offset:-6px}
+@media (prefers-reduced-motion:reduce){.vx-th{transition:none}}
+
+/* ── Accesibilidad: verde original más oscuro en tema claro (contraste 4,5:1 como texto y como fondo) ── */
+:root[data-t="light"]:not([data-accent]){--ac:#3b7700;--ac2:#2c5c00}
+@media(prefers-color-scheme:light){:root[data-t="auto"]:not([data-accent]){--ac:#3b7700;--ac2:#2c5c00}}
+/* foco visible solo al usar el teclado */
+:focus-visible{outline:2px solid var(--ac)!important;outline-offset:2px}
+[role="button"]{cursor:pointer}
+/* La tarjeta "Hoy" de Entrenos es oscura en los dos modos: lleva siempre los colores del tema oscuro
+   (en modo claro heredaba el texto oscuro y no se leía) */
+.hero2{--tx:#f2f6f0;--mu:#8a968a;--ac:#9dff2e;--ac2:#4bd01a;--on:#071006;--card:#0e130e;--card2:#151b15;--ln:#1f291f;color:var(--tx)}
+/* Móviles estrechos (≤ 360 px): logo e iconos de la cabecera más compactos para que quepan los cuatro */
+@media (max-width:360px){
+  #m .row.sp > img.vlogo-i{width:104px!important;height:auto!important}
+  #m .row.sp > .row:has(> .ib){gap:6px}
+  #m .row.sp > .row > .ib{width:34px;height:34px;min-width:34px}
+}
+/* Guía de rangos en móviles estrechos: el rango de XP pasa a dos líneas en vez de salirse de la tarjeta */
+@media (max-width:400px){
+  .vrk .xp{white-space:normal;text-align:right;font-size:12px;max-width:42%;flex:none}
+  .vrk .xp + *{flex:none}
+}
+/* Oráculo: "¿Cómo funciona?" desplegable */
+.vx-or-how{margin-top:10px;border-top:1px solid var(--ln);padding-top:8px}
+.vx-or-how summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--ac);list-style:none;display:flex;align-items:center;gap:6px;min-height:28px}
+.vx-or-how summary::-webkit-details-marker{display:none}
+.vx-or-how summary::after{content:'›';transition:transform .2s}
+.vx-or-how[open] summary::after{transform:rotate(90deg)}
+.vx-or-how p{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--mu)}
+.vx-or-how p b{color:var(--tx)}
+/* Rangos: el botón (i) de la guía quedaba debajo del nombre del rango y no respondía al tocarlo */
+.vhero .vinfo{z-index:10!important;width:36px;height:36px;top:10px;right:10px;font-size:17px;box-shadow:0 0 10px color-mix(in srgb,currentColor 35%,transparent);transition:transform .12s}
+.vhero .vinfo:active{transform:scale(.92)}
+.vhero .nm{pointer-events:none;padding-right:44px}
+/* Perfil → Temas: lista de colores */
+.vx-thlist{padding:4px 0}
+.vx-thr{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:12px 14px;min-height:56px;cursor:pointer}
+.vx-thr + .vx-thr{border-top:1px solid var(--ln)}
+.vx-thr .vx-th-sw{width:30px;height:30px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,var(--b),var(--a));box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ln)}
+.vx-thr.on .vx-th-sw{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--a)}
+.vx-thk{font-weight:800;color:var(--ac);font-size:18px;min-width:20px;text-align:right}
+/* Misiones: etiqueta de las 2 que cambian cada día */
+.vx-dtag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;vertical-align:1px;color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 10%,transparent)}
+/* Logros por familias con niveles */
+.vx-famlist{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.vx-fam{padding:14px;margin:0}
+.vx-fam.ok{border-color:color-mix(in srgb,var(--m) 55%,var(--ln));background:linear-gradient(180deg,color-mix(in srgb,var(--m) 9%,transparent),var(--card) 70%)}
+.vx-fam .vx-badge{flex:none;position:relative}
+.vx-fam.ok .vx-badge{background:radial-gradient(circle at 30% 30%,color-mix(in srgb,var(--m) 40%,transparent),var(--card2));box-shadow:0 0 16px color-mix(in srgb,var(--m) 30%,transparent)}
+.vx-fam:not(.ok) .vx-badge span{filter:grayscale(1);opacity:.45}
+.vx-tier{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:10px;font-weight:800;min-width:20px;height:18px;padding:0 4px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--m);color:#111;box-shadow:0 0 0 2px var(--card)}
+.vx-fambar{height:6px;border-radius:3px;background:var(--card2);margin-top:8px;overflow:hidden}
+.vx-fambar i{display:block;height:100%;border-radius:3px;background:var(--m,var(--ac))}
+.vx-fam:not(.ok) .vx-fambar i{background:var(--ac)}
+.vx-dots{display:flex;gap:4px;flex-wrap:wrap}
+.vx-dots i{width:8px;height:8px;border-radius:50%;background:var(--card2);box-shadow:inset 0 0 0 1px var(--ln)}
+.vx-dots i.on{background:var(--d);box-shadow:none}
+.vx-badge.sm[style*="--m"]{box-shadow:0 0 0 2px color-mix(in srgb,var(--m) 60%,transparent)}
+
+/* Atleta 3D de la ficha */
+.vx3{position:relative;border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,#26313a 0%,#141a1f 62%,#0d1114 100%);min-height:180px}
+.vx3 .vx3-cv{display:block;width:100%;height:auto;cursor:grab;touch-action:pan-y}
+.vx3.vx3-wait::after{content:attr(data-load);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9dff2e;font-size:13px;font-weight:700}
+.vx3-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;background:rgba(8,11,13,.55)}
+.vx3-bar button{min-height:32px;min-width:36px;padding:4px 10px;border-radius:10px;border:1px solid rgba(157,255,46,.35);background:rgba(10,14,17,.72);color:#e9f5ee;font-size:12px;font-weight:700;cursor:pointer}
+.vx3-bar button[aria-pressed="true"]{background:#9dff2e;color:#0d1114}
+.vx3-bar button:focus-visible{outline:2px solid #9dff2e;outline-offset:2px}
+.vx3-hint{margin-left:auto;color:rgba(233,245,238,.62);font-size:11px}
+.vx3-leg{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:10px;background:rgba(10,14,17,.6);color:#c9f7a0;font-size:11px;font-weight:700}
+.vx3-leg i{display:inline-block;width:18px;border-top:2px dashed #9dff2e}
+.vx3-see{margin:0 0 6px}
+@media (max-width:360px){.vx3-hint{display:none}}

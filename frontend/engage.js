@@ -1,0 +1,755 @@
+/* VOLTA · capa de enganche: misiones diarias, logros, recuperación muscular, calendario de actividad,
+   aviso de fin de descanso y animaciones. Se inyecta después de mejoras.js con `npm run build:app`. */
+(function () {
+  'use strict';
+  if (typeof S === 'undefined' || typeof R !== 'function') return;
+
+  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const T = {
+    missions: ['Misiones de hoy', "Today's missions", 'Missions du jour', 'Missões de hoje'],
+    stTitle: ['Tu racha', 'Your streak', 'Ta série', 'A tua sequência'],
+    stDays: ['días seguidos', 'days in a row', 'jours d’affilée', 'dias seguidos'],
+    stDay: ['día seguido', 'day in a row', 'jour d’affilée', 'dia seguido'],
+    stBest: ['Récord', 'Best', 'Record', 'Recorde'],
+    stFrz: ['congeladores', 'freezes', 'gels', 'congeladores'],
+    stStart: ['Abre Volta cada día para encender tu racha. Se reinicia tras 48 h sin abrir la app.', 'Open Volta every day to light your streak. It resets after 48 h without opening the app.', 'Ouvre Volta chaque jour pour allumer ta série. Elle repart à zéro après 48 h sans ouvrir l’app.', 'Abre o Volta todos os dias para acender a tua sequência. Reinicia após 48 h sem abrir a app.'],
+    stKeep: ['¡Sigue así! Vuelve mañana para sumar otro día.', 'Keep it up! Come back tomorrow for another day.', 'Continue ! Reviens demain pour un jour de plus.', 'Continua! Volta amanhã para somar outro dia.'],
+    stRecord: ['¡Estás en tu récord! 🏆', 'You’re at your record! 🏆', 'Tu es à ton record ! 🏆', 'Estás no teu recorde! 🏆'],
+    mTrain: ['Entrena hoy', 'Work out today', "Entraîne-toi aujourd'hui", 'Treina hoje'],
+    mMeals: ['Registra 2 comidas', 'Log 2 meals', 'Enregistre 2 repas', 'Regista 2 refeições'],
+    mWater: ['Bebe 2 litros de agua', 'Drink 2 litres of water', "Bois 2 litres d'eau", 'Bebe 2 litros de água'],
+    mSets: ['Completa 12 series', 'Complete 12 sets', 'Termine 12 séries', 'Conclui 12 séries'],
+    mVol: ['Mueve 5.000 kg hoy', 'Move 5,000 kg today', 'Soulève 5 000 kg aujourd’hui', 'Move 5.000 kg hoje'],
+    mGroups: ['Entrena 2 grupos musculares', 'Train 2 muscle groups', 'Entraîne 2 groupes musculaires', 'Treina 2 grupos musculares'],
+    mNewEx: ['Prueba un ejercicio nuevo', 'Try a new exercise', 'Essaie un nouvel exercice', 'Experimenta um exercício novo'],
+    mProt: ['Llega a {n} g de proteína', 'Reach {n} g of protein', 'Atteins {n} g de protéines', 'Chega a {n} g de proteína'],
+    mMeals3: ['Registra 3 comidas', 'Log 3 meals', 'Enregistre 3 repas', 'Regista 3 refeições'],
+    mWater3: ['Bebe 3 litros de agua', 'Drink 3 litres of water', 'Bois 3 litres d’eau', 'Bebe 3 litros de água'],
+    mWeigh: ['Registra tu peso', 'Log your weight', 'Enregistre ton poids', 'Regista o teu peso'],
+    mPr: ['Bate un récord personal', 'Set a personal record', 'Bats un record personnel', 'Bate um recorde pessoal'],
+    mEarly: ['Entrena antes de las 10:00', 'Train before 10 am', 'Entraîne-toi avant 10 h', 'Treina antes das 10:00'],
+    mFinish: ['Finaliza un entreno completo', 'Finish a full workout', 'Termine une séance complète', 'Termina um treino completo'],
+    daily: ['Del día', 'Today only', 'Du jour', 'Do dia'],
+    go: ['Ir', 'Go', 'Aller', 'Ir'],
+    perfect: ['¡Día perfecto! Misiones completadas', 'Perfect day! Missions complete', 'Journée parfaite ! Missions accomplies', 'Dia perfeito! Missões concluídas'],
+    perfectShort: ['Día perfecto', 'Perfect day', 'Journée parfaite', 'Dia perfeito'],
+    frzWon: ['Has ganado un congelador de racha 🧊', 'You earned a streak freeze 🧊', 'Tu as gagné un gel de série 🧊', 'Ganhaste um congelador de sequência 🧊'],
+    frzUsed: ['Congelador usado: tu racha sigue viva 🧊', 'Streak freeze used: your streak lives on 🧊', 'Gel utilisé : ta série continue 🧊', 'Congelador usado: a tua sequência continua 🧊'],
+    frzTip: ['Congeladores de racha: protegen tu racha si un día no abres la app. Ganas uno cada 3 días perfectos.', 'Streak freezes protect your streak if you miss a day. Earn one every 3 perfect days.', "Les gels de série protègent ta série si tu rates un jour. Gagnes-en un tous les 3 jours parfaits.", 'Os congeladores protegem a tua sequência se falhares um dia. Ganhas um a cada 3 dias perfeitos.'],
+    rec: ['Recuperación muscular', 'Muscle recovery', 'Récupération musculaire', 'Recuperação muscular'],
+    readyToday: ['Listos para hoy', 'Ready today', "Prêts aujourd'hui", 'Prontos para hoje'],
+    allReady: ['Todo recuperado: elige lo que quieras', 'Fully recovered: train anything', 'Tout est récupéré : entraîne ce que tu veux', 'Tudo recuperado: treina o que quiseres'],
+    fresh: ['listo', 'ready', 'prêt', 'pronto'],
+    act: ['Actividad', 'Activity', 'Activité', 'Atividade'],
+    actSub: ['Últimas 16 semanas · {n} días entrenados', 'Last 16 weeks · {n} training days', '16 dernières semaines · {n} jours entraînés', 'Últimas 16 semanas · {n} dias treinados'],
+    less: ['Menos', 'Less', 'Moins', 'Menos'], more: ['Más', 'More', 'Plus', 'Mais'],
+    ach: ['Logros', 'Achievements', 'Succès', 'Conquistas'],
+    achSub: ['{a} de {b} desbloqueados', '{a} of {b} unlocked', '{a} sur {b} débloqués', '{a} de {b} desbloqueadas'],
+    level: ['Nivel', 'Level', 'Niveau', 'Nível'],
+    maxLevel: ['Nivel máximo', 'Max level', 'Niveau max', 'Nível máximo'],
+    unlocked: ['Logro desbloqueado', 'Achievement unlocked', 'Succès débloqué', 'Conquista desbloqueada'],
+    restEnd: ['¡Descanso terminado!', 'Rest is over!', 'Repos terminé !', 'Descanso terminado!'],
+    restBody: ['Vamos a por la siguiente serie 💪', "Let's hit the next set 💪", 'On attaque la série suivante 💪', 'Vamos à próxima série 💪'],
+    quote: ['Frase del día', 'Quote of the day', 'Citation du jour', 'Frase do dia'],
+    see: ['Ver todos', 'See all', 'Tout voir', 'Ver todos'],
+  };
+  const t = (k, vars) => {
+    let s = (T[k] || [k])[LI[S.lang] || 0] || T[k][0];
+    if (vars) Object.keys(vars).forEach((v) => { s = s.replace('{' + v + '}', vars[v]); });
+    return s;
+  };
+  const td = () => lk(Date.now());
+  const save = () => { try { sv(); } catch (e) { /* almacenamiento no disponible */ } };
+  const vx = () => (S.vx && typeof S.vx === 'object' ? S.vx : (S.vx = {}));
+  const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const insertBefore = (html, marker, block) => {
+    const i = html.indexOf(marker); if (i === -1) return null;
+    const c = html.lastIndexOf('<div class="card', i); if (c === -1) return null;
+    return html.slice(0, c) + block + html.slice(c);
+  };
+
+  /* ───────────── Datos de entrenamiento ───────────── */
+  const realLog = () => (Array.isArray(S.log) ? S.log : []).filter((l) => { try { return isEff(l); } catch (e) { return true; } });
+  const viewLog = () => { try { return getLog().filter(isEff); } catch (e) { return realLog(); } };
+  const dayOf = (k) => (S.nlog && typeof S.nlog === 'object' && S.nlog[k]) || { e: [], w: 0 };
+
+  /* ───────────── 1. Misiones diarias ───────────── */
+  // 3 misiones fijas (entrenar, comer, beber) + 2 que cambian cada día, elegidas de un grupo de 11.
+  // El sorteo depende de la fecha: todo el día ves las mismas y mañana tocan otras.
+  const POOL = ['sets', 'vol', 'groups', 'newex', 'protein', 'meals3', 'water3', 'weigh', 'pr', 'early', 'finish'];
+  function dailyPicks(k) {
+    let h = 0; for (const ch of String(k)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const out = [], pool = POOL.slice();
+    while (out.length < 2 && pool.length) { h = (h * 1103515245 + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
+    return out;
+  }
+  function proteinGoal() {
+    try { const c = NUTR.calc(NUTR.prof()); if (c && c.ok && c.pr > 0) return Math.round(c.pr); } catch (e) { /* sin perfil */ }
+    return 100;
+  }
+  function missions() {
+    const k = td(), d = dayOf(k), now = Date.now();
+    const L = realLog(), today = L.filter((l) => lk(l.t) == k), before = L.filter((l) => lk(l.t) < k);
+    const trained = !!(S.done && S.done[k]) || today.length > 0;
+    const meals = Array.isArray(d.e) ? d.e.length : 0;
+    const water = +d.w || 0;
+    const prot = Array.isArray(d.e) ? Math.round(d.e.reduce((a, e) => a + (+(e && e.p) || 0), 0)) : 0;
+    const L2 = (n) => (n / 1000).toLocaleString(S.lang, { maximumFractionDigits: 2 });
+    const goT = `<button class="chip" onclick="tab('train')">${t('go')}</button>`, goN = `<button class="chip" onclick="tab('nut')">${t('go')}</button>`;
+    const sip = '<button class="chip vx-water" onclick="vxWater(250)">+250 ml</button>';
+    const core = [
+      { id: 'train', icon: '🏋️', label: t('mTrain'), done: trained, prog: trained ? 1 : 0, txt: trained ? '✓' : '', act: goT },
+      { id: 'meals', icon: '🍽️', label: t('mMeals'), done: meals >= 2, prog: Math.min(1, meals / 2), txt: Math.min(meals, 2) + '/2', act: goN },
+      { id: 'water', icon: '💧', label: t('mWater'), done: water >= 2000, prog: Math.min(1, water / 2000), txt: L2(water) + '/2 L', act: sip },
+    ];
+    const vol = today.reduce((a, l) => a + (l.w || 0) * (l.r || 0), 0);
+    const groups = new Set(today.map((l) => EX[l.ex] && EX[l.ex][1]).filter(Boolean)).size;
+    const seen = new Set(before.map((l) => l.ex));
+    const newEx = today.some((l) => !seen.has(l.ex));
+    const best = {}; before.forEach((l) => { best[l.ex] = Math.max(best[l.ex] || 0, l.w || 0); });
+    const pr = today.some((l) => best[l.ex] > 0 && (l.w || 0) > best[l.ex]);
+    const early = today.some((l) => new Date(l.t).getHours() < 10);
+    const weighed = Array.isArray(S.wts) && S.wts.some((w) => w && w.d === new Date(now).toISOString().slice(0, 10));
+    const finished = !!(S.done && S.done[k]);
+    const pg = proteinGoal();
+    const X = {
+      sets: { icon: '🎯', label: t('mSets'), done: today.length >= 12, prog: Math.min(1, today.length / 12), txt: Math.min(today.length, 12) + '/12', act: goT },
+      vol: { icon: '🏗️', label: t('mVol'), done: vol >= 5000, prog: Math.min(1, vol / 5000), txt: nf2(Math.min(vol, 5000)) + '/5.000 kg', act: goT },
+      groups: { icon: '🫀', label: t('mGroups'), done: groups >= 2, prog: Math.min(1, groups / 2), txt: Math.min(groups, 2) + '/2', act: goT },
+      newex: { icon: '🧭', label: t('mNewEx'), done: newEx, prog: newEx ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('train');go('lib')">${t('go')}</button>` },
+      protein: { icon: '🥩', label: t('mProt').replace('{n}', pg), done: prot >= pg, prog: Math.min(1, prot / pg), txt: Math.min(prot, pg) + '/' + pg + ' g', act: goN },
+      meals3: { icon: '🥗', label: t('mMeals3'), done: meals >= 3, prog: Math.min(1, meals / 3), txt: Math.min(meals, 3) + '/3', act: goN },
+      water3: { icon: '🌊', label: t('mWater3'), done: water >= 3000, prog: Math.min(1, water / 3000), txt: L2(water) + '/3 L', act: sip },
+      weigh: { icon: '⚖️', label: t('mWeigh'), done: weighed, prog: weighed ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('prog');go('pg:body')">${t('go')}</button>` },
+      pr: { icon: '🏆', label: t('mPr'), done: pr, prog: pr ? 1 : 0, txt: '', act: goT },
+      early: { icon: '🌅', label: t('mEarly'), done: early, prog: early ? 1 : 0, txt: '', act: goT },
+      finish: { icon: '🏁', label: t('mFinish'), done: finished, prog: finished ? 1 : 0, txt: '', act: goT },
+    };
+    return core.concat(dailyPicks(k).map((id) => Object.assign({ id, daily: true }, X[id])));
+  }
+  const nf2 = (v) => Math.round(v).toLocaleString(S.lang);
+  function missionsCard() {
+    // el día perfecto (y los congeladores de racha) se gana con las 3 fijas; las 2 del día son un extra
+    const M = missions(), n = M.filter((m) => m.done).length, perfect = M.filter((m) => !m.daily).every((m) => m.done);
+    const ring = (p) => { const C = 2 * Math.PI * 15; return `<svg class="vx-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="vx-ring-bg"/><circle cx="18" cy="18" r="15" class="vx-ring-fg" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - p)}"/></svg>`; };
+    const frz = vx().freezes || 0;
+    return `<div class="card vx-missions${perfect ? ' vx-perfect' : ''}"><div class="row sp"><b>${perfect ? '🔥 ' + t('perfectShort') : t('missions')}</b><span class="row" style="gap:8px">${frz ? `<span class="vx-frz" title="${esc(t('frzTip'))}" aria-label="${esc(t('frzTip'))}">🧊 ${frz}</span>` : ''}<span class="vx-count">${n}/${M.length}</span></span></div>` +
+      M.map((m) => `<div class="row vx-mrow${m.done ? ' done' : ''}"><div class="vx-mic">${ring(m.prog)}<span>${m.done ? '✓' : m.icon}</span></div><div class="g"><div class="vx-ml">${m.label}${m.daily ? ` <span class="vx-dtag">${t('daily')}</span>` : ''}</div>${m.txt && !m.done ? `<div class="mu">${m.txt}</div>` : ''}</div>${m.done ? '' : m.act}</div>`).join('') +
+      '</div>';
+  }
+  function checkPerfect() {
+    const M = missions(), k = td(), V2 = vx();
+    V2.perfect = V2.perfect || {};
+    if (M.filter((m) => !m.daily).every((m) => m.done) && !V2.perfect[k]) {
+      V2.perfect[k] = 1; save();
+      pushInbox('🔥', t('perfect'));
+      const nP = Object.keys(V2.perfect).length;
+      if (nP % 3 === 0 && (V2.freezes || 0) < 2) { V2.freezes = (V2.freezes || 0) + 1; save(); pushInbox('🧊', t('frzWon')); setTimeout(() => toast(t('frzWon')), 2400); }
+      try { R(); } catch (e) { /* se verá en el siguiente render */ }
+      setTimeout(() => { window.vxCelebrate && window.vxCelebrate(); toast('🔥 ' + t('perfect')); }, 120);
+    }
+  }
+  window.vxWater = function (ml) {
+    const k = td();
+    if (!S.nlog || typeof S.nlog !== 'object') S.nlog = {};
+    const d = S.nlog[k] || (S.nlog[k] = { e: [], w: 0 });
+    d.w = Math.min(10000, (+d.w || 0) + ml);
+    try { navigator.vibrate && navigator.vibrate(15); } catch (e) { /* sin vibración */ }
+    save(); R(); checkPerfect(); checkAchievements();
+  };
+
+  /* ───────────── 2. Logros escalables ─────────────
+     Familias con niveles (I, II, III…): cada nivel es un logro. Todo se mide con tus datos reales. */
+  function stats() {
+    const L = realLog().slice().sort((a, b) => a.t - b.t);
+    const days = new Set(L.map((l) => lk(l.t)));
+    const mx = {}; let prs = 0;
+    L.forEach((l) => { const w = l.w || 0; if (mx[l.ex] > 0 && w > mx[l.ex]) prs++; mx[l.ex] = Math.max(mx[l.ex] || 0, w); });
+    const weeks = {}, perDay = {};
+    days.forEach((d) => { const x = new Date(d + 'T12:00'); const m = new Date(x); m.setDate(x.getDate() - ((x.getDay() + 6) % 7)); const wk = lk(m); weeks[wk] = (weeks[wk] || 0) + 1; });
+    L.forEach((l) => { const k = lk(l.t); perDay[k] = (perDay[k] || 0) + 1; });
+    const dayHour = (fn) => new Set(L.filter((l) => fn(new Date(l.t).getHours())).map((l) => lk(l.t))).size;
+    const nl = S.nlog && typeof S.nlog === 'object' ? Object.values(S.nlog) : [];
+    let labors = 0, oracle = 1;
+    try { labors = window.vxLabors ? window.vxLabors().filter((x) => x.ok).length : 0; } catch (e) { /* sin Trabajos */ }
+    try { oracle = window.vxFavor ? window.vxFavor().lv : 1; } catch (e) { /* sin Oráculo */ }
+    return {
+      days: days.size, sets: L.length, prs,
+      vol: L.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0),
+      reps: L.reduce((s, l) => s + (+l.r || 0), 0),
+      exs: new Set(L.map((l) => l.ex)).size,
+      groups: new Set(L.map((l) => EX[l.ex] && EX[l.ex][1]).filter(Boolean)).size,
+      early: dayHour((h) => h < 8),
+      late: dayHour((h) => h >= 22),
+      weekend: [...days].filter((d) => { const g = new Date(d + 'T12:00').getDay(); return g === 0 || g === 6; }).length,
+      streak: Math.max(+S.streakCount || 0, +S.bestStreak || 0),
+      perfect: Object.keys(vx().perfect || {}).length,
+      water: nl.filter((d) => d && +d.w >= 2000).length,
+      food: nl.filter((d) => d && Array.isArray(d.e) && d.e.length >= 2).length,
+      solid: Object.values(weeks).filter((n) => n >= 3).length,
+      long: Object.values(perDay).filter((n) => n >= 20).length,
+      routines: (Array.isArray(S.routines) ? S.routines : []).length,
+      labors, oracle,
+    };
+  }
+  // [id, icono, nombre ES|EN|FR|PT, descripción con {n} ES|EN|FR|PT, métrica, niveles]
+  const FAM = [
+    ['days', '🏋️', 'Constancia|Consistency|Régularité|Constância', 'Entrena {n} días|Train on {n} days|Entraîne-toi {n} jours|Treina {n} dias', 'days', [1, 5, 10, 25, 50, 100, 200, 365, 500, 1000]],
+    ['streak', '🔥', 'Racha de fuego|Fire streak|Série de feu|Sequência de fogo', 'Racha de {n} días|{n}-day streak|Série de {n} jours|Sequência de {n} dias', 'streak', [3, 7, 14, 30, 60, 100, 180, 365]],
+    ['vol', '🏗️', 'Toneladas|Tonnage|Tonnage|Toneladas', 'Levanta {n} kg en total|Lift {n} kg in total|Soulève {n} kg au total|Levanta {n} kg no total', 'vol', [1000, 10000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000, 10000000]],
+    ['sets', '🎯', 'Series|Sets|Séries|Séries', 'Completa {n} series|Complete {n} sets|Termine {n} séries|Conclui {n} séries', 'sets', [50, 100, 250, 500, 1000, 2500, 5000, 10000]],
+    ['reps', '🔁', 'Repeticiones|Reps|Répétitions|Repetições', 'Suma {n} repeticiones|Do {n} reps|Fais {n} répétitions|Faz {n} repetições', 'reps', [500, 2000, 5000, 10000, 25000, 50000]],
+    ['prs', '🏆', 'Rompe-récords|Record breaker|Briseur de records|Quebra-recordes', 'Bate {n} récords|Set {n} records|Bats {n} records|Bate {n} recordes', 'prs', [1, 5, 10, 25, 50, 100, 250]],
+    ['exs', '🧭', 'Explorador|Explorer|Explorateur|Explorador', 'Prueba {n} ejercicios distintos|Try {n} different exercises|Essaie {n} exercices différents|Experimenta {n} exercícios diferentes', 'exs', [5, 10, 20, 40, 60, 100]],
+    ['groups', '🫀', 'Cuerpo completo|Full body|Corps complet|Corpo completo', 'Entrena {n} grupos musculares|Train {n} muscle groups|Entraîne {n} groupes musculaires|Treina {n} grupos musculares', 'groups', [4, 8, 12, 16]],
+    ['perfect', '⭐', 'Día perfecto|Perfect day|Journée parfaite|Dia perfeito', 'Consigue {n} días perfectos|Get {n} perfect days|Obtiens {n} journées parfaites|Consegue {n} dias perfeitos', 'perfect', [1, 3, 7, 14, 30, 60, 100]],
+    ['water', '💧', 'Hidratación|Hydration|Hydratation|Hidratação', 'Bebe 2 L en {n} días|Drink 2 L on {n} days|Bois 2 L sur {n} jours|Bebe 2 L em {n} dias', 'water', [1, 7, 14, 30, 60, 100]],
+    ['food', '🥗', 'Buen comer|Eating well|Bien manger|Comer bem', 'Registra tus comidas {n} días|Log your meals on {n} days|Enregistre tes repas {n} jours|Regista as refeições em {n} dias', 'food', [1, 7, 14, 30, 60, 100]],
+    ['solid', '📅', 'Semanas sólidas|Solid weeks|Semaines solides|Semanas sólidas', '{n} semanas con 3+ entrenos|{n} weeks with 3+ workouts|{n} semaines avec 3+ séances|{n} semanas com 3+ treinos', 'solid', [1, 4, 8, 12, 26, 52]],
+    ['early', '🌅', 'Madrugador|Early bird|Lève-tôt|Madrugador', 'Entrena antes de las 8:00 {n} días|Train before 8 am on {n} days|Entraîne-toi avant 8 h {n} jours|Treina antes das 8:00 em {n} dias', 'early', [1, 5, 20, 50]],
+    ['late', '🌙', 'Noctámbulo|Night owl|Oiseau de nuit|Noctívago', 'Entrena después de las 22:00 {n} días|Train after 10 pm on {n} days|Entraîne-toi après 22 h {n} jours|Treina depois das 22:00 em {n} dias', 'late', [1, 5, 20, 50]],
+    ['weekend', '🎉', 'Guerrero de finde|Weekend warrior|Guerrier du week-end|Guerreiro de fim de semana', 'Entrena {n} días de fin de semana|Train on {n} weekend days|Entraîne-toi {n} jours de week-end|Treina {n} dias de fim de semana', 'weekend', [1, 10, 25, 52]],
+    ['long', '⏳', 'Maratón|Marathon|Marathon|Maratona', '{n} sesiones de 20+ series|{n} sessions of 20+ sets|{n} séances de 20+ séries|{n} sessões de 20+ séries', 'long', [1, 5, 15]],
+    ['routines', '📋', 'Arquitecto|Architect|Architecte|Arquiteto', 'Crea {n} rutinas|Create {n} routines|Crée {n} routines|Cria {n} rotinas', 'routines', [1, 3, 5]],
+    ['labors', '🏛️', 'Trabajos de Hércules|Labours of Hercules|Travaux d’Hercule|Trabalhos de Hércules', 'Completa {n} de los 12 Trabajos|Complete {n} of the 12 Labours|Accomplis {n} des 12 Travaux|Conclui {n} dos 12 Trabalhos', 'labors', [1, 3, 6, 9, 12]],
+    ['oracle', '🔮', 'Favor del Oráculo|Oracle’s favour|Faveur de l’Oracle|Favor do Oráculo', 'Llega al nivel {n} del Oráculo|Reach Oracle level {n}|Atteins le niveau {n} de l’Oracle|Chega ao nível {n} do Oráculo', 'oracle', [2, 5, 10, 15, 20]],
+  ];
+  const part = (s, i) => s.split('|')[i] || s.split('|')[0];
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  // color del nivel según lo alto que esté dentro de su familia: bronce → plata → oro → platino → diamante → mítico
+  const MEDAL = ['#c97b45', '#b9c2cc', '#f2c14e', '#7fe3d6', '#7ab8ff', '#c38bff'];
+  const medal = (i, n) => MEDAL[Math.min(MEDAL.length - 1, Math.floor((i / Math.max(1, n - 1)) * (MEDAL.length - 1) + 1e-9))];
+  const nf = (v) => Math.round(v).toLocaleString(S.lang);
+  // "Bate 1 récords" → "Bate 1 récord": singular cuando la cifra es 1
+  const ONE = [[/ días perfectos/, ' día perfecto'], [/ días de fin de semana/, ' día de fin de semana'], [/ días/, ' día'], [/ récords/, ' récord'], [/ rutinas/, ' rutina'], [/ semanas/, ' semana'], [/ sesiones/, ' sesión'],
+    [/ perfect days/, ' perfect day'], [/ weekend days/, ' weekend day'], [/ days/, ' day'], [/ records/, ' record'], [/ routines/, ' routine'], [/ weeks/, ' week'], [/ sessions/, ' session'],
+    [/ journées parfaites/, ' journée parfaite'], [/ jours de week-end/, ' jour de week-end'], [/ jours/, ' jour'], [/ routines/, ' routine'], [/ semaines/, ' semaine'], [/ séances/, ' séance'],
+    [/ dias perfeitos/, ' dia perfeito'], [/ dias de fim de semana/, ' dia de fim de semana'], [/ dias/, ' dia'], [/ recordes/, ' recorde'], [/ rotinas/, ' rotina'], [/ sessões/, ' sessão']];
+  const descN = (d, n, txt) => { let o = d.replace('{n}', txt); if (n === 1) for (const [re, to] of ONE) if (re.test(o)) { o = o.replace(re, to); break; } return o; };
+  function families() {
+    const st = stats(), x = LI[S.lang] || 0;
+    return FAM.map(([id, icon, name, desc, m, tiers]) => {
+      const v = st[m] || 0, lvl = tiers.filter((g) => v >= g).length;
+      return { id, icon, name: part(name, x), desc: part(desc, x), v, tiers, lvl, next: tiers[lvl], max: lvl === tiers.length };
+    });
+  }
+  // lista plana: un logro por nivel (para el contador, los avisos y la tarjeta de Perfil)
+  function achList() {
+    return families().flatMap((f) => f.tiers.map((g, i) => ({
+      id: f.id + '_' + (i + 1), icon: f.icon, name: f.name + ' ' + ROMAN[i], desc: descN(f.desc, g, nf(g)),
+      cur: Math.min(f.v, g), goal: g, ok: f.v >= g, color: medal(i, f.tiers.length),
+    })));
+  }
+  const ACH_VER = 2;
+  function checkAchievements() {
+    const V2 = vx(); V2.ach = V2.ach || {};
+    const list = achList(), fresh = list.filter((a) => a.ok && !V2.ach[a.id]);
+    // Primera vez (o logros nuevos tras una actualización): lo ya conseguido se marca sin avalancha de avisos
+    if (!V2.achInit || (V2.achVer || 1) < ACH_VER) { fresh.forEach((a) => { V2.ach[a.id] = Date.now(); }); V2.achInit = 1; V2.achVer = ACH_VER; save(); return; }
+    if (!fresh.length) return;
+    fresh.forEach((a) => { V2.ach[a.id] = Date.now(); });
+    save();
+    fresh.forEach((a) => pushInbox(a.icon, t('unlocked') + ': ' + a.name, "go('vx:ach')"));
+    fresh.slice(0, 3).forEach((a, i) => setTimeout(() => { toast('🏅 ' + t('unlocked') + ': ' + a.icon + ' ' + a.name); if (i === 0 && window.vxCelebrate) window.vxCelebrate(); }, 300 + i * 1800));
+  }
+  window.vxAch = achList; window.vxAchFam = families; window.vxMissions = missions; // para pruebas
+
+  function achCard() {
+    const L = achList(), n = L.filter((a) => a.ok).length;
+    const next = families().filter((f) => !f.max).sort((a, b) => b.v / b.next - a.v / a.next).slice(0, 3);
+    return `<div class="card vx-achcard" onclick="go('vx:ach')" role="button" tabindex="0"><div class="row sp"><b>🏅 ${t('ach')}</b><span class="mu">${t('achSub', { a: n, b: L.length })} ›</span></div>` +
+      `<div class="vx-achbar"><i style="width:${Math.round((n / L.length) * 100)}%"></i></div>` +
+      `<div class="row vx-achnext">${next.map((f) => `<div class="vx-badge sm" title="${esc(f.name + ' ' + ROMAN[f.lvl])}" style="--m:${medal(f.lvl, f.tiers.length)}"><span>${f.icon}</span><i style="--p:${Math.min(1, f.v / f.next)}"></i></div>`).join('')}</div></div>`;
+  }
+  V['vx:ach'] = function () {
+    const F = families(), L = achList(), n = L.filter((a) => a.ok).length;
+    const fmt = (v) => (v >= 1e6 ? (v / 1e6).toLocaleString(S.lang, { maximumFractionDigits: 1 }) + 'M' : v >= 10000 ? Math.round(v / 1000).toLocaleString(S.lang) + 'k' : nf(v));
+    const lvT = [t('level'), t('maxLevel')];
+    return `<div class="row"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">${t('ach')}</h1></div>` +
+      `<div class="mu" style="margin:6px 0 14px">${t('achSub', { a: n, b: L.length })}</div><div class="vx-achbar big"><i style="width:${Math.round((n / L.length) * 100)}%"></i></div>` +
+      `<div class="vx-famlist">${F.map((f) => {
+        const c = f.lvl ? medal(f.lvl - 1, f.tiers.length) : 'var(--ln)';
+        const p = f.max ? 1 : Math.min(1, f.v / f.next);
+        return `<div class="card vx-fam${f.lvl ? ' ok' : ''}" style="--m:${c}"><div class="row" style="gap:12px;align-items:center">` +
+          `<div class="vx-badge" style="--m:${c}"><span>${f.icon}</span>${f.lvl ? `<em class="vx-tier">${ROMAN[f.lvl - 1]}</em>` : ''}</div>` +
+          `<div class="g"><div class="row sp"><b>${esc(f.name)}</b><span class="mu" style="font-size:12px">${f.max ? '👑 ' + lvT[1] : lvT[0] + ' ' + f.lvl + '/' + f.tiers.length}</span></div>` +
+          `<div class="mu" style="font-size:12px;margin-top:2px">${esc(f.max ? descN(f.desc, f.tiers[f.tiers.length - 1], fmt(f.tiers[f.tiers.length - 1])) : descN(f.desc, f.next, fmt(f.next)))}</div>` +
+          `<div class="vx-fambar"><i style="width:${(p * 100).toFixed(1)}%"></i></div>` +
+          `<div class="row sp" style="margin-top:4px"><span class="vx-dots" aria-hidden="true">${f.tiers.map((g, i) => `<i class="${i < f.lvl ? 'on' : ''}" style="--d:${medal(i, f.tiers.length)}"></i>`).join('')}</span><span class="mu" style="font-size:12px">${f.max ? '' : fmt(f.v) + ' / ' + fmt(f.next)}</span></div>` +
+          '</div></div></div>';
+      }).join('')}</div>` +
+      heatmapCard();
+  };
+
+  /* ───────────── 3. Recuperación muscular (como Fitbod) ───────────── */
+  function recovery() {
+    const now = Date.now(), L = viewLog(), last = {}, vol = {};
+    L.forEach((l) => {
+      const g = EX[l.ex] && EX[l.ex][1]; if (!g) return;
+      last[g] = Math.max(last[g] || 0, l.t);
+      if (now - l.t < 72 * 36e5) vol[g] = (vol[g] || 0) + 1;
+    });
+    const groups = [...new Set(EX.map((e) => e[1]))];
+    return groups.map((g) => {
+      const h = last[g] ? (now - last[g]) / 36e5 : Infinity;
+      const need = (vol[g] || 0) >= 10 ? 72 : 48; // más series → más recuperación
+      const st = h >= need ? 'ok' : h >= need / 2 ? 'mid' : 'low';
+      return { g, h, st, pct: Math.min(1, h / need) };
+    }).sort((a, b) => b.pct - a.pct);
+  }
+  function recoveryCard() {
+    const R2 = recovery(), ready = R2.filter((r) => r.st === 'ok');
+    const name = (g) => window.vxTr ? window.vxTr(g) : g;
+    const sub = ready.length === R2.length ? t('allReady') : t('readyToday') + ': ' + ready.slice(0, 4).map((r) => name(r.g)).join(', ');
+    return `<div class="card vx-rec"><div class="row sp"><b>💪 ${t('rec')}</b></div><div class="mu" style="margin:4px 0 10px">${esc(sub)}</div><div class="vx-recgrid">` +
+      R2.map((r) => `<div class="vx-recm ${r.st}"><span>${esc(name(r.g))}</span><em>${r.h === Infinity ? t('fresh') : r.st === 'ok' ? '✓' : Math.round(r.h) + ' h'}</em><i style="width:${Math.round(r.pct * 100)}%"></i></div>`).join('') +
+      '</div></div>';
+  }
+
+  /* ───────────── 4. Calendario de actividad (16 semanas) ───────────── */
+  function heatmapCard() {
+    const per = {}; viewLog().forEach((l) => { const k = lk(l.t); per[k] = (per[k] || 0) + 1; });
+    const today = new Date(); today.setHours(12, 0, 0, 0);
+    const start = new Date(today); start.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7 * 15);
+    const cells = []; let days = 0;
+    for (let i = 0; i < 16 * 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const k = lk(d), n = per[k] || 0, fut = d > today;
+      if (n) days++;
+      const lv = fut ? 'f' : n === 0 ? 0 : n <= 5 ? 1 : n <= 12 ? 2 : n <= 20 ? 3 : 4;
+      cells.push(`<i class="l${lv}" title="${k}: ${n}"></i>`);
+    }
+    return `<div class="card vx-heat"><div class="row sp"><b>📆 ${t('act')}</b></div><div class="mu" style="margin:4px 0 10px">${t('actSub', { n: days })}</div><div class="vx-heatgrid">${cells.join('')}</div>` +
+      `<div class="row vx-heatleg"><span class="mu">${t('less')}</span><i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span class="mu">${t('more')}</span></div></div>`;
+  }
+
+  /* ───────────── 5. Frase del día ───────────── */
+  const QUOTES = [
+    ['La disciplina vence a la motivación.', 'Discipline beats motivation.', 'La discipline bat la motivation.', 'A disciplina vence a motivação.'],
+    ['Un entreno a medias vale más que ninguno.', 'Half a workout beats no workout.', 'Une demi-séance vaut mieux que rien.', 'Meio treino vale mais do que nenhum.'],
+    ['No cuentes los días: haz que los días cuenten.', "Don't count the days, make the days count.", 'Ne compte pas les jours, fais que les jours comptent.', 'Não contes os dias, faz os dias contarem.'],
+    ['El progreso es progreso, aunque sea lento.', 'Progress is progress, no matter how slow.', 'Un progrès reste un progrès, même lent.', 'Progresso é progresso, mesmo que lento.'],
+    ['Tu único rival eres tú ayer.', 'Your only rival is who you were yesterday.', "Ton seul rival, c'est toi hier.", 'O teu único rival és tu ontem.'],
+    ['Constancia hoy, resultados mañana.', 'Consistency today, results tomorrow.', "Régularité aujourd'hui, résultats demain.", 'Constância hoje, resultados amanhã.'],
+    ['El mejor momento para empezar fue ayer. El segundo, ahora.', 'The best time to start was yesterday. The next best is now.', "Le meilleur moment pour commencer, c'était hier. Le deuxième, c'est maintenant.", 'O melhor momento para começar foi ontem. O segundo é agora.'],
+    ['Descansar también es entrenar.', 'Rest is part of training.', "Se reposer, c'est aussi s'entraîner.", 'Descansar também é treinar.'],
+    ['Pequeñas mejoras diarias, grandes resultados.', 'Small daily wins, big results.', 'Petits progrès quotidiens, grands résultats.', 'Pequenas melhorias diárias, grandes resultados.'],
+    ['Hazlo por la persona en la que te estás convirtiendo.', "Do it for the person you're becoming.", 'Fais-le pour la personne que tu deviens.', 'Fá-lo pela pessoa em que te estás a tornar.'],
+    ['La fuerza no viene del cuerpo, viene de la voluntad.', 'Strength comes from an indomitable will.', 'La force vient de la volonté.', 'A força vem da vontade.'],
+    ['Una serie más. Siempre una más.', 'One more set. Always one more.', 'Une série de plus. Toujours une de plus.', 'Mais uma série. Sempre mais uma.'],
+  ];
+  function quoteCard() {
+    const n = Math.floor(Date.now() / 864e5) % QUOTES.length;
+    return `<div class="vx-quote"><span class="mu">${t('quote')}</span><p>“${QUOTES[n][LI[S.lang] || 0]}”</p></div>`;
+  }
+
+  /* ───────────── Inserción en las pantallas ───────────── */
+  const _home = V.home;
+  V.home = function () {
+    let h = _home.apply(this, arguments);
+    try {
+      const due = weekDue();
+      if (due && vx().weekNote !== lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5)) { vx().weekNote = lk(Date.now() - ((new Date().getDay() + 6) % 7) * 864e5); pushInbox('📊', w('ready'), 'vxWeek()'); }
+      // Misiones y recuperación viven en Entrenos; en Inicio queda el resumen semanal cuando toca
+      const block = due ? weekCard(true) : '';
+      h = streakIn(h);
+      // Social pasa de flotar sobre el logo a la fila de iconos de la cabecera
+      const soc = '<div class="chips"><div class="chip" onclick="socGo()" style="border-color:var(--ac)">👥 Social ›</div></div>';
+      if (h.indexOf(soc) !== -1) h = h.replace(soc, '').replace('<div class="row" style="gap:8px"><div class="ib"', '<div class="row" style="gap:8px"><div class="ib vx-soc" onclick="socGo()">👥</div><div class="ib"');
+      if (block) h = insertBefore(h, 'Calorías de hoy', block) || insertBefore(h, 'Tu plan de hoy', block) || h + block;
+      if (socialOn()) { h += lbCard(); setTimeout(loadLeaderboard, 0); }
+      h += quoteCard(); // los logros se muestran solo en Perfil
+    } catch (e) { /* la pantalla original sigue intacta */ }
+    return h;
+  };
+  // Racha en Inicio: tarjeta propia, clara (antes se llamaba "Tu progreso empieza hoy")
+  function streakCard() {
+    const n = +S.streakCount || 0, best = Math.max(+S.bestStreak || 0, n), frz = vx().freezes || 0;
+    const days = Array.isArray(S.ld) ? S.ld : [];
+    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+    const L = 'LMXJVSD', today = (new Date().getDay() + 6) % 7;
+    const dots = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const on = days.includes(lk(d.getTime())); return `<div class="vx-st-d${on ? ' on' : ''}${i === today ? ' now' : ''}"><i>${on ? '🔥' : ''}</i><span>${L[i]}</span></div>`; }).join('');
+    const msg = n <= 1 ? t('stStart') : n >= best ? t('stRecord') : t('stKeep');
+    return `<div class="card vx-streak${n >= 2 ? ' hot' : ''}"><div class="row" style="gap:14px;align-items:center"><div class="vx-st-flame" aria-hidden="true">🔥</div>` +
+      `<div class="g"><div class="mu">${t('stTitle')}</div><div class="vx-st-n"><b>${n}</b> ${n === 1 ? t('stDay') : t('stDays')}</div>` +
+      `<div class="mu">${t('stBest')}: ${best}${frz ? ` · <span title="${esc(t('frzTip'))}">🧊 ${frz} ${t('stFrz')}</span>` : ''}</div></div></div>` +
+      `<div class="vx-st-week">${dots}</div><div class="mu" style="font-size:12px;margin-top:8px">${msg}</div></div>`;
+  }
+  function streakIn(h) {
+    const a = h.indexOf('<div class="card"><div class="row sp"><b>Tu progreso empieza hoy</b>');
+    if (a === -1) return streakCard() + h;
+    const endTxt = h.indexOf('</div></div>', h.indexOf('Abre Volta cada día', a));
+    return endTxt === -1 ? h : h.slice(0, a) + streakCard() + h.slice(endTxt + 12);
+  }
+  window.vxStreakCard = streakCard;
+
+  // Entrenos: misiones diarias y recuperación muscular, justo antes de la lista de ejercicios
+  if (typeof V.train === 'function') {
+    const _train = V.train;
+    V.train = function () {
+      let h = _train.apply(this, arguments);
+      try {
+        const blk = missionsCard() + recoveryCard(), mk = '<h2>Ejercicios</h2>';
+        h = h.indexOf(mk) !== -1 ? h.replace(mk, blk + mk) : h + blk;
+      } catch (e) { /* Entrenos original */ }
+      return h;
+    };
+  }
+  if (typeof V.prog === 'function') {
+    const _prog = V.prog;
+    V.prog = function () {
+      let h = _prog.apply(this, arguments);
+      try { const blk = weekCard(false) + heatmapCard(); h = insertBefore(h, 'esumen de esta semana', blk) || insertBefore(h, 'ESUMEN DE ESTA SEMANA', blk) || h + blk; } catch (e) { /* idem */ }
+      return h;
+    };
+  }
+  if (typeof V.prof === 'function') {
+    const _prof = V.prof;
+    V.prof = function () {
+      let h = _prof.apply(this, arguments);
+      try { h = insertBefore(h, 'Mi perfil', achCard()) || h + achCard(); } catch (e) { /* idem */ }
+      return h;
+    };
+  }
+
+  /* ───────────── 6. Aviso de fin de descanso (también con la pantalla bloqueada) ───────────── */
+  // Se comprueba cada segundo mientras hay descanso: sigue a −15 s / +15 s / pausa / saltar.
+  let restIv = null, pending = 0;
+  function showRestNote() {
+    if (document.visibilityState === 'visible' || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const opts = { body: t('restBody'), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'volta-rest', renotify: true, vibrate: [200, 100, 200] };
+    const show = (reg) => (reg ? reg.showNotification(t('restEnd'), opts) : new Notification(t('restEnd'), opts));
+    try { (navigator.serviceWorker ? navigator.serviceWorker.getRegistration() : Promise.resolve(null)).then(show).catch(() => show(null)); } catch (e) { /* sin avisos */ }
+  }
+  function restTick() {
+    const on = S.w && S.w.on, now = Date.now();
+    if (on && S.w.end && !S.w.paused) pending = S.w.end;
+    if (pending && now >= pending - 500) { pending = 0; showRestNote(); }
+    else if (!on && pending && now < pending - 1500) pending = 0; // descanso saltado: sin aviso
+    if (!on && !pending) { clearInterval(restIv); restIv = null; }
+  }
+  if (typeof doneSet === 'function') {
+    const _done = doneSet;
+    doneSet = function () {
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch (e) { /* sin avisos */ }
+      const out = _done.apply(this, arguments);
+      if (!restIv) restIv = setInterval(restTick, 1000);
+      setTimeout(() => { checkPerfect(); checkAchievements(); pushStats(); }, 400);
+      return out;
+    };
+  }
+
+  /* ───────────── 7. Números que suben al terminar el entreno ───────────── */
+  let countedFor = '';
+  function countUp() {
+    if (reduceMotion() || countedFor === td()) return;
+    const root = document.getElementById('m'); if (!root || !root.querySelector('.pop9')) return;
+    countedFor = td();
+    root.querySelectorAll('b.big').forEach((el) => {
+      const m = /^([+]?)([\d.,]+)$/.exec(el.textContent.trim()); if (!m) return;
+      const target = parseFloat(m[2].replace(/[.,](?=\d{3}\b)/g, '').replace(',', '.')); if (!isFinite(target) || target <= 0) return;
+      const final = el.textContent, t0 = performance.now(), dur = 900;
+      (function step(now) {
+        const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = k < 1 ? m[1] + Math.round(target * e).toLocaleString(S.lang) : final;
+        if (k < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+  }
+
+  /* ───────────── 11. Clasificación semanal con amigos (como Strava) ───────────── */
+  const LB = {
+    title: ['Clasificación semanal', 'Weekly leaderboard', 'Classement de la semaine', 'Classificação semanal'],
+    resets: ['Se reinicia cada lunes', 'Resets every Monday', 'Remis à zéro chaque lundi', 'Reinicia todas as segundas'],
+    you: ['tú', 'you', 'toi', 'tu'],
+    days: ['días', 'days', 'jours', 'dias'],
+    invite: ['Añade amigos para competir', 'Add friends to compete', 'Ajoute des amis pour te mesurer à eux', 'Adiciona amigos para competir'],
+    loading: ['Cargando…', 'Loading…', 'Chargement…', 'A carregar…'],
+  };
+  const lb = (k) => LB[k][LI[S.lang] || 0];
+  const socialOn = () => !!(window.VoltaAPI && VoltaAPI.isLoggedIn() && S.soc && S.soc.me);
+  const apiCall = (method, path, body) => {
+    let token = ''; try { token = localStorage.getItem('volta.token') || ''; } catch (e) { /* sin almacenamiento */ }
+    return fetch(VoltaAPI.getBase() + path, { method, headers: Object.assign({ Authorization: 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined })
+      .then((r) => (r.status === 204 ? null : r.ok ? r.json() : Promise.reject(r.status)));
+  };
+  function thisWeek() {
+    const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const L = realLog().filter((l) => l.t >= mon.getTime());
+    return { days: new Set(L.map((l) => lk(l.t))).size, sets: L.length, volume: Math.round(L.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0)) };
+  }
+  let lbCache = null, lbAt = 0, lbBusy = false, pushT = null;
+  function pushStats() {
+    if (!socialOn()) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(() => {
+      apiCall('POST', '/api/users/stats', thisWeek())
+        .then((d) => { lbAt = 0; if (d && window.vxArenaServer) window.vxArenaServer(d); if (document.querySelector('.vx-lb-body')) loadLeaderboard(); }) // la tarjeta visible refleja tu última serie
+        .catch(() => {});
+    }, 1500);
+  }
+  function lbRows(d) {
+    if (!d || !d.entries) return `<div class="mu">${lb('loading')}</div>`;
+    const medal = ['🥇', '🥈', '🥉'];
+    const rows = d.entries.map((e, i) => `<div class="row vx-lbr${e.me ? ' me' : ''}"><span class="vx-lbp">${medal[i] || i + 1}</span><b class="g">${esc(e.username)}${e.me ? ` <span class="mu">(${lb('you')})</span>` : ''}</b><span class="mu">${e.days} ${lb('days')}</span><b class="vx-lbv">${e.volume.toLocaleString(S.lang)} ${S.units.w}</b></div>`).join('');
+    return rows + (d.entries.length < 2 ? `<button class="btn o sm" style="margin-top:10px" onclick="socGo()">👥 ${lb('invite')}</button>` : '');
+  }
+  function loadLeaderboard() {
+    if (lbBusy || !socialOn() || Date.now() - lbAt < 30000) return;
+    lbBusy = true;
+    apiCall('GET', '/api/friends/leaderboard').then((d) => {
+      lbCache = d; lbAt = Date.now();
+      document.querySelectorAll('.vx-lb-body').forEach((el) => { el.innerHTML = lbRows(d); });
+    }).catch(() => {}).finally(() => { lbBusy = false; });
+  }
+  const lbCard = () => `<div class="card vx-lb"><div class="row sp"><b>🏁 ${lb('title')}</b><span class="mu">${lb('resets')}</span></div><div class="vx-lb-body">${lbRows(lbCache)}</div></div>`;
+  window.vxLeaderboard = () => lbCache; // para pruebas
+  // Compartido con compete.js (Arena)
+  window.vxApiCall = apiCall; window.vxSocialOn = socialOn; window.vxThisWeek = thisWeek; window.vxRealLog = realLog;
+  window.vxPushInbox = (icon, text, act) => pushInbox(icon, text, act);
+  if (typeof V.soc === 'function') {
+    const _soc = V.soc;
+    V.soc = function () { const h = _soc.apply(this, arguments); try { if (socialOn()) { setTimeout(loadLeaderboard, 0); return h + lbCard(); } } catch (e) { /* idem */ } return h; };
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pushStats(); });
+  setTimeout(pushStats, 2500);
+
+  /* ───────────── 10. Actividad (la campana): logros, récords, días perfectos y avisos ───────────── */
+  const IB = {
+    title: ['Actividad', 'Activity', 'Activité', 'Atividade'],
+    empty: ['Aquí verás tus logros, récords y avisos.', "Your achievements, records and alerts will show up here.", 'Tes succès, records et alertes apparaîtront ici.', 'Aqui vais ver as tuas conquistas, recordes e avisos.'],
+    now: ['ahora', 'now', 'maintenant', 'agora'],
+    social: ['Comunidad', 'Community', 'Communauté', 'Comunidade'],
+  };
+  const ib = (k) => IB[k][LI[S.lang] || 0];
+  function inbox() { const V2 = vx(); if (!Array.isArray(V2.inbox)) V2.inbox = []; return V2.inbox; }
+  function pushInbox(icon, text, act) {
+    const L = inbox();
+    if (L.length && L[0].text === text && Date.now() - L[0].t < 6e4) return; // evita duplicados seguidos
+    L.unshift({ t: Date.now(), icon, text, act: act || '', seen: false });
+    L.length = Math.min(L.length, 60); save();
+  }
+  const unread = () => inbox().some((n) => !n.seen);
+  function ago(ts) {
+    const s = (Date.now() - ts) / 1000;
+    try {
+      const f = new Intl.RelativeTimeFormat(S.lang, { numeric: 'auto' });
+      if (s < 60) return ib('now');
+      if (s < 3600) return f.format(-Math.round(s / 60), 'minute');
+      if (s < 86400) return f.format(-Math.round(s / 3600), 'hour');
+      return f.format(-Math.round(s / 86400), 'day');
+    } catch (e) { return new Date(ts).toLocaleString(); }
+  }
+  V['vx:inbox'] = function () {
+    const L = inbox();
+    const html = `<div class="row"><button class="back" onclick="back()">‹</button><h1 style="font-size:22px">${ib('title')}</h1></div>` +
+      (L.length ? `<div class="vx-inbox">${L.map((n) => `<div class="vx-ibi${n.seen ? '' : ' new'}"${n.act ? ` onclick="${n.act}" role="button" tabindex="0"` : ''}><span class="vx-ibic">${n.icon}</span><div class="g"><div>${esc(n.text)}</div><div class="mu">${ago(n.t)}</div></div></div>`).join('')}</div>`
+        : `<div class="vx-empty"><div>🔔</div><p class="mu">${ib('empty')}</p></div>`);
+    if (L.some((n) => !n.seen)) { L.forEach((n) => { n.seen = true; }); save(); }
+    return html;
+  };
+  // Los avisos de la app (récord, rango nuevo) también quedan guardados en Actividad
+  if (typeof toast === 'function') {
+    const _toast = toast;
+    toast = function (m) {
+      try {
+        const s = String(m || '');
+        if (/RÉCORD PERSONAL|NUEVO RANGO/.test(s)) pushInbox(/RANGO/.test(s) ? '🟣' : '🏆', (window.vxTr ? window.vxTr(s) : s).replace(/^[^\wÀ-ÿ¡¿]+/u, ''), "tab('prog')");
+      } catch (e) { /* sin bandeja */ }
+      return _toast.apply(this, arguments);
+    };
+  }
+  // Cabecera: campana → Actividad (con punto si hay novedades) e iconos accesibles con teclado
+  const HDR = { '?': ['Ayuda', 'Help', 'Aide', 'Ajuda'], bell: ['Actividad', 'Activity', 'Activité', 'Atividade'], prof: ['Perfil', 'Profile', 'Profil', 'Perfil'], soc: ['Comunidad', 'Community', 'Communauté', 'Comunidade'] };
+  function fixHeader() {
+    const root = document.getElementById('m'); if (!root) return;
+    const x = LI[S.lang] || 0;
+    root.querySelectorAll('[onclick*="Sin notificaciones"]').forEach((el) => { el.setAttribute('onclick', "go('vx:inbox')"); el.classList.add('vx-bell'); });
+    root.querySelectorAll('.vx-bell').forEach((el) => { const d = el.querySelector('.vx-dot'); if (unread() && !d) el.insertAdjacentHTML('beforeend', '<i class="vx-dot"></i>'); else if (!unread() && d) d.remove(); });
+    root.querySelectorAll('.ib').forEach((el) => {
+      el.setAttribute('role', 'button'); el.tabIndex = 0;
+      const oc = el.getAttribute('onclick') || '';
+      const k = el.classList.contains('vx-bell') ? 'bell' : /obOpen/.test(oc) ? '?' : /prof/.test(oc) ? 'prof' : /socGo/.test(oc) ? 'soc' : null;
+      if (k) el.setAttribute('aria-label', HDR[k][x]);
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    const el = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && el && el.getAttribute && el.getAttribute('role') === 'button' && el.tagName !== 'BUTTON') { e.preventDefault(); el.click(); }
+  });
+
+  /* ───────────── 9. Resumen semanal en historias (estilo Wrapped) ───────────── */
+  const W = {
+    title: ['Tu semana en Volta', 'Your week in Volta', 'Ta semaine sur Volta', 'A tua semana no Volta'],
+    last7: ['Últimos 7 días', 'Last 7 days', '7 derniers jours', 'Últimos 7 dias'],
+    open: ['Ver mi semana', 'See my week', 'Voir ma semaine', 'Ver a minha semana'],
+    ready: ['Tu resumen semanal está listo', 'Your weekly recap is ready', 'Ton récap de la semaine est prêt', 'O teu resumo semanal está pronto'],
+    days: ['días entrenados', 'training days', "jours d'entraînement", 'dias treinados'],
+    sets: ['series', 'sets', 'séries', 'séries'],
+    volume: ['volumen total', 'total volume', 'volume total', 'volume total'],
+    vsPrev: ['vs. los 7 días anteriores', 'vs. the previous 7 days', 'vs. les 7 jours précédents', 'vs. os 7 dias anteriores'],
+    best: ['Tu mejor marca', 'Your best lift', 'Ta meilleure perf', 'A tua melhor marca'],
+    e1rm: ['1RM estimado', 'estimated 1RM', '1RM estimé', '1RM estimado'],
+    prs: ['récords batidos', 'records broken', 'records battus', 'recordes batidos'],
+    top: ['Tu músculo estrella', 'Your star muscle', 'Ton muscle star', 'O teu músculo estrela'],
+    perfect: ['días perfectos', 'perfect days', 'journées parfaites', 'dias perfeitos'],
+    water: ['litros de agua', 'litres of water', "litres d'eau", 'litros de água'],
+    end: ['A por la siguiente semana', 'On to next week', 'En route pour la semaine prochaine', 'Venha a próxima semana'],
+    share: ['Compartir', 'Share', 'Partager', 'Partilhar'],
+    none: ['Aún no hay entrenos esta semana: ¡empieza hoy!', 'No workouts this week yet: start today!', "Pas encore de séance cette semaine : commence aujourd'hui !", 'Ainda sem treinos esta semana: começa hoje!'],
+  };
+  const w = (k) => W[k][LI[S.lang] || 0];
+  function weekStats() {
+    const now = Date.now(), D7 = 7 * 864e5, L = viewLog();
+    const cur = L.filter((l) => now - l.t < D7), prev = L.filter((l) => now - l.t >= D7 && now - l.t < 2 * D7);
+    const vol = (A) => A.reduce((s, l) => s + (l.w || 0) * (l.r || 0), 0);
+    const best = cur.reduce((a, b) => (!a || e1of(b) > e1of(a) ? b : a), null);
+    const byG = {}; cur.forEach((l) => { const g = EX[l.ex] && EX[l.ex][1]; if (g) byG[g] = (byG[g] || 0) + 1; });
+    const top = Object.keys(byG).sort((a, b) => byG[b] - byG[a])[0];
+    const before = L.filter((l) => now - l.t >= D7), mx = {};
+    before.forEach((l) => { mx[l.ex] = Math.max(mx[l.ex] || 0, l.w || 0); });
+    const prs = new Set(cur.filter((l) => mx[l.ex] > 0 && (l.w || 0) > mx[l.ex]).map((l) => l.ex)).size;
+    let perfect = 0, water = 0;
+    for (let i = 0; i < 7; i++) { const k = lk(now - i * 864e5); if ((vx().perfect || {})[k]) perfect++; water += +dayOf(k).w || 0; }
+    const pv = vol(prev), cv = vol(cur);
+    return {
+      days: new Set(cur.map((l) => lk(l.t))).size, sets: cur.length, vol: cv,
+      delta: pv > 0 ? Math.round(((cv - pv) / pv) * 100) : null,
+      best, bestE: best ? Math.round(e1of(best)) : 0, prs, top, topN: top ? byG[top] : 0, perfect, water: water / 1000,
+    };
+  }
+  const num = (v, d) => Number(v).toLocaleString(S.lang, { maximumFractionDigits: d || 0 });
+  const big = (txt, small) => { const n = String(txt).length + (small ? String(small).length * 0.45 : 0); return `<div class="vx-st-big${n > 9 ? ' s' : n > 6 ? ' m' : ''}">${txt}${small ? ` <small>${small}</small>` : ''}</div>`; };
+  function slides(s) {
+    const u = S.units.w, nm = (x) => esc(window.vxTr ? window.vxTr(x) : x);
+    const delta = s.delta == null ? '' : `<div class="vx-st-delta ${s.delta >= 0 ? 'up' : 'down'}">${s.delta >= 0 ? '▲' : '▼'} ${Math.abs(s.delta)} % <span>${w('vsPrev')}</span></div>`;
+    if (!s.sets) return [`<div class="vx-st-k">${w('last7')}</div><h2>${w('title')}</h2><p>${w('none')}</p>`];
+    return [
+      `<div class="vx-st-k">${w('last7')}</div><h2>${w('title')}</h2>${big(s.days)}<div class="vx-st-l">${w('days')}</div>`,
+      `${big(num(s.vol), u)}<div class="vx-st-l">${w('volume')}</div>${delta}<div class="vx-st-row"><b>${s.sets}</b> ${w('sets')}</div>`,
+      `<div class="vx-st-k">${w('best')}</div><h2>${nm(EX[s.best.ex][0])}</h2>${big(s.best.w, u + ' × ' + s.best.r)}<div class="vx-st-l">${w('e1rm')}: ${s.bestE} ${u}</div><div class="vx-st-row">🏆 <b>${s.prs}</b> ${w('prs')}</div>`,
+      `<div class="vx-st-k">${w('top')}</div><h2>${s.top ? nm(s.top) : '—'}</h2><div class="vx-st-l">${s.topN} ${w('sets')}</div><div class="vx-st-row">⭐ <b>${s.perfect}</b> ${w('perfect')}</div><div class="vx-st-row">💧 <b>${num(s.water, 1)}</b> ${w('water')}</div>`,
+      `<h2>${w('end')} 💪</h2><button class="btn" onclick="event.stopPropagation();vxWeekShare()">📤 ${w('share')}</button>`,
+    ];
+  }
+  let story = null;
+  function storyClose() { if (story) { clearTimeout(story.timer); story.el.remove(); story = null; } }
+  function storyShow(i) {
+    if (!story) return;
+    story.i = Math.max(0, Math.min(story.n - 1, i));
+    story.el.querySelector('.vx-st-body').innerHTML = story.sl[story.i];
+    story.el.querySelectorAll('.vx-st-bars i').forEach((b, k) => { b.className = k < story.i ? 'done' : k === story.i ? 'on' : ''; });
+    clearTimeout(story.timer);
+    if (!reduceMotion() && story.i < story.n - 1) story.timer = setTimeout(() => storyShow(story.i + 1), 5000);
+  }
+  window.vxWeek = function () {
+    storyClose();
+    const sl = slides(weekStats());
+    const el = document.createElement('div');
+    el.className = 'vx-story'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', w('title'));
+    el.innerHTML = `<div class="vx-st-bars">${sl.map(() => '<i></i>').join('')}</div><button class="vx-st-x" aria-label="✕" onclick="event.stopPropagation();vxWeekClose()">✕</button><div class="vx-st-body"></div>`;
+    el.addEventListener('click', (e) => { if (!story) return; storyShow(story.i + (e.clientX > innerWidth / 3 ? 1 : -1)); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Escape') storyClose(); if (e.key === 'ArrowRight') storyShow(story.i + 1); if (e.key === 'ArrowLeft') storyShow(story.i - 1); });
+    document.body.appendChild(el); el.tabIndex = -1; el.focus();
+    story = { el, sl, n: sl.length, i: 0, timer: null };
+    storyShow(0);
+    vx().weekSeen = lk(Date.now()); save();
+  };
+  window.vxWeekClose = storyClose;
+  window.vxWeekShare = async function () {
+    const s = weekStats(), cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920;
+    const g = cv.getContext('2d'), F = (wt, px) => `${wt} ${px}px "Barlow","Segoe UI",system-ui,sans-serif`;
+    const bg = g.createLinearGradient(0, 0, 0, 1920); bg.addColorStop(0, '#1d3a10'); bg.addColorStop(0.5, '#0a1208'); bg.addColorStop(1, '#050805');
+    g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+    g.fillStyle = '#9dff2e'; g.font = F(900, 70); g.fillText('VOLTA', 90, 170);
+    g.fillStyle = '#f2f6f0'; g.font = F(800, 96); g.fillText(w('title'), 90, 330);
+    g.fillStyle = '#8a968a'; g.font = F(600, 44); g.fillText(w('last7'), 90, 400);
+    const rows = [[String(s.days), w('days')], [num(s.vol) + ' ' + S.units.w, w('volume')], [String(s.sets), w('sets')], ['🏆 ' + s.prs, w('prs')], ['⭐ ' + s.perfect, w('perfect')]];
+    rows.forEach(([v, l], k) => { const y = 600 + k * 230; g.fillStyle = '#9dff2e'; g.font = F(900, 120); g.fillText(v, 90, y); g.fillStyle = '#8a968a'; g.font = F(600, 44); g.fillText(l, 90, y + 66); });
+    if (s.best) { g.fillStyle = '#f2f6f0'; const line = w('best') + ': ' + (window.vxTr ? window.vxTr(EX[s.best.ex][0]) : EX[s.best.ex][0]) + ' · ' + s.best.w + ' ' + S.units.w + ' × ' + s.best.r; let px = 46; do { g.font = F(700, px); px -= 2; } while (g.measureText(line).width > 900 && px > 24); g.fillText(line, 90, 1800); }
+    if (false) { g.fillText(w('best') + ': ' + (window.vxTr ? window.vxTr(EX[s.best.ex][0]) : EX[s.best.ex][0]) + ' · ' + s.best.w + ' ' + S.units.w + ' × ' + s.best.r, 90, 1800); }
+    const blob = await new Promise((ok) => cv.toBlob(ok, 'image/png'));
+    const file = new File([blob], 'volta-semana.png', { type: 'image/png' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Volta' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  window.vxWeekStats = weekStats; // para pruebas
+  const weekCard = (highlight) => `<div class="card vx-weekcard${highlight ? ' hl' : ''}" onclick="vxWeek()" role="button" tabindex="0"><div class="row sp"><div><div class="mu">${w('last7')}</div><b>${highlight ? '✨ ' + w('ready') : '📊 ' + w('title')}</b></div><span class="chip on">${w('open')} ›</span></div></div>`;
+  // En Inicio, los lunes y martes si aún no se ha visto y hubo entrenos
+  const weekDue = () => { const d = new Date().getDay(); return (d === 1 || d === 2) && vx().weekSeen !== lk(Date.now()) && !(vx().weekSeen && Date.now() - new Date(vx().weekSeen + 'T12:00') < 2 * 864e5) && weekStats().sets > 0; };
+
+  /* ───────────── 8. Cronómetro de la sesión y siguiente ejercicio (como Hevy) ───────────── */
+  const NX = ['Siguiente', 'Up next', 'Ensuite', 'A seguir'];
+  const clock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+  function sessionStart() {
+    const V2 = vx(), k = td();
+    if (!V2.ws || V2.ws.d !== k) { V2.ws = { d: k, t: Date.now() }; save(); }
+    return V2.ws.t;
+  }
+  function nextExercise() {
+    const r = (S.routines || []).find((x) => x.id == S.cur);
+    const L = r ? r.ex.length : (typeof DEF !== 'undefined' ? DEF.length : 0);
+    if (S.wi >= L - 1) return null;
+    const keep = S.wi;
+    try { S.wi = keep + 1; const c = cfg(); return c && EX[c.i] ? c : null; } catch (e) { return null; } finally { S.wi = keep; }
+  }
+  if (typeof V.work === 'function') {
+    const _work = V.work;
+    V.work = function () {
+      let h = _work.apply(this, arguments);
+      try {
+        if (S.done && S.done[td()] && !S.edit) return h; // pantalla de "completado"
+        const t0 = sessionStart();
+        h = h.replace('</div></div><div class="bar"', `</div><span class="vx-clock" id="vxclk" aria-label="⏱">⏱ ${clock(Date.now() - t0)}</span></div><div class="bar"`);
+        const n = nextExercise();
+        if (n) h += `<div class="vx-next"><span class="mu">${NX[LI[S.lang] || 0]}</span><b>${esc(window.vxTr ? window.vxTr(EX[n.i][0]) : EX[n.i][0])}</b><span class="mu">${n.sets} × ${esc(String(n.reps))}</span></div>`;
+      } catch (e) { /* la pantalla original sigue intacta */ }
+      return h;
+    };
+  }
+  setInterval(() => {
+    const el = document.getElementById('vxclk');
+    if (el && vx().ws) el.textContent = '⏱ ' + clock(Date.now() - vx().ws.t);
+  }, 1000);
+
+  const _R = R;
+  R = function () {
+    const out = _R.apply(this, arguments);
+    try { countUp(); } catch (e) { /* sin animación */ }
+    try { fixHeader(); } catch (e) { /* cabecera original */ }
+    return out;
+  };
+
+  /* ───────────── 12. Congelador de racha (como Duolingo) ───────────── */
+  // La app reinicia la racha si pasan más de 48 h sin abrirla. Con un congelador, aguanta hasta 72 h.
+  function guardStreak() {
+    const V2 = vx(), snap = V2.streakSnap, now = Date.now(), today = lk(now);
+    if (snap && snap.count > 1 && S.streakCount === 1 && S.lastLoginDate === today && snap.date !== today &&
+        now - snap.ts <= 72 * 36e5 && (V2.freezes || 0) > 0) {
+      V2.freezes -= 1;
+      S.streakCount = snap.count + 1;
+      S.bestStreak = Math.max(S.bestStreak || 0, S.streakCount);
+      pushInbox('🧊', t('frzUsed'));
+      setTimeout(() => toast(t('frzUsed')), 800);
+    }
+    V2.streakSnap = { count: S.streakCount || 0, ts: S.lastLoginTs || now, date: S.lastLoginDate || today };
+    save();
+  }
+  try { guardStreak(); } catch (e) { /* sin racha */ }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { guardStreak(); R(); } catch (e) { /* idem */ } } });
+  window.vxGuardStreak = guardStreak; // para pruebas
+
+  setTimeout(() => { try { checkAchievements(); } catch (e) { /* sin logros */ } }, 1500);
+  // Algunos logros cambian fuera de las series (rutinas creadas, Trabajos, Oráculo, agua…): se revisan también al
+  // moverse por la app, como mucho una vez cada 5 s
+  {
+    let lastChk = 0, chkT = 0;
+    const _Rch = R;
+    R = function () {
+      const out = _Rch.apply(this, arguments);
+      if (!chkT && Date.now() - lastChk > 5000) chkT = setTimeout(() => { chkT = 0; lastChk = Date.now(); try { checkAchievements(); } catch (e) { /* sin logros */ } }, 1200);
+      return out;
+    };
+  }
+  try { R(); } catch (e) { /* la app ya está pintada */ }
+})();

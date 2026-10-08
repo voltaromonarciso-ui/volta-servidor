@@ -1,18 +1,20 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const { z } = require('zod');
-const rateLimit = require('express-rate-limit');
+const { limiter } = require('../lib/limiter');
 const config = require('../config');
 const { query } = require('../db');
 const { ah, HttpError } = require('../lib/http');
 const VMOD = require('../lib/moderation');
 const { sign, requireAuth } = require('../middleware/auth');
+const ws = require('../ws');
 
-const authLimiter = rateLimit({
+const authLimiter = limiter({ name: 'auth',
   windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => config.rateLimitOff,
   message: { error: 'rate_limited', message: 'Demasiados intentos. Prueba de nuevo en unos minutos.' },
 });
 
@@ -78,6 +80,28 @@ router.get('/me', requireAuth, ah(async (req, res) => {
   const { rows } = await query('SELECT id, username, email, created_at FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
   res.json({ user: publicUser(rows[0]) });
+}));
+
+// POST /api/auth/refresh  → sesión nueva para quien ya tiene una válida (la app la renueva sola al abrirse,
+// así la cuenta queda recordada mientras se use; solo se cierra al salir, borrar los datos o borrar la cuenta)
+router.post('/refresh', requireAuth, ah(async (req, res) => {
+  const { rows } = await query('SELECT id, username, email, created_at FROM users WHERE id = $1', [req.user.id]);
+  if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  res.json({ token: sign(rows[0]), user: publicUser(rows[0]) });
+}));
+
+// DELETE /api/auth/me   { password }  → borra la cuenta, sus mensajes y amistades (ON DELETE CASCADE)
+router.delete('/me', authLimiter, requireAuth, ah(async (req, res) => {
+  const { password } = z.object({ password: z.string().min(1).max(200) }).parse(req.body ?? {});
+  const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+  if (!rows[0]) throw new HttpError(401, 'invalid_token', 'La cuenta ya no existe.');
+  // 403 y no 401: la sesión es válida (los clientes cierran sesión al recibir 401)
+  if (!(await bcrypt.compare(password, rows[0].password_hash))) {
+    throw new HttpError(403, 'bad_credentials', 'Contraseña incorrecta.');
+  }
+  await query('DELETE FROM users WHERE id = $1', [req.user.id]);
+  ws.disconnectUser(req.user.id);
+  res.status(204).end();
 }));
 
 module.exports = router;
