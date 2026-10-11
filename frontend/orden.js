@@ -11,7 +11,9 @@
   const m = () => { const r = document.getElementById('m'); if (!r) return null; return r.children.length === 1 && r.firstElementChild.children.length > 3 ? r.firstElementChild : r; };
   const kids = (root) => [...root.children];
   const byClass = (root, c) => kids(root).find((e) => e.classList && e.classList.contains(c));
-  const byText = (root, re, sel) => kids(root).find((e) => (!sel || e.matches(sel)) && re.test((e.textContent || '').slice(0, 160)));
+  // por lo que hace al tocarlo (no por el texto: así funciona en todos los idiomas)
+  const byClick = (root, re, sel) => kids(root).find((e) => (!sel || e.matches(sel)) && re.test(e.getAttribute('onclick') || ''));
+  const hasClick = (root, re) => kids(root).find((e) => !e.classList.contains('card') && [...e.querySelectorAll('[onclick]')].some((x) => re.test(x.getAttribute('onclick') || '')));
 
   // Coloca los elementos en este orden donde estaba el primero de ellos
   function place(root, seq) {
@@ -21,8 +23,8 @@
   }
   function orderHome(root) {
     const zeus = byClass(root, 'vx-zeus-card');
-    const plan = byText(root, /Tu plan de hoy|Today’s plan|Ton plan du jour|O teu plano de hoje|Entrenamiento de hoy/, '.card');
-    const quick = kids(root).find((e) => !e.classList.contains('card') && e.querySelector && e.querySelector('button') && /Registrar comida|Log meal|Log food|Enregistrer|Registar/.test(e.textContent || ''));
+    const plan = byClick(root, /^playToday\(\)/, '.card');
+    const quick = hasClick(root, /vxFoodOpen\(|tab\('nut'\)/);
     const oly = byClass(root, 'vx-oly'), lg = byClass(root, 'vx-arena-card'), st = byClass(root, 'vx-streak');
     const seq = [zeus, plan, quick, oly, lg, st].filter(Boolean);
     if (seq.length < 3) return;
@@ -31,8 +33,13 @@
 
   function orderTrain(root) {
     // fuera la lista larga y los filtros: eso está en la Biblioteca
-    const lst = root.querySelector('#lst'); if (lst) lst.remove();
-    kids(root).forEach((e) => { if (e.tagName === 'H2' && /^(Ejercicios|Exercises|Exercices|Exercícios)$/.test((e.textContent || '').trim())) e.remove(); });
+    const lst = root.querySelector('#lst');
+    if (lst) {
+      // el título «Ejercicios» y los filtros que van justo antes de la lista
+      let e = lst.previousElementSibling;
+      for (let k = 0; e && k < 3; k++) { const prev = e.previousElementSibling; if (e.tagName === 'H2' || e.matches('.chips.ch2')) { const h2 = e.tagName === 'H2'; e.remove(); if (h2) break; } e = prev; }
+      lst.remove();
+    }
     const ch = root.querySelector('.chips.ch2'); if (ch) ch.remove();
     const q = root.querySelector('#q');
     if (q) {
@@ -41,11 +48,11 @@
       q.addEventListener('focus', open); q.addEventListener('click', open);
     }
     const hero = byClass(root, 'hero2');
-    const quick = kids(root).find((e) => !e.classList.contains('card') && e.querySelector && e.querySelector('button,[onclick]') && /rutinas|routines|rotinas/i.test(e.textContent || '') && (e.textContent || '').length < 120);
-    const mis = byClass(root, 'vx-missions'), rec = byClass(root, 'vx-recovery') || byText(root, /Recuperación muscular|Muscle recovery|Récupération|Recuperação/, '.card');
+    const quick = hasClick(root, /go\('routines'\)/);
+    const mis = byClass(root, 'vx-missions'), rec = byClass(root, 'vx-rec') || byClass(root, 'vx-recovery');
     const lab = byClass(root, 'vx-lab-card');
-    const libc = byText(root, /Biblioteca de ejercicios|Exercise library|Bibliothèque|Biblioteca de exercícios/, '.card');
-    const fav = byText(root, /Favoritos|Favorites|Favoris/, '.card');
+    const libc = byClick(root, /^go\('lib'\)/, '.card');
+    const fav = byClick(root, /^go\('favs'\)/, '.card');
     const coach = kids(root).find((e) => e.getAttribute && /go\('coach'\)/.test(e.getAttribute('onclick') || ''));
     const seq = [hero, quick, mis, rec, lab, libc, fav, coach].filter(Boolean);
     if (!seq.length) return;
