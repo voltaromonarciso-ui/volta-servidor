@@ -4,7 +4,7 @@
   'use strict';
   if (typeof S === 'undefined' || typeof R !== 'function') return;
 
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const T = {
     missions: ['Misiones de hoy', "Today's missions", 'Missions du jour', 'Missões de hoje'],
     stTitle: ['Tu racha', 'Your streak', 'Ta série', 'A tua sequência'],

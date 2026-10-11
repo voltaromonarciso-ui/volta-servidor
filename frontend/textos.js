@@ -435,4 +435,65 @@ En calibración · ⚪ Sin datos|Calibrating · ⚪ No data|En calibrage · ⚪ 
   P(/^(\d+) kcal · P (\d+) · C (\d+) · G (\d+)$/, ['$1 kcal · P $2 · C $3 · F $4', '$1 kcal · P $2 · G $3 · L $4', '$1 kcal · P $2 · H $3 · G $4']);
   P(/^SUSTITUIR (.+)$/, ['SWAP $1', 'REMPLACER $1', 'SUBSTITUIR $1']);
   P(/^Secondary: (.+)$/, ['Secondary: $1', 'Secondaires : $1', 'Secundários: $1']);
+  // Huecos que quedaban en inglés (detectados por scripts/i18n-extract.js)
+  window.vxAddTr(`
+Bíceps cabeza corta|Biceps short head|Biceps chef court|Bíceps cabeça curta
+Bíceps cabeza larga|Biceps long head|Biceps chef long|Bíceps cabeça longa
+Bíceps cabeza larga / corta|Biceps long / short head|Biceps chef long / court|Bíceps cabeça longa / curta
+Bíceps femoral|Biceps femoris|Biceps fémoral|Bíceps femoral
+Bíceps femoral / erectores|Biceps femoris / spinal erectors|Biceps fémoral / érecteurs|Bíceps femoral / eretores
+Bíceps femoral / glúteo|Biceps femoris / glutes|Biceps fémoral / fessiers|Bíceps femoral / glúteos
+Cuádriceps y glúteo mayor|Quads and gluteus maximus|Quadriceps et grand fessier|Quadríceps e glúteo máximo
+Extensores de la muñeca|Wrist extensors|Extenseurs du poignet|Extensores do pulso
+Flexores de la muñeca|Wrist flexors|Fléchisseurs du poignet|Flexores do pulso
+Flexores de los dedos (agarre)|Finger flexors (grip)|Fléchisseurs des doigts (prise)|Flexores dos dedos (pega)
+Glúteo mayor|Gluteus maximus|Grand fessier|Glúteo máximo
+Glúteo mayor / aductores|Gluteus maximus / adductors|Grand fessier / adducteurs|Glúteo máximo / adutores
+Isquiosurales (bíceps femoral, semitendinoso, semimembranoso) y glúteo mayor|Hamstrings (biceps femoris, semitendinosus, semimembranosus) and gluteus maximus|Ischio-jambiers (biceps fémoral, semi-tendineux, semi-membraneux) et grand fessier|Isquiotibiais (bíceps femoral, semitendinoso, semimembranoso) e glúteo máximo
+Semitendinoso / glúteo medio|Semitendinosus / gluteus medius|Semi-tendineux / moyen fessier|Semitendinoso / glúteo médio
+Tríceps braquial|Triceps brachii|Triceps brachial|Tríceps braquial
+Tríceps cabeza larga|Triceps long head|Triceps chef long|Tríceps cabeça longa
+Tríceps cabeza lateral|Triceps lateral head|Triceps chef latéral|Tríceps cabeça lateral
+Tríceps cabeza lateral / medial|Triceps lateral / medial head|Triceps chef latéral / médial|Tríceps cabeça lateral / medial
+Vasto lateral / glúteo|Vastus lateralis / glutes|Vaste latéral / fessiers|Vasto lateral / glúteos
+Vasto medial / glúteo|Vastus medialis / glutes|Vaste médial / fessiers|Vasto medial / glúteos
+Gastrocnemio / sóleo|Gastrocnemius / soleus|Gastrocnémien / soléaire|Gastrocnémio / sóleo
+Glúteos, core|Glutes, core|Fessiers, gainage|Glúteos, core
+Glúteos, erectores|Glutes, spinal erectors|Fessiers, érecteurs|Glúteos, eretores
+Sóleo, tibial|Soleus, tibialis|Soléaire, tibial|Sóleo, tibial
+Bíceps, braquial|Biceps, brachialis|Biceps, brachial|Bíceps, braquial
+porción media e inferior|middle and lower portion|faisceaux moyen et inférieur|porção média e inferior
+porción superior|upper portion|faisceau supérieur|porção superior
+Brócoli|Broccoli|Brocoli|Brócolos
+Espárragos|Asparagus|Asperges|Espargos
+Plátano|Banana|Banane|Banana
+Salmón|Salmon|Saumon|Salmão
+Proteína whey|Whey protein|Protéine whey|Proteína whey
+Lácteos|Dairy|Produits laitiers|Laticínios
+Añadir a favoritos|Add to favourites|Ajouter aux favoris|Adicionar aos favoritos
+La lista se genera a partir de tu plan.|The list is built from your plan.|La liste est créée à partir de ton plan.|A lista é criada a partir do teu plano.
+Se actualiza al sustituir ingredientes en tus comidas.|It updates when you swap ingredients in your meals.|Elle se met à jour quand tu remplaces des ingrédients.|Atualiza-se quando substituis ingredientes nas tuas refeições.
+Según tus comidas|Based on your meals|Selon tes repas|Segundo as tuas refeições
+Sin plan|No plan|Pas de plan|Sem plano
+Toca un día para ver su plan.|Tap a day to see its plan.|Touche un jour pour voir son plan.|Toca num dia para ver o plano.
+Se trabaja cada lado por separado. VOLTA todavía registra un único valor por serie.|Each side is trained separately. VOLTA still logs a single value per set.|Chaque côté travaille séparément. VOLTA enregistre encore une seule valeur par série.|Cada lado trabalha em separado. O VOLTA ainda regista um único valor por série.
+Primera medición|First measurement|Première mesure|Primeira medição
+Plano (apoyo de antebrazo)|Flat (forearm support)|Plat (appui de l’avant-bras)|Plano (apoio do antebraço)
+Plano (apoyo de antebrazos)|Flat (forearms support)|Plat (appui des avant-bras)|Plano (apoio dos antebraços)
+Banco como apoyo de la espalda alta (sin ángulo definido)|Bench as upper-back support (no set angle)|Banc comme appui du haut du dos (sans angle défini)|Banco como apoio da parte superior das costas (sem ângulo definido)
+Lunes|Monday|Lundi|Segunda-feira
+Martes|Tuesday|Mardi|Terça-feira
+Miércoles|Wednesday|Mercredi|Quarta-feira
+Jueves|Thursday|Jeudi|Quinta-feira
+Viernes|Friday|Vendredi|Sexta-feira
+Sábado|Saturday|Samedi|Sábado
+Domingo|Sunday|Dimanche|Domingo
+`);
+  P(/^Información de (.+)$/, ['About $1', 'À propos de $1', 'Sobre $1']);
+  P(/^Atleta (\d)D de Volta haciendo el ejercicio: (.+)$/, ['Volta $1D athlete doing the exercise: $2', 'Athlète $1D Volta faisant l’exercice : $2', 'Atleta $1D do Volta a fazer o exercício: $2']);
+  P(/^🪑 BANCO: (.+)$/, ['🪑 BENCH: $1', '🪑 BANC : $1', '🪑 BANCO: $1']);
+  P(/^([+−-]?[\d.,]+ kg) respecto a la medición anterior$/, ['$1 vs the previous measurement', '$1 par rapport à la mesure précédente', '$1 vs a medição anterior']);
+  P(/^Recomendado: (\d+)°\. Rango útil: aprox\. (\d+)-(\d+)° según objetivo y ejecución; con inclinaciones altas el deltoides anterior participa más\.$/, ['Recommended: $1°. Useful range: about $2-$3° depending on goal and form; steeper inclines work the front delts more.', 'Recommandé : $1°. Plage utile : env. $2-$3° selon l’objectif et l’exécution ; plus l’inclinaison est forte, plus le deltoïde antérieur travaille.', 'Recomendado: $1°. Amplitude útil: aprox. $2-$3° segundo o objetivo e a execução; com inclinações altas o deltoide anterior participa mais.']);
+  P(/^· ([\d.,]+) Voltios\. Subes de nivel \(I–V\) con los Voltios que ganas entrenando, con misiones, logros y Trabajos\.$/, ['· $1 Volts. You level up (I–V) with the Volts you earn training, with missions, achievements and Labors.', '· $1 Voltios. Tu montes de niveau (I–V) avec les Voltios gagnés à l’entraînement, les missions, les succès et les Travaux.', '· $1 Voltios. Sobes de nível (I–V) com os Voltios que ganhas a treinar, com missões, conquistas e Trabalhos.']);
+  P(/^(\d+) (plátanos?|huevos?|claras?|manzanas?|peras?|kiwis?|aguacates?) \(≈(\d+) g\)$/, ['$1 $2 (≈$3 g)', '$1 $2 (≈$3 g)', '$1 $2 (≈$3 g)']);
 })();

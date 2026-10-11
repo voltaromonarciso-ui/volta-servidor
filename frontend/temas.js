@@ -7,7 +7,7 @@
    Los verdes de la comida (verduras, hierbas) no están en la lista, así que no cambian. */
 (function () {
   if (typeof S !== 'object' || typeof R !== 'function') return;
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const tr = (a) => a[LI[S.lang] || 0];
 
   // Verdes de la interfaz, agrupados por intensidad: b = neón, m = principal, d = profundo, k = fondo oscuro, o = texto sobre el color

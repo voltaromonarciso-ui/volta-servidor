@@ -514,7 +514,7 @@ Sírvelo al momento con hielo.~Serve right away with ice.
     step: ['Paso', 'Step', 'Étape', 'Passo'],
     timer: ['Temporizador', 'Timer', 'Minuteur', 'Temporizador'],
   };
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const tt = (k) => TXT[k][LI[S.lang] || 0];
 
   // ── Temporizador de cocina por paso ("cuece 12 min" → botón ⏱ 12 min) ──

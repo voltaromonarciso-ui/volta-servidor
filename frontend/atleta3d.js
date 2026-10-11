@@ -514,7 +514,7 @@
     see: ['Ver atleta 3D', 'Show 3D athlete', 'Voir l’athlète 3D', 'Ver atleta 3D'],
     label: ['Atleta 3D de Volta haciendo el ejercicio', 'Volta 3D athlete doing the exercise', 'Athlète 3D Volta faisant l’exercice', 'Atleta 3D da Volta a fazer o exercício'],
   };
-  const li = () => ({ es: 0, en: 1, fr: 2, pt: 3 })[typeof S === 'object' && S.lang] || 0;
+  const li = () => ({ es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 })[typeof S === 'object' && S.lang] || 0;
   const tx = (k) => TX[k][li()];
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
   const saveData = () => { try { return !!(navigator.connection && navigator.connection.saveData); } catch (e) { return false; } };

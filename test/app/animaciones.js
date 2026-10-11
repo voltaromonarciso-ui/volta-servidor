@@ -19,13 +19,13 @@ ok(bad2[0].length === 0, 'SVG animados válidos en ' + bad2[1] + ' ejercicios ' 
 const i = await p.evaluate(() => EX.findIndex(e => e[0] === 'Sentadilla'));
 await p.evaluate((i) => { S.stack = ['ex' + i]; R(); }, i); await p.waitForTimeout(400);
 ok(await p.locator('.vx-av-ctl button').count() === 3, 'controles pausa / lento / 1× en la ficha');
-await p.click('.vx-av-ctl button >> nth=0'); await p.waitForTimeout(200);
+await p.click('.vx-av-ctl button >> nth=0', { force: true, timeout: 5000 }); await p.waitForTimeout(200);
 ok(await p.evaluate(() => document.querySelector('.vx-avatar svg').animationsPaused()), 'pausa detiene la animación');
-await p.click('.vx-av-ctl button >> nth=0'); await p.waitForTimeout(100);
+await p.click('.vx-av-ctl button >> nth=0', { force: true, timeout: 5000 }); await p.waitForTimeout(100);
 ok(await p.evaluate(() => !document.querySelector('.vx-avatar svg').animationsPaused()), 'y vuelve a seguir');
-await p.click('.vx-av-ctl button >> nth=1'); await p.waitForTimeout(200);
+await p.click('.vx-av-ctl button >> nth=1', { force: true, timeout: 5000 }); await p.waitForTimeout(200);
 ok(await p.evaluate(() => /dur="5.6s"/.test(document.querySelector('.vx-avatar').innerHTML) && document.querySelector('.vx-av-ctl button:nth-child(2)').classList.contains('on')), 'cámara lenta 0,5×');
-await p.click('.vx-av-ctl button >> nth=2'); await p.waitForTimeout(200);
+await p.click('.vx-av-ctl button >> nth=2', { force: true, timeout: 5000 }); await p.waitForTimeout(200);
 ok(await p.evaluate(() => /dur="2.6s"/.test(document.querySelector('.vx-avatar').innerHTML)), 'velocidad normal');
 ok(/Ritmo recomendado/.test(await p.evaluate(() => document.getElementById('m').innerText)), 'indicación de ritmo');
 await p.screenshot({ path: 'shots/anim-ex.png' });

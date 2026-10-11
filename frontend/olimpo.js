@@ -3,7 +3,7 @@
    - El Oráculo de Delfos: cada día te dice qué entrenar según la recuperación de cada grupo muscular. */
 (function () {
   if (typeof V !== 'object' || typeof R !== 'function' || typeof EX === 'undefined') return;
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const tr = (a) => (Array.isArray(a) ? a[LI[S.lang] || 0] || a[1] || a[0] : a);
   const fmt = (n) => Math.round(n || 0).toLocaleString(S.lang);
   const log = () => (window.vxRealLog ? window.vxRealLog() : (Array.isArray(S.log) ? S.log : [])).filter((l) => l && EX[l.ex]);

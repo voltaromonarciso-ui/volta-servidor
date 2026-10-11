@@ -96,7 +96,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
     reps: ['Indica cuántas repeticiones has hecho (mínimo 1).', 'Enter how many reps you did (at least 1).', 'Indique combien de répétitions tu as faites (au moins 1).', 'Indica quantas repetições fizeste (mínimo 1).'],
     big: ['Revisa los datos: más de 100 repeticiones o 1000 kg no es posible en una serie.', 'Check your numbers: over 100 reps or 1000 kg isn’t possible in one set.', 'Vérifie : plus de 100 répétitions ou 1000 kg n’est pas possible en une série.', 'Revê os dados: mais de 100 repetições ou 1000 kg não é possível numa série.'],
   };
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   if (typeof doneSet === 'function') {
     const _done = doneSet;
     doneSet = function () {
@@ -184,7 +184,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
         let out;
         if (S.stack && S.stack.length) S.stack.pop(); else S.tab = 'home';
         try { out = R.apply(this, arguments); } catch (e2) { S.stack = []; S.tab = 'home'; out = R.apply(this, arguments); }
-        if (typeof toast === 'function') toast(['No se pudo abrir esa pantalla', 'That screen could not be opened', 'Impossible d’ouvrir cet écran', 'Não foi possível abrir esse ecrã'][{ en: 1, fr: 2, pt: 3 }[S.lang] || 0]);
+        if (typeof toast === 'function') toast(['No se pudo abrir esa pantalla', 'That screen could not be opened', 'Impossible d’ouvrir cet écran', 'Não foi possível abrir esse ecrã'][{ en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 }[S.lang] || 0]);
         return out;
       } finally { rescuing = false; }
     }
@@ -206,7 +206,7 @@ Comparar con otro ejercicio|Compare with another exercise|Comparer avec un autre
   const TX = {
     t: ['Cuestionario', 'Questionnaire', 'Questionnaire', 'Questionário'],
   };
-  const L = () => ({ en: 1, fr: 2, pt: 3 }[S.lang] || 0);
+  const L = () => ({ en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 }[S.lang] || 0);
   const _prof = V.prof;
   V.prof = function () {
     let h = _prof.apply(this, arguments);

@@ -1,7 +1,7 @@
 /* VOLTA · Plantillas de rutina: empezar a entrenar con un toque cuando aún no tienes rutinas */
 (function () {
   if (typeof V !== 'object' || typeof V.routines !== 'function') return;
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const tt = (a) => a[LI[S.lang] || 0];
   const T = {
     emptyT: ['Empieza con una plantilla', 'Start with a template', 'Commence avec un modèle', 'Começa com um modelo'],

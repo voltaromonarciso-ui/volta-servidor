@@ -10,7 +10,7 @@
   'use strict';
   if (typeof R !== 'function' || typeof S === 'undefined' || typeof V === 'undefined' || !window.NUTR) return;
   const N = window.NUTR;
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const T = {
     title: ['Añadir alimento', 'Add food', 'Ajouter un aliment', 'Adicionar alimento'],
     ph: ['Busca: pollo, arroz, yogur…', 'Search: chicken, rice, yogurt…', 'Cherche : poulet, riz, yaourt…', 'Pesquisa: frango, arroz, iogurte…'],

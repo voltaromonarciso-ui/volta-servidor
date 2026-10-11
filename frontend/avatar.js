@@ -347,7 +347,7 @@
   window.vxAv = function (i, mode, btn) {
     const box = document.querySelector('.vx-avatar[data-ex="' + i + '"]'), e = EX[i];
     if (!box || !e) return;
-    const x = { es: 0, en: 1, fr: 2, pt: 3 }[S.lang] || 0, bar = btn && btn.parentElement;
+    const x = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 }[S.lang] || 0, bar = btn && btn.parentElement;
     const svg = () => box.querySelector('svg');
     if (mode === 'pause') {
       const s2 = svg(); if (!s2 || !s2.pauseAnimations) return;
@@ -366,7 +366,7 @@
     V.ex = function (i) {
       let h = _ex.apply(this, arguments);
       try {
-        const e = EX[i], x = { es: 0, en: 1, fr: 2, pt: 3 }[S.lang] || 0;
+        const e = EX[i], x = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 }[S.lang] || 0;
         const anim2 = `<div class="vx-avatar" data-ex="${i}">${render(e, { zoom: true })}<span class="vx-av-tag">▶ ${MOV[x]}</span></div>` +
           (reduceMotion() ? '' : `<div class="vx-av-ctl" role="group" aria-label="${CTL.label[x]}"><button class="chip" onclick="vxAv(${i},'pause',this)" aria-pressed="false">⏸ ${CTL.pause[x]}</button><button class="chip" onclick="vxAv(${i},'slow',this)">🐢 ${CTL.slow[x]}</button><button class="chip on" onclick="vxAv(${i},'normal',this)">1×</button></div>`) +
           `<div class="mu vx-av-tempo">⏱ ${CTL.tempo[x]}</div>`;

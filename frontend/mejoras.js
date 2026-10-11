@@ -108,7 +108,7 @@
   }
 
   /* ───────────── 5. Traducción de los textos que la app dejaba en español ───────────── */
-  const LANGS = { en: 1, fr: 2, pt: 3 };
+  const LANGS = { en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const D = {};
   const add = (block) => block.trim().split('\n').forEach((row) => { const a = row.split('|'); D[a[0].trim()] = a.map((s) => s.trim()); });
 
@@ -563,8 +563,9 @@ berenjena|aubergine|aubergine|beringela
 calabaza|pumpkin|courge|abóbora
 `);
   window.vxAddTr = add; // para que otros módulos (comidas.js) añadan sus traducciones
-  const UP = {};
-  Object.keys(D).forEach((k) => { UP[k.toUpperCase()] = D[k].map((s) => s.toUpperCase()); });
+  // versión en mayúsculas de cada texto; se rehace si otros módulos añaden textos después
+  let UPM = {}, UPN = -1;
+  const UPG = () => { const n = Object.keys(D).length; if (n !== UPN) { UPN = n; UPM = {}; Object.keys(D).forEach((k) => { UPM[k.toUpperCase()] = D[k].map((s) => s.toUpperCase()); }); } return UPM; };
   let EXN = null, EXN_N = 0;
   const exNames = () => { if (!EXN || EXN_N !== EX.length) { EXN_N = EX.length; EXN = Object.keys(D).filter((k) => EX.some((e) => e[0] === k)).sort((a, b) => b.length - a.length); } return EXN; };
 
@@ -586,12 +587,13 @@ calabaza|pumpkin|courge|abóbora
     [/^NUEVO RÉCORD PERSONAL · (.+)$/, ['NEW PERSONAL RECORD · $1', 'NOUVEAU RECORD PERSONNEL · $1', 'NOVO RECORDE PESSOAL · $1']],
   ];
   window.vxAddTrPat = (re, outs) => P.push([re, outs]); // patrones con huecos ($1…) desde otros módulos
+  window.vxTrDump = () => ({ D, P }); // para extraer los textos que se traducen a los idiomas nuevos
   const DAYS = { Lun: ['Mon', 'lun.', 'Seg'], Mar: ['Tue', 'mar.', 'Ter'], 'Mié': ['Wed', 'mer.', 'Qua'], Jue: ['Thu', 'jeu.', 'Qui'], Vie: ['Fri', 'ven.', 'Sex'], 'Sáb': ['Sat', 'sam.', 'Sáb'], Dom: ['Sun', 'dim.', 'Dom'] };
-  const LETTERS = { en: 'MTWTFSS', fr: 'LMMJVSD', pt: 'STQQSSD' };
+  const LETTERS = { en: 'MTWTFSS', fr: 'LMMJVSD', pt: 'STQQSSD', de: 'MDMDFSS', it: 'LMMGVSD', ru: 'ПВСЧПСВ', ar: 'نثرخجسح', tr: 'PSÇPCCP', ja: '月火水木金土日', ko: '월화수목금토일', zh: '一二三四五六日', hi: ['सो', 'मं', 'बु', 'गु', 'शु', 'श', 'र'] };
 
   function trText(s, x) {
     if (D[s]) return D[s][x] || null;
-    if (UP[s]) return UP[s][x] || null;
+    { const U = UPG(); if (U[s]) return U[s][x] || null; }
     if (DAYS[s]) return DAYS[s][x - 1];
     for (const [re, out] of P) {
       const m = re.exec(s);
@@ -668,6 +670,8 @@ calabaza|pumpkin|courge|abóbora
     });
     flush();
     root.querySelectorAll('[placeholder]').forEach((e) => { const r = window.vxTr(e.placeholder); if (r !== e.placeholder) e.placeholder = r; });
+    // etiquetas para lectores de pantalla y descripciones de imágenes
+    root.querySelectorAll('[aria-label],[title],img[alt]').forEach((e) => ['aria-label', 'title', 'alt'].forEach((a) => { const v = e.getAttribute(a); if (!v) return; const r = window.vxTr(v); if (r !== v) e.setAttribute(a, r); }));
   }
   if (typeof toast === 'function') {
     const _toast = toast;

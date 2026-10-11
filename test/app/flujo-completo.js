@@ -10,8 +10,8 @@ for (; steps < 30; steps++) { if (last.indexOf('Preparando') !== -1) await p.wai
   if (await p.evaluate(() => S.onboarded)) break;
   const r = await p.evaluate(() => {
     const vis = (e) => e && e.offsetParent !== null;
-    const root = document.getElementById('vob') || document.body; const txt = root.innerText.slice(0, 80).replace(/\n/g, ' | ');
-    const inps = [...root.querySelectorAll('input, select')].filter(vis);
+    const root = document.getElementById('vob') || document.body; const sel = root.querySelector('.obsel'); const txt = (sel ? root.innerText.replace(sel.innerText, '') : root.innerText).trim().slice(0, 80).replace(/\n/g, ' | ');
+    const inps = [...root.querySelectorAll('input, select')].filter(vis).filter((e) => !e.classList.contains('obsel'));
     for (const inp of inps) {
       if (inp.value) continue;
       if (inp.tagName === 'SELECT') { inp.selectedIndex = 1; inp.dispatchEvent(new Event('change', { bubbles: true })); continue; }

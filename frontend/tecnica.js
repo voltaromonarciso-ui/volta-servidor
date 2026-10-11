@@ -221,7 +221,7 @@
     br: ['Respiración', 'Breathing', 'Respiration', 'Respiração'], err: ['Errores que debes evitar', 'Mistakes to avoid', 'Erreurs à éviter', 'Erros a evitar'],
     tip: ['Consejo pro', 'Pro tip', 'Conseil pro', 'Dica pro'],
   };
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   if (typeof V.ex === 'function') {
     const _ex = V.ex;
     V.ex = function (i) {

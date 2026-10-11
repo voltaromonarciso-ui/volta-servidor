@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   if (typeof EX === 'undefined' || typeof S === 'undefined') return;
-  const LI = { es: 0, en: 1, fr: 2, pt: 3 };
+  const LI = { es: 0, en: 1, fr: 2, pt: 3, de: 1, it: 1, ru: 1, ar: 1, tr: 1, ja: 1, ko: 1, zh: 1, hi: 1 };
   const tr = (a) => (Array.isArray(a) ? a[LI[S.lang] || 0] || a[1] || a[0] : a);
   const nf = (n) => Math.round(n || 0).toLocaleString(S.lang);
   const T = {

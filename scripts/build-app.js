@@ -8,7 +8,14 @@ const root = path.join(__dirname, '..');
 const file = path.join(root, 'Volta-app.html');
 const css = fs.readFileSync(path.join(root, 'frontend/mejoras.css'), 'utf8');
 // Orden importante: engage.js se apoya en lo que define mejoras.js (vxTr, vxCelebrate)
-const js = ['platos.js', 'mejoras.js', 'recetas.js', 'ejercicios.js', 'catalogo.js', 'imagenes.js', 'avatar.js', 'atleta3d.js', 'tecnica.js', 'engage.js', 'compete.js', 'olimpo.js', 'progreso.js', 'zeus.js', 'rutinas.js', 'arreglos.js', 'textos.js', 'temas.js', 'comida.js', 'orden.js', 'a11y.js'].map((f) => fs.readFileSync(path.join(root, 'frontend', f), 'utf8')).join('\n');
+const js = ['platos.js', 'mejoras.js', 'recetas.js', 'ejercicios.js', 'catalogo.js', 'imagenes.js', 'avatar.js', 'atleta3d.js', 'tecnica.js', 'engage.js', 'compete.js', 'olimpo.js', 'progreso.js', 'zeus.js', 'rutinas.js', 'arreglos.js', 'textos.js', 'idiomas.js', 'temas.js', 'comida.js', 'orden.js', 'a11y.js'].map((f) => fs.readFileSync(path.join(root, 'frontend', f), 'utf8')).join('\n')
+  // versión de los diccionarios de idiomas: cambia cuando cambian, así el móvil no usa una copia vieja
+  .replace('__VX_I18N__', (() => {
+    const dir = path.join(root, 'public/assets/i18n');
+    const h = require('crypto').createHash('sha1');
+    if (fs.existsSync(dir)) fs.readdirSync(dir).sort().forEach((f) => h.update(f + fs.readFileSync(path.join(dir, f))));
+    return h.digest('hex').slice(0, 10);
+  })());
 
 const START = '<!-- VOLTA-MEJORAS:START -->';
 const END = '<!-- VOLTA-MEJORAS:END -->';
