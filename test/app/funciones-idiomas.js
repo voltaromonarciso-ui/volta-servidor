@@ -33,7 +33,12 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   // inglés
   await p.evaluate(() => { S.lang = 'en'; tab('train'); }); await p.waitForTimeout(300);
   const txt = await p.evaluate(() => document.getElementById('m').innerText);
-  ok(/Exercise library/.test(txt) && /Bench press/.test(txt) && !/Biblioteca de ejercicios/.test(txt), 'pantalla de entrenos en inglés (biblioteca y ejercicios)');
+  ok(/Exercise library/.test(txt) && !/Biblioteca de ejercicios/.test(txt), 'pantalla de entrenos en inglés');
+  ok(!/Bench press/.test(txt) && !(await p.evaluate(() => !!document.querySelector('#lst'))), 'la lista larga ya no está en Entrenos');
+  await p.click('#q'); await p.waitForTimeout(400);
+  const lib = await p.evaluate(() => ({ top: S.stack[S.stack.length - 1], t: document.getElementById('m').innerText, f: document.activeElement && document.activeElement.tagName }));
+  ok(lib.top === 'lib' && /Bench press/.test(lib.t) && lib.f === 'INPUT', 'el buscador de Entrenos abre la Biblioteca (en inglés) con el cursor listo');
+  await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(200);
   await p.screenshot({ path: 'shots/en-train-new.png' });
   await p.evaluate(() => { tab('home'); }); await p.waitForTimeout(300);
   await p.screenshot({ path: 'shots/en-home-new.png' });
