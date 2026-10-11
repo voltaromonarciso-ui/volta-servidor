@@ -367,8 +367,10 @@
     const n = +S.streakCount || 0, best = Math.max(+S.bestStreak || 0, n), frz = vx().freezes || 0;
     const days = Array.isArray(S.ld) ? S.ld : [];
     const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
-    const L = 'LMXJVSD', today = (new Date().getDay() + 6) % 7;
-    const dots = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const on = days.includes(lk(d.getTime())); return `<div class="vx-st-d${on ? ' on' : ''}${i === today ? ' now' : ''}"><i>${on ? '🔥' : ''}</i><span>${L[i]}</span></div>`; }).join('');
+    // inicial del día en el idioma elegido (L M X J V S D, M T W T F S S, 月 火 水…)
+    const wd = (d) => { try { return new Intl.DateTimeFormat(S.lang || 'es', { weekday: 'narrow' }).format(d); } catch (e) { return 'LMXJVSD'[(d.getDay() + 6) % 7]; } };
+    const today = (new Date().getDay() + 6) % 7;
+    const dots = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const on = days.includes(lk(d.getTime())); return `<div class="vx-st-d${on ? ' on' : ''}${i === today ? ' now' : ''}"><i>${on ? '🔥' : ''}</i><span>${wd(d)}</span></div>`; }).join('');
     const msg = n <= 1 ? t('stStart') : n >= best ? t('stRecord') : t('stKeep');
     return `<div class="card vx-streak${n >= 2 ? ' hot' : ''}"><div class="row" style="gap:14px;align-items:center"><div class="vx-st-flame" aria-hidden="true">🔥</div>` +
       `<div class="g"><div class="mu">${t('stTitle')}</div><div class="vx-st-n"><b>${n}</b> ${n === 1 ? t('stDay') : t('stDays')}</div>` +
