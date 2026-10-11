@@ -44,7 +44,7 @@ const appHtml = fs.existsSync(APP_FILE)
 const APP_CSP = [
   "default-src 'self'", "script-src 'self' 'unsafe-inline'", "script-src-attr 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "media-src 'self' data: blob:", "font-src 'self' data:",
-  "connect-src 'self' ws: wss: https://api.anthropic.com", "manifest-src 'self' blob:", "worker-src 'self'",
+  "connect-src 'self' ws: wss: https://api.anthropic.com https://world.openfoodfacts.org", "manifest-src 'self' blob:", "worker-src 'self'",
   "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "object-src 'none'",
 ].join('; ');
 if (appHtml) {

@@ -421,3 +421,28 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-zeus-fab:focus-visible{outline:3px solid var(--ac,#9dff2e);outline-offset:3px}
 @media (prefers-reduced-motion:no-preference){.vx-zeus-fab{animation:vxZeusBob 3.2s ease-in-out infinite}@keyframes vxZeusBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}}
 .vx-zeus-fab[hidden]{display:none!important}
+/* ── Registrar comida ── */
+.vx-f-search{gap:8px;margin:4px 0 10px}
+.vx-f-search input{flex:1;min-width:0;padding-left:14px}
+.vx-f-search .btn{flex:none;min-width:48px;min-height:48px;font-size:20px}
+.vx-f-list{padding:4px 10px}
+.vx-f-row{display:flex;align-items:center;gap:10px;width:100%;padding:11px 2px;background:none;border:0;border-bottom:1px solid var(--ln);color:var(--tx);text-align:left;font:inherit;cursor:pointer;min-height:48px}
+.vx-f-row:last-child{border-bottom:0}
+.vx-f-row .g{min-width:0}
+.vx-f-n{font-weight:700}
+.vx-f-m{display:block;font-size:12.5px;margin-top:2px}
+.vx-f-plus{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);font-size:20px;font-weight:700}
+.vx-f-row:focus-visible,.vx-f-x:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.vx-f-pick{border-color:var(--ac);box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 35%,transparent)}
+.vx-f-pick input{padding-left:14px;margin-top:4px}
+.vx-f-tot{font-weight:700;margin:10px 0;color:var(--ac)}
+.vx-f-off{width:100%;margin-top:10px}
+.vx-f-mt{margin-bottom:6px}
+.vx-f-more summary{cursor:pointer;min-height:24px}
+.vx-f-more input{padding-left:14px}
+.vx-f-actions .btn{flex:1}
+.vx-f-e{margin-top:8px;gap:8px}
+.vx-f-x{flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--ln);background:none;color:var(--mu);font-size:18px;cursor:pointer}
+.vx-f-cam{position:fixed;inset:0;z-index:200;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px}
+.vx-f-cam video{width:100%;max-width:480px;border-radius:16px}
+.vx-f-cam-frame{position:absolute;width:70%;max-width:340px;height:120px;border:3px solid var(--ac);border-radius:14px;pointer-events:none}
