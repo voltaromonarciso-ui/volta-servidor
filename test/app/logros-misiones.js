@@ -10,7 +10,7 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.goto(process.env.APP_URL); await p.waitForTimeout(1200);
   await p.evaluate(() => { S.onboarded = true; S.name = 'Alex'; S.lang = 'es'; S.demo = true; S.log = []; S.nlog = {}; S.vx = {}; S.done = {}; S.stack = []; tab('home'); });
   await p.waitForTimeout(300);
-  ok(await p.evaluate(() => !!document.querySelector('.vx-streak') && !!document.querySelector('.vx-quote') && !document.querySelector('.vx-missions') && !document.querySelector('.vx-achcard')), 'Inicio: racha y frase del día (sin misiones ni logros)');
+  ok(await p.evaluate(() => !!document.querySelector('.vx-streak') && !!document.querySelector('.vx-zeus-card') && !document.querySelector('.vx-missions') && !document.querySelector('.vx-achcard')), 'Inicio: racha y mensaje de Zeus (sin misiones ni logros)');
   await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(300);
   ok(await p.evaluate(() => !!document.querySelector('.vx-missions') && !!document.querySelector('.vx-rec')), 'Entrenos: misiones y recuperación');
   await p.screenshot({ path: 'shots/eng-home1.png' });

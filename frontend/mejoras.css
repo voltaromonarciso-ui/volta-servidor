@@ -408,3 +408,16 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-zone{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 0 4px;border-top:1px dashed currentColor}
 .vx-zone.up{color:#22C55E}.vx-zone.down{color:#F87171}
 .vx-ar-row.me .vx-ar-pts{color:var(--tx)}
+
+/* Zeus */
+.vx-zeus-card{display:flex;gap:12px;align-items:center;border-color:color-mix(in srgb,var(--ac,#9dff2e) 40%,transparent)}
+.vx-zeus-img{flex:none;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.vx-zeus-say{font-weight:700;line-height:1.35;margin-top:2px}
+.vx-zeus-cta{color:var(--ac);font-size:13px;font-weight:700;margin-top:6px}
+.vx-zeus-head .vx-zeus-img{align-self:flex-start}
+.vx-zeus-tone .chips{margin:8px 0 4px}
+.vx-zeus-fab{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;padding:3px;border:2px solid var(--ac,#9dff2e);background:radial-gradient(circle at 50% 35%,#2a3530,#121816);box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 18px color-mix(in srgb,var(--ac,#9dff2e) 45%,transparent);z-index:60;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.vx-zeus-fab .vx-zeus-img{width:58px;height:58px;filter:none}
+.vx-zeus-fab:focus-visible{outline:3px solid var(--ac,#9dff2e);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){.vx-zeus-fab{animation:vxZeusBob 3.2s ease-in-out infinite}@keyframes vxZeusBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}}
+.vx-zeus-fab[hidden]{display:none!important}

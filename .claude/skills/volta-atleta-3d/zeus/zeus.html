@@ -1,0 +1,111 @@
+<!doctype html><html><body style="margin:0;background:transparent">
+<canvas id="c" width="512" height="512"></canvas>
+<script src="three.min.js"></script>
+<script>
+const T = THREE;
+const cv = document.getElementById('c');
+const r = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+r.setClearColor(0x000000, 0); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+function lin(h) { return new T.Color(h).convertSRGBToLinear(); }
+const M = (h, o) => new T.MeshStandardMaterial(Object.assign({ color: lin(h), roughness: .55, metalness: 0 }, o || {}));
+const SKIN = M('#f0c19a', { roughness: .62 }), SKIN2 = M('#e2a77e', { roughness: .6 }), WHITE = M('#f5f7f8', { roughness: .85 }), WSH = M('#dfe6ea', { roughness: .9 });
+const DARK = M('#23282e', { roughness: .35 }), EYEW = M('#ffffff', { roughness: .2 }), GREEN = M('#7ee21a', { roughness: .45, emissive: lin('#2d6a00'), emissiveIntensity: .35 });
+const BOLT = M('#8fd60f', { roughness: .28, metalness: .1, emissive: lin('#3a8a00'), emissiveIntensity: .45 }), BLUSH = new T.MeshBasicMaterial({ color: lin('#ff9a8a'), transparent: true, opacity: .35 });
+const MOUTH = M('#5a1f22', { roughness: .5 }), TONGUE = M('#e2666c', { roughness: .5 }), SANDAL = M('#8a5a2b', { roughness: .7 }), GOLD = M('#e6b84a', { roughness: .35, metalness: .6 });
+const sph = (rad, mat, x, y, z, sx, sy, sz, seg) => { const m = new T.Mesh(new T.SphereGeometry(rad, seg || 32, seg ? seg / 2 : 24), mat); m.position.set(x, y, z); m.scale.set(sx || 1, sy || 1, sz || 1); return m; };
+const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
+function build(mood) {
+  const G = new T.Group();
+  // ── Cuerpo: toga ──
+  const prof = []; for (let i = 0; i <= 14; i++) { const t = i / 14; prof.push(new T.Vector2(.4 + .4 * Math.pow(t, 1.5) + .025 * Math.sin(t * 11), 1.5 - t * 1.5)); }
+  const toga = new T.Mesh(new T.LatheGeometry(prof, 48), WHITE); toga.position.y = .05; G.add(toga);
+  // pliegues
+  // banda verde en diagonal
+  const belt = new T.Mesh(new T.TorusGeometry(.53, .065, 12, 48), GREEN); belt.position.set(0, .86, 0); belt.rotation.x = Math.PI / 2; G.add(belt);
+  const strap = new T.Mesh(new T.TorusGeometry(.46, .055, 10, 40, Math.PI * .85), GREEN); strap.position.set(0, 1.08, .06); strap.rotation.set(.15, 0, -.55); G.add(strap);
+  const brooch = sph(.1, GOLD, .3, 1.32, .36); G.add(brooch);
+  // sandalias
+  [-.22, .22].forEach((x) => { G.add(sph(.16, SANDAL, x, .06, .45, 1, .45, 1.5)); G.add(sph(.12, SKIN, x, .12, .5, 1, .6, 1.3)); });
+  // cuello
+  const neck = new T.Mesh(new T.CylinderGeometry(.22, .26, .25, 24), SKIN); neck.position.y = 1.58; G.add(neck);
+  // ── Brazos ──
+  const arm = (side, upA, foreA, holdBolt) => {
+    const g = new T.Group(); g.position.set(side * .52, 1.38, 0);
+    const up = new T.Mesh(new T.CylinderGeometry(.13, .12, .5, 16), WHITE); up.position.y = -.25; const ug = new T.Group(); ug.add(up); ug.rotation.z = side * upA[0]; ug.rotation.x = upA[1]; g.add(ug);
+    const fg = new T.Group(); fg.position.y = -.5; ug.add(fg); fg.rotation.z = side * foreA[0]; fg.rotation.x = foreA[1];
+    const fo = new T.Mesh(new T.CylinderGeometry(.11, .1, .42, 16), SKIN); fo.position.y = -.21; fg.add(fo);
+    const hand = sph(.14, SKIN, 0, -.46, 0); fg.add(hand);
+    if (holdBolt) {
+      const s = new T.Shape(); const P = [[0, .62], [.2, .62], [.06, .2], [.24, .22], [-.08, -.5], [.02, -.06], [-.16, -.08]]; s.moveTo(P[0][0], P[0][1]); P.slice(1).forEach((p) => s.lineTo(p[0], p[1])); s.closePath();
+      const b = new T.Mesh(new T.ExtrudeGeometry(s, { depth: .08, bevelEnabled: true, bevelSize: .025, bevelThickness: .025, bevelSegments: 2 }), BOLT);
+      b.position.set(-.06, -.52, -.04); b.rotation.z = side * .25; b.scale.setScalar(1.35); fg.add(b);
+      const glow = new T.PointLight(0xb6ff3a, 1.2, 1.8); glow.position.set(0, -.5, .2); fg.add(glow);
+    }
+    G.add(g); return g;
+  };
+  const P = {
+    feliz: { R: [[.35, 0], [.9, -.4], true], L: [[.25, 0], [.15, 0], false] },
+    anima: { R: [[2.95, .05], [.25, 0], true], L: [[.6, .1], [1.6, -.5], false] },
+    piensa: { R: [[.35, 0], [.9, -.4], true], L: [[.55, -.9], [2.1, -.6], false] },
+    preocupado: { R: [[.2, -.5], [1.3, -.6], true], L: [[.2, -.5], [1.3, -.6], false] },
+    guino: { R: [[.35, 0], [.9, -.4], true], L: [[.9, -.2], [2.2, -.3], false] },
+  }[mood];
+  arm(1, ...P.R); arm(-1, ...P.L);
+  // ── Cabeza ──
+  const H = new T.Group(); H.position.y = 2.42; G.add(H);
+  H.add(sph(.86, SKIN, 0, 0, 0, 1, .98, .95));
+  // orejas
+  [-1, 1].forEach((s) => H.add(sph(.16, SKIN2, s * .84, -.05, 0, .55, 1, .8)));
+  // pelo: nube blanca detrás y arriba
+  for (let k = 0; k < 70; k++) { const th = rnd() * Math.PI * 2, ph = rnd() * 1.25; const x = Math.sin(ph) * Math.cos(th), y = Math.cos(ph), z = Math.sin(ph) * Math.sin(th); if (z > .2 && y < .82) continue; const rr = .86 + rnd() * .06; H.add(sph(.15 + rnd() * .12, k % 4 ? WHITE : WSH, x * rr, y * rr * .95 + .02, z * rr - .05, 1, 1, 1, 16)); }
+  // laterales del pelo
+  [-1, 1].forEach((s) => { for (let k = 0; k < 5; k++) H.add(sph(.16 + rnd() * .08, WHITE, s * (.82 + rnd() * .06), .22 - k * .15, -.12 - rnd() * .2, 1, 1, 1, 16)); });
+  // corona de laurel verde Volta
+  const crown = new T.Group(); crown.position.set(0, .46, 0); crown.rotation.x = .2; H.add(crown);
+  const ring = new T.Mesh(new T.TorusGeometry(.95, .045, 8, 64, Math.PI * 1.3), GREEN); ring.rotation.set(Math.PI / 2, 0, -Math.PI * .15 + Math.PI / 2 - Math.PI * .5); ring.rotation.z = Math.PI * .35 - Math.PI * 1.3 / 2 + Math.PI / 2; crown.add(ring);
+  for (let k = 0; k < 34; k++) { const a = (k / 34) * Math.PI * 2; if (Math.cos(a) > .985 || Math.cos(a) < -.45) continue; const lf = sph(.17, GREEN, Math.sin(a) * .99, .07, Math.cos(a) * .99, .42, .22, 1, 12); lf.rotation.set(-.7, a + (k % 2 ? .55 : -.55), 0); crown.add(lf); }
+  // ojos
+  const eye = (s, closed) => {
+    const g = new T.Group(); g.position.set(s * .3, .1, .76);
+    if (closed) { const c = new T.Mesh(new T.TorusGeometry(.11, .028, 8, 20, Math.PI), DARK); c.rotation.z = Math.PI; c.position.y = .02; g.add(c); }
+    else { g.add(sph(.17, EYEW, 0, 0, 0, .85, 1.08, .55)); const lookX = mood === 'piensa' ? .05 : 0, lookY = mood === 'piensa' ? .05 : 0; g.add(sph(.105, DARK, lookX, lookY - .01, .07, 1, 1.12, .6)); g.add(sph(.035, EYEW, lookX + .035, lookY + .05, .13)); }
+    H.add(g);
+  };
+  eye(-1, false); eye(1, mood === 'guino');
+  // cejas blancas pobladas
+  const brow = (s, rz, dy) => { const b = sph(.17, WHITE, s * .3, .36 + dy, .74, 1.25, .5, .6, 16); b.rotation.z = s * rz; H.add(b); };
+  const BR = { feliz: [.12, 0], anima: [.22, .05], piensa: [.0, 0], preocupado: [-.35, .03], guino: [.15, 0] }[mood];
+  brow(-1, BR[0], BR[1]); brow(1, mood === 'piensa' ? -.25 : BR[0], mood === 'piensa' ? .1 : BR[1]);
+  // nariz y mofletes
+  H.add(sph(.13, SKIN2, 0, -.08, .86, 1, .9, .9));
+  [-1, 1].forEach((s) => { const c = new T.Mesh(new T.CircleGeometry(.12, 20), BLUSH); c.position.set(s * .5, -.14, .72); c.rotation.y = s * .55; H.add(c); });
+  // barba: nube blanca bajo la cara
+  for (let k = 0; k < 70; k++) { const a = -Math.PI * .86 + rnd() * Math.PI * .72, t = rnd(); const rad = .7 + t * .16; const x = Math.cos(a) * rad, y = Math.sin(a) * rad * .92 - .08 - t * .14, z = .42 + Math.sqrt(Math.max(0, 1 - x * x)) * .36 - t * .08; if (y > -.24) continue; H.add(sph(.12 + rnd() * .09, k % 5 ? WHITE : WSH, x, y, z, 1, 1, 1, 16)); }
+  for (let k = 0; k < 7; k++) H.add(sph(.15 - k * .012, WHITE, (rnd() - .5) * .14, -.9 - k * .065, .62 - k * .03, 1, 1, 1, 16));
+  // boca
+  const mouthY = -.36;
+  if (mood === 'anima') { H.add(sph(.17, MOUTH, 0, mouthY - .04, .8, 1.2, .85, .5)); H.add(sph(.1, TONGUE, 0, mouthY - .1, .84, 1.1, .5, .4)); }
+  else if (mood === 'preocupado') { const m = new T.Mesh(new T.TorusGeometry(.09, .03, 8, 20, Math.PI), MOUTH); m.position.set(0, mouthY - .06, .86); H.add(m); }
+  else if (mood === 'piensa') { H.add(sph(.05, MOUTH, .06, mouthY - .02, .86, 1.5, 1, .6)); }
+  else { const m = new T.Mesh(new T.TorusGeometry(.13, .035, 8, 24, Math.PI), MOUTH); m.rotation.z = Math.PI; m.position.set(0, mouthY + .02, .86); H.add(m); }
+  // bigote
+  [-1, 1].forEach((s) => { const m = sph(.16, WHITE, s * .17, -.24, .86, 1.5, .62, .7, 16); m.rotation.z = s * -.35; H.add(m); H.add(sph(.08, WHITE, s * .36, -.17, .8, 1, 1, 1, 12)); });
+  if (mood === 'anima') H.rotation.z = .06;
+  if (mood === 'piensa') H.rotation.z = -.08;
+  if (mood === 'preocupado') H.rotation.x = .08;
+  return G;
+}
+function shot(mood) {
+  const sc = new T.Scene();
+  sc.add(new T.HemisphereLight(0xffffff, 0x8899aa, .9));
+  const k = new T.DirectionalLight(0xffffff, 1.5); k.position.set(2, 4, 5); sc.add(k);
+  const rim = new T.DirectionalLight(0x9dff2e, .7); rim.position.set(-4, 3, -3); sc.add(rim);
+  const f = new T.DirectionalLight(0xbfd6ff, .35); f.position.set(-3, 1, 3); sc.add(f);
+  const g = build(mood); g.rotation.y = -.28; sc.add(g);
+  const cam = new T.PerspectiveCamera(26, 1, .1, 50); cam.position.set(0, 2.1, 9.6); cam.lookAt(0, 1.78, 0);
+  r.render(sc, cam);
+  return cv.toDataURL('image/png');
+}
+window.render = shot;
+document.title = 'ready';
+</script></body></html>
