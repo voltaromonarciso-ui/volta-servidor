@@ -37,6 +37,12 @@ ok(await p.evaluate(() => S.onboarded), 'onboarding completo en ' + steps + ' pa
 await p.waitForTimeout(1500);
 const tour = await p.evaluate(() => { const ob = document.getElementById('ob'); if (!ob || ob.offsetParent === null && getComputedStyle(ob).display === 'none') return 'sin guía'; const sk = [...ob.querySelectorAll('button,[onclick]')].find((x) => /Saltar|Omitir/i.test(x.innerText)); if (sk) { sk.click(); return 'guía saltada'; } return 'guía sin botón saltar: ' + ob.innerText.slice(0, 80); });
 console.log('     ' + tour);
+// Tras la guía se ofrece Volta Pro una vez; se cierra y se sigue gratis
+await p.waitForTimeout(700);
+ok(await p.evaluate(() => S.stack[S.stack.length - 1] === 'vx:pro'), 'al terminar la guía se ofrece Volta Pro');
+await p.screenshot({ path: 'shots/flow-pro.png' });
+await p.evaluate(() => vxProClose()); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !S.stack.length && S.vx.proSeen === 1), 'se cierra con «Seguir con el plan gratis» y no vuelve a salir');
 await p.screenshot({ path: 'shots/flow-home.png' });
 const home = await p.evaluate(() => document.getElementById('m') && document.getElementById('m').innerText);
 ok(home && home.length > 100, 'inicio tras el onboarding');

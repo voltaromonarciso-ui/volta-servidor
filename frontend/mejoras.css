@@ -449,3 +449,34 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 /* ── Árabe (derecha a izquierda): las flechas apuntan hacia el otro lado ── */
 [dir=rtl] .arr,[dir=rtl] .back,[dir=rtl] .vx-f-plus{display:inline-block;transform:scaleX(-1)}
 [dir=rtl] .vx-f-row{text-align:right}
+/* ── Volta Pro ── */
+.vx-pro{padding-bottom:24px}
+.vx-pro-x{font-size:22px}
+.vx-pro-hero{text-align:center;padding:4px 8px 14px;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--ac) 22%,transparent),transparent 65%)}
+.vx-pro-hero .vx-zeus-img{width:112px;height:112px;filter:drop-shadow(0 8px 22px color-mix(in srgb,var(--ac) 45%,transparent))}
+.vx-pro-hero h1{font-size:30px;margin:6px 0 4px;letter-spacing:-.5px}
+.vx-pro-hero p{color:var(--mu);margin:0 0 10px;font-size:15px}
+.vx-pro-trial{display:inline-block;padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);font-weight:700;font-size:13px}
+.vx-pro-ben .row{gap:12px;padding:8px 0;align-items:center}
+.vx-pro-ic{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--card2);font-size:17px}
+.vx-pro-plans{display:flex;flex-direction:column;gap:10px;margin:4px 0 14px}
+.vx-pro-plan{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:16px 14px;border-radius:16px;border:2px solid var(--ln);background:var(--card);color:var(--tx);font:inherit;cursor:pointer;min-height:64px}
+.vx-pro-plan.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--card))}
+.vx-pro-plan:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.vx-pro-dot{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--mu)}
+.vx-pro-plan.on .vx-pro-dot{border-color:var(--ac);background:radial-gradient(circle,var(--ac) 45%,transparent 50%)}
+.vx-pro-sub{display:block;font-size:12.5px;margin-top:2px}
+.vx-pro-price{flex:none;font-size:16px}
+.vx-pro-tag{position:absolute;top:-10px;inset-inline-end:14px;padding:3px 10px;border-radius:999px;background:var(--ac);color:var(--on);font-size:11.5px;font-weight:800}
+.vx-pro-cta{width:100%;min-height:54px;font-size:17px;font-weight:800}
+.vx-pro-after{text-align:center;font-size:12.5px;margin:8px 0 10px}
+.vx-pro-free{width:100%}
+.vx-pro-cr{padding:9px 0;border-bottom:1px solid var(--ln);gap:8px;font-size:14px}
+.vx-pro-cr:last-child{border-bottom:0}
+.vx-pro-cr>span:not(.g),.vx-pro-cr>b{flex:none;width:78px;text-align:center}
+.vx-pro-ch b{font-size:13px}
+.vx-pro-keep{text-align:center;margin-top:14px}
+.vx-pro-legal{text-align:center;font-size:11.5px;line-height:1.5}
+.vx-pro-banner{border-color:color-mix(in srgb,var(--ac) 55%,var(--ln));background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 14%,var(--card)),var(--card));cursor:pointer;gap:12px}
+.vx-pro-bic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--ac);color:var(--on);font-size:20px}
+body.vx-pro-on #nav,body.vx-pro-on .vx-zeus-fab{display:none!important}
