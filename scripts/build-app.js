@@ -13,7 +13,10 @@ const js = ['platos.js', 'mejoras.js', 'recetas.js', 'ejercicios.js', 'catalogo.
   .replace('__VX_I18N__', (() => {
     const dir = path.join(root, 'public/assets/i18n');
     const h = require('crypto').createHash('sha1');
-    if (fs.existsSync(dir)) fs.readdirSync(dir).sort().forEach((f) => h.update(f + fs.readFileSync(path.join(dir, f))));
+    // solo los diccionarios guardados en git: así un diccionario a medio traducir no cambia la versión
+    let files = [];
+    try { files = require('child_process').execSync('git ls-files public/assets/i18n', { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => path.basename(f)); } catch (e) { files = fs.existsSync(dir) ? fs.readdirSync(dir) : []; }
+    files.sort().forEach((f) => { const p = path.join(dir, f); if (fs.existsSync(p)) h.update(f + fs.readFileSync(p)); });
     return h.digest('hex').slice(0, 10);
   })());
 
