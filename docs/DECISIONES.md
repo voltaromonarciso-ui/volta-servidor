@@ -70,3 +70,19 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
 
 - Que funcione en **iPhone y Android**.
 - **Sin errores**: pruebas automáticas, beta con amigos y lanzamiento por fases.
+
+## Decisiones del 11 de octubre de 2026 (tarde)
+
+- **Precio de Volta Pro:** 6,99 €/mes o 49,99 €/año, con 7 días de prueba gratis y plan familiar o de amigos.
+- **Pantalla de Pro:** se ofrece la prueba de 7 días al terminar la bienvenida; se puede cerrar y seguir gratis.
+- **Italiano:** los ejercicios se nombran como se dicen en el gimnasio (si en Italia se dice en inglés, se deja en inglés);
+  «Multipower» para la máquina Smith.
+- **Siguiente fase:**
+  1. **Retos con amigos sin servidor:** reto de 7 días que se comparte con un enlace e imagen (WhatsApp, Instagram);
+     cada uno marca su progreso. Cuando haya servidor, se sincroniza solo.
+  2. **Notificaciones (pocas y útiles):** plan del día por la mañana, racha en peligro por la tarde y, con servidor,
+     liga y amigos («te han adelantado», «Ana ha terminado su entreno»).
+  3. **Entreno adaptado por Zeus:** antes de entrenar pregunta cuánto tiempo tienes, cómo has dormido, si te duele algo
+     y dónde entrenas hoy (gimnasio, casa o parque).
+     - Gratis: ajuste automático por reglas (menos series si dormiste mal, recortar por tiempo, cambiar ejercicios).
+     - Pro: Zeus con IA rediseña el entreno completo y explica por qué.
