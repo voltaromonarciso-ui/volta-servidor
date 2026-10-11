@@ -139,6 +139,10 @@
   function me() {
     const l = local();
     if (srv && online()) return { xp: srv.xp, score: srv.score, league: lgIdx(srv.league), level: srv.level, parts: l.parts, week: l.week, flagged: !!srv.flagged, server: true };
+    if (window.vxVolt && window.vxPractice) { // Voltios (progreso.js): liga de práctica hasta que haya servidor
+      const v = window.vxVolt(), g = window.vxPractice.group();
+      return { xp: v.total, score: v.week, league: g.i, level: v.rank.step + 1, rankName: v.rank.nm, pos: g.pos, parts: l.parts, week: l.week, flagged: false, server: false, volt: true };
+    }
     return { xp: l.xp, score: l.score, league: lgOfXp(l.xp), level: levelOf(l.xp + l.score), parts: l.parts, week: l.week, flagged: false, server: false };
   }
   // Subida de liga: celebración una sola vez por liga
@@ -170,6 +174,14 @@
   // ── Tarjeta en Inicio ──
   function homeCard() {
     const m = me(), next = LEAGUES[m.league + 1];
+    if (m.volt) {
+      const pctV = Math.max(4, Math.min(100, ((30 - m.pos) / 29) * 100));
+      return `<div class="card vx-arena-card" onclick="go('vx:arena')" role="button" tabindex="0" aria-label="${t('arena')}">` +
+        `<div class="row" style="gap:12px;align-items:center">${badge(m.league, 52, m.pos <= 3 ? 3 : m.pos <= 7 ? 2 : m.pos <= 15 ? 1 : 0)}` +
+        `<div class="g"><div class="row sp"><b>🏆 ${t('league')} ${lgName(m.league)}</b><span class="mu">›</span></div>` +
+        `<div class="mu">#${m.pos}/30 · <b class="ac">${fmt(m.score)} ⚡</b> ${t('week')}</div>` +
+        `<div class="bar vx-xpbar" style="margin-top:8px"><i style="width:${pctV.toFixed(1)}%"></i></div></div></div></div>`;
+    }
     const tot = m.xp + m.score, pct = next ? Math.min(100, ((tot - LEAGUES[m.league].min) / (next.min - LEAGUES[m.league].min)) * 100) : 100;
     const r = lbs.global && lbs.global.me && lbs.global.me.rank;
     return `<div class="card vx-arena-card" onclick="go('vx:arena')" role="button" tabindex="0" aria-label="${t('arena')}">` +
@@ -206,20 +218,21 @@
     let h = `<div class="row" style="margin-bottom:6px"><button class="back" onclick="back()" aria-label="‹">‹</button><h1 style="font-size:22px">🏆 ${t('arena')}</h1></div>`;
     h += `<div class="card vx-ar-hero lg-${cur.id}"><div class="vx-ar-glow" aria-hidden="true"></div>` +
       `<div class="row" style="gap:16px;align-items:center">${badge(m.league, 86, Math.min(3, Math.floor(pct / 34)))}` +
-      `<div class="g"><div class="mu">${t('league')}</div><div class="vx-ar-lg">${lgName(m.league)}</div><div class="vx-ar-motto">${LEAGUES[m.league].m[LI[S.lang] || 0]}</div><div>${t('level')} <b>${m.level}</b> · ${fmt(tot)} XP</div></div></div>` +
-      `<div class="bar vx-xpbar" style="margin-top:14px"><i style="width:${pct.toFixed(1)}%"></i></div>` +
-      `<div class="mu" style="margin-top:6px">${next ? `${fmt(next.min - tot)} ${t('toNext')} ${lgName(m.league + 1)}` : t('top')}</div>` +
+      `<div class="g"><div class="mu">${t('league')}</div><div class="vx-ar-lg">${lgName(m.league)}</div><div class="vx-ar-motto">${LEAGUES[m.league].m[LI[S.lang] || 0]}</div><div>${m.volt ? `⚡ <b>${fmt(m.score)}</b> ${t('week')} · #${m.pos}/30` : `${t('level')} <b>${m.level}</b> · ${fmt(tot)} XP`}</div></div></div>` +
+      (m.volt ? '' : `<div class="bar vx-xpbar" style="margin-top:14px"><i style="width:${pct.toFixed(1)}%"></i></div>` +
+      `<div class="mu" style="margin-top:6px">${next ? `${fmt(next.min - tot)} ${t('toNext')} ${lgName(m.league + 1)}` : t('top')}</div>`) +
       `<div class="grid2 vx-ar-stats" style="grid-template-columns:repeat(3,1fr);margin-top:12px;text-align:center">` +
       `<div><b class="big">${fmt(m.score)}</b><div class="mu">${t('pts')} ${t('week')}</div></div>` +
-      `<div><b class="big">${myRank ? '#' + fmt(myRank) : '—'}</b><div class="mu">${t('rank')}</div></div>` +
+      `<div><b class="big">${myRank ? '#' + fmt(myRank) : m.volt ? '#' + m.pos : '—'}</b><div class="mu">${t('rank')}</div></div>` +
       `<div><b class="big">${m.week.days}</b><div class="mu">${t('days')}</div></div></div></div>`;
     if (m.flagged) h += `<div class="card" style="border-color:#ff7a59">⚠️ ${t('flagged')}</div>`;
-    if (!online()) h += `<div class="card vx-ar-join"><div>${t('offline')}</div><button class="btn" style="margin-top:10px" onclick="socGo()">⚡ ${t('join')}</button></div>`;
+    if (!online()) { if (window.vxPractice) h += window.vxPractice.rows(); h += `<div class="card vx-ar-join"><div>${t('offline')}</div><button class="btn" style="margin-top:10px" onclick="socGo()">⚡ ${t('join')}</button></div>`; }
     else {
       h += `<div class="chips vx-ar-tabs" role="tablist">${[['league', t('tabLeague')], ['global', t('tabGlobal')], ['friends', t('tabFriends')]].map(([id, n]) => `<div class="chip ${k === id ? 'on' : ''}" role="tab" aria-selected="${k === id}" onclick="vxArenaTab('${id}')">${n}</div>`).join('')}</div>`;
       h += `<div class="card vx-ar-list">${!myRank && k !== 'friends' && d ? `<div class="mu" style="margin-bottom:6px">${t('noRank')}</div>` : ''}${rows(d && d.entries, d && d.me && d.me.username)}</div>`;
     }
-    h += `<h2>${t('how')}</h2><div class="card vx-ar-how">` +
+    if (m.volt) h += `<h2>${t('how')}</h2><div class="card vx-ar-how" onclick="go('vx:volt')" role="button" tabindex="0"><div class="row sp"><span>⚡ ${t('hNote')}</span><span class="mu">›</span></div></div>`;
+    else h += `<h2>${t('how')}</h2><div class="card vx-ar-how">` +
       [['📅', t('hDays'), '+100', p.days], ['🏋️', t('hSets'), '+5', p.sets], ['📦', t('hVol'), 'log', p.vol], ['📈', t('hProg'), '≤ +200', p.prog]]
         .map(([ic, n, r, v]) => `<div class="row sp" style="margin:8px 0"><span>${ic} ${n} <span class="mu">(${r})</span></span><b class="ac">${fmt(v)}</b></div>`).join('') +
       `<div class="mu">${t('hNote')}</div></div>`;

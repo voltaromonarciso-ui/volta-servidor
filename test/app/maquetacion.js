@@ -11,7 +11,7 @@ let t = await p.evaluate(() => document.getElementById('m').innerText);
 ok(/Tu racha/.test(t) && /4\s*días seguidos/.test(t) && /Récord: 9/.test(t) && !/Tu progreso empieza hoy/.test(t), 'racha visible en Inicio');
 ok(!/Misiones de hoy/.test(t) && !/Recuperación muscular/.test(t) && !/12 Trabajos/.test(t), 'misiones, recuperación y 12 Trabajos fuera de Inicio');
 ok(!/Logros/.test(t), 'sin logros en Inicio');
-ok(order.indexOf('vx-streak') < order.indexOf('vx-oracle') && order.indexOf('vx-oracle') < order.indexOf('vx-arena-card'), 'orden: racha › Oráculo › Arena');
+ok(order.indexOf('vx-streak') < order.indexOf('vx-oly') && order.indexOf('vx-oly') < order.indexOf('vx-arena-card'), 'orden: racha › Tu Olimpo › Liga');
 await p.screenshot({ path: 'shots/home-new.png' });
 await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(300);
 t = await p.evaluate(() => document.getElementById('m').innerText);

@@ -151,6 +151,7 @@
   }
   // Solo avances: nivel, título, XP y cómo se gana. Ningún entrenamiento recomendado.
   function oracleCard() {
+    if (window.vxOlympusCard) return window.vxOlympusCard(); // sistema único de Voltios (progreso.js)
     const f = remember(), doy = Math.floor(Date.now() / 864e5);
     const head = `<div class="row" style="gap:10px;align-items:center"><span class="vx-or-ic" aria-hidden="true">${ORACLE_SVG}</span><div class="g"><b>${tr(T.oracle)}</b><div class="mu vx-or-proph">“${tr(PROPH[doy % PROPH.length])}”</div></div></div>`;
     const fav = `<div class="vx-or-fav"><div class="row sp"><span><b>${tr(T.favor)}</b> · ${tr(T.lvl)} ${f.lv} · <span class="vx-or-rank">${f.name}</span></span><span class="mu">${fmt(f.xp)} XP</span></div>` +

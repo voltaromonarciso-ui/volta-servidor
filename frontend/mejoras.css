@@ -394,3 +394,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx3-leg i{display:inline-block;width:18px;border-top:2px dashed #9dff2e}
 .vx3-see{margin:0 0 6px}
 @media (max-width:360px){.vx3-hint{display:none}}
+
+/* Voltios: Tu Olimpo y liga de práctica */
+.vx-oly{border-color:color-mix(in srgb,var(--rc,#9dff2e) 45%,transparent)}
+.vx-oly-rk{font-size:22px;font-weight:800;letter-spacing:.2px;color:var(--rc,#9dff2e)}
+.vx-oly-goal{margin-top:10px;font-size:13px;align-items:center}
+.vx-oly-dots{display:flex;gap:5px}
+.vx-oly-dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--rc,#9dff2e);display:inline-block}
+.vx-oly-dots i.on{background:var(--rc,#9dff2e)}
+.vx-oly-pieces p{margin:6px 0}
+.vx-oly-how .row,.vx-oly-hist .row{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);gap:12px}
+.vx-oly-how .row:last-child,.vx-oly-hist .row:last-child{border-bottom:0}
+.vx-zone{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 0 4px;border-top:1px dashed currentColor}
+.vx-zone.up{color:#22C55E}.vx-zone.down{color:#F87171}
+.vx-ar-row.me .vx-ar-pts{color:var(--tx)}

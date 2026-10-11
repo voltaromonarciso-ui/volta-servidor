@@ -8,7 +8,7 @@ const sq = await p.evaluate(() => EX.findIndex(e => e[0] === 'Sentadilla')), bp 
 await p.evaluate(() => { localStorage.removeItem('vx:labors'); S.onboarded = true; S.demo = false; S.lang = 'es'; S.log = []; S.streakCount = 1; S.bestStreak = 1; S.userProfile = Object.assign({}, S.userProfile, { weight: 70 }); S.stack = []; tab('home'); });
 await p.waitForTimeout(300);
 let t = await p.evaluate(() => document.getElementById('m').innerText);
-ok(/El Oráculo de Delfos/.test(t) && /Favor del Oráculo/.test(t) && !/Hoy los dioses te piden|Entrenar esto|rutina con IA/.test(t), 'Oráculo en Inicio, solo con avances (sin entrenamientos)');
+ok(/Tu Olimpo/.test(t) && !/Favor del Oráculo/.test(t) && !/Hoy los dioses te piden|Entrenar esto|rutina con IA/.test(t), 'Tu Olimpo en Inicio, solo con avances (sin entrenamientos)');
 await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(300);
 ok(/Los 12 Trabajos de Hércules/.test(await p.evaluate(() => document.getElementById('m').innerText)) && /0\/12/.test(await p.evaluate(() => document.getElementById('m').innerText)), 'tarjeta de los 12 Trabajos (0/12) en Entrenos');
 await p.evaluate(() => { S.stack = []; tab('home'); });
@@ -27,7 +27,8 @@ ok(await p.evaluate(() => (S.vx.inbox || []).some(n => /Trabajos? completados?/i
 await p.evaluate(() => { S.stack = []; tab('home'); }); await p.waitForTimeout(300);
 t = await p.evaluate(() => document.getElementById('m').innerText);
 ok(!/Descansa, guerrero/.test(t), 'tras entrenar: sin consejos de entreno');
-ok(await p.evaluate(() => !document.querySelector('.vx-oracle .btn') && !!document.querySelector('.vx-oracle details summary')), 'el Oráculo no tiene botones de entreno y explica cómo funciona');
+ok(await p.evaluate(() => !document.querySelector('.vx-oly .btn') && /go\('vx:volt'\)/.test(document.querySelector('.vx-oly').getAttribute('onclick'))), 'Tu Olimpo no tiene botones de entreno y abre cómo se ganan los Voltios');
+ok(await p.evaluate(() => vxVolt().entries.some((e) => e.kind === 'labor' && e.v === 500)), 'cada Trabajo de Hércules da +500 Voltios');
 await p.evaluate(() => { S.stack = []; tab('home'); go('vx:labors'); }); await p.waitForTimeout(300);
 t = await p.evaluate(() => document.getElementById('m').innerText);
 ok(/Título/.test(t) && (await p.locator('.vx-lab').count()) === 12, 'pantalla de los 12 Trabajos');
@@ -35,6 +36,6 @@ await p.screenshot({ path: 'shots/labors.png' });
 await p.evaluate(() => { S.stack = []; tab('home'); document.getElementById('m').scrollTop = 0; }); await p.waitForTimeout(300);
 await p.screenshot({ path: 'shots/oracle-home.png' });
 await p.evaluate(() => { S.lang = 'en'; S.stack = []; tab('home'); }); await p.waitForTimeout(300);
-ok(/The Oracle of Delphi/.test(await p.evaluate(() => document.getElementById('m').innerText)), 'en inglés');
+ok(/Your Olympus/.test(await p.evaluate(() => document.getElementById('m').innerText)), 'en inglés');
 ok(errs.length === 0, 'sin errores JS ' + JSON.stringify(errs.slice(0, 3)));
 await b.close(); })();
