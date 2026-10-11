@@ -480,3 +480,4 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .vx-pro-banner{border-color:color-mix(in srgb,var(--ac) 55%,var(--ln));background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 14%,var(--card)),var(--card));cursor:pointer;gap:12px}
 .vx-pro-bic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--ac);color:var(--on);font-size:20px}
 body.vx-pro-on #nav,body.vx-pro-on .vx-zeus-fab{display:none!important}
+.vx-zeus-fab .vx-zeus-img{border-radius:50%;object-fit:cover}
