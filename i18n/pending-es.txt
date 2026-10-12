@@ -1,5 +1,4 @@
 Atleta {0}D de Volta haciendo el ejercicio: Press de banca
-Atleta {0}D de Volta haciendo el ejercicio: Press inclinado con mancuernas
 Lucía J.
 Sofía T.
 {0} exercises · buscador anatómico, filtros y comparador

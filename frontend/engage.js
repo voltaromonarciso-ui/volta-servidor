@@ -418,6 +418,7 @@
   // Se comprueba cada segundo mientras hay descanso: sigue a −15 s / +15 s / pausa / saltar.
   let restIv = null, pending = 0;
   function showRestNote() {
+    if (S.vx && S.vx.nt && S.vx.nt.rest === 0) return; // apagado en Ajustes › Notificaciones
     if (document.visibilityState === 'visible' || !('Notification' in window) || Notification.permission !== 'granted') return;
     const opts = { body: t('restBody'), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'volta-rest', renotify: true, vibrate: [200, 100, 200] };
     const show = (reg) => (reg ? reg.showNotification(t('restEnd'), opts) : new Notification(t('restEnd'), opts));

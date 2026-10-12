@@ -649,3 +649,14 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 .vx-ck-nh{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
 .vx-ck-nh b{flex:1}
 :root[data-t="light"] .vx-ck-pain .vx-ck-ic{color:#92400e}
+
+/* ===== Notificaciones (avisos.js) ===== */
+.vx-nt-perm{display:flex;flex-direction:column;gap:6px;border:1px solid color-mix(in srgb,var(--ac) 45%,var(--ln))}
+.vx-nt-perm .btn{align-self:flex-start;width:auto;padding:10px 18px;margin-top:4px}
+.vx-nt-perm.warn{border-color:rgba(251,191,36,.45)}
+.vx-nt-ic{font-size:22px;width:30px;text-align:center}
+.vx-nt-row.off{opacity:.55}
+.vx-nt-time{margin-top:10px;padding-top:10px;border-top:1px solid var(--ln);gap:12px}
+.vx-nt-time.off{opacity:.5}
+.vx-nt-time input{width:auto;min-width:110px;padding:8px 12px!important;margin:0;font-size:16px;text-align:center}
+.vx-nt-foot{text-align:center;font-size:12.5px;margin:12px 0 4px}

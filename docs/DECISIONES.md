@@ -152,3 +152,15 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
     Se busca el ejercicio del mismo grupo y patrón de movimiento.
 - **La rutina original no cambia:** la sesión adaptada es una copia de hoy. Se borra al empezar otra rutina o al día
   siguiente y no aparece en «Mis rutinas».
+
+### Hecho: notificaciones (12-10-2026)
+
+- **Plan del día a las 9:00:** «⚡ Tu plan de hoy · Hoy toca: Pierna · 6 ejercicios».
+- **Racha en peligro a las 19:00:** «🔥 Tu racha está en peligro · 12 días · Entrena hoy para mantenerla». Solo sale si
+  ese día aún no has entrenado.
+- **Ajustes:** en Perfil › Ajustes › Notificaciones se cambian las horas y se apaga cada aviso. Ahí también está
+  «Fin del descanso» y un botón «Probar aviso». «Liga y amigos» aparece como «llegará con las cuentas de Volta».
+- **App de móvil (Capacitor):** se programan los avisos de los próximos 7 días con notificaciones locales, sin
+  servidor. Se reprograman al abrir la app o al entrenar, y si ya has entrenado no sale el de la tarde.
+- **Navegador:** sin servidor, los avisos solo llegan mientras Volta está abierta o en segundo plano. Si la app está
+  a la vista, van al buzón de Volta.
