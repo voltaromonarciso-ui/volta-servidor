@@ -114,3 +114,21 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
     es fuerte o no se va.
 - **Retos de Voltios:** de **2 a 10 personas**; el ganador recibe una **medalla en su perfil y +100 ⚡**, y todos los
   que terminan el reto, **+25 ⚡**.
+
+## Decisiones del 12 de octubre de 2026 (tercera ronda)
+
+- **Check-in de Zeus al pulsar «Empezar entreno»:**
+  - Una sola pantalla con las 4 preguntas en filas de botones grandes (tiempo, sueño, dolor, lugar).
+  - Sale en cada entreno, se puede saltar y se puede desactivar en Ajustes.
+- **Reglas de adaptación:**
+  - Durmió mal o está cansado: **bajar la intensidad** (los mismos ejercicios con ~10 % menos de peso o 1 serie menos)
+    y avisar del cambio.
+  - En casa o sin material: **cada ejercicio se cambia por un equivalente** con mancuernas o peso corporal que
+    trabaje lo mismo.
+- **Retos de Voltios:** se dejan para cuando haya servidor (no se muestran antes).
+- **Notificaciones por defecto:** plan del día a las **9:00** y racha en peligro a las **19:00**; cada usuario puede
+  cambiar las horas.
+- **Orden siguiente:**
+  1. Entreno adaptado.
+  2. Notificaciones.
+  3. **Capacitor** (app de Android/iOS para probarla en el móvil).
