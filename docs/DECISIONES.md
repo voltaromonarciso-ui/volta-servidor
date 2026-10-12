@@ -175,3 +175,27 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
   el icono y la pantalla de arranque de Volta.
 - **Pendiente para publicar:** cuentas de desarrollador, clave de firma, fichas de las tiendas y textos legales
   (fase legal).
+
+## Siguiente sesión: atleta 3D y fotos de comida (respuestas del 12-10-2026)
+
+### Atleta 3D en los ejercicios
+- **Qué falla hoy:** todo a la vez. Los movimientos son poco realistas (rango, postura y ritmo), el personaje se ve poco
+  profesional, faltan ejercicios con animación propia y va lento o a tirones en el móvil.
+- **Estilo:** **3D realista**, un personaje humano con músculos que se marcan al trabajar.
+- **Personaje:** **dos atletas (hombre y mujer)**; cada usuario elige el suyo en el perfil.
+- **Funciones:**
+  - girar el atleta y hacer zoom;
+  - **resaltar los músculos que trabajan** durante el movimiento;
+  - **errores comunes**: la versión mal hecha en rojo frente a la buena;
+  - **cámara lenta**, con control de velocidad.
+- **Alcance:** **los 252 ejercicios a la vez**, no por tandas.
+- **Herramientas:** skill `volta-atleta-3d` y `frontend/atleta3d.js` (three.js); modelos en `public/assets/models`.
+  Tiene que ir fluido en móviles normales.
+
+### Fotos de comida en Nutrición
+- **Estilo:** **fotos realistas** generadas con IA, una por plato y con un estilo uniforme.
+- **Dónde:** de momento solo la **foto del usuario (Pro)**: el usuario fotografía su plato y la IA calcula las calorías y
+  los macros.
+- **Cómo se consiguen:** Claude prepara los prompts para la IA de imágenes y los fundadores generan las imágenes.
+  Claude las recorta, las optimiza y las mete en la app, como se hizo con las poses de Zeus.
+- **Pendiente de concretar:** si los platos, recetas y alimentos sueltos también llevan foto.
