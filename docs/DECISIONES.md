@@ -164,3 +164,14 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
   servidor. Se reprograman al abrir la app o al entrenar, y si ya has entrenado no sale el de la tarde.
 - **Navegador:** sin servidor, los avisos solo llegan mientras Volta está abierta o en segundo plano. Si la app está
   a la vista, van al buzón de Volta.
+
+### Hecho: app de móvil con Capacitor (12-10-2026)
+
+- La carpeta `movil/` tiene el proyecto de Android y el de iOS. El identificador de la app es `app.volta.fitness`.
+- **Android:** GitHub construye el APK de pruebas en cada cambio (Actions › «App de móvil» › volta-android). Se
+  instala en el móvil sin pasar por Google Play.
+- **iPhone:** necesita un Mac con Xcode. Para TestFlight o la App Store hace falta la cuenta Apple Developer (99 $/año).
+- **Funciones del móvil:** notificaciones locales (sin servidor), botón atrás de Android, barra de estado oscura, y
+  el icono y la pantalla de arranque de Volta.
+- **Pendiente para publicar:** cuentas de desarrollador, clave de firma, fichas de las tiendas y textos legales
+  (fase legal).

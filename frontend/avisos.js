@@ -94,19 +94,26 @@
   R = function () { _R.apply(this, arguments); try { clearTimeout(R._nt); R._nt = setTimeout(() => scheduleNative(), 800); } catch (e) { /* sin avisos */ } };
 
   // ── Permiso ──
+  // en la app de móvil el permiso se consulta al plugin (Android 13+ e iOS lo piden la primera vez)
+  let natPerm = 'unknown';
+  const natRefresh = () => { const LN = cap(); if (!LN || !LN.checkPermissions) return; LN.checkPermissions().then((r) => { const was = natPerm; natPerm = (r && r.display) || 'unknown'; if (was !== natPerm && S.stack && S.stack[S.stack.length - 1] === 's:notif') R(); }).catch(() => {}); };
+  setTimeout(natRefresh, 1200);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') natRefresh(); });
   function perm() {
-    if (cap()) return 'app';
+    if (cap()) return /^prompt/.test(natPerm) ? 'default' : natPerm === 'denied' ? 'denied' : 'app';
     if (!('Notification' in window)) return 'none';
     return Notification.permission; // default | granted | denied
   }
   window.vxNtAsk = async () => {
     try {
       const LN = cap();
-      if (LN) { await LN.requestPermissions(); await scheduleNative(true); }
+      if (LN) { const r = await LN.requestPermissions(); natPerm = (r && r.display) || natPerm; await scheduleNative(true); }
       else if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
     } catch (e) { /* sin permiso */ }
     R();
   };
+  // la primera serie registrada pide el permiso en el móvil (como ya hace el navegador)
+  if (typeof doneSet === 'function') { const _ds = doneSet; doneSet = function () { try { if (cap() && /^prompt/.test(natPerm)) window.vxNtAsk(); } catch (e) { /* sin permiso */ } return _ds.apply(this, arguments); }; }
   window.vxNtSet = (k, v) => { const P = prefs(); if (k === 'planAt' || k === 'streakAt') { if (/^\d{2}:\d{2}$/.test(v)) P[k] = v; } else P[k] = P[k] ? 0 : 1; lastSig = ''; R(); };
   window.vxNtTest = () => { const m = planMsg(true); if (perm() === 'granted') { const opts = { body: m.body, icon: 'icon-192.png', tag: 'volta-test' }; try { (navigator.serviceWorker ? navigator.serviceWorker.getRegistration() : Promise.resolve(null)).then((reg) => (reg ? reg.showNotification(m.title, opts) : new Notification(m.title, opts))).catch(() => new Notification(m.title, opts)); } catch (e) { /* sin aviso */ } } else if (cap()) { cap().schedule({ notifications: [Object.assign({ id: 9099, schedule: { at: new Date(Date.now() + 2000) } }, m)] }).catch(() => {}); } if (typeof toast === 'function') toast(m.title + ' · ' + m.body); };
 
@@ -128,7 +135,7 @@
     h += row('⏱️', 'Fin del descanso', 'Con la pantalla bloqueada', 'rest');
     h += `<div class="card vx-nt-row off"><div class="row" style="gap:10px"><span class="vx-nt-ic" aria-hidden="true">🏆</span><div class="g"><b>${tr('Liga y amigos')}</b><div class="mu">${tr('Llegará con las cuentas de Volta')}</div></div></div></div>`;
     h += `<button class="btn o" onclick="vxNtTest()">${tr('Probar aviso')}</button>`;
-    if (p !== 'app') h += `<div class="mu vx-nt-foot">${tr('En el navegador, los avisos llegan mientras Volta está abierta. En la app del móvil llegan siempre.')}</div>`;
+    if (!cap()) h += `<div class="mu vx-nt-foot">${tr('En el navegador, los avisos llegan mientras Volta está abierta. En la app del móvil llegan siempre.')}</div>`;
     return h;
   };
 

@@ -1,0 +1,24 @@
+{
+  "appId": "app.volta.fitness",
+  "appName": "Volta",
+  "webDir": "www",
+  "backgroundColor": "#0b0c0e",
+  "android": {
+    "backgroundColor": "#0b0c0e"
+  },
+  "ios": {
+    "backgroundColor": "#0b0c0e",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_volta",
+      "iconColor": "#9dff2e"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b0c0e",
+      "overlaysWebView": false
+    }
+  }
+}
