@@ -1,7 +1,7 @@
 name: App de móvil
 
-# Construye el APK de Android (versión de pruebas) con Capacitor y lo deja para descargar en la pestaña
-# «Actions» de GitHub › esta ejecución › «Artifacts» › volta-android.
+# Construye el APK de Android (versión de pruebas) con Capacitor y lo publica en la Release «App Android (pruebas)»
+# del repositorio (página principal › Releases, también desde el móvil). Además queda en Actions › Artifacts.
 on:
   push:
     paths:
@@ -10,6 +10,9 @@ on:
       - 'movil/**'
       - '.github/workflows/movil.yml'
   workflow_dispatch:
+
+permissions:
+  contents: write   # para publicar el APK en la Release
 
 jobs:
   android:
@@ -44,3 +47,16 @@ jobs:
           name: volta-android
           path: volta-android.apk
           retention-days: 30
+      - name: Publicar en la Release «App Android (pruebas)»
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-pruebas
+          name: App Android (pruebas)
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          files: volta-android.apk
+          body: |
+            Última versión de pruebas de Volta para Android (se actualiza sola con cada cambio de la app).
+            Descarga **volta-android.apk** aquí abajo, ábrelo en el móvil y acepta «instalar apps de origen desconocido».
+            Versión: ${{ github.sha }}

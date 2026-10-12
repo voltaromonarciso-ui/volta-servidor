@@ -9,11 +9,10 @@ abierto). Además lleva funciones del móvil:
 
 ## Probarla en Android (sin instalar nada en el ordenador)
 
-1. GitHub construye el APK solo cada vez que cambia la app. En el repositorio, entra en **Actions** › **App de móvil**
-   y abre la última ejecución en verde.
-2. Abajo, en **Artifacts**, descarga **volta-android** (un .zip con `volta-android.apk`).
-3. Pasa el `.apk` al móvil (por ejemplo por Google Drive o WhatsApp), ábrelo y acepta **«Instalar apps de origen
-   desconocido»** cuando lo pida.
+1. Entra en la página del repositorio en GitHub (con tu cuenta). En la columna de la derecha (en el móvil, más abajo) pulsa
+   **Releases** › **App Android (pruebas)**.
+2. Descarga **volta-android.apk**, ábrelo en el móvil y acepta **«Instalar apps de origen desconocido»**.
+3. Se actualiza sola con cada cambio de la app. También está en **Actions** › **App de móvil** › **Artifacts**.
 
 Es una **versión de pruebas** (firmada con una clave de depuración). Sirve para probarla, no para Google Play.
 
