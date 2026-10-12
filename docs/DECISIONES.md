@@ -98,3 +98,17 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
   - Demasiadas cosas en pantalla: simplificar Inicio y Entrenos.
   - Registrar series: más rápido y claro (los fundadores mandarán una imagen de referencia).
   - Diseño: gustan los colores, pero la app se ve muy básica; el objetivo es **darle vida**.
+
+## Decisiones del 12 de octubre de 2026 (siguiente fase)
+
+- **Ahora:** dar vida a Progreso, Nutrición y Perfil con un estilo **más «gaming»** (brillos, medallas, rayos y efectos
+  al conseguir cosas).
+  - **Progreso:** arriba, tu rango (Voltios) grande y tu evolución del último mes (fuerza y volumen).
+  - **Nutrición:** arriba, calorías y macros de hoy con el botón «Registrar comida».
+  - **Perfil:** tu **tarjeta de atleta** (avatar, rango, liga, racha y medallas), que se puede compartir.
+- **Entreno adaptado por Zeus (después):**
+  - Poco tiempo: **menos ejercicios con las mismas series** (se quedan los compuestos, fuera los accesorios).
+  - Dolor en una zona: **cambia los ejercicios por otros seguros** y avisa de consultar a un profesional si el dolor
+    es fuerte o no se va.
+- **Retos de Voltios:** de **2 a 10 personas**; el ganador recibe una **medalla en su perfil y +100 ⚡**, y todos los
+  que terminan el reto, **+25 ⚡**.
