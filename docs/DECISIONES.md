@@ -86,3 +86,15 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
      y dónde entrenas hoy (gimnasio, casa o parque).
      - Gratis: ajuste automático por reglas (menos series si dormiste mal, recortar por tiempo, cambiar ejercicios).
      - Pro: Zeus con IA rediseña el entreno completo y explica por qué.
+
+## Decisiones del 12 de octubre de 2026
+
+- **Zeus:** se mantiene la ilustración de los fundadores (con «VOLTA» en la camiseta). Claude prepara el texto (prompt)
+  para generar más poses con el mismo estilo (celebrando, preocupado, pensando, guiñando); luego se recortan e integran.
+- **Entreno adaptado:** las preguntas (tiempo, sueño, dolor, lugar) salen al pulsar «Empezar entreno», en una tarjeta
+  rápida que se puede saltar.
+- **Retos de 7 días con amigos:** de tipo «quién gana más Voltios ⚡ en la semana».
+- **Lo que hay que mejorar de la app:**
+  - Demasiadas cosas en pantalla: simplificar Inicio y Entrenos.
+  - Registrar series: más rápido y claro (los fundadores mandarán una imagen de referencia).
+  - Diseño: gustan los colores, pero la app se ve muy básica; el objetivo es **darle vida**.
