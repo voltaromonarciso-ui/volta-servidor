@@ -16,6 +16,8 @@
   const unit = () => (S.units && S.units.w) || 'kg';
   const routine = () => S.routines.find((x) => x.id == S.cur);
   const list = () => { const r = routine(); return r ? r.ex : DEF; };
+  // Sesión adaptada por Zeus con menos carga (dormiste mal): peso propuesto ~10 % menor, redondeado a 2,5
+  const lighter = (w) => { const r = routine(), f = r && r.vxLoad; const n = num(w); return f && f < 1 && n ? Math.round((n * f) / 2.5) * 2.5 : w; };
   const keyOf = (c) => S.cur + ':' + S.wi + ':' + c.i;
   const drafts = (k) => { S.vxd = S.vxd && typeof S.vxd === 'object' ? S.vxd : {}; if (!S.vxd[k]) S.vxd = { [k]: {} }; return S.vxd[k]; };
 
@@ -48,11 +50,11 @@
       if (x.done) return;
       if (d[x.id]) { x.w = d[x.id].w; x.r = d[x.id].r; } else if (x.warm) {
         const base = ref && ref.w ? ref.w : (x.last ? x.last.w : 0);
-        x.w = x.last ? x.last.w : base ? Math.max(0, Math.round(base * 0.5 / 2.5) * 2.5) : '';
+        x.w = x.last ? lighter(x.last.w) : base ? Math.max(0, Math.round(base * 0.5 / 2.5) * 2.5) : '';
         x.r = x.last ? x.last.r : 10;
       } else {
         const src = firstEff && target ? target : (x.last || ref); firstEff = false;
-        x.w = src ? src.w : ''; x.r = src ? src.r : lo;
+        x.w = src ? lighter(src.w) : ''; x.r = src ? src.r : lo;
       }
       x.act = first; first = false;
     });

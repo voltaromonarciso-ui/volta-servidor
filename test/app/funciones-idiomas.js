@@ -11,7 +11,10 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.goto(process.env.APP_URL); await p.waitForTimeout(1200);
   await p.evaluate(() => { S.onboarded = true; S.demo = true; S.name = 'Alex'; S.lang = 'es'; S.stack = []; tab('home'); });
   // abrir el entreno rápido
-  await p.click('text=Empezar'); await p.waitForTimeout(600);
+  await p.click('text=Empezar'); await p.waitForTimeout(400);
+  // antes del entreno, Zeus pregunta (tiempo, sueño, dolor, lugar); «Saltar» entrena como siempre
+  ok(await p.evaluate(() => S.stack[S.stack.length - 1] === 'vx:check'), 'antes del entreno sale el check-in de Zeus');
+  await p.click('.vx-ck-skip'); await p.waitForTimeout(600);
   const vals = await p.$$eval('.vx-sr-row:not(.warm) input', els => els.slice(0, 2).map(e => e.value));
   ok(vals[0] === '77.5' && vals[1] === '9', 'peso y reps prerrellenados con el objetivo de hoy: ' + JSON.stringify(vals));
   ok(await p.evaluate(() => window.__wl) >= 1, 'pantalla encendida solicitada al entrar al entreno');

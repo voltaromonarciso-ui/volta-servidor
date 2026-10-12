@@ -132,3 +132,23 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
   1. Entreno adaptado.
   2. Notificaciones.
   3. **Capacitor** (app de Android/iOS para probarla en el móvil).
+
+### Hecho: entreno adaptado por Zeus (12-10-2026)
+
+- **Al pulsar «Empezar entreno»** sale «¿Cómo vienes hoy?», con las 4 preguntas y una vista previa de los cambios. Debajo están
+  «Empezar entreno adaptado» y «Saltar». Se desactiva en Ajustes › General.
+- **Reglas** (plan gratis; con Pro lo hará la IA):
+  - **Tiempo:** opciones 20 / 30–45 / 60+ min. Se quitan primero los accesorios y luego los compuestos, desde el
+    final, hasta que cabe (cada serie ≈ 45 s más el descanso). Siempre quedan al menos 2 ejercicios.
+  - **Sueño «Mal»:** el peso propuesto baja un 10 % (redondeado a 2,5 kg).
+  - **Dolor:** cada zona tiene ejercicios que se evitan:
+    - **Hombro:** presses por encima de la cabeza, elevaciones, fondos y dominadas; banca y flexiones solo en máquina.
+    - **Espalda baja:** peso muerto, buenos días, swing y zancadas; sentadilla y remo solo en máquina o polea.
+    - **Rodilla:** sentadilla, zancadas, prensa, extensiones y saltos; se cambian por glúteo.
+    - **Codo o muñeca:** curls, extensiones de tríceps, fondos y antebrazo.
+
+    Si no hay un sustituto seguro, el ejercicio se quita. Siempre se avisa de consultar a un profesional.
+  - **Lugar:** en Casa se usan mancuernas, bandas, kettlebell y peso corporal; con «Sin material», solo peso corporal.
+    Se busca el ejercicio del mismo grupo y patrón de movimiento.
+- **La rutina original no cambia:** la sesión adaptada es una copia de hoy. Se borra al empezar otra rutina o al día
+  siguiente y no aparece en «Mis rutinas».

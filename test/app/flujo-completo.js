@@ -51,6 +51,7 @@ await p.evaluate(() => { S.stack = []; tab('work'); }); await p.waitForTimeout(4
 await p.screenshot({ path: 'shots/flow-work0.png' });
 const start = await p.$('button:has-text("Empezar"), button:has-text("Entrenar"), button:has-text("Iniciar")');
 if (start) { await start.click(); await p.waitForTimeout(400); }
+if (await p.$('.vx-ck-skip')) { await p.click('.vx-ck-skip'); await p.waitForTimeout(400); }
 await p.screenshot({ path: 'shots/flow-work.png' });
 let logged = 0;
 const before = await p.evaluate(() => (S.log || []).length);

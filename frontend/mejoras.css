@@ -627,3 +627,25 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 :root[data-t="light"] .vx-g-stats3>div,:root[data-t="light"] .vx-g-chips>div,:root[data-t="light"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}
 :root[data-t="light"] .vx-g-stats3 em.up,:root[data-t="light"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}
 @media(prefers-color-scheme:light){:root[data-t="auto"] .vx-g-stats3 em.up,:root[data-t="auto"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}:root[data-t="auto"] .vx-g-stats3>div,:root[data-t="auto"] .vx-g-chips>div,:root[data-t="auto"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}}
+
+/* ===== Entreno adaptado por Zeus (adapta.js) ===== */
+.vx-ck-head{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid color-mix(in srgb,var(--ac) 40%,var(--ln));background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--ac) 18%,var(--card)) 0%,var(--card) 60%)}
+.vx-ck-head .vx-zeus-img{width:84px;height:84px;margin:-6px -2px -10px -6px;flex:none;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--ac) 30%,transparent))}
+.vx-ck-head b{font-size:19px}
+.vx-ck-q{margin:14px 0 4px}
+.vx-ck-l{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;margin-bottom:8px}
+.vx-ck-opts{display:flex;flex-wrap:wrap;gap:8px}
+.vx-ck-opts .chip{min-height:44px;padding:0 14px;font-size:14.5px}
+.vx-ck-prev{margin-top:16px}
+.vx-ck-prev ul,.vx-ck-note ul{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.vx-ck-ic{display:inline-block;width:20px;text-align:center;color:var(--ac);font-weight:900}
+.vx-ck-pain .vx-ck-ic{color:#fbbf24}
+.vx-ck-warn{margin-top:10px;padding:8px 10px;border-radius:12px;font-size:13px;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.35)}
+.vx-ck-go{margin-top:14px;font-size:17px;font-weight:800;box-shadow:0 8px 24px color-mix(in srgb,var(--ac) 35%,transparent)}
+.vx-ck-skip{margin-top:10px}
+.vx-ck-foot{text-align:center;font-size:12.5px;margin:12px 0 4px}
+.vx-ck-set{margin-top:12px;gap:12px}
+.vx-ck-note{margin:8px 0;padding:10px 12px;border:1px solid color-mix(in srgb,var(--ac) 35%,var(--ln))}
+.vx-ck-nh{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.vx-ck-nh b{flex:1}
+:root[data-t="light"] .vx-ck-pain .vx-ck-ic{color:#92400e}

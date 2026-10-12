@@ -188,7 +188,7 @@
       food: nl.filter((d) => d && Array.isArray(d.e) && d.e.length >= 2).length,
       solid: Object.values(weeks).filter((n) => n >= 3).length,
       long: Object.values(perDay).filter((n) => n >= 20).length,
-      routines: (Array.isArray(S.routines) ? S.routines : []).length,
+      routines: (Array.isArray(S.routines) ? S.routines : []).filter((r) => !r.vxAdapt).length,
       labors, oracle,
     };
   }
