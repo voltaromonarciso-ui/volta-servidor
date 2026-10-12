@@ -8,7 +8,7 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   const msg = () => p.evaluate(() => vxZeusMessage());
   await p.evaluate(() => { S.onboarded = true; S.demo = false; S.lang = 'es'; S.userProfile = Object.assign(S.userProfile || {}, { name: 'Lucía', days: 4 }); S.log = []; S.zeusTone = 'auto'; S.tab = 'home'; S.stack = []; R(); });
   await p.waitForTimeout(300);
-  ok(await p.evaluate(() => !!document.querySelector('.vx-zeus-card img') && /Lucía/.test(document.querySelector('.vx-zeus-card').innerText)), 'Inicio: Zeus saluda por tu nombre');
+  ok(await p.evaluate(() => !!document.querySelector('.vx-hero img') && /Lucía/.test(document.querySelector('.vx-hero').innerText)), 'Inicio: Zeus saluda por tu nombre');
   ok(await p.evaluate(() => !document.querySelector('.lion') || getComputedStyle(document.querySelector('.lion')).backgroundImage.includes('webp')), 'el león ya no aparece: Zeus en su lugar');
   // llevas días sin entrenar → preocupado y tono amigo
   await p.evaluate(() => { const t0 = Date.now() - 6 * 864e5; for (let k = 0; k < 5; k++) S.log.push({ ex: 0, w: 60, r: 8, t: t0 + k * 6e4, ty: 'effective' }); R(); });

@@ -18,7 +18,7 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   }
   // Zeus: la ilustración nueva en Inicio y el busto en el botón flotante
   await p.evaluate(() => { S.pgt = 0; S.stack = []; tab('home'); }); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => { const a = document.querySelector('.vx-zeus-card .vx-zeus-img'), f = document.querySelector('.vx-zeus-fab .vx-zeus-img'); return !!a && !!f && a.complete && a.naturalWidth > 300 && f.naturalWidth === 200; }), 'Zeus nuevo en Inicio y su busto en el botón flotante');
+  ok(await p.evaluate(() => { const a = document.querySelector('.vx-hero .vx-zeus-img'), f = document.querySelector('.vx-zeus-fab .vx-zeus-img'); return !!a && !!f && a.complete && a.naturalWidth > 300 && f.naturalWidth === 200; }), 'Zeus nuevo en Inicio y su busto en el botón flotante');
   ok(errs.length === 0, 'sin errores de JavaScript: ' + JSON.stringify(errs.slice(0, 3)));
   await b.close();
 })();

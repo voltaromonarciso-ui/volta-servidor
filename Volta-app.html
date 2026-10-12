@@ -3456,6 +3456,49 @@ body.vx-pro-on #nav,body.vx-pro-on .vx-zeus-fab{display:none!important}
 @keyframes vxSrIn{from{transform:scale(.98)}to{transform:none}}
 .vx-sr-up{border:0!important;background:none!important;padding:0!important}
 .vx-sr-in input{padding:0!important;height:auto;border-radius:0}
+/* ── Vida: fondo, tarjeta «Hoy», fichas y entradas ── */
+body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(--ac) 16%,transparent),transparent 70%),radial-gradient(700px 500px at 110% 40%,color-mix(in srgb,var(--ac) 6%,transparent),transparent 70%),var(--bg);background-attachment:fixed}
+.card{transition:transform .18s ease,box-shadow .2s ease,border-color .2s}
+.card[onclick]:active,.vx-tile:active{transform:scale(.985)}
+.vx-hero{position:relative;overflow:hidden;padding:0;border:1px solid color-mix(in srgb,var(--ac) 45%,var(--ln));background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--ac) 22%,var(--card)) 0%,var(--card) 60%),var(--card);box-shadow:0 14px 36px rgba(0,0,0,.45),0 0 0 1px color-mix(in srgb,var(--ac) 12%,transparent)}
+.vx-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.07) 45%,transparent 60%);transform:translateX(-100%);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){.vx-hero::after{animation:vxShine 6s ease-in-out 1.2s infinite}}
+@keyframes vxShine{0%,70%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.vx-hero-top{display:flex;align-items:center;gap:12px;padding:14px 14px 6px;cursor:pointer}
+.vx-hero-top .vx-zeus-img{width:112px;height:112px;margin:-6px -4px -10px -8px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55)) drop-shadow(0 0 16px color-mix(in srgb,var(--ac) 30%,transparent))}
+.vx-hero-top .vx-zeus-say{font-size:16.5px;font-weight:800;line-height:1.3}
+.vx-hero-plan{display:flex;align-items:center;gap:12px;margin:6px 10px 10px;padding:12px 12px 12px 14px;border-radius:16px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.07);cursor:pointer}
+.vx-hero-plan b{font-size:18px}
+.vx-hero-go{flex:none;width:auto!important;padding:12px 18px!important;font-size:16px;font-weight:800;border-radius:14px;background:linear-gradient(135deg,var(--ac),var(--ac2,#4bd01a));color:var(--on,#071006);box-shadow:0 6px 20px color-mix(in srgb,var(--ac) 40%,transparent)}
+.vx-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.vx-tile{margin:0!important;padding:12px 10px!important;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:4px;min-height:132px;background:linear-gradient(160deg,var(--card2),var(--card))!important;cursor:pointer}
+.vx-tile>.row{flex-direction:column;align-items:center;gap:6px!important}
+.vx-tile .g{min-width:0;width:100%}
+.vx-tile .mu{font-size:11.5px;line-height:1.3}
+.vx-tile>.row>span.mu,.vx-tile>.bar,.vx-tile>.row.sp,.vx-tile .vx-st-week,.vx-tile>.mu{display:none!important}
+.vx-tile.vx-streak .vx-st-flame{width:38px;height:38px;font-size:22px}
+.vx-tile .vx-st-n{font-size:12.5px;line-height:1.2}.vx-tile .vx-st-n b{display:block;font-size:30px;line-height:1.05;color:var(--tx)}
+.vx-tile.vx-arena-card .vx-badge{width:42px;height:42px}
+.vx-tile.vx-arena-card b{font-size:14px}
+.vx-tile.vx-oly>.row{font-size:24px}
+.vx-tile .vx-oly-rk{font-size:17px;font-weight:900;line-height:1.1}
+.vx-tile .vx-ar-bar,.vx-tile .vx-arena-prog{display:none}
+.vx-goalbar{padding:10px 14px}
+.vx-goalbar .vx-oly-goal{margin:0 0 6px;font-size:13px}
+.vx-meals{gap:12px;align-items:center}
+.vx-meals-ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--card2);font-size:20px}
+.vx-meals .g{cursor:pointer}
+.vx-meals-btn{flex:none;width:auto!important;padding:10px 14px!important}
+.vx-more{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-top:1px solid var(--ln);background:none;color:var(--ac);font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.vx-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.vx-duo-c{margin:0!important;flex-direction:column;align-items:flex-start!important;min-height:96px}
+.vx-duo-c .arr{display:none}
+.vx-duo-c .mu{font-size:12px}
+@media (prefers-reduced-motion:no-preference){.vx-in{animation:vxIn .42s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--vxi,0) * 45ms)}}
+@keyframes vxIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.btn:not(.o):not(.s){background:linear-gradient(135deg,var(--ac),var(--ac2,#4bd01a));box-shadow:0 6px 18px color-mix(in srgb,var(--ac) 28%,transparent)}
+.btn:not(.o):not(.s){color:var(--on,#071006)}
+.vx-tile .vx-oly-rk{color:color-mix(in srgb,var(--rc,var(--tx)) 45%,var(--tx))!important}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -10378,6 +10421,117 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
       if (top === 'lib' && S.vxFocusLib) { S.vxFocusLib = 0; const i = root.querySelector('input'); if (i) setTimeout(() => i.focus(), 30); }
     } catch (e) { /* se queda el orden original */ }
   };
+})();
+
+/* VOLTA · Inicio y Entrenos más simples y con más vida (decisión de los fundadores, 12-10-2026).
+   Inicio (vistazo de la mañana):
+     1. Tarjeta «Hoy»: Zeus con su mensaje + tu plan + botón Empezar (antes eran 3 tarjetas y 2 botones).
+     2. Tres fichas en fila: Racha 🔥 · Liga 🏆 · Voltios ⚡, y debajo el objetivo de la semana.
+     3. Comidas en una línea con «Registrar comida».   (Fuera: «Ver progreso», el anillo grande de calorías y el
+        resumen repetido; todo eso está en sus pestañas.)
+   Entrenos: misiones (3 a la vista + «Ver todas»), recuperación plegada, Biblioteca y Favoritos en dos fichas,
+   sin la tarjeta de Zeus (ya tiene su botón flotante).
+   Reorganiza lo que ya pintan los demás módulos (textos ya traducidos, mismos onclick); no cambia datos. */
+(function () {
+  'use strict';
+  if (typeof R !== 'function' || typeof S === 'undefined') return;
+  const root = () => { const r = document.getElementById('m'); if (!r) return null; return r.children.length === 1 && r.firstElementChild.children.length > 3 ? r.firstElementChild : r; };
+  const kids = (r) => [...r.children];
+  const byClass = (r, c) => kids(r).find((e) => e.classList && e.classList.contains(c));
+  const byClick = (r, re, sel) => kids(r).find((e) => (!sel || e.matches(sel)) && re.test(e.getAttribute('onclick') || ''));
+  const hasClick = (r, re) => kids(r).find((e) => !e.classList.contains('card') && [...e.querySelectorAll('[onclick]')].some((x) => re.test(x.getAttribute('onclick') || '')));
+  const tr = (s) => (window.vxTr ? window.vxTr(s) : s);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const nf = (n) => Math.round(+n || 0).toLocaleString(S.lang || 'es');
+
+  function home(r) {
+    if (r.dataset.vxIni === '1') return;
+    const zeus = byClass(r, 'vx-zeus-card'), plan = byClick(r, /^playToday\(\)/, '.card');
+    // 1. Tarjeta «Hoy»
+    if (zeus && plan) {
+      const hero = el('div', 'card vx-hero');
+      const img = zeus.querySelector('.vx-zeus-img'), say = zeus.querySelector('.g');
+      const top = el('div', 'vx-hero-top'); top.setAttribute('onclick', "go('coach')"); top.setAttribute('role', 'button'); top.tabIndex = 0;
+      if (img) { img.width = 112; img.height = 112; top.appendChild(img); }
+      if (say) top.appendChild(say);
+      const bottom = el('div', 'vx-hero-plan'); bottom.setAttribute('onclick', 'playToday()'); bottom.setAttribute('role', 'button'); bottom.tabIndex = 0;
+      const pg = plan.querySelector('.g'), pb = plan.querySelector('.btn');
+      if (pg) bottom.appendChild(pg);
+      if (pb) { pb.classList.add('vx-hero-go'); bottom.appendChild(pb); }
+      hero.append(top, bottom);
+      r.insertBefore(hero, zeus); zeus.remove(); plan.remove();
+    }
+    // 2. Fichas: racha, liga y Olimpo
+    const st = byClass(r, 'vx-streak'), lg = byClass(r, 'vx-arena-card'), oly = byClass(r, 'vx-oly');
+    const tiles = [st, lg, oly].filter(Boolean);
+    if (tiles.length >= 2) {
+      const row = el('div', 'vx-tiles');
+      r.insertBefore(row, tiles[0]);
+      tiles.forEach((t) => { t.classList.add('vx-tile'); row.appendChild(t); });
+      const goal = oly && oly.querySelector('.vx-oly-goal');
+      if (goal) { const g = el('div', 'card vx-goalbar'); g.appendChild(goal); const v = window.vxVolt ? window.vxVolt() : null; if (v && v.goal) { const b = el('div', 'bar'); b.innerHTML = `<i style="width:${Math.min(100, v.weekDone / v.goal * 100)}%"></i>`; g.appendChild(b); } row.after(g); }
+    }
+    // 3. Comidas en una línea
+    const quick = hasClick(r, /vxFoodOpen\(|tab\('nut'\)/), kcal = byClick(r, /^go\('ngoal'\)/, '.card');
+    if (kcal) {
+      let k = 0, goal = 0;
+      try { const d = window.NUTR; if (d) { k = d.tot(d.dateOfDow((new Date().getDay() + 6) % 7)).k; goal = d.goals().kc; } } catch (e) { /* sin datos */ }
+      const line = el('div', 'card row vx-meals', `<span class="vx-meals-ic" aria-hidden="true">🍽️</span><div class="g" role="button" tabindex="0" onclick="go('ngoal')"><div class="mu" style="font-size:12.5px">${tr('Calorías de hoy')}</div><b>${nf(k)}${goal ? ' / ' + nf(goal) : ''} kcal</b></div><button class="btn sm vx-meals-btn" onclick="vxFoodOpen()">${tr('Registrar comida')}</button>`);
+      r.insertBefore(line, kcal); kcal.remove();
+    }
+    if (quick) quick.remove();
+    const sum = byClick(r, /^tab\('prog'\)/, '.card'); if (sum) sum.remove();
+    r.dataset.vxIni = '1';
+  }
+
+  function train(r) {
+    if (r.dataset.vxIni === '1') return;
+    // misiones: 3 a la vista
+    const mis = byClass(r, 'vx-missions');
+    if (mis) {
+      const rows = [...mis.querySelectorAll('.vx-mrow')];
+      if (rows.length > 3 && !S.vxMisAll) {
+        rows.slice(3).forEach((x) => { x.style.display = 'none'; });
+        const b = el('button', 'vx-more', `${tr('Ver todas')} (${rows.length}) ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxMisAll=1;R()'); mis.appendChild(b);
+      }
+    }
+    // recuperación plegada
+    const rec = byClass(r, 'vx-rec');
+    if (rec && !S.vxRecOpen) {
+      const grid = rec.querySelector('.vx-recgrid');
+      if (grid) { grid.style.display = 'none'; const b = el('button', 'vx-more', `${tr('Ver mapa muscular')} ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxRecOpen=1;R()'); rec.appendChild(b); }
+    }
+    // Biblioteca y Favoritos en dos fichas
+    const lib = byClick(r, /^go\('lib'\)/, '.card'), fav = byClick(r, /^go\('favs'\)/, '.card');
+    if (lib && fav) { const duo = el('div', 'vx-duo'); r.insertBefore(duo, lib); duo.append(lib, fav); lib.classList.add('vx-duo-c'); fav.classList.add('vx-duo-c'); }
+    const coach = kids(r).find((e) => /^go\('coach'\)/.test(e.getAttribute('onclick') || '') && !e.classList.contains('vx-hero')); if (coach) coach.remove();
+    r.dataset.vxIni = '1';
+  }
+
+  // Entrada suave de las tarjetas al cambiar de pantalla (no en cada repintado)
+  let lastView = '';
+  function enter(r, view) {
+    if (view === lastView) return; lastView = view;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    kids(r).forEach((c, i) => { if (i > 14) return; c.style.setProperty('--vxi', i); c.classList.add('vx-in'); setTimeout(() => c.classList.remove('vx-in'), 700 + i * 45); });
+  }
+
+  const _R = R;
+  R = function () {
+    _R.apply(this, arguments);
+    try {
+      const r = root(); if (!r) return;
+      const top = S.stack && S.stack.length ? S.stack[S.stack.length - 1] : '';
+      if (!top && S.tab === 'home') home(r);
+      if (!top && S.tab === 'train') train(r);
+      enter(r, (top || S.tab) + '');
+    } catch (e) { /* se queda la pantalla tal cual */ }
+  };
+
+  if (window.vxAddTr) window.vxAddTr(`
+Ver todas|See all|Tout voir|Ver todas
+Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
+`);
 })();
 
 /* VOLTA · Accesibilidad (WCAG 2.2 AA). Se carga el último, después de temas.js.

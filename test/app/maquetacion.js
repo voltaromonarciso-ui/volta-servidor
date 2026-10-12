@@ -12,7 +12,7 @@ ok(/Tu racha/.test(t) && /4\s*días seguidos/.test(t) && /Récord: 9/.test(t) &&
 ok(!/Misiones de hoy/.test(t) && !/Recuperación muscular/.test(t) && !/12 Trabajos/.test(t), 'misiones, recuperación y 12 Trabajos fuera de Inicio');
 ok(!/Logros/.test(t), 'sin logros en Inicio');
 const ix = (k) => order.findIndex((x) => x.indexOf(k) === 0);
-ok(ix('vx-zeus-card') === 0 && ix('vx-zeus-card') < ix('Tu plan de hoy') && ix('Tu plan de hoy') < ix('vx-oly') && ix('vx-oly') < ix('vx-arena-card') && ix('vx-arena-card') < ix('vx-streak'), 'orden: Zeus › plan de hoy › Tu Olimpo › Liga › racha');
+ok(ix('vx-hero') === 0 && ix('vx-hero') < ix('vx-streak') && ix('vx-streak') < ix('vx-arena-card') && ix('vx-arena-card') < ix('vx-oly') && /Tu plan de hoy/.test(t), 'orden: tarjeta Hoy (Zeus + plan) › racha · liga · Olimpo');
 await p.screenshot({ path: 'shots/home-new.png' });
 await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(300);
 t = await p.evaluate(() => document.getElementById('m').innerText);
