@@ -25,7 +25,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      # El SDK de Android ya viene en ubuntu-latest (ANDROID_HOME); Gradle baja lo que falte (plataforma 36…)
+      - name: SDK de Android
+        run: echo "ANDROID_HOME=$ANDROID_HOME" && yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
       - name: Dependencias de Capacitor
         working-directory: movil
         run: npm ci
