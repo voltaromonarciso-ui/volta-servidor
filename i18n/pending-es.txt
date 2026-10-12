@@ -1,5 +1,6 @@
 Atleta {0}D de Volta haciendo el ejercicio: Press de banca
-Atleta {0}D de Volta haciendo el ejercicio: Press inclinado con mancuernas
+Lucía J.
+Sofía T.
 {0} kg · Aug {1}, {2}-{3} kg respecto a la medición anterior
 {0} kg · Aug {1}, {2}Primera medición
 {0} kg · Sep {1}, {2}+{3} kg respecto a la medición anterior

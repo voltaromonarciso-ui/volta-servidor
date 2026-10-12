@@ -567,3 +567,63 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 .btn:not(.o):not(.s){background:linear-gradient(135deg,var(--ac),var(--ac2,#4bd01a));box-shadow:0 6px 18px color-mix(in srgb,var(--ac) 28%,transparent)}
 .btn:not(.o):not(.s){color:var(--on,#071006)}
 .vx-tile .vx-oly-rk{color:color-mix(in srgb,var(--rc,var(--tx)) 45%,var(--tx))!important}
+
+/* ===== Estilo «gaming»: Progreso, Nutrición y Perfil (gaming.js) ===== */
+@keyframes vxGlow{0%,100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 40%,transparent),0 0 22px color-mix(in srgb,var(--ac) 22%,transparent)}50%{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 70%,transparent),0 0 38px color-mix(in srgb,var(--ac) 40%,transparent)}}
+@keyframes vxBolt{0%,86%,100%{opacity:.9;filter:drop-shadow(0 0 10px var(--ac))}88%{opacity:.3}90%{opacity:1;filter:drop-shadow(0 0 26px var(--ac))}92%{opacity:.5}}
+@keyframes vxSpark{0%{transform:translateY(0) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-70px) scale(.4);opacity:0}}
+@keyframes vxMedal{0%,75%{transform:translateX(-120%) rotate(25deg)}100%{transform:translateX(220%) rotate(25deg)}}
+.vp .vhero.vx-g-rank{border:1px solid color-mix(in srgb,var(--ac) 55%,#2a2a2a);padding-top:18px}
+.vx-g-emb{position:relative;z-index:2;width:58px;height:58px;margin:0 auto 4px;display:grid;place-items:center;border-radius:18px;transform:rotate(45deg);background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 35%,#0b0f0b),#0b0f0b);border:2px solid var(--ac);box-shadow:0 0 24px color-mix(in srgb,var(--ac) 45%,transparent)}
+.vx-g-emb svg{width:30px;height:30px;transform:rotate(-45deg);fill:var(--ac)}
+.vx-g-rank .nm{text-align:center;letter-spacing:.5px}
+.vx-g-spark{position:absolute;z-index:2;bottom:18px;width:4px;height:4px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);opacity:0;pointer-events:none}
+.vx-g-spark.s1{left:18%}.vx-g-spark.s2{left:52%}.vx-g-spark.s3{left:82%}
+.vx-g-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.vx-g-h b{font-size:16px}
+.vx-g-evo{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid color-mix(in srgb,var(--ac) 25%,var(--ln))}
+.vx-g-stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vx-g-stats3>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);text-align:center}
+.vx-g-stats3 .mu{font-size:12px}
+.vx-g-ic{font-size:20px}
+.vx-g-stats3 b{font-size:20px}
+.vx-g-stats3 em,.vx-g-new{font-style:normal;font-weight:800;font-size:15px;color:var(--mu)}
+.vx-g-stats3 em.up{color:var(--ac);text-shadow:0 0 12px color-mix(in srgb,var(--ac) 50%,transparent)}
+.vx-g-stats3 em.down{color:#f87171}
+.vx-g-stats3 em.vx-g-new{color:var(--ac);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+/* Nutrición */
+.vx-g-fuelbox{padding:14px;border:1px solid color-mix(in srgb,var(--ac) 35%,var(--ln));background:radial-gradient(110% 80% at 0% 0%,color-mix(in srgb,var(--ac) 14%,var(--card)) 0%,var(--card) 65%)}
+.vx-g-fuelh{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
+.vx-g-boltic svg{width:18px;height:18px;fill:var(--ac);display:block;filter:drop-shadow(0 0 6px var(--ac))}
+.vx-g-fuel{gap:16px;margin:0;padding:0;background:none!important;border:0;box-shadow:none}
+.vx-g-log{margin-top:12px;font-size:16px;font-weight:800;box-shadow:0 8px 24px color-mix(in srgb,var(--ac) 35%,transparent)}
+/* Perfil: tarjeta de atleta */
+.vx-g-card{position:relative;overflow:hidden;padding:16px;border:1px solid color-mix(in srgb,var(--ac) 50%,var(--ln));background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--ac) 20%,var(--card)) 0%,var(--card) 60%),var(--card)}
+.vx-g-card::before{content:"";position:absolute;right:-30px;top:-20px;width:170px;height:170px;opacity:.07;background:var(--ac);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'/%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none}
+.vx-g-ctop{display:flex;align-items:center;gap:14px}
+.vx-g-avring{flex:none;padding:3px;border-radius:50%;background:conic-gradient(var(--ac),var(--ac2,#4bd01a),var(--ac))}
+.vx-g-avring .vx-g-av{margin:0;border:3px solid var(--card);width:72px;height:72px;font-size:30px}
+.vx-g-who h1{font-size:24px;margin:0}
+.vx-g-lg{display:inline-flex;gap:6px;align-items:center;margin-top:6px;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:800;color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent);border:1px solid color-mix(in srgb,var(--ac) 40%,transparent)}
+.vx-g-rk{margin:14px 0 10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.07);cursor:pointer}
+.vx-g-rkn{display:inline-flex;align-items:center;gap:6px;font-size:17px;color:var(--ac)}
+.vx-g-rkn svg{width:18px;height:18px;fill:var(--ac)}
+.vx-g-rk .bar{margin-top:8px}
+.vx-g-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vx-g-chips>div{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06)}
+.vx-g-chips b{font-size:19px}
+.vx-g-chips .mu{font-size:12px}
+.vx-g-card .vx-g-grid{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.vx-g-share{margin-top:12px}
+.vx-achcard .vx-badge{position:relative;overflow:hidden}
+.vx-achcard .vx-badge::after{content:"";position:absolute;top:-20%;left:0;width:30%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-120%) rotate(25deg);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){
+  .vx-g-rank,.vx-g-card{animation:vxGlow 3.2s ease-in-out infinite}
+  .vx-g-emb svg,.vx-g-boltic svg{animation:vxBolt 4.5s linear infinite}
+  .vx-g-spark{animation:vxSpark 2.8s ease-out infinite}.vx-g-spark.s2{animation-delay:.9s}.vx-g-spark.s3{animation-delay:1.8s}
+  .vx-achcard .vx-badge::after{animation:vxMedal 4s ease-in-out infinite}
+  .vx-achcard .vx-badge:nth-child(2)::after{animation-delay:.4s}.vx-achcard .vx-badge:nth-child(3)::after{animation-delay:.8s}
+}
+:root[data-t="light"] .vx-g-stats3>div,:root[data-t="light"] .vx-g-chips>div,:root[data-t="light"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}
+:root[data-t="light"] .vx-g-stats3 em.up,:root[data-t="light"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}
+@media(prefers-color-scheme:light){:root[data-t="auto"] .vx-g-stats3 em.up,:root[data-t="auto"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}:root[data-t="auto"] .vx-g-stats3>div,:root[data-t="auto"] .vx-g-chips>div,:root[data-t="auto"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}}

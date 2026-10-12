@@ -101,11 +101,13 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
 
 ## Decisiones del 12 de octubre de 2026 (siguiente fase)
 
-- **Ahora:** dar vida a Progreso, Nutrición y Perfil con un estilo **más «gaming»** (brillos, medallas, rayos y efectos
+- **Hecho (12-10):** dar vida a Progreso, Nutrición y Perfil con un estilo **más «gaming»** (brillos, medallas, rayos y efectos
   al conseguir cosas).
   - **Progreso:** arriba, tu rango (Voltios) grande y tu evolución del último mes (fuerza y volumen).
   - **Nutrición:** arriba, calorías y macros de hoy con el botón «Registrar comida».
   - **Perfil:** tu **tarjeta de atleta** (avatar, rango, liga, racha y medallas), que se puede compartir.
+  - La evolución compara las **últimas 2 semanas con las 2 anteriores** (así se ve cambio aunque lleves poco tiempo).
+  - La tarjeta se comparte como imagen 1080×1350 (o se descarga si el móvil no deja compartir).
 - **Entreno adaptado por Zeus (después):**
   - Poco tiempo: **menos ejercicios con las mismas series** (se quedan los compuestos, fuera los accesorios).
   - Dolor en una zona: **cambia los ejercicios por otros seguros** y avisa de consultar a un profesional si el dolor

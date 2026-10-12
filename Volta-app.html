@@ -3499,6 +3499,66 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 .btn:not(.o):not(.s){background:linear-gradient(135deg,var(--ac),var(--ac2,#4bd01a));box-shadow:0 6px 18px color-mix(in srgb,var(--ac) 28%,transparent)}
 .btn:not(.o):not(.s){color:var(--on,#071006)}
 .vx-tile .vx-oly-rk{color:color-mix(in srgb,var(--rc,var(--tx)) 45%,var(--tx))!important}
+
+/* ===== Estilo «gaming»: Progreso, Nutrición y Perfil (gaming.js) ===== */
+@keyframes vxGlow{0%,100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 40%,transparent),0 0 22px color-mix(in srgb,var(--ac) 22%,transparent)}50%{box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 70%,transparent),0 0 38px color-mix(in srgb,var(--ac) 40%,transparent)}}
+@keyframes vxBolt{0%,86%,100%{opacity:.9;filter:drop-shadow(0 0 10px var(--ac))}88%{opacity:.3}90%{opacity:1;filter:drop-shadow(0 0 26px var(--ac))}92%{opacity:.5}}
+@keyframes vxSpark{0%{transform:translateY(0) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-70px) scale(.4);opacity:0}}
+@keyframes vxMedal{0%,75%{transform:translateX(-120%) rotate(25deg)}100%{transform:translateX(220%) rotate(25deg)}}
+.vp .vhero.vx-g-rank{border:1px solid color-mix(in srgb,var(--ac) 55%,#2a2a2a);padding-top:18px}
+.vx-g-emb{position:relative;z-index:2;width:58px;height:58px;margin:0 auto 4px;display:grid;place-items:center;border-radius:18px;transform:rotate(45deg);background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 35%,#0b0f0b),#0b0f0b);border:2px solid var(--ac);box-shadow:0 0 24px color-mix(in srgb,var(--ac) 45%,transparent)}
+.vx-g-emb svg{width:30px;height:30px;transform:rotate(-45deg);fill:var(--ac)}
+.vx-g-rank .nm{text-align:center;letter-spacing:.5px}
+.vx-g-spark{position:absolute;z-index:2;bottom:18px;width:4px;height:4px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);opacity:0;pointer-events:none}
+.vx-g-spark.s1{left:18%}.vx-g-spark.s2{left:52%}.vx-g-spark.s3{left:82%}
+.vx-g-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.vx-g-h b{font-size:16px}
+.vx-g-evo{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid color-mix(in srgb,var(--ac) 25%,var(--ln))}
+.vx-g-stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vx-g-stats3>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);text-align:center}
+.vx-g-stats3 .mu{font-size:12px}
+.vx-g-ic{font-size:20px}
+.vx-g-stats3 b{font-size:20px}
+.vx-g-stats3 em,.vx-g-new{font-style:normal;font-weight:800;font-size:15px;color:var(--mu)}
+.vx-g-stats3 em.up{color:var(--ac);text-shadow:0 0 12px color-mix(in srgb,var(--ac) 50%,transparent)}
+.vx-g-stats3 em.down{color:#f87171}
+.vx-g-stats3 em.vx-g-new{color:var(--ac);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+/* Nutrición */
+.vx-g-fuelbox{padding:14px;border:1px solid color-mix(in srgb,var(--ac) 35%,var(--ln));background:radial-gradient(110% 80% at 0% 0%,color-mix(in srgb,var(--ac) 14%,var(--card)) 0%,var(--card) 65%)}
+.vx-g-fuelh{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
+.vx-g-boltic svg{width:18px;height:18px;fill:var(--ac);display:block;filter:drop-shadow(0 0 6px var(--ac))}
+.vx-g-fuel{gap:16px;margin:0;padding:0;background:none!important;border:0;box-shadow:none}
+.vx-g-log{margin-top:12px;font-size:16px;font-weight:800;box-shadow:0 8px 24px color-mix(in srgb,var(--ac) 35%,transparent)}
+/* Perfil: tarjeta de atleta */
+.vx-g-card{position:relative;overflow:hidden;padding:16px;border:1px solid color-mix(in srgb,var(--ac) 50%,var(--ln));background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--ac) 20%,var(--card)) 0%,var(--card) 60%),var(--card)}
+.vx-g-card::before{content:"";position:absolute;right:-30px;top:-20px;width:170px;height:170px;opacity:.07;background:var(--ac);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'/%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none}
+.vx-g-ctop{display:flex;align-items:center;gap:14px}
+.vx-g-avring{flex:none;padding:3px;border-radius:50%;background:conic-gradient(var(--ac),var(--ac2,#4bd01a),var(--ac))}
+.vx-g-avring .vx-g-av{margin:0;border:3px solid var(--card);width:72px;height:72px;font-size:30px}
+.vx-g-who h1{font-size:24px;margin:0}
+.vx-g-lg{display:inline-flex;gap:6px;align-items:center;margin-top:6px;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:800;color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent);border:1px solid color-mix(in srgb,var(--ac) 40%,transparent)}
+.vx-g-rk{margin:14px 0 10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.07);cursor:pointer}
+.vx-g-rkn{display:inline-flex;align-items:center;gap:6px;font-size:17px;color:var(--ac)}
+.vx-g-rkn svg{width:18px;height:18px;fill:var(--ac)}
+.vx-g-rk .bar{margin-top:8px}
+.vx-g-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vx-g-chips>div{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06)}
+.vx-g-chips b{font-size:19px}
+.vx-g-chips .mu{font-size:12px}
+.vx-g-card .vx-g-grid{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.vx-g-share{margin-top:12px}
+.vx-achcard .vx-badge{position:relative;overflow:hidden}
+.vx-achcard .vx-badge::after{content:"";position:absolute;top:-20%;left:0;width:30%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-120%) rotate(25deg);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){
+  .vx-g-rank,.vx-g-card{animation:vxGlow 3.2s ease-in-out infinite}
+  .vx-g-emb svg,.vx-g-boltic svg{animation:vxBolt 4.5s linear infinite}
+  .vx-g-spark{animation:vxSpark 2.8s ease-out infinite}.vx-g-spark.s2{animation-delay:.9s}.vx-g-spark.s3{animation-delay:1.8s}
+  .vx-achcard .vx-badge::after{animation:vxMedal 4s ease-in-out infinite}
+  .vx-achcard .vx-badge:nth-child(2)::after{animation-delay:.4s}.vx-achcard .vx-badge:nth-child(3)::after{animation-delay:.8s}
+}
+:root[data-t="light"] .vx-g-stats3>div,:root[data-t="light"] .vx-g-chips>div,:root[data-t="light"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}
+:root[data-t="light"] .vx-g-stats3 em.up,:root[data-t="light"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}
+@media(prefers-color-scheme:light){:root[data-t="auto"] .vx-g-stats3 em.up,:root[data-t="auto"] .vx-g-stats3 em.vx-g-new{color:#2d5a00;text-shadow:none}:root[data-t="auto"] .vx-g-stats3>div,:root[data-t="auto"] .vx-g-chips>div,:root[data-t="auto"] .vx-g-rk{background:var(--card2);border-color:var(--ln)}}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -9484,7 +9544,7 @@ Domingo|Sunday|Dimanche|Domingo
   if (typeof S === 'undefined' || typeof R !== 'function' || !window.vxTr) return;
   const XL = window.VXL2 || ['de', 'it', 'ru', 'ar', 'tr', 'ja', 'ko', 'zh', 'hi'];
   const RTL = { ar: 1 };
-  const VER = '0e3f292c28';
+  const VER = 'f7ee8ea305';
   const NUM = /\d+(?:[.,]\d+)*/g;
   const dicts = {}; // idioma → { s, up, pats, memo } | 'loading' | 'error'
 
@@ -10536,6 +10596,210 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
   if (window.vxAddTr) window.vxAddTr(`
 Ver todas|See all|Tout voir|Ver todas
 Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
+`);
+})();
+
+/* VOLTA · Progreso, Nutrición y Perfil con estilo «gaming» (decisión de los fundadores, 12-10-2026).
+   Progreso: arriba tu rango de Voltios en grande (brillo, rayos) y tu evolución reciente (fuerza, volumen, entrenos);
+             debajo, la gráfica de evolución y el resumen de la semana. Fuera la gráfica repetida de volumen.
+   Nutrición (Día): arriba el anillo de calorías y macros con «Registrar comida»; Explorar baja al final.
+   Perfil: tarjeta de atleta (avatar, rango, liga, racha, medallas y estadísticas) que se puede compartir como imagen.
+   Como inicio.js: reorganiza lo que ya pintan los demás módulos (mismos onclick y textos traducidos); no cambia datos. */
+(function () {
+  'use strict';
+  if (typeof R !== 'function' || typeof S === 'undefined') return;
+  const tr = (s) => (window.vxTr ? window.vxTr(s) : s);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const nf = (n) => Math.round(+n || 0).toLocaleString(S.lang || 'es');
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nice = (s) => String(s || '').split(' ').map((w, i) => (i ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())).join(' ');
+  const pct = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+  const BOLT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z"/></svg>';
+
+  // ── Evolución: últimas 2 semanas frente a las 2 anteriores ──
+  function evolution() {
+    let L = [];
+    try { L = (typeof getLog === 'function' ? getLog() : S.log || []).filter((l) => l && l.t && l.ty !== 'warmup' && (+l.w || 0) >= 0 && (+l.r || 0) > 0); } catch (e) { L = []; }
+    const now = Date.now(), H = 14 * 864e5;
+    const half = (a, b) => L.filter((l) => l.t > now - a && l.t <= now - b);
+    const A = half(H, 0), B = half(2 * H, H);
+    const vol = (x) => x.reduce((s, l) => s + (+l.w || 0) * (+l.r || 0), 0);
+    const days = (x) => new Set(x.map((l) => new Date(l.t).toDateString())).size;
+    const best = (x) => { const o = {}; x.forEach((l) => { const v = +l.e1 || (+l.w || 0) * (1 + (+l.r || 0) / 30); if (v > (o[l.ex] || 0)) o[l.ex] = v; }); return o; };
+    const ba = best(A), bb = best(B), common = Object.keys(ba).filter((k) => bb[k] > 0);
+    const str = common.length ? Math.round((common.reduce((s, k) => s + ba[k] / bb[k], 0) / common.length - 1) * 100) : null;
+    return { str, vol: pct(vol(A), vol(B)), volN: vol(A), ses: days(A), sesD: days(A) - days(B), any: A.length > 0 };
+  }
+  const delta = (v, unit) => (v == null ? '<em class="vx-g-new">' + tr('nuevo') + '</em>' : `<em class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}">${v > 0 ? '▲ +' : v < 0 ? '▼ ' : '= '}${v > 0 || v < 0 ? nf(v) : '0'}${unit}</em>`);
+
+  function prog(r) {
+    const vp = r.querySelector('.vp'); if (!vp || vp.dataset.vxG === '1') return;
+    const hero = vp.querySelector('.vhero'); if (!hero) return;
+    vp.dataset.vxG = '1';
+    hero.classList.add('vx-g-rank');
+    const nm = hero.querySelector('.nm');
+    if (nm) { const emb = el('div', 'vx-g-emb', BOLT); emb.setAttribute('aria-hidden', 'true'); hero.insertBefore(emb, nm); }
+    hero.insertAdjacentHTML('beforeend', '<i class="vx-g-spark s1" aria-hidden="true"></i><i class="vx-g-spark s2" aria-hidden="true"></i><i class="vx-g-spark s3" aria-hidden="true"></i>');
+    // tarjeta de evolución
+    const e = evolution();
+    const evo = el('div', 'card vx-g-evo', `<div class="vx-g-h"><b>${tr('Tu evolución')}</b><span class="mu">${tr('Últimas 2 semanas')}</span></div>` +
+      '<div class="vx-g-stats3">' +
+      `<div><span class="vx-g-ic" aria-hidden="true">🏋️</span><span class="mu">${tr('Fuerza')}</span>${delta(e.any ? e.str : null, '%')}</div>` +
+      `<div><span class="vx-g-ic" aria-hidden="true">📈</span><span class="mu">${tr('Volumen')}</span>${delta(e.any ? e.vol : null, '%')}</div>` +
+      `<div><span class="vx-g-ic" aria-hidden="true">📅</span><span class="mu">${tr('Entrenos')}</span><b>${nf(e.ses)}</b>${e.sesD ? `<em class="${e.sesD > 0 ? 'up' : 'down'}">${e.sesD > 0 ? '+' : ''}${e.sesD}</em>` : ''}</div>` +
+      '</div>');
+    hero.after(evo);
+    // la gráfica de evolución sube; la de volumen repetida se quita
+    const chips = [...vp.children].filter((c) => c.classList.contains('chips'));
+    const charts = [...vp.children].filter((c) => c.classList.contains('vch'));
+    const metric = chips.find((c) => /S\.pmt=/.test(c.innerHTML)), period = chips.find((c) => /S\.prr=/.test(c.innerHTML));
+    const h2 = metric && metric.previousElementSibling && metric.previousElementSibling.tagName === 'H2' ? metric.previousElementSibling : null;
+    const evoChart = metric && metric.nextElementSibling && metric.nextElementSibling.classList.contains('vch') ? metric.nextElementSibling : null;
+    if (metric && h2 && evoChart) {
+      charts.filter((c) => c !== evoChart).forEach((c) => c.remove());
+      let at = evo;
+      [h2, period, metric, evoChart].filter(Boolean).forEach((n) => { at.after(n); at = n; });
+      evoChart.classList.add('vx-g-chart');
+    }
+  }
+
+  function nut(r) {
+    const vx = r.querySelector('.vx') || r; if (vx.dataset.vxG === '1') return;
+    const ringC = vx.querySelector('circle[r="52"]'); const ring = ringC && ringC.closest('.card'); if (!ring) return;
+    vx.dataset.vxG = '1';
+    const chips = [...vx.children].find((c) => c.classList.contains('chips'));
+    ring.classList.add('vx-g-fuel');
+    const head = el('div', 'vx-g-fuelh', `<span class="vx-g-boltic">${BOLT}</span><b>${tr('Combustible de hoy')}</b>`);
+    const box = el('div', 'card vx-g-fuelbox');
+    const log = el('button', 'btn vx-g-log', `＋ ${tr('Registrar comida')}`); log.type = 'button';
+    log.setAttribute('onclick', typeof window.vxFoodOpen === 'function' ? 'vxFoodOpen()' : "go('explore')");
+    if (chips) chips.after(box); else vx.insertBefore(box, ring);
+    ring.classList.remove('card');
+    box.append(head, ring, log);
+    // Explorar y los botones de modo bajan, antes de Personalización
+    const explore = [...vx.children].find((c) => /^go\('explore'\)/.test(c.getAttribute('onclick') || ''));
+    const mode = [...vx.children].find((c) => c.classList.contains('row') && /S\.mode=/.test(c.innerHTML));
+    const vcard = vx.querySelector('.vcard'), pers = vcard && vcard.parentElement && vcard.parentElement.previousElementSibling;
+    if (pers && pers.tagName === 'H2') [explore, mode].filter(Boolean).forEach((n) => vx.insertBefore(n, pers));
+  }
+
+  // ── Tarjeta de atleta ──
+  function athlete() {
+    const o = { name: (S.name || '').trim() || tr('Atleta'), rank: '', p: 0, volt: 0, league: '', streak: +S.streakCount || 0, medals: 0, total: 0 };
+    try { const v = window.vxVolt && window.vxVolt(); if (v) { o.volt = v.total; o.rank = nice(v.rank.nm); o.p = v.rank.p; o.ri = v.rank.i; } } catch (e) { /* sin Voltios */ }
+    try { if (window.vxPractice) { const g = window.vxPractice.group(); o.league = tr(window.vxPractice.names[g.i] || ''); o.pos = g.pos; } } catch (e) { /* sin liga */ }
+    try { const a = window.vxAch ? window.vxAch() : []; o.medals = a.filter((x) => x.ok).length; o.total = a.length; } catch (e) { /* sin logros */ }
+    return o;
+  }
+  function prof(r) {
+    if (r.dataset.vxG === '1') return;
+    const kids = [...r.children];
+    const who = kids.find((c) => c.classList.contains('row') && c.querySelector(':scope > .th'));
+    const grid = kids.find((c) => c.classList.contains('grid2'));
+    if (!who) return;
+    r.dataset.vxG = '1';
+    const a = athlete();
+    const card = el('div', 'card vx-g-card');
+    const top = el('div', 'vx-g-ctop');
+    const av = who.querySelector('.th'); av.classList.add('vx-g-av');
+    const ring = el('div', 'vx-g-avring'); ring.appendChild(av);
+    const info = who.querySelector('.g'); info.classList.add('vx-g-who');
+    const bar = info.querySelector('.bar'); if (bar) bar.remove();
+    top.append(ring, info);
+    const lg = el('div', 'vx-g-lg', `<span aria-hidden="true">🏆</span>${esc(a.league)}`); if (a.league) info.appendChild(lg);
+    const rk = el('div', 'vx-g-rk', `<div class="row sp"><b class="vx-g-rkn">${BOLT}${esc(a.rank)}</b><span class="mu">${nf(a.volt)} ⚡</span></div><div class="bar"><i style="width:${Math.max(3, a.p)}%"></i></div>`);
+    rk.setAttribute('onclick', "tab('prog')"); rk.setAttribute('role', 'button'); rk.tabIndex = 0;
+    const chips = el('div', 'vx-g-chips',
+      `<div><span aria-hidden="true">🔥</span><b>${nf(a.streak)}</b><span class="mu">${tr('Racha')}</span></div>` +
+      `<div><span aria-hidden="true">🏅</span><b>${nf(a.medals)}</b><span class="mu">${tr('Medallas')}</span></div>` +
+      `<div><span aria-hidden="true">🏆</span><b>${a.pos ? '#' + nf(a.pos) : '—'}</b><span class="mu">${tr('Liga')}</span></div>`);
+    card.append(top, rk, chips);
+    if (grid) { grid.classList.add('vx-g-grid'); card.appendChild(grid); }
+    const sh = el('button', 'btn o vx-g-share', `↗ ${tr('Compartir mi tarjeta')}`); sh.type = 'button'; sh.setAttribute('onclick', 'vxAthleteShare()');
+    card.appendChild(sh);
+    r.insertBefore(card, who); who.remove();
+  }
+
+  // Imagen 1080×1350 para compartir
+  function drawAthlete() {
+    const a = athlete(), W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), cs = getComputedStyle(document.documentElement);
+    const ac = (cs.getPropertyValue('--ac') || '#9dff2e').trim() || '#9dff2e';
+    const font = (w, s) => `${w} ${s}px Inter, system-ui, sans-serif`;
+    g.fillStyle = '#060906'; g.fillRect(0, 0, W, H);
+    let gr = g.createRadialGradient(W / 2, 380, 40, W / 2, 380, 760); gr.addColorStop(0, ac + '55'); gr.addColorStop(1, 'transparent'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    // rayos de fondo
+    g.save(); g.globalAlpha = 0.10; g.strokeStyle = ac; g.lineWidth = 6;
+    for (let i = 0; i < 9; i++) { const x = 60 + i * 120; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 40, 120); g.lineTo(x - 10, 130); g.lineTo(x + 30, 260); g.stroke(); }
+    g.restore();
+    g.strokeStyle = ac; g.lineWidth = 6; g.globalAlpha = 0.7; g.strokeRect(36, 36, W - 72, H - 72); g.globalAlpha = 1;
+    g.fillStyle = ac; g.font = font(900, 46); g.textAlign = 'center'; g.fillText('VOLTA', W / 2, 130);
+    // avatar
+    g.save(); g.shadowColor = ac; g.shadowBlur = 60; g.beginPath(); g.arc(W / 2, 360, 150, 0, Math.PI * 2); g.fillStyle = '#111811'; g.fill(); g.restore();
+    g.lineWidth = 12; g.strokeStyle = ac; g.beginPath(); g.arc(W / 2, 360, 150, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#f2f6f0'; g.font = font(900, 150); g.textBaseline = 'middle'; g.fillText((a.name[0] || 'V').toUpperCase(), W / 2, 370); g.textBaseline = 'alphabetic';
+    g.font = font(900, 76); g.fillText(a.name.slice(0, 22), W / 2, 620);
+    g.fillStyle = ac; g.font = font(900, 64); g.fillText('⚡ ' + a.rank, W / 2, 720);
+    g.fillStyle = '#8a968a'; g.font = font(600, 38); g.fillText(nf(a.volt) + ' ' + tr('Voltios') + (a.league ? '  ·  🏆 ' + a.league : ''), W / 2, 790);
+    // barra de rango
+    g.fillStyle = '#1b231b'; g.fillRect(190, 830, 700, 18); g.fillStyle = ac; g.fillRect(190, 830, 700 * Math.max(0.03, a.p / 100), 18);
+    // estadísticas
+    const st = [['🔥', nf(a.streak), tr('Racha')], ['🏅', nf(a.medals), tr('Medallas')], ['⚡', nf(a.volt), tr('Voltios')]];
+    st.forEach((s, i) => {
+      const x = 120 + i * 300, y = 920;
+      g.fillStyle = '#0f150f'; g.strokeStyle = ac + '88'; g.lineWidth = 3;
+      if (g.roundRect) { g.beginPath(); g.roundRect(x, y, 240, 240, 36); g.fill(); g.stroke(); } else { g.fillRect(x, y, 240, 240); g.strokeRect(x, y, 240, 240); }
+      g.fillStyle = '#f2f6f0'; g.font = font(600, 58); g.fillText(s[0], x + 120, y + 80);
+      g.font = font(900, 64); g.fillText(s[1], x + 120, y + 160);
+      g.fillStyle = '#8a968a'; g.font = font(600, 32); g.fillText(s[2], x + 120, y + 210);
+    });
+    g.fillStyle = '#8a968a'; g.font = font(600, 32); g.fillText(tr('Entrena conmigo en Volta'), W / 2, H - 80);
+    return cv;
+  }
+  window.vxAthleteCard = drawAthlete;
+  window.vxAthleteShare = async function () {
+    try {
+      const blob = await new Promise((ok) => drawAthlete().toBlob(ok, 'image/png'));
+      const file = new File([blob], 'volta-atleta.png', { type: 'image/png' });
+      try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Volta' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      if (typeof toast === 'function') toast(tr('Imagen guardada'));
+    } catch (e) { if (typeof toast === 'function') toast(tr('No se pudo crear la imagen')); }
+  };
+
+  const root = () => { const r = document.getElementById('m'); if (!r) return null; return r.children.length === 1 && r.firstElementChild.children.length > 3 ? r.firstElementChild : r; };
+  const _R = R;
+  R = function () {
+    _R.apply(this, arguments);
+    try {
+      const top = S.stack && S.stack.length ? S.stack[S.stack.length - 1] : '';
+      if (top) return;
+      const m = document.getElementById('m'); if (!m) return;
+      if (S.tab === 'prog' && S.pgt != 1) prog(m);
+      else if (S.tab === 'nut' && (S.nsub || 'day') === 'day') nut(m);
+      else if (S.tab === 'prof') { const r = root(); if (r) prof(r); }
+    } catch (e) { /* se queda la pantalla tal cual */ }
+  };
+
+  if (window.vxAddTr) window.vxAddTr(`
+nuevo|new|nouveau|novo
+Registrar comida|Log meal|Enregistrer un repas|Registar refeição
+Racha|Streak|Série|Sequência
+Medallas|Medals|Médailles|Medalhas
+Atleta|Athlete|Athlète|Atleta
+Cambiar ejercicio|Swap exercise|Changer d'exercice|Trocar exercício
+Volver|Back|Retour|Voltar
+Liga|League|Ligue|Liga
+Calorías de hoy|Today's calories|Calories du jour|Calorias de hoje
+Información|Info|Infos|Informação
+Tu evolución|Your progress|Ton évolution|A tua evolução
+Últimas 2 semanas|Last 2 weeks|2 dernières semaines|Últimas 2 semanas
+Combustible de hoy|Today's fuel|Carburant du jour|Combustível de hoje
+Compartir mi tarjeta|Share my card|Partager ma carte|Partilhar o meu cartão
+Entrena conmigo en Volta|Train with me on Volta|Entraîne-toi avec moi sur Volta|Treina comigo no Volta
+Imagen guardada|Image saved|Image enregistrée|Imagem guardada
+No se pudo crear la imagen|Couldn't create the image|Impossible de créer l’image|Não foi possível criar a imagem
 `);
 })();
 
