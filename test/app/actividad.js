@@ -9,6 +9,8 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.waitForTimeout(300);
   ok(await p.evaluate(() => !document.querySelector('#m .chips .chip[onclick="socGo()"]') && !!document.querySelector('#m .ib.vx-soc')), 'Social integrado en la fila de iconos');
   ok(await p.evaluate(() => [...document.querySelectorAll('#m .ib')].every(e => e.getAttribute('role') === 'button' && e.getAttribute('aria-label'))), 'iconos de cabecera accesibles (rol y nombre)');
+  // los lunes la app avisa de que el resumen semanal está listo: se vacía el buzón para probar el caso «sin novedades»
+  await p.evaluate(() => { S.vx.inbox = []; R(); }); await p.waitForTimeout(200);
   ok(await p.evaluate(() => !document.querySelector('.vx-dot')), 'sin punto cuando no hay novedades');
   await p.screenshot({ path: 'shots/hdr.png', clip: { x: 0, y: 0, width: 390, height: 260 } });
   // logro nuevo (tras la comprobación inicial) y récord → Actividad

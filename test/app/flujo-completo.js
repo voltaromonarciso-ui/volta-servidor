@@ -54,11 +54,12 @@ if (start) { await start.click(); await p.waitForTimeout(400); }
 await p.screenshot({ path: 'shots/flow-work.png' });
 let logged = 0;
 const before = await p.evaluate(() => (S.log || []).length);
-await p.evaluate(() => { [...document.querySelectorAll('button')].find((b) => /Registrar serie/.test(b.innerText)).click(); });
+// serie vacía: se borran el peso y las repeticiones de la serie activa y se intenta completar
+await p.evaluate(() => { document.querySelectorAll('.vx-sr-row.act input').forEach((i) => { i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); }); document.querySelector('.vx-sr-row.act .vx-sr-ok').click(); });
 await p.waitForTimeout(300);
 ok(await p.evaluate(() => (S.log || []).length) === before && /repeticiones/.test(await p.evaluate(() => document.body.innerText)), 'una serie vacía (0 × 0) no se registra y se avisa');
 for (let i = 0; i < 3; i++) {
-  const done = await p.evaluate((i) => { const c = cfg(); S.wk = Object.assign({}, S.wk, { k: S.cur + ':' + S.wi + ':' + c.i, w: String(40 + i * 2.5), r: '10' }); const bt = [...document.querySelectorAll('button')].find((b) => /Registrar serie/.test(b.innerText)); if (!bt) return false; bt.click(); return true; }, i);
+  const done = await p.evaluate((i) => { const row = document.querySelector('.vx-sr-row.act:not(.warm)') || document.querySelector('.vx-sr-row.act'); if (!row) return false; const [w, r] = row.querySelectorAll('input'); w.value = String(40 + i * 2.5); r.value = '10'; row.querySelector('.vx-sr-ok').click(); return true; }, i);
   if (!done) break; await p.waitForTimeout(300);
   await p.evaluate(() => { const sk = [...document.querySelectorAll('button')].find((b) => /^Saltar/.test(b.innerText.trim())); if (sk) sk.click(); });
   logged++;

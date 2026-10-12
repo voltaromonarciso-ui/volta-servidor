@@ -12,7 +12,7 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.evaluate(() => { S.onboarded = true; S.demo = true; S.name = 'Alex'; S.lang = 'es'; S.stack = []; tab('home'); });
   // abrir el entreno rápido
   await p.click('text=Empezar'); await p.waitForTimeout(600);
-  const vals = await p.$$eval('.w9c input', els => els.map(e => e.value));
+  const vals = await p.$$eval('.vx-sr-row:not(.warm) input', els => els.slice(0, 2).map(e => e.value));
   ok(vals[0] === '77.5' && vals[1] === '9', 'peso y reps prerrellenados con el objetivo de hoy: ' + JSON.stringify(vals));
   ok(await p.evaluate(() => window.__wl) >= 1, 'pantalla encendida solicitada al entrar al entreno');
   // récord: subir el peso por encima del máximo y completar la serie
