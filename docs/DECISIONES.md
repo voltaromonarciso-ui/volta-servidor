@@ -220,3 +220,24 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
   - El resumen semanal y los contadores «Mejoran/Estables/Bajan» solo salen si hay entrenos reales.
 - **Anatomía:** solo el cuerpo, sin leyenda de metales, sin rangos por músculo y sin tarjetas debajo.
 - **Inicio › «Tu Olimpo»:** en esquema: emblema, rango, barra al siguiente rango, ⚡ Voltios y lo ganado hoy.
+
+## Atleta 3D: segunda ronda de respuestas (14-10-2026)
+
+- **Dónde:** aparece **al pulsar el ejercicio que vas a hacer** (en su ficha). El atleta hace el ejercicio bien y, al
+  lado, mal.
+- **Bien frente a mal:** **dos atletas lado a lado y sincronizados.** El correcto lleva una marca clara (✓ verde,
+  «Técnica correcta») y el incorrecto otra (✗ rojo, con el error común).
+- **Antes de animar los 252:** primero se manda a los fundadores una **foto del hombre y la mujer en pose** (de frente y
+  de lado) para que la aprueben.
+- **Origen:** lo hace Claude, gratis, por código (cuerpo base CC0 de MakeHuman y movimientos programados).
+- **Material:** se ve todo: barra, discos, mancuernas, banco, poleas y máquinas.
+- **Ropa:** la que mejor deje ver la técnica, por ejemplo hasta dónde baja la barra. Mínima, para que se vean los
+  músculos, sin rasgos que distraigan. Puede llevar detalles de Volta si ayudan.
+- **Controles:**
+  - velocidad (1×, 0,5× y 0,25×);
+  - vistas rápidas (frente, lado y espalda) y girar con el dedo;
+  - músculos encendidos o apagados;
+  - pausa.
+
+  Claude puede quitar alguno que no aporte o añadir otro mejor.
+- **Móvil lento:** se pasa solo a un vídeo grabado del mismo atleta.
