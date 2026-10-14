@@ -3208,7 +3208,9 @@
   "With the screen locked": "画面ロック中も",
   "Your plan for today": "あなたの今日のプラン",
   "Your streak is in danger": "連続記録がピンチです",
-  "Zeus has your workout ready. Let's go!": "ゼウスがワークアウトを用意しました。さあ、始めましょう！"
+  "Zeus has your workout ready. Let's go!": "ゼウスがワークアウトを用意しました。さあ、始めましょう！",
+  "+{0} today": "今日 +{0}",
+  "Wed": "水"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "種目 {s1}/{s2}",

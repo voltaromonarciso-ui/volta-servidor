@@ -3208,7 +3208,9 @@
   "With the screen locked": "والشاشة مقفلة",
   "Your plan for today": "خطتك لليوم",
   "Your streak is in danger": "سلسلتك في خطر",
-  "Zeus has your workout ready. Let's go!": "زيوس جهّز تمرينك. هيا بنا!"
+  "Zeus has your workout ready. Let's go!": "زيوس جهّز تمرينك. هيا بنا!",
+  "+{0} today": "+{0} اليوم",
+  "Wed": "الأربعاء"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "التمرين {s1} من {s2}",

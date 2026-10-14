@@ -3592,6 +3592,30 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 .vx-nt-time.off{opacity:.5}
 .vx-nt-time input{width:auto;min-width:110px;padding:8px 12px!important;margin:0;font-size:16px;text-align:center}
 .vx-nt-foot{text-align:center;font-size:12.5px;margin:12px 0 4px}
+
+/* ===== Tarjetas plegables (misiones, recuperación) ===== */
+.vx-fold-h{cursor:pointer;align-items:center;gap:8px;min-height:32px}
+.vx-fold-h>b{flex:1}
+.vx-fold-ic{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--ln);color:var(--ac);font-size:13px;flex:none;transition:transform .2s}
+.vx-fold:not(.open){padding-bottom:12px}
+.vx-fold:not(.open) .vx-fold-h{margin-bottom:0}
+.vx-fold.open .vx-fold-h{margin-bottom:6px}
+
+/* ===== «Tu Olimpo» en esquema (Inicio) ===== */
+.vx-oly-s{gap:6px!important;justify-content:flex-start}
+.vx-oly-head{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:22px;line-height:1}
+.vx-oly-head .mu{font-size:11.5px;line-height:1.2}
+.vx-oly-s .vx-oly-rk{font-size:15px;font-weight:900;line-height:1.15;color:var(--rc,var(--ac))}
+.vx-oly-s .bar{width:100%;margin:2px 0 0!important;height:5px}
+.vx-oly-ls{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;width:100%;font-size:12.5px}
+.vx-oly-ls li{display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.vx-oly-ls b{font-size:14px}
+.vx-oly-today{color:var(--mu)}
+
+/* ===== Menos texto (directiva de los fundadores, 14-10-2026): fuera subtítulos que no aportan ===== */
+.vx-duo-c .mu,.vx-dtag{display:none}
+.vx>.card.row[onclick^="go('explore')"] .mu,.vx>.li[onclick^="go('subs')"] .mu{display:none}
+.vx-duo-c{min-height:0!important;justify-content:center}
 </style>
 <script>
 /* VOLTA · dibujante de platos: cada ingrediente con su forma real, en plato, cuenco o vaso, con luz y sombra.
@@ -7154,12 +7178,30 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
   /* ───────────── 1. Misiones diarias ───────────── */
   // 3 misiones fijas (entrenar, comer, beber) + 2 que cambian cada día, elegidas de un grupo de 11.
   // El sorteo depende de la fecha: todo el día ves las mismas y mañana tocan otras.
-  const POOL = ['sets', 'vol', 'groups', 'newex', 'protein', 'meals3', 'water3', 'weigh', 'pr', 'early', 'finish'];
+  // Misiones del día: una de entreno y otra de hábito, sin repetir las 3 fijas (entrenar, 2 comidas, 2 L de agua) y
+  // solo si son alcanzables para ti (según tu historial anterior a hoy, así no cambian a lo largo del día).
   function dailyPicks(k) {
     let h = 0; for (const ch of String(k)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    const out = [], pool = POOL.slice();
-    while (out.length < 2 && pool.length) { h = (h * 1103515245 + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
-    return out;
+    const rnd = (n) => { h = (h * 1103515245 + 12345) >>> 0; return h % n; };
+    const L = realLog().filter((l) => lk(l.t) < k && l.ty !== 'warmup');
+    const byDay = {}; L.forEach((l) => { (byDay[lk(l.t)] = byDay[lk(l.t)] || []).push(l); });
+    const sessions = Object.values(byDay).filter((d) => d.length >= 3);
+    const avg = (f) => (sessions.length ? sessions.reduce((a, d) => a + f(d), 0) / sessions.length : 0);
+    const avgSets = avg((d) => d.length), avgVol = avg((d) => d.reduce((a, l) => a + (l.w || 0) * (l.r || 0), 0));
+    const exSeen = new Set(L.map((l) => l.ex)).size;
+    const train = ['groups'];
+    if (!sessions.length || avgSets >= 9) train.push('sets');
+    if (avgVol >= 4000) train.push('vol');
+    if (exSeen >= 8) train.push('newex');
+    if (sessions.length >= 3) train.push('pr');
+    const habit = [];
+    const week = Array.from({ length: 7 }, (_, i) => dayOf(lk(Date.now() - (i + 1) * 864e5)));
+    if (week.some((d) => Array.isArray(d.e) && d.e.some((e) => e && +e.p > 0))) habit.push('protein');
+    const lastW = Array.isArray(S.wts) ? S.wts.map((w) => w && w.d).filter(Boolean).sort().pop() : null;
+    if (!lastW || (Date.now() - new Date(lastW + 'T12:00').getTime()) / 864e5 >= 6) habit.push('weigh');
+    const a = train.splice(rnd(train.length), 1)[0];
+    const b = habit.length ? habit[rnd(habit.length)] : train.length ? train[rnd(train.length)] : null;
+    return [a, b].filter(Boolean);
   }
   function proteinGoal() {
     try { const c = NUTR.calc(NUTR.prof()); if (c && c.ok && c.pr > 0) return Math.round(c.pr); } catch (e) { /* sin perfil */ }
@@ -7186,9 +7228,7 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
     const newEx = today.some((l) => !seen.has(l.ex));
     const best = {}; before.forEach((l) => { best[l.ex] = Math.max(best[l.ex] || 0, l.w || 0); });
     const pr = today.some((l) => best[l.ex] > 0 && (l.w || 0) > best[l.ex]);
-    const early = today.some((l) => new Date(l.t).getHours() < 10);
     const weighed = Array.isArray(S.wts) && S.wts.some((w) => w && w.d === new Date(now).toISOString().slice(0, 10));
-    const finished = !!(S.done && S.done[k]);
     const pg = proteinGoal();
     const X = {
       sets: { icon: '🎯', label: t('mSets'), done: today.length >= 12, prog: Math.min(1, today.length / 12), txt: Math.min(today.length, 12) + '/12', act: goT },
@@ -7196,12 +7236,8 @@ Glúteo mayor, tensor de la fascia lata|Gluteus maximus, TFL|Grand fessier, tens
       groups: { icon: '🫀', label: t('mGroups'), done: groups >= 2, prog: Math.min(1, groups / 2), txt: Math.min(groups, 2) + '/2', act: goT },
       newex: { icon: '🧭', label: t('mNewEx'), done: newEx, prog: newEx ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('train');go('lib')">${t('go')}</button>` },
       protein: { icon: '🥩', label: t('mProt').replace('{n}', pg), done: prot >= pg, prog: Math.min(1, prot / pg), txt: Math.min(prot, pg) + '/' + pg + ' g', act: goN },
-      meals3: { icon: '🥗', label: t('mMeals3'), done: meals >= 3, prog: Math.min(1, meals / 3), txt: Math.min(meals, 3) + '/3', act: goN },
-      water3: { icon: '🌊', label: t('mWater3'), done: water >= 3000, prog: Math.min(1, water / 3000), txt: L2(water) + '/3 L', act: sip },
       weigh: { icon: '⚖️', label: t('mWeigh'), done: weighed, prog: weighed ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('prog');go('pg:body')">${t('go')}</button>` },
       pr: { icon: '🏆', label: t('mPr'), done: pr, prog: pr ? 1 : 0, txt: '', act: goT },
-      early: { icon: '🌅', label: t('mEarly'), done: early, prog: early ? 1 : 0, txt: '', act: goT },
-      finish: { icon: '🏁', label: t('mFinish'), done: finished, prog: finished ? 1 : 0, txt: '', act: goT },
     };
     return core.concat(dailyPicks(k).map((id) => Object.assign({ id, daily: true }, X[id])));
   }
@@ -9578,7 +9614,7 @@ Domingo|Sunday|Dimanche|Domingo
   if (typeof S === 'undefined' || typeof R !== 'function' || !window.vxTr) return;
   const XL = window.VXL2 || ['de', 'it', 'ru', 'ar', 'tr', 'ja', 'ko', 'zh', 'hi'];
   const RTL = { ar: 1 };
-  const VER = '99b24c37f6';
+  const VER = 'f298ddffbd';
   const NUM = /\d+(?:[.,]\d+)*/g;
   const dicts = {}; // idioma → { s, up, pats, memo } | 'loading' | 'error'
 
@@ -10530,7 +10566,7 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
      2. Tres fichas en fila: Racha 🔥 · Liga 🏆 · Voltios ⚡, y debajo el objetivo de la semana.
      3. Comidas en una línea con «Registrar comida».   (Fuera: «Ver progreso», el anillo grande de calorías y el
         resumen repetido; todo eso está en sus pestañas.)
-   Entrenos: misiones (3 a la vista + «Ver todas»), recuperación plegada, Biblioteca y Favoritos en dos fichas,
+   Entrenos: misiones y recuperación plegables (se abren y cierran tocando su cabecera), Biblioteca y Favoritos en dos fichas,
    sin la tarjeta de Zeus (ya tiene su botón flotante).
    Reorganiza lo que ya pintan los demás módulos (textos ya traducidos, mismos onclick); no cambia datos. */
 (function () {
@@ -10544,6 +10580,20 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
   const tr = (s) => (window.vxTr ? window.vxTr(s) : s);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const nf = (n) => Math.round(+n || 0).toLocaleString(S.lang || 'es');
+
+  // «Tu Olimpo» en esquema: emblema, rango, barra al siguiente y dos datos (Voltios y lo ganado hoy)
+  function olyTile(o) {
+    const row = o.querySelector('.row'), g = row && row.querySelector('.g'); if (!g) return;
+    const em = row.firstChild, label = g.querySelector('.mu'), rk = g.querySelector('.vx-oly-rk'), info = g.querySelector('.mu:last-child'), bar = o.querySelector('.bar');
+    const tot = info && info.querySelector('b'), today = info ? info.textContent.split('·').pop().trim() : '';
+    const head = el('div', 'vx-oly-head'); if (em) head.appendChild(em); if (label) head.appendChild(label);
+    const list = el('ul', 'vx-oly-ls');
+    if (tot) { const li = el('li'); li.appendChild(tot); list.appendChild(li); }
+    if (today) list.appendChild(el('li', 'vx-oly-today', `<span aria-hidden="true">📈</span>${today.replace(/[&<>]/g, '')}`));
+    o.textContent = '';
+    [head, rk, bar, list].forEach((x) => { if (x) o.appendChild(x); });
+    o.classList.add('vx-oly-s');
+  }
 
   function home(r) {
     if (r.dataset.vxIni === '1') return;
@@ -10571,6 +10621,7 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
       tiles.forEach((t) => { t.classList.add('vx-tile'); row.appendChild(t); });
       const goal = oly && oly.querySelector('.vx-oly-goal');
       if (goal) { const g = el('div', 'card vx-goalbar'); g.appendChild(goal); const v = window.vxVolt ? window.vxVolt() : null; if (v && v.goal) { const b = el('div', 'bar'); b.innerHTML = `<i style="width:${Math.min(100, v.weekDone / v.goal * 100)}%"></i>`; g.appendChild(b); } row.after(g); }
+      if (oly) olyTile(oly);
     }
     // 3. Comidas en una línea
     const quick = hasClick(r, /vxFoodOpen\(|tab\('nut'\)/), kcal = byClick(r, /^go\('ngoal'\)/, '.card');
@@ -10585,23 +10636,26 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
     r.dataset.vxIni = '1';
   }
 
+  // Tarjeta plegable: la primera fila es la cabecera (botón con flecha); `sel` es lo que se oculta al cerrar
+  window.vxFold = (k) => { S[k] = S[k] ? 0 : 1; R(); };
+  function fold(card, key, sel) {
+    if (!card || card.dataset.vxFold) return;
+    const head = card.firstElementChild; if (!head) return;
+    card.dataset.vxFold = '1'; card.classList.add('vx-fold');
+    const open = !!S[key];
+    head.classList.add('vx-fold-h'); head.setAttribute('role', 'button'); head.tabIndex = 0;
+    head.setAttribute('aria-expanded', String(open)); head.setAttribute('onclick', `vxFold('${key}')`);
+    head.setAttribute('onkeydown', `if(event.key==='Enter'||event.key===' '){event.preventDefault();vxFold('${key}')}`);
+    head.appendChild(el('span', 'vx-fold-ic', open ? '▴' : '▾')).setAttribute('aria-hidden', 'true');
+    card.classList.toggle('open', open);
+    if (!open) card.querySelectorAll(sel).forEach((x) => { x.style.display = 'none'; });
+  }
+
   function train(r) {
     if (r.dataset.vxIni === '1') return;
-    // misiones: 3 a la vista
-    const mis = byClass(r, 'vx-missions');
-    if (mis) {
-      const rows = [...mis.querySelectorAll('.vx-mrow')];
-      if (rows.length > 3 && !S.vxMisAll) {
-        rows.slice(3).forEach((x) => { x.style.display = 'none'; });
-        const b = el('button', 'vx-more', `${tr('Ver todas')} (${rows.length}) ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxMisAll=1;R()'); mis.appendChild(b);
-      }
-    }
-    // recuperación plegada
-    const rec = byClass(r, 'vx-rec');
-    if (rec && !S.vxRecOpen) {
-      const grid = rec.querySelector('.vx-recgrid');
-      if (grid) { grid.style.display = 'none'; const b = el('button', 'vx-more', `${tr('Ver mapa muscular')} ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxRecOpen=1;R()'); rec.appendChild(b); }
-    }
+    // Misiones y recuperación: se abren y se cierran tocando la cabecera (cerradas, solo el resumen)
+    fold(byClass(r, 'vx-missions'), 'vxMisOpen', '.vx-mrow');
+    fold(byClass(r, 'vx-rec'), 'vxRecOpen', '.vx-recgrid');
     // Biblioteca y Favoritos en dos fichas
     const lib = byClick(r, /^go\('lib'\)/, '.card'), fav = byClick(r, /^go\('favs'\)/, '.card');
     if (lib && fav) { const duo = el('div', 'vx-duo'); r.insertBefore(duo, lib); duo.append(lib, fav); lib.classList.add('vx-duo-c'); fav.classList.add('vx-duo-c'); }
@@ -10629,10 +10683,6 @@ Serie hecha (tocar para borrarla)|Set done (tap to delete)|Série faite (touche 
     } catch (e) { /* se queda la pantalla tal cual */ }
   };
 
-  if (window.vxAddTr) window.vxAddTr(`
-Ver todas|See all|Tout voir|Ver todas
-Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
-`);
 })();
 
 /* VOLTA · Progreso, Nutrición y Perfil con estilo «gaming» (decisión de los fundadores, 12-10-2026).
@@ -10697,6 +10747,24 @@ Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
       [h2, period, metric, evoChart].filter(Boolean).forEach((n) => { at.after(n); at = n; });
       evoChart.classList.add('vx-g-chart');
     }
+    // Limpieza: fuera lo que repite «Tu evolución» o sale vacío sin entrenos reales
+    const num = (e) => parseInt((e && e.textContent.match(/-?\d+/) || [0])[0], 10) || 0;
+    const rs = vp.querySelector('.rs');
+    if (rs) {
+      const k = rs.querySelector('.vsm.k'); if (k) k.remove(); // fuerza/volumen/rendimiento de 7 días: repetido y engañoso a mitad de semana
+      const rows = [...rs.querySelectorAll('.vsm')];
+      if (!rows.some((x) => num(x.querySelector('.mu')) > 0)) { const h = rs.previousElementSibling; if (h && h.tagName === 'H2') h.remove(); rs.remove(); }
+    }
+    const cnt = vp.querySelector('.vcnt');
+    if (cnt && ![...cnt.querySelectorAll('b')].some((x) => num(x) > 0)) cnt.remove();
+  }
+
+  // Anatomía: solo el cuerpo (los rangos de cada músculo ya están en la app; aquí sobraban)
+  function anat(m) {
+    const pane = m.querySelector('.vpane'); if (!pane || pane.dataset.vxG === '1') return;
+    pane.dataset.vxG = '1';
+    [...pane.children].forEach((c) => { if (!c.classList.contains('vbc')) c.remove(); });
+    const pg = m.firstElementChild; if (pg) [...pg.children].forEach((c) => { if (!c.classList.contains('vp')) c.style.display = 'none'; });
   }
 
   function nut(r) {
@@ -10813,6 +10881,7 @@ Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
       if (top) return;
       const m = document.getElementById('m'); if (!m) return;
       if (S.tab === 'prog' && S.pgt != 1) prog(m);
+      else if (S.tab === 'prog') anat(m);
       else if (S.tab === 'nut' && (S.nsub || 'day') === 'day') nut(m);
       else if (S.tab === 'prof') { const r = root(); if (r) prof(r); }
     } catch (e) { /* se queda la pantalla tal cual */ }
@@ -10988,7 +11057,7 @@ No se pudo crear la imagen|Couldn't create the image|Impossible de créer l’im
     const a = answers(), base = baseRoutine(), res = adapt(base ? base.ex : DEF, a);
     const z = typeof window.vxZeus === 'function' ? window.vxZeus('piensa', 84) : '';
     let h = bk(tr('Antes de empezar'));
-    h += `<div class="card vx-ck-head">${z}<div><b>${tr('¿Cómo vienes hoy?')}</b><div class="mu">${tr('Adapto tu entreno en un momento.')}</div></div></div>`;
+    h += `<div class="card vx-ck-head">${z}<div><b>${tr('¿Cómo vienes hoy?')}</b></div></div>`;
     ROWS.forEach(([k, ic, q, opts]) => {
       h += `<div class="vx-ck-q" role="group" aria-label="${esc(tr(q))}"><div class="vx-ck-l"><span aria-hidden="true">${ic}</span>${tr(q)}</div><div class="vx-ck-opts">` +
         opts.map(([v, l]) => `<button type="button" class="chip${a[k] === v ? ' on' : ''}" aria-pressed="${a[k] === v}" onclick="vxCkSet('${k}','${v}')">${tr(l)}</button>`).join('') + '</div></div>';
@@ -10999,7 +11068,6 @@ No se pudo crear la imagen|Couldn't create the image|Impossible de créer l’im
       (a.d !== 'no' ? `<div class="vx-ck-warn" role="note">⚠️ ${tr('Si el dolor es fuerte o no se va, para y consulta a un profesional sanitario.')}</div>` : '') + '</div>';
     h += `<button class="btn vx-ck-go" onclick="vxCkGo()">⚡ ${tr(res.changes.length ? 'Empezar entreno adaptado' : 'Empezar entreno')}</button>`;
     h += `<button class="btn o vx-ck-skip" onclick="vxCkSkip()">${tr('Saltar')}</button>`;
-    h += `<div class="mu vx-ck-foot">${tr('Puedes desactivar estas preguntas en Ajustes › General.')}</div>`;
     return h;
   };
 
@@ -11149,7 +11217,7 @@ Entrenamiento rápido|Quick workout|Séance rapide|Treino rápido
 
   // ── Navegador: comprobar mientras la app está viva ──
   function showWeb(msg, tag) {
-    if (document.visibilityState === 'visible') { if (window.vxPushInbox) window.vxPushInbox(msg.title.slice(0, 2), msg.title.slice(2).trim() + ' · ' + msg.body, "tab('home')"); return; }
+    if (document.visibilityState === 'visible') { if (window.vxPushInbox) window.vxPushInbox(msg.title.slice(0, 2), msg.title.slice(2).trim(), "tab('home')"); return; } // en el buzón, solo el título (corto y traducible)
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const opts = { body: msg.body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'volta-' + tag };
     const show = (reg) => (reg ? reg.showNotification(msg.title, opts) : new Notification(msg.title, opts));

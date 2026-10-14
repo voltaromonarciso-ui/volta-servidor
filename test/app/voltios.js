@@ -10,7 +10,7 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.evaluate(() => { S.onboarded = true; S.demo = false; S.lang = 'es'; S.log = []; S.done = {}; S.nlog = {}; S.vx = {}; S.userProfile = Object.assign(S.userProfile || {}, { days: 3, weight: 75 }); localStorage.removeItem('vx:labors'); S.stack = []; tab('home'); });
   await p.waitForTimeout(300);
   let t = await p.evaluate(() => document.getElementById('m').innerText);
-  ok(/Tu Olimpo/.test(t) && /Mortal I/.test(t) && /0 Voltios/.test(t), 'Inicio: tarjeta Tu Olimpo con Mortal I y 0 Voltios');
+  ok(/Tu Olimpo/.test(t) && /Mortal I/.test(t) && /⚡\s*0\b/.test(t), 'Inicio: tarjeta Tu Olimpo con Mortal I y ⚡ 0');
   ok(!/Favor del Oráculo|Peregrino/.test(t), 'ya no hay un segundo sistema de XP (Favor del Oráculo)');
   // un día de entreno: 6 series efectivas
   const day = (d, w, n, wt) => p.evaluate(({ d, w, n, wt, bp }) => { const t0 = Date.now() - d * 864e5; for (let k = 0; k < n; k++) S.log.push({ ex: bp, w: wt, r: 8, t: t0 + k * 6e4, ty: 'effective' }); }, { d, w, n, wt, bp });

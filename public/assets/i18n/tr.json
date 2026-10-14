@@ -3208,7 +3208,9 @@
   "With the screen locked": "Ekran kilitliyken",
   "Your plan for today": "Bugünkü planın",
   "Your streak is in danger": "Serin tehlikede",
-  "Zeus has your workout ready. Let's go!": "Zeus antrenmanını hazırladı. Hadi başlayalım!"
+  "Zeus has your workout ready. Let's go!": "Zeus antrenmanını hazırladı. Hadi başlayalım!",
+  "+{0} today": "bugün +{0}",
+  "Wed": "Çar"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "Egzersiz {s1}/{s2}",

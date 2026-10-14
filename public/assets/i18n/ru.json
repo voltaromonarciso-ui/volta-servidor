@@ -3208,7 +3208,9 @@
   "With the screen locked": "При заблокированном экране",
   "Your plan for today": "Твой план на сегодня",
   "Your streak is in danger": "Твоя серия под угрозой",
-  "Zeus has your workout ready. Let's go!": "Зевс подготовил тебе тренировку. Вперёд!"
+  "Zeus has your workout ready. Let's go!": "Зевс подготовил тебе тренировку. Вперёд!",
+  "+{0} today": "+{0} сегодня",
+  "Wed": "Ср"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "Упражнение {s1} из {s2}",

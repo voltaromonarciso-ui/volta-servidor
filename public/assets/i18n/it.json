@@ -3208,7 +3208,9 @@
   "With the screen locked": "Con lo schermo bloccato",
   "Your plan for today": "Il tuo piano per oggi",
   "Your streak is in danger": "La tua serie è in pericolo",
-  "Zeus has your workout ready. Let's go!": "Zeus ha pronto il tuo allenamento. Andiamo!"
+  "Zeus has your workout ready. Let's go!": "Zeus ha pronto il tuo allenamento. Andiamo!",
+  "+{0} today": "+{0} oggi",
+  "Wed": "Mer"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "Esercizio {s1} di {s2}",

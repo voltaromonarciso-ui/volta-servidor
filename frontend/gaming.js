@@ -60,6 +60,24 @@
       [h2, period, metric, evoChart].filter(Boolean).forEach((n) => { at.after(n); at = n; });
       evoChart.classList.add('vx-g-chart');
     }
+    // Limpieza: fuera lo que repite «Tu evolución» o sale vacío sin entrenos reales
+    const num = (e) => parseInt((e && e.textContent.match(/-?\d+/) || [0])[0], 10) || 0;
+    const rs = vp.querySelector('.rs');
+    if (rs) {
+      const k = rs.querySelector('.vsm.k'); if (k) k.remove(); // fuerza/volumen/rendimiento de 7 días: repetido y engañoso a mitad de semana
+      const rows = [...rs.querySelectorAll('.vsm')];
+      if (!rows.some((x) => num(x.querySelector('.mu')) > 0)) { const h = rs.previousElementSibling; if (h && h.tagName === 'H2') h.remove(); rs.remove(); }
+    }
+    const cnt = vp.querySelector('.vcnt');
+    if (cnt && ![...cnt.querySelectorAll('b')].some((x) => num(x) > 0)) cnt.remove();
+  }
+
+  // Anatomía: solo el cuerpo (los rangos de cada músculo ya están en la app; aquí sobraban)
+  function anat(m) {
+    const pane = m.querySelector('.vpane'); if (!pane || pane.dataset.vxG === '1') return;
+    pane.dataset.vxG = '1';
+    [...pane.children].forEach((c) => { if (!c.classList.contains('vbc')) c.remove(); });
+    const pg = m.firstElementChild; if (pg) [...pg.children].forEach((c) => { if (!c.classList.contains('vp')) c.style.display = 'none'; });
   }
 
   function nut(r) {
@@ -176,6 +194,7 @@
       if (top) return;
       const m = document.getElementById('m'); if (!m) return;
       if (S.tab === 'prog' && S.pgt != 1) prog(m);
+      else if (S.tab === 'prog') anat(m);
       else if (S.tab === 'nut' && (S.nsub || 'day') === 'day') nut(m);
       else if (S.tab === 'prof') { const r = root(); if (r) prof(r); }
     } catch (e) { /* se queda la pantalla tal cual */ }

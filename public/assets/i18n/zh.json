@@ -3208,7 +3208,9 @@
   "With the screen locked": "锁屏时也能收到",
   "Your plan for today": "你今天的计划",
   "Your streak is in danger": "你的连续打卡告急",
-  "Zeus has your workout ready. Let's go!": "宙斯已为你备好训练。开练吧！"
+  "Zeus has your workout ready. Let's go!": "宙斯已为你备好训练。开练吧！",
+  "+{0} today": "今天 +{0}",
+  "Wed": "周三"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "第 {s1} 个动作，共 {s2} 个",

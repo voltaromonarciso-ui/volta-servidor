@@ -4,7 +4,7 @@
      2. Tres fichas en fila: Racha 🔥 · Liga 🏆 · Voltios ⚡, y debajo el objetivo de la semana.
      3. Comidas en una línea con «Registrar comida».   (Fuera: «Ver progreso», el anillo grande de calorías y el
         resumen repetido; todo eso está en sus pestañas.)
-   Entrenos: misiones (3 a la vista + «Ver todas»), recuperación plegada, Biblioteca y Favoritos en dos fichas,
+   Entrenos: misiones y recuperación plegables (se abren y cierran tocando su cabecera), Biblioteca y Favoritos en dos fichas,
    sin la tarjeta de Zeus (ya tiene su botón flotante).
    Reorganiza lo que ya pintan los demás módulos (textos ya traducidos, mismos onclick); no cambia datos. */
 (function () {
@@ -18,6 +18,20 @@
   const tr = (s) => (window.vxTr ? window.vxTr(s) : s);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const nf = (n) => Math.round(+n || 0).toLocaleString(S.lang || 'es');
+
+  // «Tu Olimpo» en esquema: emblema, rango, barra al siguiente y dos datos (Voltios y lo ganado hoy)
+  function olyTile(o) {
+    const row = o.querySelector('.row'), g = row && row.querySelector('.g'); if (!g) return;
+    const em = row.firstChild, label = g.querySelector('.mu'), rk = g.querySelector('.vx-oly-rk'), info = g.querySelector('.mu:last-child'), bar = o.querySelector('.bar');
+    const tot = info && info.querySelector('b'), today = info ? info.textContent.split('·').pop().trim() : '';
+    const head = el('div', 'vx-oly-head'); if (em) head.appendChild(em); if (label) head.appendChild(label);
+    const list = el('ul', 'vx-oly-ls');
+    if (tot) { const li = el('li'); li.appendChild(tot); list.appendChild(li); }
+    if (today) list.appendChild(el('li', 'vx-oly-today', `<span aria-hidden="true">📈</span>${today.replace(/[&<>]/g, '')}`));
+    o.textContent = '';
+    [head, rk, bar, list].forEach((x) => { if (x) o.appendChild(x); });
+    o.classList.add('vx-oly-s');
+  }
 
   function home(r) {
     if (r.dataset.vxIni === '1') return;
@@ -45,6 +59,7 @@
       tiles.forEach((t) => { t.classList.add('vx-tile'); row.appendChild(t); });
       const goal = oly && oly.querySelector('.vx-oly-goal');
       if (goal) { const g = el('div', 'card vx-goalbar'); g.appendChild(goal); const v = window.vxVolt ? window.vxVolt() : null; if (v && v.goal) { const b = el('div', 'bar'); b.innerHTML = `<i style="width:${Math.min(100, v.weekDone / v.goal * 100)}%"></i>`; g.appendChild(b); } row.after(g); }
+      if (oly) olyTile(oly);
     }
     // 3. Comidas en una línea
     const quick = hasClick(r, /vxFoodOpen\(|tab\('nut'\)/), kcal = byClick(r, /^go\('ngoal'\)/, '.card');
@@ -59,23 +74,26 @@
     r.dataset.vxIni = '1';
   }
 
+  // Tarjeta plegable: la primera fila es la cabecera (botón con flecha); `sel` es lo que se oculta al cerrar
+  window.vxFold = (k) => { S[k] = S[k] ? 0 : 1; R(); };
+  function fold(card, key, sel) {
+    if (!card || card.dataset.vxFold) return;
+    const head = card.firstElementChild; if (!head) return;
+    card.dataset.vxFold = '1'; card.classList.add('vx-fold');
+    const open = !!S[key];
+    head.classList.add('vx-fold-h'); head.setAttribute('role', 'button'); head.tabIndex = 0;
+    head.setAttribute('aria-expanded', String(open)); head.setAttribute('onclick', `vxFold('${key}')`);
+    head.setAttribute('onkeydown', `if(event.key==='Enter'||event.key===' '){event.preventDefault();vxFold('${key}')}`);
+    head.appendChild(el('span', 'vx-fold-ic', open ? '▴' : '▾')).setAttribute('aria-hidden', 'true');
+    card.classList.toggle('open', open);
+    if (!open) card.querySelectorAll(sel).forEach((x) => { x.style.display = 'none'; });
+  }
+
   function train(r) {
     if (r.dataset.vxIni === '1') return;
-    // misiones: 3 a la vista
-    const mis = byClass(r, 'vx-missions');
-    if (mis) {
-      const rows = [...mis.querySelectorAll('.vx-mrow')];
-      if (rows.length > 3 && !S.vxMisAll) {
-        rows.slice(3).forEach((x) => { x.style.display = 'none'; });
-        const b = el('button', 'vx-more', `${tr('Ver todas')} (${rows.length}) ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxMisAll=1;R()'); mis.appendChild(b);
-      }
-    }
-    // recuperación plegada
-    const rec = byClass(r, 'vx-rec');
-    if (rec && !S.vxRecOpen) {
-      const grid = rec.querySelector('.vx-recgrid');
-      if (grid) { grid.style.display = 'none'; const b = el('button', 'vx-more', `${tr('Ver mapa muscular')} ›`); b.type = 'button'; b.setAttribute('onclick', 'S.vxRecOpen=1;R()'); rec.appendChild(b); }
-    }
+    // Misiones y recuperación: se abren y se cierran tocando la cabecera (cerradas, solo el resumen)
+    fold(byClass(r, 'vx-missions'), 'vxMisOpen', '.vx-mrow');
+    fold(byClass(r, 'vx-rec'), 'vxRecOpen', '.vx-recgrid');
     // Biblioteca y Favoritos en dos fichas
     const lib = byClick(r, /^go\('lib'\)/, '.card'), fav = byClick(r, /^go\('favs'\)/, '.card');
     if (lib && fav) { const duo = el('div', 'vx-duo'); r.insertBefore(duo, lib); duo.append(lib, fav); lib.classList.add('vx-duo-c'); fav.classList.add('vx-duo-c'); }
@@ -103,8 +121,4 @@
     } catch (e) { /* se queda la pantalla tal cual */ }
   };
 
-  if (window.vxAddTr) window.vxAddTr(`
-Ver todas|See all|Tout voir|Ver todas
-Ver mapa muscular|View muscle map|Voir la carte musculaire|Ver mapa muscular
-`);
 })();

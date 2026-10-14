@@ -68,7 +68,7 @@
 
   // ── Navegador: comprobar mientras la app está viva ──
   function showWeb(msg, tag) {
-    if (document.visibilityState === 'visible') { if (window.vxPushInbox) window.vxPushInbox(msg.title.slice(0, 2), msg.title.slice(2).trim() + ' · ' + msg.body, "tab('home')"); return; }
+    if (document.visibilityState === 'visible') { if (window.vxPushInbox) window.vxPushInbox(msg.title.slice(0, 2), msg.title.slice(2).trim(), "tab('home')"); return; } // en el buzón, solo el título (corto y traducible)
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const opts = { body: msg.body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'volta-' + tag };
     const show = (reg) => (reg ? reg.showNotification(msg.title, opts) : new Notification(msg.title, opts));

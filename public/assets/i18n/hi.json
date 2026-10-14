@@ -3208,7 +3208,9 @@
   "With the screen locked": "स्क्रीन लॉक होने पर भी",
   "Your plan for today": "आज के लिए तुम्हारा प्लान",
   "Your streak is in danger": "तुम्हारी स्ट्रीक खतरे में है",
-  "Zeus has your workout ready. Let's go!": "ज़ीउस ने तुम्हारा वर्कआउट तैयार कर दिया है। चलो शुरू करें!"
+  "Zeus has your workout ready. Let's go!": "ज़ीउस ने तुम्हारा वर्कआउट तैयार कर दिया है। चलो शुरू करें!",
+  "+{0} today": "आज +{0}",
+  "Wed": "बुध"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "{s2} में से एक्सरसाइज़ {s1}",

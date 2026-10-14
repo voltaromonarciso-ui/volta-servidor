@@ -147,7 +147,7 @@
     const a = answers(), base = baseRoutine(), res = adapt(base ? base.ex : DEF, a);
     const z = typeof window.vxZeus === 'function' ? window.vxZeus('piensa', 84) : '';
     let h = bk(tr('Antes de empezar'));
-    h += `<div class="card vx-ck-head">${z}<div><b>${tr('¿Cómo vienes hoy?')}</b><div class="mu">${tr('Adapto tu entreno en un momento.')}</div></div></div>`;
+    h += `<div class="card vx-ck-head">${z}<div><b>${tr('¿Cómo vienes hoy?')}</b></div></div>`;
     ROWS.forEach(([k, ic, q, opts]) => {
       h += `<div class="vx-ck-q" role="group" aria-label="${esc(tr(q))}"><div class="vx-ck-l"><span aria-hidden="true">${ic}</span>${tr(q)}</div><div class="vx-ck-opts">` +
         opts.map(([v, l]) => `<button type="button" class="chip${a[k] === v ? ' on' : ''}" aria-pressed="${a[k] === v}" onclick="vxCkSet('${k}','${v}')">${tr(l)}</button>`).join('') + '</div></div>';
@@ -158,7 +158,6 @@
       (a.d !== 'no' ? `<div class="vx-ck-warn" role="note">⚠️ ${tr('Si el dolor es fuerte o no se va, para y consulta a un profesional sanitario.')}</div>` : '') + '</div>';
     h += `<button class="btn vx-ck-go" onclick="vxCkGo()">⚡ ${tr(res.changes.length ? 'Empezar entreno adaptado' : 'Empezar entreno')}</button>`;
     h += `<button class="btn o vx-ck-skip" onclick="vxCkSkip()">${tr('Saltar')}</button>`;
-    h += `<div class="mu vx-ck-foot">${tr('Puedes desactivar estas preguntas en Ajustes › General.')}</div>`;
     return h;
   };
 

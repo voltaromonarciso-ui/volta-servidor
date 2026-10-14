@@ -660,3 +660,27 @@ body{background:radial-gradient(900px 420px at 50% -140px,color-mix(in srgb,var(
 .vx-nt-time.off{opacity:.5}
 .vx-nt-time input{width:auto;min-width:110px;padding:8px 12px!important;margin:0;font-size:16px;text-align:center}
 .vx-nt-foot{text-align:center;font-size:12.5px;margin:12px 0 4px}
+
+/* ===== Tarjetas plegables (misiones, recuperación) ===== */
+.vx-fold-h{cursor:pointer;align-items:center;gap:8px;min-height:32px}
+.vx-fold-h>b{flex:1}
+.vx-fold-ic{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--ln);color:var(--ac);font-size:13px;flex:none;transition:transform .2s}
+.vx-fold:not(.open){padding-bottom:12px}
+.vx-fold:not(.open) .vx-fold-h{margin-bottom:0}
+.vx-fold.open .vx-fold-h{margin-bottom:6px}
+
+/* ===== «Tu Olimpo» en esquema (Inicio) ===== */
+.vx-oly-s{gap:6px!important;justify-content:flex-start}
+.vx-oly-head{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:22px;line-height:1}
+.vx-oly-head .mu{font-size:11.5px;line-height:1.2}
+.vx-oly-s .vx-oly-rk{font-size:15px;font-weight:900;line-height:1.15;color:var(--rc,var(--ac))}
+.vx-oly-s .bar{width:100%;margin:2px 0 0!important;height:5px}
+.vx-oly-ls{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;width:100%;font-size:12.5px}
+.vx-oly-ls li{display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.vx-oly-ls b{font-size:14px}
+.vx-oly-today{color:var(--mu)}
+
+/* ===== Menos texto (directiva de los fundadores, 14-10-2026): fuera subtítulos que no aportan ===== */
+.vx-duo-c .mu,.vx-dtag{display:none}
+.vx>.card.row[onclick^="go('explore')"] .mu,.vx>.li[onclick^="go('subs')"] .mu{display:none}
+.vx-duo-c{min-height:0!important;justify-content:center}

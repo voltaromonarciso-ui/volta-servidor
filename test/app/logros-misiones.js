@@ -14,7 +14,8 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   await p.evaluate(() => { S.stack = []; tab('train'); }); await p.waitForTimeout(300);
   ok(await p.evaluate(() => !!document.querySelector('.vx-missions') && !!document.querySelector('.vx-rec')), 'Entrenos: misiones y recuperación');
   await p.screenshot({ path: 'shots/eng-home1.png' });
-  // agua x8 = 2 L
+  // agua x8 = 2 L (con «Misiones de hoy» desplegada)
+  await p.evaluate(() => { S.vxMisOpen = 1; R(); }); await p.waitForTimeout(200);
   for (let i = 0; i < 8; i++) await p.click('.vx-water');
   ok(await p.evaluate(() => S.nlog[lk(Date.now())].w) === 2000, 'botón +250 ml suma agua (2 L)');
   // comidas y entreno → día perfecto

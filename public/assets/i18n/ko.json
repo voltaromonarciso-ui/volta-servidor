@@ -3208,7 +3208,9 @@
   "With the screen locked": "화면이 잠겨 있을 때도",
   "Your plan for today": "오늘 할 운동 플랜",
   "Your streak is in danger": "연속 기록이 위험해요",
-  "Zeus has your workout ready. Let's go!": "제우스가 운동을 준비했어요. 시작해요!"
+  "Zeus has your workout ready. Let's go!": "제우스가 운동을 준비했어요. 시작해요!",
+  "+{0} today": "오늘 +{0}",
+  "Wed": "수"
  },
  "patterns": {
   "Exercise {s1} of {s2}": "운동 {s1} / {s2}",

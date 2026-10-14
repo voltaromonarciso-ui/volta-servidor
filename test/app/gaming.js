@@ -60,6 +60,18 @@ const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) pro
   const d = await dl;
   ok(!!d && /volta-atleta\.png/.test(d.suggestedFilename()), 'Perfil: sin «compartir» del sistema, se descarga la imagen');
 
+  // Progreso sin métricas rotas: sin entrenos reales no salen el resumen ni los contadores vacíos
+  r = await p.evaluate(() => { S.demo = false; S.log = []; S.stack = []; S.pgt = 0; tab('prog'); const vp = document.querySelector('#m .vp'); return { rs: !!vp.querySelector('.rs'), cnt: !!vp.querySelector('.vcnt'), k: !!vp.querySelector('.vsm.k') }; });
+  ok(!r.rs && !r.cnt && !r.k, 'Progreso sin entrenos: sin resumen semanal ni contadores a cero');
+  r = await p.evaluate(() => {
+    const ex = [0, 1, 2, 3]; S.log = [];
+    for (let d = 20; d >= 0; d -= 2) ex.forEach((e, j) => { for (let k = 0; k < 3; k++) S.log.push({ ex: e, w: 50 + j * 5 + (20 - d), r: 8, rir: 2, ty: 'effective', t: Date.now() - d * 864e5 - (j * 3 + k) * 6e4 }); });
+    R(); const vp = document.querySelector('#m .vp'); return { rs: !!vp.querySelector('.rs'), k: !!vp.querySelector('.vsm.k'), charts: vp.querySelectorAll('.vch').length };
+  });
+  ok(r.rs && !r.k && r.charts === 1, 'Progreso con entrenos: resumen por grupos, sin la fila repetida de fuerza/volumen y una sola gráfica');
+  // Inicio: «Tu Olimpo» en esquema
+  r = await p.evaluate(() => { S.demo = true; S.stack = []; tab('home'); const o = document.querySelector('.vx-oly'); return o && { s: o.classList.contains('vx-oly-s'), rk: !!o.querySelector('.vx-oly-rk'), li: o.querySelectorAll('.vx-oly-ls li').length, txt: o.innerText }; });
+  ok(r && r.s && r.rk && r.li >= 1 && /⚡/.test(r.txt), 'Inicio: «Tu Olimpo» en esquema (rango, barra y datos en viñetas) · ' + (r && r.txt.replace(/\n/g, ' | ')));
   // inglés
   await p.evaluate(() => { S.lang = 'en'; S.stack = []; tab('prof'); }); await p.waitForTimeout(300);
   const en = await p.evaluate(() => document.querySelector('#m .vx-g-card').innerText);

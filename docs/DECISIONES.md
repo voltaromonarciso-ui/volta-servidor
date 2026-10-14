@@ -199,3 +199,24 @@ Sin preferencia de los fundadores. Se mantiene el atleta oficial de Volta para e
 - **Cómo se consiguen:** Claude prepara los prompts para la IA de imágenes y los fundadores generan las imágenes.
   Claude las recorta, las optimiza y las mete en la app, como se hizo con las poses de Zeus.
 - **Pendiente de concretar:** si los platos, recetas y alimentos sueltos también llevan foto.
+
+## Decisiones del 14 de octubre de 2026 (limpieza de UX)
+
+- **Menos texto en general:** fuera los subtítulos que no aportan:
+  - Biblioteca y Favoritos;
+  - «Explorar comidas» y «Sustituciones»;
+  - la etiqueta «Del día» en las misiones;
+  - las frases de relleno del check-in de Zeus.
+- **Misiones del día:**
+  - **Reparto:** una de entreno y otra de hábito.
+  - **Sin repetidas:** fuera «3 comidas», «3 L» y «terminar entreno», que repetían las fijas, y «antes de las 10:00»,
+    que era imposible según la hora.
+  - **Alcanzables:** solo las que encajan con tu historial (por ejemplo, «mueve 5.000 kg» solo si sueles llegar).
+- **Misiones y Recuperación muscular:** son plegables y se abren y cierran tocando la cabecera. Cerradas, muestran solo
+  el resumen.
+- **Progreso:**
+  - Fuera la fila «fuerza/volumen/rendimiento» de 7 días: repetía «Tu evolución» y daba números engañosos a mitad de
+    semana.
+  - El resumen semanal y los contadores «Mejoran/Estables/Bajan» solo salen si hay entrenos reales.
+- **Anatomía:** solo el cuerpo, sin leyenda de metales, sin rangos por músculo y sin tarjetas debajo.
+- **Inicio › «Tu Olimpo»:** en esquema: emblema, rango, barra al siguiente rango, ⚡ Voltios y lo ganado hoy.

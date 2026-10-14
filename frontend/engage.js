@@ -76,12 +76,30 @@
   /* ───────────── 1. Misiones diarias ───────────── */
   // 3 misiones fijas (entrenar, comer, beber) + 2 que cambian cada día, elegidas de un grupo de 11.
   // El sorteo depende de la fecha: todo el día ves las mismas y mañana tocan otras.
-  const POOL = ['sets', 'vol', 'groups', 'newex', 'protein', 'meals3', 'water3', 'weigh', 'pr', 'early', 'finish'];
+  // Misiones del día: una de entreno y otra de hábito, sin repetir las 3 fijas (entrenar, 2 comidas, 2 L de agua) y
+  // solo si son alcanzables para ti (según tu historial anterior a hoy, así no cambian a lo largo del día).
   function dailyPicks(k) {
     let h = 0; for (const ch of String(k)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    const out = [], pool = POOL.slice();
-    while (out.length < 2 && pool.length) { h = (h * 1103515245 + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
-    return out;
+    const rnd = (n) => { h = (h * 1103515245 + 12345) >>> 0; return h % n; };
+    const L = realLog().filter((l) => lk(l.t) < k && l.ty !== 'warmup');
+    const byDay = {}; L.forEach((l) => { (byDay[lk(l.t)] = byDay[lk(l.t)] || []).push(l); });
+    const sessions = Object.values(byDay).filter((d) => d.length >= 3);
+    const avg = (f) => (sessions.length ? sessions.reduce((a, d) => a + f(d), 0) / sessions.length : 0);
+    const avgSets = avg((d) => d.length), avgVol = avg((d) => d.reduce((a, l) => a + (l.w || 0) * (l.r || 0), 0));
+    const exSeen = new Set(L.map((l) => l.ex)).size;
+    const train = ['groups'];
+    if (!sessions.length || avgSets >= 9) train.push('sets');
+    if (avgVol >= 4000) train.push('vol');
+    if (exSeen >= 8) train.push('newex');
+    if (sessions.length >= 3) train.push('pr');
+    const habit = [];
+    const week = Array.from({ length: 7 }, (_, i) => dayOf(lk(Date.now() - (i + 1) * 864e5)));
+    if (week.some((d) => Array.isArray(d.e) && d.e.some((e) => e && +e.p > 0))) habit.push('protein');
+    const lastW = Array.isArray(S.wts) ? S.wts.map((w) => w && w.d).filter(Boolean).sort().pop() : null;
+    if (!lastW || (Date.now() - new Date(lastW + 'T12:00').getTime()) / 864e5 >= 6) habit.push('weigh');
+    const a = train.splice(rnd(train.length), 1)[0];
+    const b = habit.length ? habit[rnd(habit.length)] : train.length ? train[rnd(train.length)] : null;
+    return [a, b].filter(Boolean);
   }
   function proteinGoal() {
     try { const c = NUTR.calc(NUTR.prof()); if (c && c.ok && c.pr > 0) return Math.round(c.pr); } catch (e) { /* sin perfil */ }
@@ -108,9 +126,7 @@
     const newEx = today.some((l) => !seen.has(l.ex));
     const best = {}; before.forEach((l) => { best[l.ex] = Math.max(best[l.ex] || 0, l.w || 0); });
     const pr = today.some((l) => best[l.ex] > 0 && (l.w || 0) > best[l.ex]);
-    const early = today.some((l) => new Date(l.t).getHours() < 10);
     const weighed = Array.isArray(S.wts) && S.wts.some((w) => w && w.d === new Date(now).toISOString().slice(0, 10));
-    const finished = !!(S.done && S.done[k]);
     const pg = proteinGoal();
     const X = {
       sets: { icon: '🎯', label: t('mSets'), done: today.length >= 12, prog: Math.min(1, today.length / 12), txt: Math.min(today.length, 12) + '/12', act: goT },
@@ -118,12 +134,8 @@
       groups: { icon: '🫀', label: t('mGroups'), done: groups >= 2, prog: Math.min(1, groups / 2), txt: Math.min(groups, 2) + '/2', act: goT },
       newex: { icon: '🧭', label: t('mNewEx'), done: newEx, prog: newEx ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('train');go('lib')">${t('go')}</button>` },
       protein: { icon: '🥩', label: t('mProt').replace('{n}', pg), done: prot >= pg, prog: Math.min(1, prot / pg), txt: Math.min(prot, pg) + '/' + pg + ' g', act: goN },
-      meals3: { icon: '🥗', label: t('mMeals3'), done: meals >= 3, prog: Math.min(1, meals / 3), txt: Math.min(meals, 3) + '/3', act: goN },
-      water3: { icon: '🌊', label: t('mWater3'), done: water >= 3000, prog: Math.min(1, water / 3000), txt: L2(water) + '/3 L', act: sip },
       weigh: { icon: '⚖️', label: t('mWeigh'), done: weighed, prog: weighed ? 1 : 0, txt: '', act: `<button class="chip" onclick="tab('prog');go('pg:body')">${t('go')}</button>` },
       pr: { icon: '🏆', label: t('mPr'), done: pr, prog: pr ? 1 : 0, txt: '', act: goT },
-      early: { icon: '🌅', label: t('mEarly'), done: early, prog: early ? 1 : 0, txt: '', act: goT },
-      finish: { icon: '🏁', label: t('mFinish'), done: finished, prog: finished ? 1 : 0, txt: '', act: goT },
     };
     return core.concat(dailyPicks(k).map((id) => Object.assign({ id, daily: true }, X[id])));
   }
