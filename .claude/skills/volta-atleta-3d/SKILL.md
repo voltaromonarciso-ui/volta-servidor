@@ -13,7 +13,10 @@ Es un personaje propio y gratuito. No copia el de ninguna otra app.
   - Esqueleto `game_engine` de 53 huesos.
   - Cada vértice lleva su zona muscular (atributo `_MUSCLE`, con las 15 zonas de la app) y su pintura (atributo `_PAINT`):
     piel, pantalón corto, zapatillas u ojos.
-- **Archivo**: `public/assets/models/atleta.bin`. Es un GLB comprimido con deflate y pesa unos 480 KB.
+- **Atleta mujer** (`crear_atleta.py salida.glb mujer`): mismo esqueleto y zonas, físico atlético más suave, top deportivo y
+  pantalón corto. La ropa va en el atributo continuo `_CLOTH` (>0 = tela), así los bordes salen rectos.
+- **Archivos**: `public/assets/models/atleta.bin` (hombre) y `atleta-mujer.bin` (mujer). Son GLB comprimidos con deflate
+  y pesan unos 490 KB cada uno. La app usa el de `S.vx.atleta` (`'hombre'` o `'mujer'`).
   - La app lo descarga solo al abrir la ficha de un ejercicio, junto con Three.js r128 desde cdnjs.
   - Si el móvil no tiene WebGL o falla la descarga, se queda la animación 2D.
   - Con «ahorro de datos» activado, sale un botón para cargarlo.
@@ -39,7 +42,8 @@ git clone --depth 1 https://github.com/makehumancommunity/mpfb2 /tmp/mpfb2
 # instalar MPFB como extensión de Blender (una vez)
 /tmp/bv/bin/python -c "import bpy,os,shutil;d=os.path.join(bpy.utils.user_resource('EXTENSIONS',path='user_default',create=True),'mpfb');os.path.exists(d) or shutil.copytree('/tmp/mpfb2/src/mpfb',d)"
 /tmp/bv/bin/python .claude/skills/volta-atleta-3d/scripts/crear_atleta.py /tmp/atleta.glb
-python3 -c "import zlib;open('public/assets/models/atleta.bin','wb').write(zlib.compress(open('/tmp/atleta.glb','rb').read(),9))"
+/tmp/bv/bin/python .claude/skills/volta-atleta-3d/scripts/crear_atleta.py /tmp/atleta-mujer.glb mujer
+python3 -c "import zlib;[open('public/assets/models/'+b,'wb').write(zlib.compress(open('/tmp/'+a,'rb').read(),9)) for a,b in [('atleta.glb','atleta.bin'),('atleta-mujer.glb','atleta-mujer.bin')]]"
 ```
 
 El físico se cambia en `crear_atleta.py`: valores de `md` y lista de targets con su peso.
