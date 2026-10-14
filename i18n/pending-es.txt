@@ -1,0 +1,7 @@
+Lucía J.
+Sofía T.
+{0} exercises · buscador anatómico, filtros y comparador
+{0} kg · Aug {1}, {2}-{3} kg respecto a la medición anterior
+{0} kg · Aug {1}, {2}Primera medición
+{0} kg · Sep {1}, {2}+{3} kg respecto a la medición anterior
+{0} kg · Sep {1}, {2}-{3} kg respecto a la medición anterior

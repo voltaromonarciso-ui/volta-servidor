@@ -1,0 +1,899 @@
+from __future__ import annotations
+
+import contextlib
+import importlib.util
+import io
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts" / "prior_work.py"
+
+
+def load_module():
+    spec = importlib.util.spec_from_file_location("prior_work_under_test", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+prior_work = load_module()
+
+
+class PriorWorkTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.docs = self.root / "docs"
+        self.code = self.root / "code"
+        self.meetings = self.root / "meetings"
+        self.state = self.root / "state"
+        for directory in (self.docs, self.code, self.meetings):
+            directory.mkdir()
+        (self.docs / "provider-contract.md").write_text(
+            "Mercury provider contract: use the singular endpoint and token prefix.\n",
+            encoding="utf-8",
+        )
+        (self.code / "existing_factory.py").write_text(
+            "def build_existing_pipeline():\n    return 'reuse existing pipeline'\n",
+            encoding="utf-8",
+        )
+        (self.meetings / "decision.md").write_text(
+            "Current North Star supersedes the old launch shortcut.\n",
+            encoding="utf-8",
+        )
+        self.fake_adapter = self.root / "fake_adapter.py"
+        self.fake_adapter.write_text(
+            "import json\n"
+            "print(json.dumps({'mode':'bm25','coverage':'fixture history',"
+            "'results':[{'session_id':'session-1','timestamp':'2026-08-01T00:00:00Z',"
+            f"'path':{str(self.docs / 'provider-contract.md')!r},"
+            "'snippet':'Earlier provider endpoint decision','sources':['archive:test']}]}))\n",
+            encoding="utf-8",
+        )
+        self.manifest_path = self.root / "manifest.json"
+        self.write_manifest()
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def write_manifest(self, *, docs_root: str | None = None) -> None:
+        manifest = {
+            "schema_version": 1,
+            "state_dir": str(self.state),
+            "sources": [
+                {
+                    "id": "docs",
+                    "carrier": "docs",
+                    "mode": "filesystem",
+                    "root": docs_root or str(self.docs),
+                    "includes": ["**/*.md"],
+                    "authority": "project_ssot",
+                    "required": True,
+                    "max_results": 10,
+                },
+                {
+                    "id": "code",
+                    "carrier": "code",
+                    "mode": "filesystem",
+                    "root": str(self.code),
+                    "includes": ["**/*.py"],
+                    "authority": "current_implementation",
+                    "required": True,
+                    "max_results": 10,
+                },
+                {
+                    "id": "meetings",
+                    "carrier": "meeting",
+                    "mode": "filesystem",
+                    "root": str(self.meetings),
+                    "includes": ["**/*.md"],
+                    "authority": "raw_history",
+                    "required": False,
+                    "max_results": 10,
+                },
+                {
+                    "id": "conversation",
+                    "carrier": "conversation",
+                    "mode": "command",
+                    "argv": [sys.executable, str(self.fake_adapter), "{query}", "{limit}"],
+                    "result_format": "finder_recall_v1",
+                    "authority": "raw_history",
+                    "required": True,
+                    "max_results": 5,
+                },
+                {
+                    "id": "live-wechat",
+                    "carrier": "wechat_live",
+                    "mode": "manual",
+                    "route": "read-wechat-messages",
+                    "instruction": "Search live registered chats",
+                    "authority": "raw_history",
+                    "required": True,
+                },
+            ],
+        }
+        self.manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def manifest(self):
+        return prior_work.load_manifest(self.manifest_path)
+
+    def test_manifest_rejects_relative_root_and_duplicate_ids(self) -> None:
+        self.write_manifest(docs_root="relative/docs")
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "must be an absolute"):
+            self.manifest()
+        self.write_manifest()
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        payload["sources"][1]["id"] = "docs"
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "Duplicate source id"):
+            self.manifest()
+
+    def test_retrieve_covers_files_command_and_visible_manual_gap(self) -> None:
+        run = prior_work.retrieve(
+            self.manifest(),
+            "Reuse the verified provider contract and existing pipeline.",
+            ["Mercury", "North Star"],
+            "reuse the Mercury provider pipeline",
+            ["Mercury", "existing pipeline", "North Star"],
+            "session-A",
+        )
+        carriers = {candidate["carrier"] for candidate in run["candidates"]}
+        self.assertTrue({"docs", "code", "meeting", "conversation"} <= carriers)
+        coverage = {row["source_id"]: row for row in run["coverage"]}
+        self.assertEqual(coverage["live-wechat"]["status"], "manual_required")
+        self.assertFalse(run["coverage_complete"])
+        self.assertTrue(Path(run["run_path"]).is_file())
+        self.assertEqual(
+            run["business_outcome"],
+            "Reuse the verified provider contract and existing pipeline.",
+        )
+        self.assertEqual(run["implementation_query"], "reuse the Mercury provider pipeline")
+        self.assertTrue(
+            all(
+                candidate["search_phase"] == "business_outcome"
+                for candidate in run["candidates"]
+                if candidate["carrier"] not in {"code", "skills"}
+            )
+        )
+        self.assertTrue(
+            all(
+                candidate["search_phase"] == "implementation"
+                for candidate in run["candidates"]
+                if candidate["carrier"] in {"code", "skills"}
+            )
+        )
+
+    def test_filesystem_adapter_skips_unrequested_full_path_scan(self) -> None:
+        source = self.manifest()["sources"][0]
+        with mock.patch.object(
+            prior_work.subprocess, "run", wraps=prior_work.subprocess.run
+        ) as run_spy:
+            candidates, detail = prior_work._filesystem_candidates(
+                source, ["Mercury", "provider contract"]
+            )
+        self.assertEqual(run_spy.call_count, 1)
+        command = run_spy.call_args_list[0].args[0]
+        self.assertEqual(command.count("--regexp"), 2)
+        self.assertEqual(detail["status"], "searched")
+        self.assertFalse(detail["path_scan_performed"])
+        self.assertTrue(candidates)
+
+    def test_filesystem_adapter_scans_paths_for_explicit_filename_term(self) -> None:
+        source = self.manifest()["sources"][0]
+        with mock.patch.object(
+            prior_work.subprocess, "run", wraps=prior_work.subprocess.run
+        ) as run_spy:
+            candidates, detail = prior_work._filesystem_candidates(
+                source, ["provider-contract.md"]
+            )
+        self.assertEqual(run_spy.call_count, 2)
+        self.assertIn("--files", run_spy.call_args_list[1].args[0])
+        self.assertTrue(detail["path_scan_performed"])
+        self.assertTrue(candidates)
+
+    def test_required_manual_route_blocks_receipt_until_completed(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the verified Mercury provider contract.",
+            ["Mercury"],
+            "reuse Mercury provider",
+            ["Mercury"],
+            "session-B",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "docs"
+        )
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "Required carriers"):
+            prior_work.complete(
+                manifest,
+                run["run_id"],
+                "session-B",
+                [f"{candidate['candidate_id']}=reuse the verified current contract"],
+                [],
+                [],
+                [],
+                None,
+            )
+        receipt = prior_work.complete(
+            manifest,
+            run["run_id"],
+            "session-B",
+            [f"{candidate['candidate_id']}=reuse the verified current contract"],
+            [],
+            [],
+            ["live-wechat=read-wechat run 2026-08-26; no newer override"],
+            None,
+        )
+        self.assertEqual(receipt["status"], "complete")
+        self.assertEqual(
+            receipt["business_outcome"],
+            "Reuse the verified Mercury provider contract.",
+        )
+        checked = prior_work.check_receipt(manifest, "session-B", 60)
+        self.assertEqual(checked["status"], "valid")
+
+    def test_malformed_command_adapter_is_failed_coverage_not_zero_hits(self) -> None:
+        malformed = self.root / "malformed_adapter.py"
+        malformed.write_text(
+            "import json\nprint(json.dumps({'results':['bad-shape']}))\n",
+            encoding="utf-8",
+        )
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        command_source = next(
+            source for source in payload["sources"] if source["id"] == "conversation"
+        )
+        command_source["argv"] = [sys.executable, str(malformed)]
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Find a verified existing artifact before building anything new.",
+            ["unseen"],
+            "unseen subject",
+            ["unseen"],
+            "session-bad",
+        )
+        coverage = {row["source_id"]: row for row in run["coverage"]}
+        self.assertEqual(coverage["conversation"]["status"], "failed")
+        self.assertFalse(run["coverage_complete"])
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "Required carriers"):
+            prior_work.complete(
+                manifest,
+                run["run_id"],
+                "session-bad",
+                [],
+                [],
+                [],
+                ["live-wechat=manual route completed with no current override"],
+                "Inspected the available artifacts and verified that their lifecycle differs.",
+            )
+
+    def _adapter_with_payload(self, name: str, extra: str) -> Path:
+        adapter = self.root / name
+        adapter.write_text(
+            "import json\n"
+            "print(json.dumps({'mode':'bm25','coverage':'fixture history',"
+            f"{extra}"
+            "'results':[{'session_id':'session-1','timestamp':'2026-08-01T00:00:00Z',"
+            f"'path':{str(self.docs / 'provider-contract.md')!r},"
+            "'snippet':'Earlier provider endpoint decision','sources':['archive:test']}]}))\n",
+            encoding="utf-8",
+        )
+        return adapter
+
+    def _conversation_source(self, adapter: Path, argv_tail: list[str]) -> dict:
+        source = self.manifest()["sources"][3]
+        source["argv"] = [sys.executable, str(adapter), *argv_tail]
+        return source
+
+    def test_command_adapter_freshness_is_readable_not_blocking(self) -> None:
+        for name, extra, expected in (
+            (
+                "fresh_adapter.py",
+                "'last_indexed_at':'2026-09-01T00:00:00Z','complete_frontier':'2026-09-01T00:00:00Z',",
+                ("fresh", "index_complete"),
+            ),
+            (
+                "stale_adapter.py",
+                "'last_indexed_at':'2026-09-01T00:00:00Z','complete_frontier':None,",
+                ("stale", "index_incomplete"),
+            ),
+            (
+                "unknown_adapter.py",
+                "'complete_frontier':'2026-09-01T00:00:00Z',",
+                ("unknown", "indexed_at_unparseable"),
+            ),
+        ):
+            with self.subTest(adapter=name):
+                source = self._conversation_source(
+                    self._adapter_with_payload(name, extra), ["{query}", "{limit}"]
+                )
+                _candidates, detail = prior_work._command_candidates(
+                    source, "query", ["t1"], "session-X"
+                )
+                self.assertEqual(detail["status"], "searched")
+                self.assertEqual(
+                    (detail["freshness"], detail["freshness_reason"]), expected
+                )
+
+    def test_stale_required_source_still_completes_coverage(self) -> None:
+        # Deadlock regression: a stale index must be visible on the receipt but
+        # can never block it — complete_receipt raises for any required source
+        # whose status is not searched/manual_completed.
+        adapter = self._adapter_with_payload(
+            "stale_required.py",
+            "'last_indexed_at':'2026-09-01T00:00:00Z','complete_frontier':None,",
+        )
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        for source in payload["sources"]:
+            source["required"] = source["id"] == "conversation"
+            if source["id"] == "conversation":
+                source["argv"] = [sys.executable, str(adapter), "{query}", "{limit}"]
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        run = prior_work.retrieve(
+            self.manifest(),
+            "Reuse the verified provider contract and existing pipeline.",
+            ["Mercury"],
+            "reuse the Mercury provider pipeline",
+            ["Mercury"],
+            "session-stale",
+        )
+        coverage = {row["source_id"]: row for row in run["coverage"]}
+        self.assertEqual(coverage["conversation"]["status"], "searched")
+        self.assertEqual(coverage["conversation"]["freshness"], "stale")
+        self.assertEqual(
+            coverage["conversation"]["freshness_reason"], "index_incomplete"
+        )
+        self.assertTrue(run["coverage_complete"])
+        # The full receipt chain must stay valid: retrieve → complete → check.
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "conversation"
+        )
+        receipt = prior_work.complete(
+            self.manifest(),
+            run["run_id"],
+            "session-stale",
+            [f"{candidate['candidate_id']}=reuse the verified current contract"],
+            [],
+            [],
+            [],
+            None,
+        )
+        self.assertEqual(receipt["status"], "complete")
+        checked = prior_work.check_receipt(self.manifest(), "session-stale", 60)
+        self.assertEqual(checked["status"], "valid")
+
+    def test_terms_placeholder_reaches_command_adapter(self) -> None:
+        source = self._conversation_source(
+            self.fake_adapter, ["{query}", "--terms", "{terms}", "{limit}"]
+        )
+        with mock.patch.object(
+            prior_work.subprocess, "run", wraps=prior_work.subprocess.run
+        ) as run_spy:
+            _candidates, detail = prior_work._command_candidates(
+                source, "query", ["alpha", "beta"], "session-T"
+            )
+        command = run_spy.call_args_list[0].args[0]
+        self.assertEqual(command[command.index("--terms") + 1], "alpha beta")
+        self.assertTrue(detail["terms_passed"])
+        self.assertEqual(detail["terms"], ["alpha", "beta"])
+
+    def test_legacy_manifest_without_terms_slot_is_not_an_error(self) -> None:
+        source = self.manifest()["sources"][3]  # argv carries no {terms} slot
+        _candidates, detail = prior_work._command_candidates(
+            source, "query", ["alpha"], "session-T"
+        )
+        self.assertEqual(detail["status"], "searched")
+        self.assertFalse(detail["terms_passed"])
+
+    def test_terms_placeholder_validates_and_unknown_placeholder_still_rejected(self) -> None:
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        payload["sources"][3]["argv"].extend(["--terms", "{terms}"])
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        self.manifest()  # {terms} must now be an accepted placeholder
+        payload["sources"][3]["argv"].append("{foo}")
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "unsupported argv placeholder"):
+            self.manifest()
+
+    def test_repository_head_change_invalidates_an_unchanged_candidate(self) -> None:
+        subprocess.run(["git", "init", "-q", str(self.docs)], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.docs), "config", "user.email", "test@example.invalid"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(self.docs), "config", "user.name", "Test"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(self.docs), "add", "provider-contract.md"], check=True
+        )
+        subprocess.run(
+            ["git", "-C", str(self.docs), "commit", "-qm", "baseline"], check=True
+        )
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the current Mercury provider contract.",
+            ["Mercury"],
+            "Mercury",
+            ["Mercury"],
+            "session-git",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "docs"
+        )
+        (self.docs / "north-star.md").write_text("new decision\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "-C", str(self.docs), "add", "north-star.md"], check=True
+        )
+        subprocess.run(
+            ["git", "-C", str(self.docs), "commit", "-qm", "new decision"], check=True
+        )
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "HEAD changed"):
+            prior_work.complete(
+                manifest,
+                run["run_id"],
+                "session-git",
+                [f"{candidate['candidate_id']}=reuse verified provider contract"],
+                [],
+                [],
+                ["live-wechat=manual route completed with no current override"],
+                None,
+            )
+
+    def test_no_reuse_requires_verified_reason_not_zero_hits(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Find a verified artifact that already delivers the requested result.",
+            ["never-present"],
+            "new subject",
+            ["never-present"],
+            "session-C",
+        )
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "verified mismatch"):
+            prior_work.complete(
+                manifest,
+                run["run_id"],
+                "session-C",
+                [],
+                [],
+                [],
+                ["live-wechat=manual search completed without a current match"],
+                "no hits",
+            )
+        receipt = prior_work.complete(
+            manifest,
+            run["run_id"],
+            "session-C",
+            [],
+            [],
+            [],
+            ["live-wechat=manual search completed without a current match"],
+            "Inspected the returned provider and code artifacts; their identity and lifecycle differ from this task.",
+        )
+        self.assertEqual(receipt["no_reuse_reason"][:9], "Inspected")
+
+    def test_required_source_change_invalidates_run_and_receipt(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the current Mercury provider contract.",
+            ["Mercury"],
+            "Mercury",
+            ["Mercury"],
+            "session-D",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "docs"
+        )
+        receipt = prior_work.complete(
+            manifest,
+            run["run_id"],
+            "session-D",
+            [f"{candidate['candidate_id']}=reuse verified provider contract"],
+            [],
+            [],
+            ["live-wechat=manual route completed and recorded"],
+            None,
+        )
+        self.assertEqual(receipt["status"], "complete")
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        payload["sources"][0]["max_results"] = 9
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "contract is stale"):
+            prior_work.check_receipt(self.manifest(), "session-D", None)
+
+    def test_optional_source_change_keeps_receipt_valid(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the current Mercury provider contract.",
+            ["Mercury"],
+            "Mercury",
+            ["Mercury"],
+            "session-optional",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "docs"
+        )
+        prior_work.complete(
+            manifest,
+            run["run_id"],
+            "session-optional",
+            [f"{candidate['candidate_id']}=reuse verified provider contract"],
+            [],
+            [],
+            ["live-wechat=manual route completed and recorded"],
+            None,
+        )
+        payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        optional_source = next(
+            source for source in payload["sources"] if source["id"] == "meetings"
+        )
+        optional_source["max_results"] = 9
+        self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        checked = prior_work.check_receipt(
+            self.manifest(), "session-optional", None
+        )
+        self.assertEqual(checked["status"], "valid")
+
+    def test_candidate_disappearance_blocks_completion(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the existing working pipeline.",
+            ["existing pipeline"],
+            "existing pipeline",
+            ["existing pipeline"],
+            "session-E",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "code"
+        )
+        (self.code / "existing_factory.py").unlink()
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "source disappeared"):
+            prior_work.complete(
+                manifest,
+                run["run_id"],
+                "session-E",
+                [f"{candidate['candidate_id']}=reuse implementation"],
+                [],
+                [],
+                ["live-wechat=manual route completed and recorded"],
+                None,
+            )
+
+    def test_cli_returns_structured_validation(self) -> None:
+        exit_code = prior_work.main(
+            ["--manifest", str(self.manifest_path), "validate-manifest", "--json"]
+        )
+        self.assertEqual(exit_code, 0)
+
+    def test_business_outcome_artifact_ranks_before_implementation_match(self) -> None:
+        (self.docs / "2026-07-30-workshop-transcript.md").write_text(
+            "Complete and human reviewed.\n",
+            encoding="utf-8",
+        )
+        (self.code / "flowzero_asr.py").write_text(
+            "def flowzero_checkpoint():\n    return 'long audio retry'\n",
+            encoding="utf-8",
+        )
+        run = prior_work.retrieve(
+            self.manifest(),
+            "Confirm whether the canonical July 30 workshop transcript already exists.",
+            ["2026-07-30", "workshop"],
+            "Implement Flowzero long-audio checkpoint retry",
+            ["flowzero_checkpoint"],
+            "session-outcome-first",
+        )
+        self.assertEqual(run["candidates"][0]["search_phase"], "business_outcome")
+        self.assertIn(
+            "2026-07-30-workshop-transcript.md", run["candidates"][0]["path"]
+        )
+
+    def test_check_rejects_legacy_receipt_without_business_outcome(self) -> None:
+        manifest = self.manifest()
+        run = prior_work.retrieve(
+            manifest,
+            "Reuse the verified Mercury provider contract.",
+            ["Mercury"],
+            "Mercury",
+            ["Mercury"],
+            "session-legacy-receipt",
+        )
+        candidate = next(
+            item for item in run["candidates"] if item["source_id"] == "docs"
+        )
+        receipt = prior_work.complete(
+            manifest,
+            run["run_id"],
+            "session-legacy-receipt",
+            [f"{candidate['candidate_id']}=reuse verified provider contract"],
+            [],
+            [],
+            ["live-wechat=manual route completed and recorded"],
+            None,
+        )
+        receipt_path = Path(receipt["receipt_path"])
+        payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+        payload.pop("business_outcome")
+        receipt_path.write_text(json.dumps(payload), encoding="utf-8")
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "no business_outcome"):
+            prior_work.check_receipt(manifest, "session-legacy-receipt", None)
+
+
+class PriorWorkAuditTests(unittest.TestCase):
+    """Covers the `audit` subcommand's health report over a hand-crafted
+    state dir -- direct control over required/trigger/receipt-correlation
+    shapes that the retrieve/complete flow does not make convenient to
+    construct (a stranded receipt, a malformed file, a non-user preview).
+    """
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.state = self.root / "state"
+        self.requirements_dir = self.state / "requirements"
+        self.receipts_dir = self.state / "receipts"
+        self.requirements_dir.mkdir(parents=True)
+        self.receipts_dir.mkdir(parents=True)
+        self.manifest_path = self.root / "manifest.json"
+        self.manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state_dir": str(self.state),
+                    "sources": [
+                        {
+                            "id": "docs",
+                            "carrier": "docs",
+                            "mode": "filesystem",
+                            "root": str(self.root),
+                            "includes": ["**/*.md"],
+                            "authority": "project_ssot",
+                            "required": True,
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def manifest(self):
+        return prior_work.load_manifest(self.manifest_path)
+
+    def _write_requirement(
+        self,
+        key: str,
+        *,
+        session_id: str,
+        trigger: str,
+        required: bool,
+        prompt_preview: str = "",
+        requirement_id: str | None = None,
+    ) -> None:
+        payload = {
+            "schema_version": 1,
+            "kind": "prior_work_requirement",
+            "requirement_id": requirement_id or f"req-{key}",
+            "session_id": session_id,
+            "prompt_sha256": "sha256:" + "0" * 64,
+            "prompt_preview": prompt_preview,
+            "trigger": trigger,
+            "required": required,
+            "created_at": "2026-08-27T00:00:00Z",
+            "manifest_sha256": "sha256:" + "0" * 64,
+        }
+        (self.requirements_dir / f"{key}.json").write_text(
+            json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def _write_receipt(self, key: str, *, session_id: str, requirement_id: str) -> None:
+        payload = {
+            "schema_version": 1,
+            "kind": "prior_work_retrieval_receipt",
+            "status": "complete",
+            "session_id": session_id,
+            "requirement_id": requirement_id,
+            "run_id": "run-1",
+            "business_outcome": "Reuse the verified fixture contract.",
+            "outcome_terms": ["fixture"],
+            "query": "fixture",
+            "terms": ["fixture"],
+            "coverage": [],
+            "decisions": [],
+            "no_reuse_reason": None,
+            "completed_at": "2026-08-27T00:00:00Z",
+        }
+        (self.receipts_dir / f"{key}.json").write_text(
+            json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def test_empty_gate_counts_required_entries_without_a_receipt(self) -> None:
+        self._write_requirement(
+            "gated", session_id="s-gated", trigger="required_prior_signal", required=True
+        )
+        self._write_requirement(
+            "opted-out", session_id="s-out", trigger="opt_out", required=False
+        )
+        self._write_requirement(
+            "gated-with-receipt",
+            session_id="s-ok",
+            trigger="manual_retrieval",
+            required=True,
+            requirement_id="req-ok",
+        )
+        self._write_receipt("gated-with-receipt", session_id="s-ok", requirement_id="req-ok")
+
+        result = prior_work.audit_state(self.manifest())
+
+        self.assertEqual(result["total_requirements"], 3)
+        self.assertEqual(result["required_true_count"], 2)
+        self.assertEqual(result["empty_gate_count"], 1)
+        self.assertEqual(result["empty_gate_percent"], 50.0)
+        self.assertEqual(
+            {entry["session_id"] for entry in result["empty_gate_entries"]}, {"s-gated"}
+        )
+
+    def test_empty_gate_percent_is_zero_not_a_crash_with_no_required_entries(self) -> None:
+        self._write_requirement(
+            "opted-out", session_id="s-out", trigger="opt_out", required=False
+        )
+        result = prior_work.audit_state(self.manifest())
+        self.assertEqual(result["required_true_count"], 0)
+        self.assertEqual(result["empty_gate_count"], 0)
+        self.assertEqual(result["empty_gate_percent"], 0.0)
+
+    def test_stranded_receipt_counts_requirement_id_mismatch(self) -> None:
+        self._write_requirement(
+            "stranded",
+            session_id="s-stranded",
+            trigger="required_prior_signal",
+            required=True,
+            requirement_id="req-new",
+        )
+        self._write_receipt("stranded", session_id="s-stranded", requirement_id="req-old")
+
+        result = prior_work.audit_state(self.manifest())
+
+        self.assertEqual(result["stranded_receipt_count"], 1)
+        self.assertEqual(result["empty_gate_count"], 0)
+        entry = result["stranded_receipt_entries"][0]
+        self.assertEqual(entry["requirement_id"], "req-new")
+        self.assertEqual(entry["receipt_requirement_id"], "req-old")
+
+    def test_non_user_prompt_flags_required_entries_matching_hook_pattern(self) -> None:
+        self._write_requirement(
+            "non-user",
+            session_id="s-non-user",
+            trigger="required_production",
+            required=True,
+            prompt_preview="You are a careful sub-agent reviewer.",
+        )
+        self._write_requirement(
+            "human",
+            session_id="s-human",
+            trigger="required_prior_signal",
+            required=True,
+            prompt_preview="以前做过类似系统，复用已有代码",
+        )
+
+        result = prior_work.audit_state(self.manifest())
+
+        if not result["hook_module_available"]:
+            self.skipTest(f"hook module unavailable: {result['hook_module_error']}")
+        self.assertEqual(result["non_user_prompt_count"], 1)
+        self.assertEqual(
+            {entry["session_id"] for entry in result["non_user_prompt_entries"]},
+            {"s-non-user"},
+        )
+
+    def test_malformed_files_are_reported_not_raised(self) -> None:
+        (self.requirements_dir / "broken.json").write_text(
+            "{not valid json", encoding="utf-8"
+        )
+        (self.requirements_dir / "no-required-field.json").write_text(
+            json.dumps({"trigger": "required_prior_signal", "session_id": "s-x"}),
+            encoding="utf-8",
+        )
+        self._write_requirement(
+            "ok",
+            session_id="s-ok",
+            trigger="required_prior_signal",
+            required=True,
+            requirement_id="req-ok",
+        )
+        (self.receipts_dir / "ok.json").write_text("{not valid json", encoding="utf-8")
+
+        result = prior_work.audit_state(self.manifest())
+
+        self.assertEqual(result["total_requirements"], 3)
+        self.assertEqual(result["malformed_requirement_count"], 2)
+        self.assertEqual(result["valid_requirements"], 1)
+        self.assertEqual(result["malformed_receipt_count"], 1)
+        # A malformed receipt is neither a clean empty-gate nor a stranded
+        # receipt -- it must be reported on its own, not silently folded in.
+        self.assertEqual(result["empty_gate_count"], 0)
+        self.assertEqual(result["stranded_receipt_count"], 0)
+        malformed_names = {item["file"] for item in result["malformed_requirement_files"]}
+        self.assertEqual(malformed_names, {"broken.json", "no-required-field.json"})
+
+    def test_audit_state_keeps_working_when_hook_module_is_absent(self) -> None:
+        self._write_requirement(
+            "gated",
+            session_id="s-gated",
+            trigger="required_prior_signal",
+            required=True,
+            prompt_preview="以前做过类似系统，复用已有代码",
+        )
+        with mock.patch.object(
+            prior_work, "_load_hook_module", return_value=(None, "boom")
+        ):
+            result = prior_work.audit_state(self.manifest())
+            # The readable-text renderer's degraded branch is only reached
+            # when hook_module_available is False; exercise it directly
+            # rather than trusting it by inspection.
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                prior_work._print_audit(result)
+
+        self.assertFalse(result["hook_module_available"])
+        self.assertEqual(result["hook_module_error"], "boom")
+        self.assertIsNone(result["non_user_prompt_count"])
+        self.assertIsNone(result["still_required_prior_signal_count"])
+        self.assertIsNone(result["matched_token_frequency"])
+        # Non-hook-dependent metrics keep working even though the sibling
+        # hook module could not be loaded.
+        self.assertEqual(result["total_requirements"], 1)
+        self.assertEqual(result["required_true_count"], 1)
+        self.assertEqual(result["empty_gate_count"], 1)
+
+        rendered = captured.getvalue()
+        self.assertIn("hook module unavailable (boom)", rendered)
+        self.assertNotIn("matched token frequency", rendered)
+        self.assertIn("empty_gate entries", rendered)
+
+    def test_limit_caps_entry_lists_but_never_the_counts(self) -> None:
+        for index in range(5):
+            self._write_requirement(
+                f"gated-{index}",
+                session_id=f"s-{index}",
+                trigger="required_prior_signal",
+                required=True,
+            )
+        result = prior_work.audit_state(self.manifest(), limit=2)
+        self.assertEqual(result["empty_gate_count"], 5)
+        self.assertEqual(len(result["empty_gate_entries"]), 2)
+        self.assertEqual(result["limit"], 2)
+
+        with self.assertRaisesRegex(prior_work.PriorWorkError, "--limit"):
+            prior_work.audit_state(self.manifest(), limit=-1)
+
+    def test_cli_audit_json_runs_through_main(self) -> None:
+        self._write_requirement(
+            "gated", session_id="s-cli", trigger="required_prior_signal", required=True
+        )
+        exit_code = prior_work.main(
+            ["--manifest", str(self.manifest_path), "audit", "--json", "--limit", "1"]
+        )
+        self.assertEqual(exit_code, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

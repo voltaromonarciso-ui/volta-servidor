@@ -1,0 +1,13 @@
+const { chromium } = require('playwright');
+const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) process.exitCode = 1; };
+(async () => { const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined }); const p = await b.newPage();
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto(process.env.APP_URL); await p.waitForTimeout(900);
+const get = () => p.evaluate(() => { S.stack = []; tab('home'); return [document.querySelector('.vx-greet') && document.querySelector('.vx-greet').innerText, (document.querySelector('.vx-greet-sub') || {}).innerText]; });
+await p.evaluate(() => { S.onboarded = true; S.demo = false; S.lang = 'es'; S.name = 'Lucía'; S.log = []; S.streakCount = 1; });
+let g = await get(); ok(g[0] && /^(Buenos días|Buenas tardes|Buenas noches), Lucía$/.test(g[0]) && !/Bienvenido/.test(g.join()), 'saludo neutro según la hora: ' + g.join(' / '));
+await p.evaluate(() => { S.streakCount = 5; }); g = await get(); ok(/5 días seguidos/.test(g[1]), 'racha en el subtítulo: ' + g[1]);
+await p.evaluate(() => { S.log = [{ ex: 0, w: 50, r: 10, t: Date.now() - 6e4, ty: 'effective' }]; }); g = await get(); ok(/Entreno de hoy hecho/.test(g[1]), 'entreno hecho: ' + g[1]);
+await p.evaluate(() => { S.lang = 'en'; }); g = await get(); ok(/^Good (morning|afternoon|evening), Lucía$/.test(g[0]), 'en inglés: ' + g.join(' / '));
+ok(errs.length === 0, 'sin errores JS ' + JSON.stringify(errs.slice(0, 3)));
+await b.close(); })();

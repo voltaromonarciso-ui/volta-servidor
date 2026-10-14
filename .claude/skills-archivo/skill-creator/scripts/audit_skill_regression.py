@@ -1,0 +1,1698 @@
+#!/usr/bin/env python3
+"""Surface and verify capability removals when an existing skill is rewritten.
+
+The tool is intentionally conservative. It can prove exact text/code movement
+and exact interface preservation, but it never treats paraphrase similarity as
+semantic equivalence. Unmatched old capability units require an explicit human
+or agent disposition before the review can pass.
+
+Typical flow:
+
+    uv run --frozen python -m scripts.audit_skill_regression snapshot \
+      --source ./my-skill --output /tmp/my-skill-before
+
+    uv run --frozen python -m scripts.audit_skill_regression compare \
+      --before /tmp/skill-before --after ./my-skill \
+      --output /tmp/my-skill-regression.json \
+      --baseline-origin pre-edit-snapshot
+
+For a Git-tracked skill, reconstruct the old directory from Git and use
+``--baseline-origin git-ref:<ref>``. The command resolves the ref to an immutable
+commit and rejects a ``before`` tree that does not match that exact Git tree.
+
+If the skill was renamed or moved (so ``--after`` is not at the same path the
+baseline was captured from), pass ``--renamed-from <old-path>`` to ``compare``
+to declare it explicitly; without it, a path change is rejected as an identity
+mismatch, on the assumption that ``--before``/``--after`` were paired by mistake.
+
+    # Review every candidate in the JSON, then:
+    uv run --frozen python -m scripts.audit_skill_regression verify \
+      --before /tmp/skill-before --after ./my-skill \
+      --review /tmp/my-skill-regression.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable
+
+from scripts.packaging_policy import (
+    LEGACY_INCLUSION_POLICY_VERSION,
+    inclusion_policy_metadata,
+    normalize_inclusion_policy,
+    should_exclude_skill_relative,
+)
+
+
+SCHEMA_VERSION = 3
+TEXT_SUFFIXES = {
+    ".md", ".txt", ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx",
+    ".jsx", ".sh", ".bash", ".json", ".yaml", ".yml", ".toml",
+    ".html", ".css",
+}
+REGRESSION_MARKER = ".skill-regression-reviewed"
+BASELINE_MANIFEST = ".skill-regression-baseline.json"
+DEVELOPMENT_ROOTS = {"evals", "tests"}
+VALID_DISPOSITIONS = {
+    "preserved_or_moved",
+    "intentional_sanitization",
+    "intentional_boundary",
+    "removed_by_explicit_user_request",
+    "not_reusable",
+    "true_gap_fixed",
+}
+RELATION_STOPWORDS = {
+    "the", "and", "for", "with", "from", "this", "that", "into", "when",
+    "use", "using", "must", "should", "skill", "current", "file", "review",
+    "check", "verify", "a", "an", "to", "of", "in", "on", "is", "are",
+}
+
+
+@dataclass(frozen=True)
+class Occurrence:
+    path: str
+    line: int
+    text: str
+    scope: str
+
+
+@dataclass
+class Unit:
+    kind: str
+    normalized: str
+    occurrences: list[Occurrence]
+
+
+def _scope_for(rel_path: Path, reachable: set[Path] | None = None) -> str:
+    if rel_path.parts and rel_path.parts[0] in DEVELOPMENT_ROOTS:
+        return "development"
+    if reachable is None or rel_path == Path("SKILL.md") or rel_path in reachable:
+        return "runtime"
+    return "unreachable"
+
+
+def _current_audit_policy() -> dict[str, Any]:
+    return inclusion_policy_metadata(include_evals=True, include_tests=True)
+
+
+def _legacy_audit_policy() -> dict[str, Any]:
+    return inclusion_policy_metadata(
+        include_evals=True,
+        include_tests=True,
+        version=LEGACY_INCLUSION_POLICY_VERSION,
+    )
+
+
+def _normalize_audit_policy(policy: Any) -> dict[str, Any]:
+    try:
+        normalized = normalize_inclusion_policy(policy)
+    except ValueError as error:
+        raise ValueError(f"invalid audit inclusion policy: {error}") from error
+    if normalized["scope"] != {"include_evals": True, "include_tests": True}:
+        raise ValueError("audit inclusion policy must include root evals and tests")
+    return normalized
+
+
+def _included_in_audit(rel: Path, inclusion_policy: Any) -> bool:
+    return not should_exclude_skill_relative(
+        rel,
+        policy=_normalize_audit_policy(inclusion_policy),
+    )
+
+
+def _iter_files(
+    root: Path,
+    inclusion_policy: Any | None = None,
+) -> Iterable[tuple[Path, Path]]:
+    policy = _normalize_audit_policy(inclusion_policy or _current_audit_policy())
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root)
+        if not _included_in_audit(rel, policy):
+            continue
+        yield rel, path
+
+
+def tree_hash(root: Path, inclusion_policy: Any | None = None) -> str:
+    digest = hashlib.sha256()
+    for rel, path in _iter_files(root, inclusion_policy):
+        digest.update(str(rel).replace("\\", "/").encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(f"{path.stat().st_mode & 0o111:o}".encode("ascii"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _git_output(repo: Path, *args: str, text: bool = True) -> str | bytes:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=text,
+    )
+    return result.stdout
+
+
+def _git_tree_hash(
+    repo: Path,
+    commit: str,
+    skill_rel: Path,
+    inclusion_policy: Any,
+) -> str:
+    """Hash the distributable/development skill tree exactly as stored in Git."""
+    # skill_rel == Path(".")（skill 目录即仓根）时，git ls-tree 输出无前缀路径
+    # （"SKILL.md"），而 ".".rstrip("/")+"/" 拼出的 "./" 永不匹配任何条目，
+    # 会把整个树滤空并报 "does not contain ./SKILL.md"。仓根必须用空前缀。
+    rel = skill_rel.as_posix().rstrip("/")
+    prefix = "" if rel in ("", ".") else rel + "/"
+    listing = _git_output(
+        repo,
+        "ls-tree",
+        "-r",
+        "-z",
+        commit,
+        "--",
+        skill_rel.as_posix(),
+        text=False,
+    )
+    assert isinstance(listing, bytes)
+    entries: list[tuple[Path, str, str]] = []
+    for raw_entry in listing.split(b"\0"):
+        if not raw_entry:
+            continue
+        metadata, raw_path = raw_entry.split(b"\t", 1)
+        mode, object_type, object_id = metadata.decode("ascii").split()
+        full_path = raw_path.decode("utf-8", errors="surrogateescape")
+        if object_type != "blob" or not full_path.startswith(prefix):
+            continue
+        rel = Path(full_path[len(prefix):])
+        if _included_in_audit(rel, inclusion_policy):
+            entries.append((rel, mode, object_id))
+
+    if not any(rel == Path("SKILL.md") for rel, _mode, _object_id in entries):
+        raise ValueError(f"Git baseline does not contain {prefix}SKILL.md")
+
+    digest = hashlib.sha256()
+    # Same order as tree_hash(), which sorts Path objects (component by component).
+    # A plain string sort puts "a-b/y" before "a/x" ("-" < "/"), so any skill with
+    # sibling directories sharing a prefix would never match its own Git baseline.
+    for rel, mode, object_id in sorted(entries, key=lambda item: item[0]):
+        content = _git_output(repo, "cat-file", "blob", object_id, text=False)
+        assert isinstance(content, bytes)
+        digest.update(rel.as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(b"111" if mode == "100755" else b"0")
+        digest.update(b"\0")
+        digest.update(content)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def create_baseline_snapshot(source: Path, output: Path) -> Path:
+    """Create a pre-edit skill snapshot plus a provenance manifest."""
+    source = source.resolve()
+    output = output.resolve()
+    if not source.is_dir() or not (source / "SKILL.md").is_file():
+        raise ValueError(f"source skill directory must contain SKILL.md: {source}")
+    if output.exists():
+        raise ValueError(f"snapshot output must not already exist: {output}")
+    output.mkdir(parents=True)
+    inclusion_policy = _current_audit_policy()
+    for rel, path in _iter_files(source, inclusion_policy):
+        destination = output / rel
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+    source_hash = tree_hash(source, inclusion_policy)
+    snapshot_hash = tree_hash(output, inclusion_policy)
+    if source_hash != snapshot_hash:
+        raise ValueError("snapshot copy does not match the source skill tree")
+    manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "kind": "skill-regression-pre-edit-snapshot",
+        "source_path_hash": hashlib.sha256(str(source).encode("utf-8")).hexdigest(),
+        "tree_hash": snapshot_hash,
+        "inclusion_policy": inclusion_policy,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (output / BASELINE_MANIFEST).write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return output / BASELINE_MANIFEST
+
+
+def _policy_for_report(
+    before: Path,
+    baseline_origin: str,
+    inclusion_policy: Any | None,
+) -> dict[str, Any]:
+    if inclusion_policy is not None:
+        return _normalize_audit_policy(inclusion_policy)
+    if baseline_origin == "pre-edit-snapshot":
+        manifest_path = before / BASELINE_MANIFEST
+        if not manifest_path.is_file():
+            raise ValueError(
+                "pre-edit snapshot is missing its provenance manifest; create it with the snapshot subcommand"
+            )
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError(f"cannot read pre-edit snapshot provenance: {error}") from error
+        persisted = manifest.get("inclusion_policy")
+        if persisted is None:
+            return _legacy_audit_policy()
+        return _normalize_audit_policy(persisted)
+    return _current_audit_policy()
+
+
+def _validated_snapshot_policy(snapshot: Path) -> dict[str, Any]:
+    manifest_path = snapshot / BASELINE_MANIFEST
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read pre-edit snapshot provenance: {error}") from error
+    if manifest.get("schema_version") != SCHEMA_VERSION:
+        raise ValueError("pre-edit snapshot provenance uses an obsolete schema")
+    if manifest.get("kind") != "skill-regression-pre-edit-snapshot":
+        raise ValueError("pre-edit snapshot provenance has an invalid kind")
+    persisted_policy = manifest.get("inclusion_policy")
+    policy = (
+        _legacy_audit_policy()
+        if persisted_policy is None
+        else _normalize_audit_policy(persisted_policy)
+    )
+    if manifest.get("tree_hash") != tree_hash(snapshot, policy):
+        raise ValueError("pre-edit snapshot content does not match its provenance manifest")
+    created_at = manifest.get("created_at")
+    try:
+        parsed = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError("pre-edit snapshot provenance timestamp is invalid") from error
+    if parsed.tzinfo is None:
+        raise ValueError("pre-edit snapshot provenance timestamp must include a timezone")
+    return policy
+
+
+def archive_baseline_snapshot(source: Path, output: Path) -> Path:
+    """Archive a verified snapshot without changing its hash-bearing file set."""
+    source = source.resolve()
+    output = output.resolve()
+    if not source.is_dir() or not (source / "SKILL.md").is_file():
+        raise ValueError(f"snapshot directory must contain SKILL.md: {source}")
+    if output.exists():
+        raise ValueError(f"snapshot archive output must not already exist: {output}")
+    if output.is_relative_to(source):
+        raise ValueError("snapshot archive output must be outside the snapshot directory")
+    manifest_bytes = (source / BASELINE_MANIFEST).read_bytes()
+    policy = _validated_snapshot_policy(source)
+    unsafe_runtime_authorizations = [
+        path.relative_to(source)
+        for path in sorted(source.rglob(".authorization"))
+        if path.is_file()
+        and path.relative_to(source).parts[0] not in DEVELOPMENT_ROOTS
+    ]
+    if unsafe_runtime_authorizations:
+        joined = ", ".join(path.as_posix() for path in unsafe_runtime_authorizations)
+        raise ValueError(
+            "snapshot contains local runtime authorization files that cannot be archived: "
+            + joined
+        )
+    members = [(rel, path) for rel, path in _iter_files(source, policy)]
+    members.append((Path(BASELINE_MANIFEST), source / BASELINE_MANIFEST))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_handle = tempfile.NamedTemporaryFile(
+        prefix=f".{output.name}.",
+        suffix=".tmp",
+        dir=output.parent,
+        delete=False,
+    )
+    temporary = Path(temporary_handle.name)
+    temporary_handle.close()
+    try:
+        with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
+            for rel, path in members:
+                archive.write(path, Path(source.name) / rel)
+        expected = {
+            (Path(source.name) / rel).as_posix(): (
+                path.read_bytes(),
+                path.stat().st_mode & 0o111,
+            )
+            for rel, path in members
+        }
+        with zipfile.ZipFile(temporary, "r") as archive:
+            if set(archive.namelist()) != set(expected):
+                raise ValueError("snapshot archive readback has an unexpected member set")
+            for name, (content, executable_mode) in expected.items():
+                info = archive.getinfo(name)
+                if archive.read(name) != content:
+                    raise ValueError(f"snapshot archive readback content mismatch: {name}")
+                if ((info.external_attr >> 16) & 0o111) != executable_mode:
+                    raise ValueError(f"snapshot archive readback executable mode mismatch: {name}")
+            manifest_name = (Path(source.name) / BASELINE_MANIFEST).as_posix()
+            if archive.read(manifest_name) != manifest_bytes:
+                raise ValueError("snapshot archive provenance changed during archival")
+            archived_hash = hashlib.sha256()
+            for rel, _path in members:
+                if rel == Path(BASELINE_MANIFEST):
+                    continue
+                name = (Path(source.name) / rel).as_posix()
+                mode = (archive.getinfo(name).external_attr >> 16) & 0o111
+                archived_hash.update(rel.as_posix().encode("utf-8"))
+                archived_hash.update(b"\0")
+                archived_hash.update(f"{mode:o}".encode("ascii"))
+                archived_hash.update(b"\0")
+                archived_hash.update(archive.read(name))
+                archived_hash.update(b"\0")
+            if archived_hash.hexdigest() != json.loads(manifest_bytes)["tree_hash"]:
+                raise ValueError("snapshot archive content does not match its provenance manifest")
+        try:
+            os.link(temporary, output)
+        except FileExistsError as error:
+            raise ValueError(f"snapshot archive output must not already exist: {output}") from error
+    finally:
+        temporary.unlink(missing_ok=True)
+    return output
+
+
+def _resolve_baseline_provenance(
+    before: Path,
+    after: Path,
+    baseline_origin: str,
+    *,
+    renamed_from: Path | None = None,
+    inclusion_policy: Any,
+) -> dict[str, Any]:
+    # Both provenance modes below identify the baseline by the SOURCE PATH the
+    # skill lived at when the baseline was captured, not by directory content.
+    # A skill rename changes that path on purpose while leaving the skill's
+    # identity and content otherwise intact, so a bare path match is too strict
+    # for that (legitimate, documented) operation. `renamed_from` is an explicit,
+    # narrow escape hatch — same shape as `--allow-identical-baseline` — that
+    # substitutes the declared old path for identity purposes ONLY; it does not
+    # touch either branch's content/tree-hash check, so a genuinely mismatched
+    # pairing (wrong skill entirely) still fails exactly as before.
+    identity_source = renamed_from.resolve() if renamed_from is not None else after.resolve()
+    if baseline_origin == "test-fixture":
+        return {"origin": "test-fixture"}
+    if baseline_origin == "pre-edit-snapshot":
+        manifest_path = before / BASELINE_MANIFEST
+        if not manifest_path.is_file():
+            raise ValueError(
+                "pre-edit snapshot is missing its provenance manifest; create it with the snapshot subcommand"
+            )
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError(f"cannot read pre-edit snapshot provenance: {error}") from error
+        if manifest.get("schema_version") != SCHEMA_VERSION:
+            raise ValueError("pre-edit snapshot provenance uses an obsolete schema")
+        if manifest.get("kind") != "skill-regression-pre-edit-snapshot":
+            raise ValueError("pre-edit snapshot provenance has an invalid kind")
+        persisted_policy = manifest.get("inclusion_policy")
+        if persisted_policy is None:
+            expected_policy = _legacy_audit_policy()
+        else:
+            expected_policy = _normalize_audit_policy(persisted_policy)
+        if expected_policy != _normalize_audit_policy(inclusion_policy):
+            raise ValueError("pre-edit snapshot inclusion policy does not match the requested audit policy")
+        expected_source_hash = hashlib.sha256(str(identity_source).encode("utf-8")).hexdigest()
+        if manifest.get("source_path_hash") != expected_source_hash:
+            if renamed_from is None:
+                hint = " (re-run compare with --renamed-from <the path --source pointed at during snapshot> if the skill was renamed/moved)"
+            else:
+                hint = (
+                    f" (--renamed-from resolved to {identity_source} — verify this is exactly "
+                    "the absolute path --source pointed at during snapshot; a relative value "
+                    "resolves against the current working directory, not against --after)"
+                )
+            raise ValueError(f"pre-edit snapshot source identity does not match the edited skill{hint}")
+        if manifest.get("tree_hash") != tree_hash(before, expected_policy):
+            raise ValueError("pre-edit snapshot content does not match its provenance manifest")
+        created_at = manifest.get("created_at")
+        try:
+            parsed = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("pre-edit snapshot provenance timestamp is invalid") from error
+        if parsed.tzinfo is None:
+            raise ValueError("pre-edit snapshot provenance timestamp must include a timezone")
+        provenance = {
+            "origin": "pre-edit-snapshot",
+            "created_at": created_at,
+            "source_path_hash": manifest["source_path_hash"],
+        }
+        if renamed_from is not None:
+            provenance["renamed_from"] = str(identity_source)
+        return provenance
+    if baseline_origin.startswith("git-ref:"):
+        requested_ref = baseline_origin.partition(":")[2].strip()
+        if not requested_ref:
+            raise ValueError("git baseline provenance requires a non-empty ref")
+        try:
+            repo_value = _git_output(after, "rev-parse", "--show-toplevel")
+            assert isinstance(repo_value, str)
+            repo = Path(repo_value.strip()).resolve()
+        except subprocess.CalledProcessError as error:
+            raise ValueError(
+                "git-ref baseline requires --after to be inside a Git worktree"
+            ) from error
+        try:
+            skill_rel = identity_source.relative_to(repo)
+        except ValueError as error:
+            # Distinct from the two except blocks around it: this is neither
+            # "not a Git worktree" nor "the ref doesn't resolve" — the path
+            # that failed here is whichever one identity now points at, and
+            # it isn't inside the same repo as --after. The likeliest cause,
+            # given both --before/--after/--renamed-from resolve relative to
+            # the CURRENT WORKING DIRECTORY when given as relative paths (not
+            # relative to each other), is that this ran from a different
+            # repo's directory than the skill being audited — a common shape
+            # for skill-creator itself, which normally lives in its own repo.
+            where = "--renamed-from" if renamed_from is not None else "--after"
+            raise ValueError(
+                f"{where} ({identity_source}) is not inside the Git repository containing "
+                f"--after ({repo}). If this path was given as relative, it resolved against "
+                "the current working directory, not against --after's location — pass an "
+                "absolute path to avoid the ambiguity."
+            ) from error
+        try:
+            commit_value = _git_output(repo, "rev-parse", "--verify", f"{requested_ref}^{{commit}}")
+            assert isinstance(commit_value, str)
+            commit = commit_value.strip()
+        except (subprocess.CalledProcessError, ValueError) as error:
+            raise ValueError(f"could not resolve ref {requested_ref!r} in {repo}") from error
+        expected_hash = _git_tree_hash(repo, commit, skill_rel, inclusion_policy)
+        actual_hash = tree_hash(before, inclusion_policy)
+        if actual_hash != expected_hash:
+            raise ValueError(
+                f"before tree does not match {requested_ref} for {skill_rel.as_posix()}"
+            )
+        provenance = {
+            "origin": f"git-ref:{commit}",
+            "requested_ref": requested_ref,
+            "resolved_commit": commit,
+            "skill_path": skill_rel.as_posix(),
+        }
+        if renamed_from is not None:
+            provenance["renamed_from"] = str(identity_source)
+        return provenance
+    raise ValueError("baseline origin must be pre-edit-snapshot or git-ref:<ref>")
+
+
+def _file_fingerprint(path: Path) -> str:
+    digest = hashlib.sha256()
+    digest.update(f"{path.stat().st_mode & 0o111:o}".encode("ascii"))
+    digest.update(b"\0")
+    digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def _reachable_runtime_files(root: Path, inclusion_policy: Any | None = None) -> set[Path]:
+    """Return files reachable through explicit pointers starting at SKILL.md."""
+    root = root.resolve()
+    available = {rel for rel, _path in _iter_files(root, inclusion_policy)}
+    reachable: set[Path] = {Path("SKILL.md")}
+    queue = [Path("SKILL.md")]
+    markdown_link = re.compile(r"\]\(([^)\s]+)\)")
+    bare_path = re.compile(r"(?<![A-Za-z0-9_/])(?:references|scripts|assets|workflows)/[\w./-]+")
+    python_module = re.compile(
+        r"^(?:from|import)\s+((?:scripts|references|assets|workflows)(?:\.[A-Za-z_][\w]*)+)",
+        re.MULTILINE,
+    )
+    javascript_import = re.compile(
+        r"(?:from\s+|require\(\s*|import\(\s*)['\"]([^'\"]+)['\"]"
+    )
+    shell_source = re.compile(r"^(?:source|\.)\s+([^\s;&|]+)", re.MULTILINE)
+
+    while queue:
+        source = queue.pop(0)
+        source_path = root / source
+        content = _read_text(source_path)
+        if content is None:
+            continue
+        raw_targets = [match.group(1) for match in markdown_link.finditer(content)]
+        raw_targets.extend(match.group(0) for match in bare_path.finditer(content))
+        raw_targets.extend(
+            match.group(1).replace(".", "/") + ".py"
+            for match in python_module.finditer(content)
+        )
+        raw_targets.extend(match.group(1) for match in javascript_import.finditer(content))
+        raw_targets.extend(match.group(1) for match in shell_source.finditer(content))
+        for raw in raw_targets:
+            value = raw.strip("<>`'\"").split("#", 1)[0].split("?", 1)[0]
+            if not value or re.match(r"^[a-z][a-z0-9+.-]*:", value, re.IGNORECASE):
+                continue
+            candidate = Path(value)
+            if candidate.is_absolute():
+                continue
+            if candidate.parts and candidate.parts[0] in {"references", "scripts", "assets", "workflows"}:
+                resolved = candidate
+            else:
+                resolved = source.parent / candidate
+            if ".." in resolved.parts:
+                continue
+            resolved_candidates = [resolved]
+            if not resolved.suffix:
+                resolved_candidates.extend(
+                    Path(f"{resolved}{suffix}")
+                    for suffix in (".py", ".js", ".mjs", ".cjs", ".sh")
+                )
+                resolved_candidates.extend((resolved / "__init__.py", resolved / "index.js"))
+            matched_file = False
+            for resolved_file in resolved_candidates:
+                if resolved_file in available and resolved_file not in reachable:
+                    reachable.add(resolved_file)
+                    queue.append(resolved_file)
+                    matched_file = True
+            if matched_file:
+                continue
+            target_dir = root / resolved
+            if target_dir.is_dir():
+                for child in sorted(available):
+                    if child != resolved and resolved in child.parents and child not in reachable:
+                        reachable.add(child)
+                        queue.append(child)
+    return reachable
+
+
+def _read_text(path: Path) -> str | None:
+    if path.suffix.lower() not in TEXT_SUFFIXES and path.name != "SKILL.md":
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def normalize_text(value: str) -> str:
+    value = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 \2", value)
+    value = re.sub(r"[`*_>#|]", " ", value)
+    value = re.sub(r"\s+", " ", value).strip().casefold()
+    return value
+
+
+def _tokens(value: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9_./-]+|[\u4e00-\u9fff]", normalize_text(value))
+        if len(token) > 1 or "\u4e00" <= token <= "\u9fff"
+    }
+
+
+def _frontmatter_description(content: str) -> tuple[str, int] | None:
+    if not content.startswith("---"):
+        return None
+    lines = content.splitlines()
+    end = next((index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"), None)
+    if end is None:
+        return None
+    for index, line in enumerate(lines[1:end], start=1):
+        if not line.startswith("description:"):
+            continue
+        value = line.partition(":")[2].strip()
+        if re.fullmatch(r"[>|][-+]?[0-9]?", value):
+            parts: list[str] = []
+            for continuation in lines[index + 1:end]:
+                # A blank line is part of a block scalar; only a non-indented
+                # line ends it.
+                if continuation.strip() and not continuation.startswith((" ", "\t")):
+                    break
+                if continuation.strip():
+                    parts.append(continuation.strip())
+            return " ".join(parts), index + 1
+        return value.strip('"\''), index + 1
+    return None
+
+
+def _description_units(content: str, rel: Path, scope: str) -> list[tuple[str, Occurrence]]:
+    parsed = _frontmatter_description(content)
+    if not parsed:
+        return []
+    description, line = parsed
+    segments: list[str] = []
+    for sentence in re.split(r"(?<=[.;。；])\s+", description):
+        sentence = sentence.strip()
+        if len(sentence) > 220:
+            segments.extend(part.strip() for part in re.split(r",\s+", sentence) if part.strip())
+        elif sentence:
+            segments.append(sentence)
+    # Short segments (a trigger phrase in a comma list, a two-word sentence) are
+    # merged into a neighbour instead of dropped: every piece of the old
+    # description must land in some unit, or removing it is never surfaced.
+    clauses: list[str] = []
+    pending = ""
+    for segment in segments:
+        pending = f"{pending}, {segment}" if pending else segment
+        if len(normalize_text(pending)) >= 18:
+            clauses.append(pending)
+            pending = ""
+    if pending:
+        if clauses:
+            clauses[-1] = f"{clauses[-1]} {pending}"
+        else:
+            clauses.append(pending)
+    return [
+        ("description_clause", Occurrence(str(rel), line, clause, scope))
+        for clause in clauses
+    ]
+
+
+def _markdown_units(content: str, rel: Path, scope: str) -> list[tuple[str, Occurrence]]:
+    results: list[tuple[str, Occurrence]] = []
+    lines = content.splitlines()
+    in_fence = False
+    in_frontmatter = bool(lines and lines[0].strip() == "---")
+    paragraph: list[tuple[int, str]] = []
+
+    def flush_paragraph() -> None:
+        if not paragraph:
+            return
+        line_no = paragraph[0][0]
+        text = " ".join(part.strip() for _, part in paragraph).strip()
+        paragraph.clear()
+        normalized = normalize_text(text)
+        if len(normalized) >= 35:
+            results.append(("guidance", Occurrence(str(rel), line_no, text, scope)))
+
+    for index, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if in_frontmatter:
+            if index > 1 and stripped == "---":
+                in_frontmatter = False
+            continue
+        if stripped.startswith("```"):
+            flush_paragraph()
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+)$", stripped)
+        bullet = re.match(r"^(?:[-*+]\s+|\d+[.)]\s+)(.+)$", stripped)
+        table = stripped.startswith("|") and stripped.endswith("|")
+        if heading:
+            flush_paragraph()
+            text = heading.group(1).strip()
+            if text and not re.fullmatch(r"[-: ]+", text):
+                results.append(("heading", Occurrence(str(rel), index, text, scope)))
+        elif bullet:
+            flush_paragraph()
+            text = bullet.group(1).strip()
+            if len(normalize_text(text)) >= 18:
+                results.append(("guidance", Occurrence(str(rel), index, text, scope)))
+        elif table:
+            flush_paragraph()
+            if not re.fullmatch(r"\|?[\s:|-]+\|?", stripped):
+                text = " | ".join(cell.strip() for cell in stripped.strip("|").split("|"))
+                if len(normalize_text(text)) >= 18:
+                    results.append(("guidance", Occurrence(str(rel), index, text, scope)))
+        elif not stripped:
+            flush_paragraph()
+        elif line.startswith(("    ", "\t")):
+            flush_paragraph()
+        else:
+            paragraph.append((index, stripped))
+    flush_paragraph()
+    return results
+
+
+def _interface_units(content: str, rel: Path, scope: str) -> list[tuple[str, Occurrence]]:
+    results: list[tuple[str, Occurrence]] = []
+    lines = content.splitlines()
+    patterns = {
+        "cli_flag": re.compile(r"(?<![\w-])--[a-z0-9][a-z0-9-]*"),
+        "internal_reference": re.compile(r"(?<![A-Za-z0-9_/])(?:scripts|references|assets|workflows)/[\w./-]+"),
+    }
+    for index, line in enumerate(lines, start=1):
+        for kind, pattern in patterns.items():
+            for match in pattern.finditer(line):
+                value = match.group(0).rstrip(".,;:)")
+                results.append((kind, Occurrence(str(rel), index, value, scope)))
+
+    env_patterns = (
+        re.compile(
+            r"(?:\$\{?|process\.env\.|os\.environ(?:\.get)?\([\"']?|env::var\([\"']?)"
+            r"([A-Z][A-Z0-9_]{2,})"
+        ),
+        re.compile(r"(?<![A-Z0-9_])([A-Z][A-Z0-9_]{2,})="),
+    )
+    for index, line in enumerate(lines, start=1):
+        for env_pattern in env_patterns:
+            for match in env_pattern.finditer(line):
+                results.append(("env_var", Occurrence(str(rel), index, match.group(1), scope)))
+
+    in_fence = False
+    command_pattern = re.compile(
+        r"^(?:[A-Z][A-Z0-9_]*=[^\s]+\s+)*(?:\$\s*)?"
+        r"(?:uv\s+run|python(?:3)?(?:\s+-m)?|node|pnpm|npm|npx|bash|sh|git|curl)\s+\S+"
+    )
+    for index, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not (in_fence or line.startswith(("    ", "\t"))):
+            continue
+        candidate = stripped.rstrip("\\").strip()
+        if command_pattern.match(candidate):
+            results.append(("command", Occurrence(str(rel), index, candidate, scope)))
+
+    if rel.suffix == ".py":
+        for index, line in enumerate(lines, start=1):
+            match = re.match(r"^(?:async\s+)?def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(|^class\s+([A-Za-z_][A-Za-z0-9_]*)", line)
+            if match:
+                results.append(("python_symbol", Occurrence(str(rel), index, match.group(1) or match.group(2), "implementation")))
+    elif rel.suffix in {".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"}:
+        for index, line in enumerate(lines, start=1):
+            match = re.match(
+                r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:export\s+)?(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=",
+                line,
+            )
+            if match:
+                results.append(("javascript_symbol", Occurrence(str(rel), index, match.group(1) or match.group(2), "implementation")))
+    return results
+
+
+def _eval_units(content: str, rel: Path, scope: str) -> list[tuple[str, Occurrence]]:
+    if scope != "development" or rel.suffix != ".json":
+        return []
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        return []
+    items = data.get("evals", []) if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return []
+    results: list[tuple[str, Occurrence]] = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            continue
+        identity = item.get("name") or item.get("id") or item.get("query")
+        prompt = item.get("prompt") or item.get("query") or ""
+        if identity or prompt:
+            results.append((
+                "eval_case",
+                Occurrence(str(rel), index, f"{identity}: {prompt}".strip(), "development"),
+            ))
+        expected_output = item.get("expected_output")
+        if isinstance(expected_output, str) and expected_output.strip():
+            results.append((
+                "eval_expectation",
+                Occurrence(str(rel), index, expected_output.strip(), "development"),
+            ))
+        expectations = (
+            item.get("expectations")
+            or item.get("assertions")
+            or item.get("expected_behavior")
+            or []
+        )
+        if isinstance(expectations, list):
+            for expectation in expectations:
+                text = expectation if isinstance(expectation, str) else json.dumps(expectation, sort_keys=True)
+                results.append(("eval_expectation", Occurrence(str(rel), index, text, "development")))
+        if isinstance(item.get("should_trigger"), bool):
+            results.append((
+                "trigger_expectation",
+                Occurrence(
+                    str(rel), index,
+                    f"should_trigger={str(item['should_trigger']).lower()}: {prompt}",
+                    "development",
+                ),
+            ))
+    return results
+
+
+def extract_units(
+    root: Path,
+    inclusion_policy: Any | None = None,
+) -> dict[tuple[str, str, str], Unit]:
+    units: dict[tuple[str, str, str], Unit] = {}
+    reachable = _reachable_runtime_files(root, inclusion_policy)
+    for rel, path in _iter_files(root, inclusion_policy):
+        scope = _scope_for(rel, reachable)
+        content = _read_text(path)
+        if content is None:
+            continue
+        extracted: list[tuple[str, Occurrence]] = []
+        if path.name == "SKILL.md":
+            extracted.extend(_description_units(content, rel, scope))
+        if path.suffix == ".md" or path.name == "SKILL.md":
+            extracted.extend(_markdown_units(content, rel, scope))
+        extracted.extend(_interface_units(content, rel, scope))
+        extracted.extend(_eval_units(content, rel, scope))
+        for kind, occurrence in extracted:
+            normalized = normalize_text(occurrence.text)
+            if not normalized:
+                continue
+            key = (occurrence.scope, kind, normalized)
+            if key not in units:
+                units[key] = Unit(kind, normalized, [])
+            units[key].occurrences.append(occurrence)
+    return units
+
+
+def _candidate_id(kind: str, scope: str, normalized: str) -> str:
+    value = f"{scope}\0{kind}\0{normalized}".encode("utf-8")
+    return hashlib.sha256(value).hexdigest()[:16]
+
+
+def _candidate(
+    *, kind: str, scope: str, normalized: str, occurrences: list[Occurrence],
+    only_outside_runtime: bool = False, observed_destinations: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": _candidate_id(kind, scope, normalized),
+        "kind": kind,
+        "scope": scope,
+        "text": occurrences[0].text if occurrences else normalized,
+        "occurrences": [occurrence.__dict__ for occurrence in occurrences],
+        "only_outside_runtime": only_outside_runtime,
+        "observed_destinations": observed_destinations or [],
+        "disposition": "unclassified",
+        "reason": "",
+        "evidence": [],
+        "destination": "",
+        "user_approval": "",
+        "semantic_review": {"reviewer": "", "rationale": ""},
+    }
+
+
+def _looks_present_outside_runtime(unit: Unit, after_units: dict[tuple[str, str, str], Unit]) -> bool:
+    if not unit.occurrences or unit.occurrences[0].scope != "runtime":
+        return False
+    wanted = _tokens(unit.occurrences[0].text)
+    if len(wanted) < 3:
+        return False
+    for (scope, _kind, _normalized), candidate in after_units.items():
+        if scope not in {"development", "unreachable"} or not candidate.occurrences:
+            continue
+        available = _tokens(candidate.occurrences[0].text)
+        if len(wanted & available) / len(wanted) >= 0.65:
+            return True
+    return False
+
+
+def build_report(
+    before: Path,
+    after: Path,
+    *,
+    baseline_origin: str = "test-fixture",
+    renamed_from: Path | None = None,
+    inclusion_policy: Any | None = None,
+) -> dict[str, Any]:
+    before = before.resolve()
+    after = after.resolve()
+    for label, root in (("before", before), ("after", after)):
+        if not root.is_dir() or not (root / "SKILL.md").is_file():
+            raise ValueError(f"{label} skill directory must contain SKILL.md: {root}")
+    policy = _policy_for_report(before, baseline_origin, inclusion_policy)
+    provenance = _resolve_baseline_provenance(
+        before,
+        after,
+        baseline_origin,
+        renamed_from=renamed_from,
+        inclusion_policy=policy,
+    )
+
+    before_files = {
+        str(rel).replace("\\", "/"): path for rel, path in _iter_files(before, policy)
+    }
+    after_files = {
+        str(rel).replace("\\", "/"): path for rel, path in _iter_files(after, policy)
+    }
+    before_reachable = _reachable_runtime_files(before, policy)
+    after_reachable = _reachable_runtime_files(after, policy)
+    after_hash_to_paths: dict[str, list[str]] = {}
+    for rel, path in after_files.items():
+        digest = _file_fingerprint(path)
+        after_hash_to_paths.setdefault(digest, []).append(rel)
+
+    candidates: list[dict[str, Any]] = []
+    auto_preserved: list[dict[str, Any]] = []
+    for rel, path in before_files.items():
+        if rel in after_files:
+            after_path = after_files[rel]
+            if _file_fingerprint(path) != _file_fingerprint(after_path):
+                rel_path = Path(rel)
+                scope = _scope_for(rel_path, before_reachable)
+                after_scope = _scope_for(rel_path, after_reachable)
+                if rel_path.name != "SKILL.md" and rel_path.suffix.lower() not in {".md", ".txt"}:
+                    candidates.append(_candidate(
+                        kind=f"{scope}_file_changed",
+                        scope=scope,
+                        normalized=rel.casefold(),
+                        occurrences=[Occurrence(rel, 1, f"{rel} changed content or executable mode", scope)],
+                        only_outside_runtime=scope == "runtime" and after_scope != "runtime",
+                        observed_destinations=[rel],
+                    ))
+            continue
+        digest = _file_fingerprint(path)
+        moved_to = after_hash_to_paths.get(digest, [])
+        scope = _scope_for(Path(rel), before_reachable)
+        valid_moves = [
+            target for target in moved_to
+            if _scope_for(Path(target), after_reachable) == scope
+        ]
+        if valid_moves:
+            auto_preserved.append({"kind": f"{scope}_file", "from": rel, "to": valid_moves})
+            continue
+        candidates.append(_candidate(
+            kind=f"{scope}_file",
+            scope=scope,
+            normalized=rel.casefold(),
+            occurrences=[Occurrence(rel, 1, rel, scope)],
+            only_outside_runtime=scope == "runtime" and bool(moved_to),
+            observed_destinations=moved_to,
+        ))
+
+    before_units = extract_units(before, policy)
+    after_units = extract_units(after, policy)
+    for key, unit in before_units.items():
+        if key in after_units:
+            auto_preserved.append({
+                "kind": unit.kind,
+                "text": unit.occurrences[0].text,
+                "from": [occurrence.__dict__ for occurrence in unit.occurrences],
+                "to": [occurrence.__dict__ for occurrence in after_units[key].occurrences],
+            })
+            continue
+        scope, kind, normalized = key
+        candidates.append(_candidate(
+            kind=kind,
+            scope=scope,
+            normalized=normalized,
+            occurrences=unit.occurrences,
+            only_outside_runtime=_looks_present_outside_runtime(unit, after_units),
+        ))
+
+    candidates.sort(key=lambda item: (item["scope"] != "runtime", item["kind"], item["id"]))
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "before": {
+            "path": str(before),
+            "tree_hash": tree_hash(before, policy),
+            "inclusion_policy": policy,
+            "provenance": provenance,
+        },
+        "after": {
+            "path": str(after),
+            "tree_hash": tree_hash(after, policy),
+            "inclusion_policy": policy,
+        },
+        "summary": {
+            "auto_preserved": len(auto_preserved),
+            "candidates": len(candidates),
+            "runtime_candidates": sum(item["scope"] == "runtime" for item in candidates),
+            "development_candidates": sum(item["scope"] == "development" for item in candidates),
+            "runtime_candidates_only_outside_runtime": sum(
+                item["scope"] == "runtime" and item["only_outside_runtime"] for item in candidates
+            ),
+        },
+        "auto_preserved": auto_preserved,
+        "candidates": candidates,
+    }
+
+
+def _load_review(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read regression review {path}: {error}") from error
+    if not isinstance(value, dict):
+        raise ValueError("regression review must be a JSON object")
+    return value
+
+
+def _validate_evidence(
+    after: Path,
+    evidence: Any,
+    candidate: dict[str, Any],
+    semantic_review: Any,
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(evidence, list) or not evidence:
+        return ["requires at least one evidence entry"]
+    file_candidate = candidate["kind"].endswith("_file") or candidate["kind"].endswith("_file_changed")
+    evidence_text: list[str] = []
+    for index, entry in enumerate(evidence):
+        if not isinstance(entry, dict):
+            errors.append(f"evidence[{index}] must be an object with path and line")
+            continue
+        rel = entry.get("path")
+        line = entry.get("line")
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or ".." in Path(rel).parts:
+            errors.append(f"evidence[{index}].path must be a safe path relative to the after skill")
+            continue
+        target = after / rel
+        if not target.is_file():
+            errors.append(f"evidence[{index}] target does not exist: {rel}")
+            continue
+        if file_candidate:
+            expected_hash = entry.get("sha256")
+            actual_hash = _file_fingerprint(target)
+            if not isinstance(expected_hash, str) or expected_hash != actual_hash:
+                errors.append(
+                    f"evidence[{index}].sha256 must equal the current file fingerprint for {rel}"
+                )
+            continue
+        if not isinstance(line, int) or line < 1:
+            errors.append(f"evidence[{index}].line must be a positive integer")
+            continue
+        try:
+            target_lines = target.read_text(encoding="utf-8").splitlines()
+            line_count = len(target_lines)
+        except (OSError, UnicodeDecodeError):
+            errors.append(f"evidence[{index}] target is not readable text: {rel}")
+            continue
+        if line > max(1, line_count):
+            errors.append(f"evidence[{index}] line {line} exceeds {rel} line count {line_count}")
+            continue
+        contains = entry.get("contains")
+        if not isinstance(contains, str) or not contains.strip():
+            errors.append(f"evidence[{index}].contains must quote current text near the cited line")
+            continue
+        start = max(0, line - 3)
+        end = min(line_count, line + 2)
+        window = " ".join(target_lines[start:end])
+        if normalize_text(contains) not in normalize_text(window):
+            errors.append(
+                f"evidence[{index}].contains was not found within two lines of {rel}:{line}"
+            )
+        evidence_text.append(contains)
+
+    if file_candidate and not errors:
+        valid_semantic_review = (
+            isinstance(semantic_review, dict)
+            and isinstance(semantic_review.get("reviewer"), str)
+            and bool(semantic_review["reviewer"].strip())
+            and isinstance(semantic_review.get("rationale"), str)
+            and len(semantic_review["rationale"].strip()) >= 40
+        )
+        if not valid_semantic_review:
+            errors.append(
+                "file-level preservation requires semantic_review with a reviewer and a concrete "
+                "40+ character rationale; a current file fingerprint proves identity, not behavior"
+            )
+    elif not errors:
+        wanted = _tokens(candidate["text"]) - RELATION_STOPWORDS
+        observed = _tokens(" ".join(evidence_text)) - RELATION_STOPWORDS
+        required_overlap = 2 if len(wanted) >= 4 else 1
+        if len(wanted & observed) < required_overlap:
+            valid_semantic_review = (
+                isinstance(semantic_review, dict)
+                and isinstance(semantic_review.get("reviewer"), str)
+                and bool(semantic_review["reviewer"].strip())
+                and isinstance(semantic_review.get("rationale"), str)
+                and len(semantic_review["rationale"].strip()) >= 20
+            )
+            if not valid_semantic_review:
+                errors.append(
+                    "evidence has no meaningful lexical relationship to the old candidate; "
+                    "add an independent semantic_review with reviewer and rationale"
+                )
+    return errors
+
+
+def _verifiable_evidence_quote(line: str, needle: str) -> str:
+    """Keep a raw match when possible; otherwise quote its complete source line."""
+    if normalize_text(needle) in normalize_text(line):
+        return needle
+    return line.strip()
+
+
+def _review_inclusion_policy(review: dict[str, Any]) -> dict[str, Any]:
+    before_policy = review.get("before", {}).get("inclusion_policy")
+    after_policy = review.get("after", {}).get("inclusion_policy")
+    if before_policy is None and after_policy is None:
+        return _legacy_audit_policy()
+    if before_policy is None or after_policy is None:
+        raise ValueError("review must record the inclusion policy for both before and after")
+    before_normalized = _normalize_audit_policy(before_policy)
+    after_normalized = _normalize_audit_policy(after_policy)
+    if before_normalized != after_normalized:
+        raise ValueError("review before/after inclusion policies must match")
+    return before_normalized
+
+
+def verify_review(before: Path, after: Path, review_path: Path) -> tuple[bool, list[str]]:
+    before = before.resolve()
+    after = after.resolve()
+    review = _load_review(review_path)
+    baseline_origin = review.get("before", {}).get("provenance", {}).get("origin")
+    # compare 已把 --renamed-from 记进 provenance；verify 必须沿用同一身份源，
+    # 否则凡 snapshot 源路径 ≠ --after 路径（如 baseline 取自替身目录）时
+    # identity 检查永远失败，形成无解死路。
+    renamed_from_value = review.get("before", {}).get("provenance", {}).get("renamed_from")
+    renamed_from = (
+        Path(renamed_from_value)
+        if isinstance(renamed_from_value, str) and renamed_from_value
+        else None
+    )
+    errors: list[str] = []
+    try:
+        inclusion_policy = _review_inclusion_policy(review)
+        current = build_report(
+            before,
+            after,
+            baseline_origin=baseline_origin or "",
+            renamed_from=renamed_from,
+            inclusion_policy=inclusion_policy,
+        )
+    except ValueError as error:
+        return False, [str(error)]
+    if review.get("schema_version") != SCHEMA_VERSION:
+        errors.append(f"unsupported schema_version: {review.get('schema_version')!r}")
+    if not isinstance(baseline_origin, str) or not (
+        baseline_origin == "pre-edit-snapshot"
+        or baseline_origin.startswith("git-ref:")
+        or baseline_origin == "test-fixture"
+    ):
+        errors.append("before.provenance.origin must be pre-edit-snapshot or git-ref:<ref>")
+    if review.get("before", {}).get("tree_hash") != current["before"]["tree_hash"]:
+        errors.append("before skill changed after the review was generated")
+    if review.get("after", {}).get("tree_hash") != current["after"]["tree_hash"]:
+        errors.append("after skill changed after the review was generated")
+
+    reviewed_candidates = {
+        item.get("id"): item
+        for item in review.get("candidates", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+    current_ids = {item["id"] for item in current["candidates"]}
+    reviewed_ids = set(reviewed_candidates)
+    if current_ids != reviewed_ids:
+        missing = sorted(current_ids - reviewed_ids)
+        stale = sorted(reviewed_ids - current_ids)
+        if missing:
+            errors.append(f"review is missing current candidates: {', '.join(missing)}")
+        if stale:
+            errors.append(f"review contains stale candidates: {', '.join(stale)}")
+
+    for candidate in current["candidates"]:
+        reviewed = reviewed_candidates.get(candidate["id"], {})
+        disposition = reviewed.get("disposition")
+        label = f"{candidate['id']} ({candidate['kind']}: {candidate['text'][:80]})"
+        if disposition not in VALID_DISPOSITIONS:
+            errors.append(f"{label} is unclassified")
+            continue
+        reason = reviewed.get("reason")
+        if not isinstance(reason, str) or len(reason.strip()) < 20:
+            errors.append(f"{label} requires a concrete reason of at least 20 characters")
+        if disposition in {"preserved_or_moved", "intentional_sanitization", "true_gap_fixed"}:
+            errors.extend(
+                f"{label}: {message}"
+                for message in _validate_evidence(
+                    after,
+                    reviewed.get("evidence"),
+                    candidate,
+                    reviewed.get("semantic_review"),
+                )
+            )
+        elif disposition == "intentional_boundary":
+            destination = reviewed.get("destination")
+            if not isinstance(destination, str) or not destination.strip():
+                errors.append(f"{label} requires the owning skill/domain in destination")
+            if candidate["scope"] == "runtime":
+                approval = reviewed.get("user_approval")
+                if not isinstance(approval, str) or len(approval.strip()) < 12:
+                    errors.append(
+                        f"{label} requires traceable user_approval before moving a runtime capability out of scope"
+                    )
+                errors.extend(
+                    f"{label}: {message}"
+                    for message in _validate_evidence(
+                        after,
+                        reviewed.get("evidence"),
+                        candidate,
+                        reviewed.get("semantic_review"),
+                    )
+                )
+        elif disposition == "removed_by_explicit_user_request":
+            approval = reviewed.get("user_approval")
+            if not isinstance(approval, str) or len(approval.strip()) < 12:
+                errors.append(f"{label} requires a traceable user_approval quote or decision")
+        elif disposition == "not_reusable" and candidate["scope"] == "runtime":
+            errors.append(
+                f"{label}: runtime capability cannot be retired as not_reusable; "
+                "preserve it, name an intentional boundary, or provide explicit user approval"
+            )
+    return not errors, errors
+
+
+def classify_review(
+    review_path: Path,
+    after: Path,
+    map_path: Path,
+    reviewer: str,
+) -> tuple[int, list[str]]:
+    """Fill candidate dispositions mechanically from an author-supplied map.
+
+    The author still decides every disposition and reason; this subcommand only
+    does the typing ``verify`` would otherwise force into a hand-written filler
+    script each round: locate the quoted evidence line in the destination file,
+    compute file fingerprints for file-level candidates, and write entries in
+    the exact shape ``verify`` validates. Fail-fast: any problem in the map
+    aborts before anything is written, so a half-classified review never lands.
+
+    Map fields: ``destination``, ``reason``, ``disposition`` (default
+    ``preserved_or_moved``), ``needle`` (non-file candidates). Optional
+    ``user_approval`` is passed through verbatim — ``verify`` requires it for
+    runtime ``intentional_boundary`` and ``removed_by_explicit_user_request``.
+    """
+    after = after.resolve()
+    review = _load_review(review_path)
+    candidates = review.get("candidates")
+    if not isinstance(candidates, list):
+        raise ValueError("regression review has no candidates list")
+    try:
+        mapping = json.loads(map_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read disposition map {map_path}: {error}") from error
+    if not isinstance(mapping, dict) or not mapping:
+        raise ValueError(
+            "disposition map must be a non-empty JSON object keyed by candidate index or id"
+        )
+    reviewer = reviewer.strip()
+    if not reviewer:
+        raise ValueError("--reviewer must not be blank; verify requires an attributable reviewer")
+
+    by_id = {c.get("id"): c for c in candidates if isinstance(c, dict)}
+    errors: list[str] = []
+    staged: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for key, entry in mapping.items():
+        candidate = by_id.get(key)
+        if candidate is None:
+            try:
+                idx = int(key)
+                # 负数索引在 Python 里合法但在这里是语义错乱（"-1" 会静默指向
+                # 最后一个候选）——索引必须是候选集内的非负整数，否则落到
+                # 前缀/报错路径。
+                if idx >= 0:
+                    candidate = candidates[idx]
+            except (ValueError, IndexError):
+                candidate = None
+        if candidate is None:
+            # 唯一 id 前缀（≥4 字符）：完整 16 位 id 在终端里难抄，
+            # 前缀唯一即可安全定位；歧义前缀显式报错而不是静默选错。
+            # 纯数字 key 在索引失败（越界/负数）后同样允许走前缀——
+            # 候选 id 是 hex 截断，前几位全数字是常态（4 位全数字概率约 15%）。
+            if isinstance(key, str) and len(key) >= 4:
+                pref = [
+                    c
+                    for cid, c in by_id.items()
+                    if isinstance(cid, str) and cid.startswith(key)
+                ]
+                if len(pref) == 1:
+                    candidate = pref[0]
+                elif len(pref) > 1:
+                    errors.append(
+                        f"map key {key!r} is an ambiguous id prefix "
+                        f"({len(pref)} candidates match)"
+                    )
+                    continue
+        if candidate is None:
+            errors.append(f"map key {key!r} matches no candidate index or id")
+            continue
+        if not isinstance(entry, dict):
+            errors.append(f"map[{key}] must be an object")
+            continue
+        disposition = entry.get("disposition", "preserved_or_moved")
+        if disposition not in VALID_DISPOSITIONS:
+            errors.append(
+                f"map[{key}].disposition {disposition!r} is not one of {sorted(VALID_DISPOSITIONS)}"
+            )
+            continue
+        reason = str(entry.get("reason", "")).strip()
+        destination = str(entry.get("destination", "")).strip()
+        kind = str(candidate.get("kind", ""))
+        file_candidate = kind.endswith("_file") or kind.endswith("_file_changed")
+        min_reason = 40 if file_candidate else 20
+        if len(reason) < min_reason:
+            errors.append(f"map[{key}].reason needs >= {min_reason} characters (got {len(reason)})")
+            continue
+        if not destination or Path(destination).is_absolute() or ".." in Path(destination).parts:
+            errors.append(f"map[{key}].destination must be a safe path relative to the after skill")
+            continue
+        target = after / destination
+        if not target.is_file():
+            errors.append(f"map[{key}].destination does not exist under after: {destination}")
+            continue
+        if file_candidate:
+            evidence: list[dict[str, Any]] = [
+                {"path": destination, "sha256": _file_fingerprint(target)}
+            ]
+        else:
+            needle = str(entry.get("needle", "")).strip()
+            if not needle:
+                errors.append(f"map[{key}].needle is required for non-file candidates")
+                continue
+            line_no = None
+            evidence_quote = None
+            try:
+                for i, line in enumerate(target.read_text(encoding="utf-8").splitlines(), 1):
+                    if needle in line:
+                        line_no = i
+                        evidence_quote = _verifiable_evidence_quote(line, needle)
+                        break
+            except (OSError, UnicodeDecodeError):
+                errors.append(f"map[{key}] destination is not readable text: {destination}")
+                continue
+            if line_no is None:
+                errors.append(f"map[{key}].needle not found in {destination}: {needle[:60]!r}")
+                continue
+            evidence = [{"path": destination, "line": line_no, "contains": evidence_quote}]
+        semantic_review = {"reviewer": reviewer, "rationale": reason}
+        fields: dict[str, Any] = {
+            "disposition": disposition,
+            "reason": reason,
+            "destination": destination,
+            "evidence": evidence,
+            "semantic_review": semantic_review,
+        }
+        # Pass through the approval trail verbatim — verify requires it for
+        # runtime intentional_boundary / removed_by_explicit_user_request, and
+        # silently dropping it here forces a hand-edit of the review JSON,
+        # which is exactly what this subcommand exists to prevent.
+        user_approval = str(entry.get("user_approval", "")).strip()
+        if user_approval:
+            fields["user_approval"] = user_approval
+        validates_evidence = disposition in {
+            "preserved_or_moved",
+            "intentional_sanitization",
+            "true_gap_fixed",
+        } or (disposition == "intentional_boundary" and candidate.get("scope") == "runtime")
+        if validates_evidence:
+            evidence_errors = _validate_evidence(after, evidence, candidate, semantic_review)
+            if evidence_errors:
+                errors.extend(
+                    f"map[{key}] generated invalid evidence: {message}"
+                    for message in evidence_errors
+                )
+                continue
+        staged.append((candidate, fields))
+
+    if errors:
+        raise ValueError("disposition map has problems; nothing was written:\n- " + "\n- ".join(errors))
+
+    for candidate, fields in staged:
+        candidate.update(fields)
+    tmp = review_path.with_name(review_path.name + ".tmp")
+    tmp.write_text(json.dumps(review, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    os.replace(tmp, review_path)
+    unclassified = [
+        f"{c.get('id')} ({c.get('kind')})"
+        for c in candidates
+        if isinstance(c, dict) and c.get("disposition") == "unclassified"
+    ]
+    return len(staged), unclassified
+
+
+def _attestation_digest(before_hash: str, after_hash: str, review_hash: str) -> str:
+    value = f"{SCHEMA_VERSION}\0{before_hash}\0{after_hash}\0{review_hash}".encode("ascii")
+    return hashlib.sha256(value).hexdigest()
+
+
+def create_regression_marker(after: Path, review_path: Path) -> Path:
+    """Persist a content-bound attestation after a completed review passes."""
+    after = after.resolve()
+    review = _load_review(review_path)
+    before_value = review.get("before", {}).get("path")
+    if not isinstance(before_value, str) or not before_value:
+        raise ValueError("review does not contain before.path")
+    ok, errors = verify_review(Path(before_value), after, review_path)
+    if not ok:
+        raise ValueError("cannot attest an invalid review: " + "; ".join(errors[:5]))
+    review_hash = hashlib.sha256(review_path.read_bytes()).hexdigest()
+    before_hash = review["before"]["tree_hash"]
+    inclusion_policy = _review_inclusion_policy(review)
+    after_hash = tree_hash(after, inclusion_policy)
+    attestation = _attestation_digest(before_hash, after_hash, review_hash)
+    marker = after / REGRESSION_MARKER
+    marker_tmp = marker.with_name(marker.name + ".tmp")
+    marker_tmp.write_text(
+        "Skill regression review passed\n"
+        f"Schema version: {SCHEMA_VERSION}\n"
+        f"Inclusion policy: {json.dumps(inclusion_policy, sort_keys=True, separators=(',', ':'))}\n"
+        f"Before tree hash: {before_hash}\n"
+        f"After tree hash: {after_hash}\n"
+        f"Review hash: {review_hash}\n"
+        f"Attestation digest: {attestation}\n"
+        f"Reviewed at: {datetime.now(timezone.utc).isoformat()}\n",
+        encoding="utf-8",
+    )
+    os.replace(marker_tmp, marker)  # atomic (methodology §4.5): packaging reads it concurrently
+    return marker
+
+
+def validate_regression_marker(skill_path: Path) -> tuple[bool, str]:
+    """Validate that the local regression attestation matches current content."""
+    skill_path = skill_path.resolve()
+    marker = skill_path / REGRESSION_MARKER
+    if not marker.is_file():
+        return False, "regression review marker is missing"
+    try:
+        content = marker.read_text(encoding="utf-8")
+    except OSError as error:
+        return False, f"cannot read regression review marker: {error}"
+    after_match = re.search(r"^After tree hash:\s*([a-f0-9]{64})$", content, re.MULTILINE)
+    before_match = re.search(r"^Before tree hash:\s*([a-f0-9]{64})$", content, re.MULTILINE)
+    review_match = re.search(r"^Review hash:\s*([a-f0-9]{64})$", content, re.MULTILINE)
+    attestation_match = re.search(r"^Attestation digest:\s*([a-f0-9]{64})$", content, re.MULTILINE)
+    reviewed_at_match = re.search(r"^Reviewed at:\s*(\S+)$", content, re.MULTILINE)
+    if not all((after_match, before_match, review_match, attestation_match, reviewed_at_match)):
+        return False, "regression review marker is malformed"
+    schema_match = re.search(r"^Schema version:\s*(\d+)$", content, re.MULTILINE)
+    if not schema_match or int(schema_match.group(1)) != SCHEMA_VERSION:
+        return False, "regression review marker uses an obsolete schema"
+    policy_match = re.search(r"^Inclusion policy:\s*(\{.*\})$", content, re.MULTILINE)
+    if policy_match:
+        try:
+            inclusion_policy = _normalize_audit_policy(json.loads(policy_match.group(1)))
+        except (json.JSONDecodeError, ValueError) as error:
+            return False, f"regression review marker inclusion policy is invalid: {error}"
+    else:
+        inclusion_policy = _legacy_audit_policy()
+    expected_attestation = _attestation_digest(
+        before_match.group(1), after_match.group(1), review_match.group(1)
+    )
+    if attestation_match.group(1) != expected_attestation:
+        return False, "regression review marker attestation digest is invalid"
+    try:
+        datetime.fromisoformat(reviewed_at_match.group(1).replace("Z", "+00:00"))
+    except ValueError:
+        return False, "regression review marker timestamp is invalid"
+    if after_match.group(1) != tree_hash(skill_path, inclusion_policy):
+        return False, "skill content changed since the regression review"
+    return True, "regression review marker is current"
+
+
+def requires_regression_review(skill_path: Path, *, new_skill: bool = False) -> tuple[bool, str]:
+    """Return whether current skill content needs a fresh review before packaging."""
+    skill_path = skill_path.resolve()
+    marker = skill_path / REGRESSION_MARKER
+    marker_note = "regression review marker is missing"
+    if marker.exists():
+        valid, reason = validate_regression_marker(skill_path)
+        marker_note = reason if valid else f"stale/invalid marker: {reason}"
+    try:
+        repo = Path(subprocess.run(
+            ["git", "-C", str(skill_path), "rev-parse", "--show-toplevel"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip())
+        rel = skill_path.relative_to(repo)
+    except (subprocess.CalledProcessError, ValueError):
+        if new_skill:
+            return False, "explicitly declared new skill outside Git"
+        return True, "cannot prove whether this non-Git skill is new; pass --new-skill only for a genuinely new skill"
+    baseline = f"HEAD:{str(rel).replace(chr(92), '/')}/SKILL.md"
+    exists = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", baseline],
+        capture_output=True, text=True,
+    ).returncode == 0
+    if not exists:
+        return False, "skill does not exist in Git HEAD (new skill)"
+    return True, (
+        "existing Git-tracked skill requires the completed regression review at packaging time; "
+        f"the local marker is informational only ({marker_note})"
+    )
+
+
+def verify_review_for_after(review_path: Path, after: Path) -> tuple[bool, list[str]]:
+    review = _load_review(review_path)
+    before_value = review.get("before", {}).get("path")
+    if not isinstance(before_value, str) or not before_value:
+        return False, ["review does not contain before.path"]
+    origin = review.get("before", {}).get("provenance", {}).get("origin")
+    if origin == "test-fixture":
+        return False, ["test-fixture baseline provenance cannot authorize packaging"]
+    return verify_review(Path(before_value), after, review_path)
+
+
+def _write_report(report: dict[str, Any], output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _print_compare(report: dict[str, Any], output: Path) -> None:
+    summary = report["summary"]
+    print(f"Regression audit: {summary['candidates']} candidate(s), {summary['auto_preserved']} exact preservation(s)")
+    print(f"  runtime candidates: {summary['runtime_candidates']}")
+    print(f"  development candidates: {summary['development_candidates']}")
+    print(f"  runtime candidates found only outside the runtime reachability graph: {summary['runtime_candidates_only_outside_runtime']}")
+    print(f"  review file: {output}")
+    if summary["candidates"]:
+        print("Review every candidate and replace disposition=unclassified before verify.")
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Audit an existing skill rewrite for lost capabilities")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    snapshot = subparsers.add_parser(
+        "snapshot",
+        help="capture an immutable pre-edit bundle with provenance for a non-Git baseline",
+    )
+    snapshot.add_argument("--source", required=True, type=Path)
+    snapshot.add_argument("--output", required=True, type=Path)
+    archive_snapshot = subparsers.add_parser(
+        "archive-snapshot",
+        help="write a verified pre-edit snapshot to a portable zip archive",
+    )
+    archive_snapshot.add_argument("--source", required=True, type=Path)
+    archive_snapshot.add_argument("--output", required=True, type=Path)
+    compare = subparsers.add_parser("compare", help="generate an editable regression review")
+    compare.add_argument("--before", required=True, type=Path)
+    compare.add_argument("--after", required=True, type=Path)
+    compare.add_argument("--output", required=True, type=Path)
+    compare.add_argument(
+        "--baseline-origin",
+        required=True,
+        help="pre-edit-snapshot or git-ref:<ref>",
+    )
+    compare.add_argument(
+        "--allow-identical-baseline",
+        action="store_true",
+        help="explicit bootstrap only: allow before and after to have the same tree hash",
+    )
+    compare.add_argument(
+        "--renamed-from",
+        type=Path,
+        default=None,
+        help=(
+            "explicit rename declaration: the path --source pointed at when the baseline "
+            "was captured (snapshot) or the skill's old path in the baseline ref (git-ref). "
+            "Use when --after is at a different path than the baseline because the skill "
+            "was renamed or moved; the identity check verifies this path instead of --after, "
+            "so an undeclared path mismatch still fails exactly as before."
+        ),
+    )
+    compare.add_argument("--json", action="store_true", help="also print the report JSON")
+    verify = subparsers.add_parser("verify", help="verify a completed regression review")
+    verify.add_argument("--before", required=True, type=Path)
+    verify.add_argument("--after", required=True, type=Path)
+    verify.add_argument("--review", required=True, type=Path)
+    verify.add_argument("--json", action="store_true", help="print a machine-readable result")
+    classify = subparsers.add_parser(
+        "classify",
+        help="fill dispositions from an author-supplied map (does the typing, not the judging)",
+    )
+    classify.add_argument("--review", required=True, type=Path)
+    classify.add_argument("--after", required=True, type=Path)
+    classify.add_argument(
+        "--map",
+        dest="map_path",
+        required=True,
+        type=Path,
+        help='JSON object: candidate index or id -> {"destination", "needle", "reason", "disposition"?}',
+    )
+    classify.add_argument(
+        "--reviewer",
+        required=True,
+        help="attributable reviewer recorded in semantic_review (you, not the tool)",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    try:
+        if args.command == "snapshot":
+            manifest = create_baseline_snapshot(args.source, args.output)
+            print(f"Pre-edit skill snapshot created: {manifest.parent}")
+            print(f"Provenance manifest: {manifest.name}")
+            return 0
+        if args.command == "archive-snapshot":
+            archive = archive_baseline_snapshot(args.source, args.output)
+            print(f"Verified pre-edit snapshot archive created: {archive}")
+            return 0
+        if args.command == "compare":
+            if not (
+                args.baseline_origin == "pre-edit-snapshot"
+                or args.baseline_origin.startswith("git-ref:")
+            ):
+                raise ValueError("--baseline-origin must be pre-edit-snapshot or git-ref:<ref>")
+            report = build_report(
+                args.before,
+                args.after,
+                baseline_origin=args.baseline_origin,
+                renamed_from=args.renamed_from,
+            )
+            if (
+                report["before"]["tree_hash"] == report["after"]["tree_hash"]
+                and not args.allow_identical_baseline
+            ):
+                raise ValueError(
+                    "before and after are identical; this commonly means the baseline was copied after editing. "
+                    "Reconstruct the old bundle, or use --allow-identical-baseline only for an explicit no-change bootstrap."
+                )
+            _write_report(report, args.output)
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+            else:
+                _print_compare(report, args.output)
+            return 1 if report["candidates"] else 0
+        if args.command == "classify":
+            classified, unclassified = classify_review(
+                args.review, args.after, args.map_path, args.reviewer
+            )
+            print(f"Classified {classified} candidate(s).")
+            if unclassified:
+                print(f"Still unclassified: {len(unclassified)}")
+                for item in unclassified:
+                    print(f"- {item}")
+            return 1 if unclassified else 0
+        ok, errors = verify_review(args.before, args.after, args.review)
+        result = {"status": "pass" if ok else "fail", "errors": errors}
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif ok:
+            print("Skill regression review passed.")
+        else:
+            print("Skill regression review failed:")
+            for error in errors:
+                print(f"- {error}")
+        if ok:
+            marker = create_regression_marker(args.after, args.review)
+            if not args.json:
+                print(f"Regression attestation created: {marker.name}")
+        return 0 if ok else 1
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        print(f"Regression audit error: {error}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

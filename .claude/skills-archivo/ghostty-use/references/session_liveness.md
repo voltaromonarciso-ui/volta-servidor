@@ -1,0 +1,111 @@
+# Session liveness: storage layouts and classification rules
+
+Verified against Claude Code (glm profile on 2026-10-04) and Codex CLI 0.16x
+on macOS. All timestamps in this file are evidence anchors — re-verify after a
+major app update rather than trusting the dates.
+
+## Claude Code transcript layout
+
+- Per-session file: `~/.claude/projects/<encoded-cwd>/<session-uuid>.jsonl`
+  (`/` → `-` encoding of the working directory at session start).
+- JSON lines. Load-bearing fields:
+  - `timestamp` — ISO-8601 with `Z` suffix; **UTC**.
+  - `isApiErrorMessage: true` marks a real API-error event; when its text
+    carries "Login expired" the channel is dead. Prose elsewhere in the
+    transcript that merely mentions such strings is conversation, not an error
+    event — a healthy session that discussed the phrase "Login expired" was
+    misread as dead until classification keyed on the structured flag
+    (2026-10-04).
+  - First user message: `{"type":"user","message":{"content":[...]}}`.
+- mtime lies: an idle TUI keeps touching its jsonl, so a same-day mtime
+  coexisted with in-file events that stopped at 03:21 (measured 2026-10-04 on
+  five sessions). Liveness must read content.
+- Profile config dirs that symlink `projects/` into the shared pool make
+  session files reachable from any profile: session storage is effectively one
+  pool. Detect this at runtime (follow the symlink) instead of assuming either
+  shape — a profile's own `projects` dir may be a symlink (`ls -la` shows
+  `projects -> /Users/<user>/.claude/projects/`) while another profile's is a
+  real directory.
+
+## Codex rollout layout
+
+- Per-session file:
+  `~/.codex/sessions/YYYY/MM/DD/rollout-<YYYY-MM-DDTHH-MM-SS>-<ulid>.jsonl`
+  — **filename time is local; the embedded `timestamp` is UTC** (Z-suffix).
+  This pairing cost one matching round-trip before it was pinned down
+  (2026-10-04).
+- Filename id is a hyphenated hex UUID (UUIDv7-shaped; synthetic example:
+  `rollout-2026-01-01T00-00-00-00000000-0000-7000-8000-000000000001.jsonl`);
+  its ordering prefix ≈ creation order. `codex resume <old-id>` may keep
+  appending to the original file instead of forking a new one (both behaviors
+  observed).
+- Current Codex can name physical segments
+  `rollout-...-<logical-thread>_<physical-rollout>.jsonl`. An underscore does not
+  prove a subagent: the maintained history reader's metadata establishes identity
+  and subagent status. The state database selects the current physical segment;
+  verify `session_meta.id` through `read-codex-history` rather than taking the
+  first filename match. Multiple segments without a valid indexed selection are
+  ambiguous; report unknown. A missing selected segment or mismatched internal
+  identity is unavailable evidence, not a license to use an older segment.
+- Some sessions have **no rollout file at all** while the process lives —
+  resume targets whose source rollout left the default tree, plus TUIs never
+  used since start. A verified indexed identity with no usable file can classify
+  `no-artifact`; missing index/reader or ambiguous identity classify `unknown`. Restoring replays
+  `codex resume <id>` and stays best-effort. Absence is not data loss by
+  itself.
+
+## Classification
+
+- `active` / `stale`: last in-file interaction within / beyond 48h (threshold
+  is one constant in `scripts/ghostty_session.py`).
+- `dead-channel`: structured `isApiErrorMessage` + "Login expired" text.
+  Restore reopens history; the TUI stops at `/login`. The keychain may still
+  hold a refreshToken with a future expiry while the account itself refuses
+  auth — the token's own clock proves nothing about the account.
+- `api-error` suffix: other structured API errors in the tail.
+- `no-artifact`: no usable file for an otherwise verified indexed identity.
+- `unknown`: Codex reader/index unavailable or rollout identity cannot be proved.
+  Default active-only restoration skips it; explicit `--only` or `--all` preserves
+  the user's option to resume the recorded ID. Report the boundary.
+
+## Misclassification war stories (why each rule exists)
+
+1. **mtime vs content timestamps** — five sessions read "active this
+   afternoon" while in-file events had stopped at 03:21; idle TUI file-touching
+   caused it. Rule: liveness reads content.
+2. **Prose false positive** — a healthy session that discussed the phrase
+   "Login expired" was graded dead-channel; classification now keys on the
+   structured flag only.
+3. **argv[0] instability** — matching processes by name missed every bare-name
+   process and produced two false "all sessions gone" reports in one session.
+   Rule: anchor on the command-line UUID at argv-token boundaries, skipping
+   companion/snapshot/daemon processes. (For argv that carries no UUID — fresh
+   TUIs — this rule is extended by item 4.)
+4. **Fresh-TUI invisibility** — only resume/fork writes the session UUID into
+   argv; a brand-new TUI has none. On 2026-10-07, 11 of 25 live Ghostty
+   sessions were fresh TUIs, and argv-only anchoring silently dropped them
+   from the snapshot, from `check` presence (false "gone"), and from
+   `restore`'s already-live filter (which would have reopened duplicate tabs).
+   Rule: UUID-less live TUIs are anchored from transcript storage — the
+   session file must be born at or after the process start (`ps lstart`,
+   second-truncated, vs float birthtime; a ½s clock tolerance is the whole
+   leeway — anything more only admits fresh corpse files, and one born 3s
+   before start is already a corpse). lstart field order varies by platform
+   locale ("Tue Oct  6 …" vs "Tue  6 Oct …", parse both). The bucket name
+   keeps the capitalization seen at creation (match case-insensitively) and
+   encodes every non-[A-Za-z0-9-] character as `-` (pinned on 347 real buckets
+   plus a live `foo_bar` probe: `/`, `.`, space, CJK and `_` all fold). The
+   file must pass internal identity verification (Claude head `cwd` within 40
+   lines — the worst real file first records it at line 9; Codex
+   `session_meta` id+cwd); a file with no verifiable cwd fails closed rather
+   than passing on the bucket alone. A node wrapper and its vendor child on
+   one pty count as one TUI — as competitors they once tied every offer and
+   excluded all three live codex sessions (2026-10-07 live regression caught
+   by re-running the snapshot after the assignment rewrite). When several
+   fresh TUIs share one bucket, candidates bind disjointly (one file per TUI,
+   closest verified claim first, fallback to the TUI's next candidate);
+   equidistant claims refuse to the unresolved section, and whatever still
+   matches nothing is reported as an unresolved row, never dropped silently.
+   Corpse files from dead earlier TUIs are the standing theft hazard: the
+   2026-10-07 pkm bucket held one born 10s before a live TUI's start, and the
+   disjoint-assignment rule plus the ½s leeway are what keep it from winning.

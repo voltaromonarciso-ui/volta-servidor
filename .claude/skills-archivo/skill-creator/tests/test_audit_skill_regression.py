@@ -1,0 +1,1449 @@
+import json
+import hashlib
+import os
+import subprocess
+import zipfile
+from pathlib import Path
+
+import pytest
+
+from scripts.audit_skill_regression import (
+    archive_baseline_snapshot,
+    build_report,
+    create_baseline_snapshot,
+    create_regression_marker,
+    main,
+    requires_regression_review,
+    tree_hash,
+    validate_regression_marker,
+    verify_review,
+)
+from scripts.packaging_policy import (
+    LEGACY_INCLUSION_POLICY_VERSION,
+    inclusion_policy_metadata,
+)
+
+
+def _make_skill(root: Path, body: str, description: str = "Audits a fixture workflow.") -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "SKILL.md").write_text(
+        "---\n"
+        "name: fixture-skill\n"
+        f"description: {description}\n"
+        "---\n\n"
+        "# Fixture Skill\n\n"
+        f"{body.strip()}\n",
+        encoding="utf-8",
+    )
+    return root
+
+
+def _write_review(path: Path, report: dict) -> Path:
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def _candidate_texts(report: dict) -> list[str]:
+    return [candidate["text"] for candidate in report["candidates"]]
+
+
+def test_snapshot_records_replayable_policy_and_excludes_only_runtime_authorization(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    (skill / ".authorization").write_text("local root grant\n", encoding="utf-8")
+    (skill / "scripts").mkdir()
+    (skill / "scripts" / ".authorization").write_text("local script grant\n", encoding="utf-8")
+    (skill / "tests").mkdir()
+    (skill / "tests" / ".authorization").write_text("fake test grant\n", encoding="utf-8")
+    (skill / "evals").mkdir()
+    (skill / "evals" / ".authorization").write_text("fake eval grant\n", encoding="utf-8")
+    (skill / ".env.example").write_text("TOKEN=replace-me\n", encoding="utf-8")
+    (skill / "config").mkdir()
+    (skill / "config" / "authorization.json").write_text("{}\n", encoding="utf-8")
+    before = tmp_path / "before"
+
+    manifest_path = create_baseline_snapshot(skill, before)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert not (before / ".authorization").exists()
+    assert not (before / "scripts" / ".authorization").exists()
+    assert (before / "tests" / ".authorization").read_text() == "fake test grant\n"
+    assert (before / "evals" / ".authorization").read_text() == "fake eval grant\n"
+    assert (before / ".env.example").read_text() == "TOKEN=replace-me\n"
+    assert (before / "config" / "authorization.json").read_text() == "{}\n"
+    assert manifest["inclusion_policy"] == inclusion_policy_metadata(
+        include_evals=True, include_tests=True
+    )
+    assert tree_hash(before, manifest["inclusion_policy"]) == manifest["tree_hash"]
+    current_hash = tree_hash(skill, manifest["inclusion_policy"])
+    legacy_policy = inclusion_policy_metadata(
+        include_evals=True,
+        include_tests=True,
+        version=LEGACY_INCLUSION_POLICY_VERSION,
+    )
+    legacy_hash = tree_hash(skill, legacy_policy)
+    (skill / ".authorization").write_text("changed local root grant\n", encoding="utf-8")
+    assert tree_hash(skill, manifest["inclusion_policy"]) == current_hash
+    assert tree_hash(skill, legacy_policy) != legacy_hash
+
+
+def test_archive_snapshot_preserves_manifest_fixture_files_and_executable_mode(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    runner = skill / "scripts" / "runner.sh"
+    runner.parent.mkdir()
+    runner.write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+    os.chmod(runner, 0o755)
+    (skill / ".authorization").write_text("local grant\n", encoding="utf-8")
+    (skill / ".env.example").write_text("TOKEN=replace-me\n", encoding="utf-8")
+    (skill / "tests").mkdir()
+    (skill / "tests" / ".authorization").write_text("fake grant\n", encoding="utf-8")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+
+    archive_path = archive_baseline_snapshot(before, tmp_path / "before.zip")
+
+    with zipfile.ZipFile(archive_path) as archive:
+        names = set(archive.namelist())
+        runner_info = archive.getinfo("before/scripts/runner.sh")
+    assert "before/.skill-regression-baseline.json" in names
+    assert "before/.env.example" in names
+    assert "before/tests/.authorization" in names
+    assert "before/.authorization" not in names
+    assert (runner_info.external_attr >> 16) & 0o111 == 0o111
+
+
+def test_archive_snapshot_cli_rejects_tampered_snapshot(tmp_path, capsys):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    (before / "SKILL.md").write_text("tampered\n", encoding="utf-8")
+
+    exit_code = main([
+        "archive-snapshot",
+        "--source", str(before),
+        "--output", str(tmp_path / "before.zip"),
+    ])
+
+    assert exit_code == 2
+    assert "does not match its provenance manifest" in capsys.readouterr().err
+    assert not (tmp_path / "before.zip").exists()
+
+
+def test_archive_snapshot_does_not_overwrite_existing_output(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    output = tmp_path / "before.zip"
+    output.write_bytes(b"existing artifact")
+
+    with pytest.raises(ValueError, match="must not already exist"):
+        archive_baseline_snapshot(before, output)
+
+    assert output.read_bytes() == b"existing artifact"
+
+
+@pytest.mark.parametrize(
+    "mutate,match",
+    [
+        (lambda policy: policy.update(name="wrong-policy"), "invalid name"),
+        (lambda policy: policy.update(version=999), "unsupported inclusion policy version"),
+        (
+            lambda policy: policy["scope"].update(include_tests=False),
+            "must include root evals and tests",
+        ),
+        (
+            lambda policy: policy["scope"].update(include_evals="yes"),
+            "boolean include_evals/include_tests",
+        ),
+    ],
+)
+def test_snapshot_policy_metadata_is_strictly_validated(tmp_path, mutate, match):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    before = tmp_path / "before"
+    manifest_path = create_baseline_snapshot(skill, before)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mutate(manifest["inclusion_policy"])
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=match):
+        build_report(before, skill, baseline_origin="pre-edit-snapshot")
+
+
+@pytest.mark.parametrize(
+    "mutate,match",
+    [
+        (lambda review: review["before"]["inclusion_policy"].update(name="wrong"), "invalid name"),
+        (
+            lambda review: review["after"]["inclusion_policy"].update(version=999),
+            "unsupported inclusion policy version",
+        ),
+        (
+            lambda review: review["before"]["inclusion_policy"]["scope"].update(include_tests=False),
+            "must include root evals and tests",
+        ),
+        (lambda review: review["after"].pop("inclusion_policy"), "both before and after"),
+    ],
+)
+def test_review_policy_metadata_is_strictly_validated(tmp_path, mutate, match):
+    before = _make_skill(tmp_path / "before", "Keep the fixture bundle intact.")
+    after = _make_skill(tmp_path / "after", "Keep the fixture bundle intact.")
+    report = build_report(before, after)
+    mutate(report)
+    review_path = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review_path)
+
+    assert ok is False
+    assert any(match in error for error in errors)
+
+
+def test_schema3_snapshot_and_review_without_policy_use_frozen_legacy_hash(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Keep the fixture bundle intact.")
+    (skill / ".authorization").write_text("legacy grant fixture\n", encoding="utf-8")
+    before = _make_skill(tmp_path / "before", "Keep the fixture bundle intact.")
+    (before / ".authorization").write_text("legacy grant fixture\n", encoding="utf-8")
+    legacy_policy = inclusion_policy_metadata(
+        include_evals=True,
+        include_tests=True,
+        version=LEGACY_INCLUSION_POLICY_VERSION,
+    )
+    manifest = {
+        "schema_version": 3,
+        "kind": "skill-regression-pre-edit-snapshot",
+        "source_path_hash": hashlib.sha256(str(skill.resolve()).encode("utf-8")).hexdigest(),
+        "tree_hash": tree_hash(before, legacy_policy),
+        "created_at": "2026-09-08T00:00:00+00:00",
+    }
+    (before / ".skill-regression-baseline.json").write_text(
+        json.dumps(manifest) + "\n", encoding="utf-8"
+    )
+
+    report = build_report(before, skill, baseline_origin="pre-edit-snapshot")
+    report["before"].pop("inclusion_policy")
+    report["after"].pop("inclusion_policy")
+    review_path = _write_review(tmp_path / "legacy-review.json", report)
+
+    ok, errors = verify_review(before, skill, review_path)
+
+    assert ok is True, errors
+    marker = create_regression_marker(skill, review_path)
+    assert "Inclusion policy:" in marker.read_text(encoding="utf-8")
+    assert validate_regression_marker(skill)[0] is True
+    with pytest.raises(ValueError, match="local runtime authorization files"):
+        archive_baseline_snapshot(before, tmp_path / "legacy-before.zip")
+    (skill / ".authorization").write_text("changed legacy fixture\n", encoding="utf-8")
+    assert validate_regression_marker(skill)[0] is False
+
+
+def test_exact_guidance_move_is_auto_preserved(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "- Verify the signed-in unauthorized branch with a genuinely role-less account.",
+    )
+    after = _make_skill(
+        tmp_path / "after",
+        "See references/authorization.md for the authorization contract.",
+    )
+    (after / "references").mkdir()
+    (after / "references" / "authorization.md").write_text(
+        "# Authorization\n\n"
+        "- Verify the signed-in unauthorized branch with a genuinely role-less account.\n",
+        encoding="utf-8",
+    )
+
+    report = build_report(before, after)
+
+    assert not any("role-less" in text for text in _candidate_texts(report))
+    assert any(
+        item.get("kind") == "guidance" and "role-less" in item.get("text", "")
+        for item in report["auto_preserved"]
+    )
+
+
+def test_paraphrase_stays_unclassified_for_semantic_review(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "- A signed-in user with no role, tenant, membership, or permission must see a plain no-access state.",
+    )
+    after = _make_skill(
+        tmp_path / "after",
+        "- Check the permission-denied branch.",
+    )
+
+    report = build_report(before, after)
+
+    candidate = next(item for item in report["candidates"] if "no role" in item["text"])
+    assert candidate["disposition"] == "unclassified"
+
+
+def test_markdown_review_keeps_each_contract_bullet_independent(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "\n".join(f"- Preserve runtime contract {index} with its recovery path." for index in range(30)),
+    )
+    after = _make_skill(tmp_path / "after", "- Inspect the current workflow.")
+
+    report = build_report(before, after)
+    guidance = [item for item in report["candidates"] if item["kind"] == "guidance"]
+
+    assert len(guidance) == 30
+    assert any("runtime contract 0" in item["text"] for item in guidance)
+    assert any("runtime contract 29" in item["text"] for item in guidance)
+
+
+def test_removing_one_clause_still_surfaces_the_changed_section(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "- Keep the normal path.\n- Verify a signed-in role-less account sees no privileged shell.",
+    )
+    after = _make_skill(tmp_path / "after", "- Keep the normal path.")
+
+    report = build_report(before, after)
+
+    assert any("role-less" in item["text"] for item in report["candidates"])
+
+
+def test_known_visual_contract_deletions_all_surface(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "\n".join([
+            "- Test HTML slides at the exact intended projection size.",
+            "- Verify a signed-in role-less user sees no privileged shell.",
+            "- Charts must show units, source, time range, empty state, and error state.",
+            "- Provider model runtime labels must match the selected path.",
+        ]),
+    )
+    after = _make_skill(tmp_path / "after", "- Inspect the rendered page.")
+
+    report = build_report(before, after)
+    texts = "\n".join(_candidate_texts(report))
+
+    assert "projection size" in texts
+    assert "role-less" in texts
+    assert "units, source, time range" in texts
+    assert "Provider model runtime" in texts
+
+
+def test_runtime_contract_only_in_evals_is_still_candidate(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "- Test HTML slides at the exact intended projection size.",
+    )
+    after = _make_skill(tmp_path / "after", "- Inspect the rendered page.")
+    (after / "evals").mkdir()
+    (after / "evals" / "evals.json").write_text(
+        json.dumps({
+            "evals": [{
+                "id": 1,
+                "name": "projection",
+                "prompt": "Test HTML slides at the exact intended projection size.",
+                "expectations": [],
+            }]
+        }),
+        encoding="utf-8",
+    )
+
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if "projection size" in item["text"])
+
+    assert candidate["scope"] == "runtime"
+    assert candidate["only_outside_runtime"] is True
+
+
+def test_explicit_user_removal_can_be_classified(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep the legacy export mode available.")
+    after = _make_skill(tmp_path / "after", "- Use the current export mode.")
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if "legacy export" in item["text"])
+    candidate.update({
+        "disposition": "removed_by_explicit_user_request",
+        "reason": "The user explicitly retired this legacy mode.",
+        "user_approval": "Remove the legacy export mode.",
+    })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert ok, errors
+
+
+def test_review_becomes_stale_when_after_changes(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep the legacy export mode available.")
+    after = _make_skill(tmp_path / "after", "- Use the current export mode.")
+    report = build_report(before, after)
+    for candidate in report["candidates"]:
+        candidate.update({
+            "disposition": "removed_by_explicit_user_request",
+            "reason": "Fixture intentionally changes the mode.",
+            "user_approval": "Retire every old fixture capability.",
+        })
+    review = _write_review(tmp_path / "review.json", report)
+    (after / "SKILL.md").write_text(
+        (after / "SKILL.md").read_text(encoding="utf-8") + "\nChanged after review.\n",
+        encoding="utf-8",
+    )
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("after skill changed" in error for error in errors)
+
+
+def test_preserved_disposition_requires_real_file_and_line_evidence(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep the legacy export mode available.")
+    after = _make_skill(tmp_path / "after", "- Use the current export mode.")
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if "legacy export" in item["text"])
+    candidate.update({
+        "disposition": "preserved_or_moved",
+        "reason": "Claimed move.",
+        "evidence": [{"path": "references/missing.md", "line": 1}],
+    })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("target does not exist" in error for error in errors)
+
+
+def test_preserved_evidence_requires_a_quote_near_the_cited_line(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep the legacy export mode available.")
+    after = _make_skill(tmp_path / "after", "- Use the current export mode.")
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if "legacy export" in item["text"])
+    candidate.update({
+        "disposition": "preserved_or_moved",
+        "reason": "The current mode owns the migrated behavior.",
+        "evidence": [{"path": "SKILL.md", "line": 7, "contains": "text that is not there"}],
+    })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("contains was not found" in error for error in errors)
+
+
+def test_preserved_evidence_must_relate_to_the_old_candidate(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep offline recovery available.")
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if "offline recovery" in item["text"])
+    candidate.update({
+        "disposition": "preserved_or_moved",
+        "reason": "Claimed preservation.",
+        "evidence": [{"path": "SKILL.md", "line": 2, "contains": "name: fixture-skill"}],
+    })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("no meaningful lexical relationship" in error for error in errors)
+
+
+def test_regression_marker_is_content_bound_and_ignores_itself(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep the legacy export mode available.")
+    after = _make_skill(tmp_path / "after", "- Use the current export mode.")
+    report = build_report(before, after)
+    for candidate in report["candidates"]:
+        candidate.update({
+            "disposition": "removed_by_explicit_user_request",
+            "reason": "Fixture intentionally changes the mode.",
+            "user_approval": "Retire every old fixture capability.",
+        })
+    review = _write_review(tmp_path / "review.json", report)
+
+    marker = create_regression_marker(after, review)
+    first = marker.read_text(encoding="utf-8")
+    assert validate_regression_marker(after)[0] is True
+
+    marker.write_text(first + "Reviewer note: still current\n", encoding="utf-8")
+    assert validate_regression_marker(after)[0] is True
+
+    marker.write_text(first.replace("Schema version: 3", "Schema version: 1"), encoding="utf-8")
+    valid, reason = validate_regression_marker(after)
+    assert valid is False
+    assert "obsolete schema" in reason
+
+    marker.write_text(
+        first.replace("Attestation digest: ", "Attestation digest: 0", 1),
+        encoding="utf-8",
+    )
+    valid, reason = validate_regression_marker(after)
+    assert valid is False
+    assert "malformed" in reason or "digest is invalid" in reason
+
+    marker.write_text(first, encoding="utf-8")
+
+    (after / "SKILL.md").write_text(
+        (after / "SKILL.md").read_text(encoding="utf-8") + "\nNew runtime behavior.\n",
+        encoding="utf-8",
+    )
+    valid, reason = validate_regression_marker(after)
+    assert valid is False
+    assert "changed since" in reason
+
+
+def test_trigger_eval_and_expected_output_removals_surface(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Inspect the rendered workflow.")
+    after = _make_skill(tmp_path / "after", "- Inspect the rendered workflow.")
+    (before / "evals").mkdir()
+    (before / "evals" / "trigger-evals.json").write_text(
+        json.dumps([
+            {"query": "Audit this existing landing page.", "should_trigger": True},
+        ]),
+        encoding="utf-8",
+    )
+    (before / "evals" / "evals.json").write_text(
+        json.dumps({
+            "evals": [{
+                "id": 1,
+                "prompt": "Audit the page.",
+                "expected_output": "A blocked result when no rendered page is available.",
+                "expected_behavior": ["Does not invent browser evidence"],
+            }]
+        }),
+        encoding="utf-8",
+    )
+
+    report = build_report(before, after)
+    kinds = {item["kind"] for item in report["candidates"]}
+    texts = "\n".join(_candidate_texts(report))
+
+    assert "trigger_expectation" in kinds
+    assert "should_trigger=true" in texts
+    assert "A blocked result" in texts
+    assert "Does not invent browser evidence" in texts
+
+
+def test_command_and_environment_interface_removals_surface(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "Use the supported command:\n\n```bash\nFLOW_MODE=strict uv run python -m scripts.audit --format json\n```",
+    )
+    after = _make_skill(tmp_path / "after", "Use the supported audit flow.")
+
+    report = build_report(before, after)
+    pairs = {(item["kind"], item["text"]) for item in report["candidates"]}
+
+    assert ("command", "FLOW_MODE=strict uv run python -m scripts.audit --format json") in pairs
+    assert ("env_var", "FLOW_MODE") in pairs
+    assert ("cli_flag", "--format") in pairs
+
+
+def test_same_path_runtime_script_body_change_surfaces(tmp_path):
+    before = _make_skill(tmp_path / "before", "Run scripts/export.py for exports.")
+    after = _make_skill(tmp_path / "after", "Run scripts/export.py for exports.")
+    for skill, body in (
+        (before, "def export(kind):\n    if kind == 'json': return '{}'\n    return 'csv'\n"),
+        (after, "def export(kind):\n    return 'csv'\n"),
+    ):
+        (skill / "scripts").mkdir()
+        (skill / "scripts" / "export.py").write_text(body, encoding="utf-8")
+
+    report = build_report(before, after)
+
+    assert any(
+        item["kind"] == "runtime_file_changed" and "scripts/export.py" in item["text"]
+        for item in report["candidates"]
+    )
+
+
+def test_file_fingerprint_alone_cannot_claim_changed_runtime_behavior_is_preserved(tmp_path):
+    before = _make_skill(tmp_path / "before", "Run scripts/export.py for exports.")
+    after = _make_skill(tmp_path / "after", "Run scripts/export.py for exports.")
+    for skill, body in (
+        (before, "def export(kind):\n    return kind\n"),
+        (after, "def export(kind):\n    return 'csv'\n"),
+    ):
+        (skill / "scripts").mkdir()
+        (skill / "scripts" / "export.py").write_text(body, encoding="utf-8")
+    report = build_report(before, after)
+    candidate = next(item for item in report["candidates"] if item["kind"] == "runtime_file_changed")
+    from scripts.audit_skill_regression import _file_fingerprint
+    candidate.update({
+        "disposition": "preserved_or_moved",
+        "reason": "The changed script is claimed to preserve all prior export behavior.",
+        "evidence": [{
+            "path": "scripts/export.py",
+            "sha256": _file_fingerprint(after / "scripts" / "export.py"),
+        }],
+    })
+    for other in report["candidates"]:
+        if other is candidate:
+            continue
+        other.update({
+            "disposition": "removed_by_explicit_user_request",
+            "reason": "The fixture explicitly retires this old implementation detail.",
+            "user_approval": "Retire the old fixture implementation detail.",
+        })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("fingerprint proves identity, not behavior" in error for error in errors)
+
+
+def test_contract_moved_to_orphan_reference_is_not_auto_preserved(tmp_path):
+    contract = "Verify the signed-in unauthorized branch with a genuinely role-less account."
+    before = _make_skill(tmp_path / "before", f"- {contract}")
+    after = _make_skill(tmp_path / "after", "Inspect the rendered authorization state.")
+    (after / "references").mkdir()
+    (after / "references" / "orphan.md").write_text(f"# Orphan\n\n- {contract}\n", encoding="utf-8")
+
+    report = build_report(before, after)
+
+    candidate = next(item for item in report["candidates"] if "role-less" in item["text"])
+    assert candidate["scope"] == "runtime"
+    assert candidate["only_outside_runtime"] is True
+
+
+def test_runtime_reachability_follows_imported_python_dependencies(tmp_path):
+    before = _make_skill(tmp_path / "before", "Run scripts/entry.py for the workflow.")
+    after = _make_skill(tmp_path / "after", "Run scripts/entry.py for the workflow.")
+    for skill in (before, after):
+        (skill / "scripts").mkdir()
+        (skill / "scripts" / "entry.py").write_text(
+            "from scripts.runtime_policy import POLICY\nprint(POLICY)\n",
+            encoding="utf-8",
+        )
+    (before / "scripts" / "runtime_policy.py").write_text("POLICY = 'strict'\n", encoding="utf-8")
+    (after / "scripts" / "runtime_policy.py").write_text("POLICY = 'updated'\n", encoding="utf-8")
+
+    report = build_report(before, after)
+
+    changed = next(
+        item for item in report["candidates"]
+        if item["kind"].endswith("file_changed") and "runtime_policy.py" in item["text"]
+    )
+    assert changed["scope"] == "runtime"
+
+
+def test_runtime_file_moved_to_tests_is_not_auto_preserved(tmp_path):
+    before = _make_skill(tmp_path / "before", "Run scripts/runner.sh for the workflow.")
+    after = _make_skill(tmp_path / "after", "Run the workflow.")
+    (before / "scripts").mkdir()
+    (before / "scripts" / "runner.sh").write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+    (after / "tests").mkdir()
+    (after / "tests" / "runner.sh").write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+
+    report = build_report(before, after)
+
+    candidate = next(item for item in report["candidates"] if item["kind"] == "runtime_file")
+    assert candidate["only_outside_runtime"] is True
+    assert candidate["observed_destinations"] == ["tests/runner.sh"]
+
+
+def test_nested_dist_file_is_hashed_because_it_would_ship(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Use the bundled runtime asset.")
+    target = skill / "assets" / "dist" / "runtime.js"
+    target.parent.mkdir(parents=True)
+    target.write_text("export const mode = 'one';\n", encoding="utf-8")
+    first = tree_hash(skill)
+
+    target.write_text("export const mode = 'two';\n", encoding="utf-8")
+
+    assert tree_hash(skill) != first
+
+
+def test_tree_hash_binds_executable_mode(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "Run scripts/runner.sh.")
+    target = skill / "scripts" / "runner.sh"
+    target.parent.mkdir()
+    target.write_text("#!/bin/sh\necho ok\n", encoding="utf-8")
+    os.chmod(target, 0o644)
+    first = tree_hash(skill)
+
+    os.chmod(target, 0o755)
+
+    assert tree_hash(skill) != first
+
+
+def test_runtime_candidate_cannot_be_blanket_not_reusable(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep offline recovery available.")
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    report = build_report(before, after)
+    for candidate in report["candidates"]:
+        candidate.update({"disposition": "not_reusable", "reason": "Not reusable."})
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("runtime capability cannot be retired" in error for error in errors)
+
+
+def test_runtime_boundary_requires_user_approval_and_current_evidence(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep offline recovery available.")
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    report = build_report(before, after)
+    for candidate in report["candidates"]:
+        candidate.update({
+            "disposition": "intentional_boundary",
+            "reason": "The old recovery capability is claimed to belong to another skill.",
+            "destination": "recovery-skill",
+        })
+    review = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review)
+
+    assert not ok
+    assert any("requires traceable user_approval" in error for error in errors)
+    assert any("requires at least one evidence entry" in error for error in errors)
+
+
+def test_existing_clean_git_skill_without_marker_still_requires_review(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "skill", "- Keep offline recovery available.")
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "skill"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/master"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/master", commit], check=True)
+
+    required, reason = requires_regression_review(skill)
+
+    assert required is True
+    assert "requires the completed regression review" in reason
+
+
+def test_non_git_skill_is_unknown_unless_explicitly_new(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "- Keep offline recovery available.")
+
+    assert requires_regression_review(skill)[0] is True
+    assert requires_regression_review(skill, new_skill=True)[0] is False
+
+
+def test_create_marker_rejects_unverified_review(tmp_path):
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    review = _write_review(tmp_path / "review.json", {})
+
+    with pytest.raises(ValueError, match="before.path"):
+        create_regression_marker(after, review)
+
+
+def test_truncated_forged_marker_is_rejected(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "- Keep offline recovery available.")
+    (skill / ".skill-regression-reviewed").write_text(
+        f"Skill regression review passed\nSchema version: 3\nAfter tree hash: {tree_hash(skill)}\n",
+        encoding="utf-8",
+    )
+
+    valid, reason = validate_regression_marker(skill)
+
+    assert valid is False
+    assert "malformed" in reason
+
+
+def test_git_ref_baseline_is_resolved_and_verified_against_git_tree(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "skill", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "skill"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/main", commit], check=True)
+    create_baseline_snapshot(skill, before)
+    (skill / "SKILL.md").write_text(
+        (skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_report(before, skill, baseline_origin="git-ref:HEAD")
+
+    assert report["before"]["provenance"]["origin"] == f"git-ref:{commit}"
+    assert report["before"]["provenance"]["resolved_commit"] == commit
+    assert any("offline recovery" in item["text"] for item in report["candidates"])
+
+
+def test_git_ref_baseline_matches_when_sibling_directories_share_a_prefix(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "skill", "- Keep offline recovery available.")
+    # "probes-r3" sorts before "probes/" as a string ("-" < "/"), but after it as a Path.
+    (skill / "references" / "probes").mkdir(parents=True)
+    (skill / "references" / "probes" / "p1.md").write_text("first\n", encoding="utf-8")
+    (skill / "references" / "probes-r3").mkdir(parents=True)
+    (skill / "references" / "probes-r3" / "r1.md").write_text("second\n", encoding="utf-8")
+    before = tmp_path / "before"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "skill"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/main", commit], check=True)
+    create_baseline_snapshot(skill, before)
+    (skill / "SKILL.md").write_text(
+        (skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_report(before, skill, baseline_origin="git-ref:HEAD")
+
+    assert report["before"]["provenance"]["resolved_commit"] == commit
+    assert any("offline recovery" in item["text"] for item in report["candidates"])
+
+
+def test_git_ref_baseline_rejects_a_copy_made_after_editing(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "skill", "- Keep offline recovery available.")
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "skill"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/main", commit], check=True)
+    (skill / "SKILL.md").write_text(
+        (skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+    copied_after_edit = tmp_path / "copied-after-edit"
+    create_baseline_snapshot(skill, copied_after_edit)
+
+    with pytest.raises(ValueError, match="does not match HEAD"):
+        build_report(copied_after_edit, skill, baseline_origin="git-ref:HEAD")
+
+
+def test_pre_edit_snapshot_requires_tool_created_provenance(tmp_path):
+    skill = _make_skill(tmp_path / "skill", "- Keep offline recovery available.")
+    raw_copy = _make_skill(tmp_path / "raw-copy", "- Keep offline recovery available.")
+
+    with pytest.raises(ValueError, match="provenance manifest"):
+        build_report(raw_copy, skill, baseline_origin="pre-edit-snapshot")
+
+    verified_copy = tmp_path / "verified-copy"
+    manifest_path = create_baseline_snapshot(skill, verified_copy)
+    assert str(skill.resolve()) not in manifest_path.read_text(encoding="utf-8")
+    (skill / "SKILL.md").write_text(
+        (skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+    report = build_report(verified_copy, skill, baseline_origin="pre-edit-snapshot")
+    assert report["before"]["provenance"]["origin"] == "pre-edit-snapshot"
+
+
+def test_pre_edit_snapshot_rejects_undeclared_rename(tmp_path):
+    skill = _make_skill(tmp_path / "old-name", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    renamed = tmp_path / "new-name"
+    skill.rename(renamed)
+
+    with pytest.raises(ValueError, match="does not match the edited skill"):
+        build_report(before, renamed, baseline_origin="pre-edit-snapshot")
+
+
+def test_pre_edit_snapshot_accepts_declared_rename(tmp_path):
+    skill = _make_skill(tmp_path / "old-name", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    renamed = tmp_path / "new-name"
+    skill.rename(renamed)
+    (renamed / "SKILL.md").write_text(
+        (renamed / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_report(
+        before, renamed, baseline_origin="pre-edit-snapshot", renamed_from=skill
+    )
+
+    assert report["before"]["provenance"]["origin"] == "pre-edit-snapshot"
+    assert report["before"]["provenance"]["renamed_from"] == str(skill.resolve())
+    assert any("offline recovery" in item["text"] for item in report["candidates"])
+
+    # A renamed_from pointing at the wrong old path must still fail — the
+    # override is a narrow substitution, not a way to skip identity checking.
+    with pytest.raises(ValueError, match="does not match the edited skill"):
+        build_report(
+            before, renamed, baseline_origin="pre-edit-snapshot", renamed_from=tmp_path / "wrong-old-name"
+        )
+
+
+def test_pre_edit_snapshot_wrong_renamed_from_names_the_resolved_path(tmp_path):
+    # A wrong --renamed-from value used to produce the exact same bare error
+    # as no --renamed-from at all, with no way to tell "you forgot the flag"
+    # apart from "you passed the flag but got the value wrong" (independent
+    # review, 2026-08-15). The hint must now show what path renamed_from
+    # actually resolved to, so a wrong value is diagnosable from the error
+    # alone.
+    skill = _make_skill(tmp_path / "old-name", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    renamed = tmp_path / "new-name"
+    skill.rename(renamed)
+    wrong_old_path = tmp_path / "wrong-old-name"
+
+    with pytest.raises(ValueError, match=r"--renamed-from resolved to .*wrong-old-name"):
+        build_report(
+            before, renamed, baseline_origin="pre-edit-snapshot", renamed_from=wrong_old_path
+        )
+
+
+def test_git_ref_baseline_accepts_declared_rename(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "old-name", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "old-name"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/main", commit], check=True)
+    create_baseline_snapshot(skill, before)
+    renamed = repo / "new-name"
+    skill.rename(renamed)
+    (renamed / "SKILL.md").write_text(
+        (renamed / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+
+    # Undeclared: after moved out from under the ref-relative lookup path, so
+    # the tree lookup for the (now nonexistent) new-name path fails.
+    with pytest.raises(ValueError):
+        build_report(before, renamed, baseline_origin="git-ref:HEAD")
+
+    report = build_report(
+        before, renamed, baseline_origin="git-ref:HEAD", renamed_from=skill
+    )
+
+    assert report["before"]["provenance"]["origin"] == f"git-ref:{commit}"
+    assert report["before"]["provenance"]["skill_path"] == "old-name"
+    assert report["before"]["provenance"]["renamed_from"] == str(skill.resolve())
+    assert any("offline recovery" in item["text"] for item in report["candidates"])
+
+    # renamed_from resolving outside --after's repo (e.g. a relative path that
+    # resolved against the wrong cwd — the exact shape independent review hit
+    # running this from skill-creator's own, separate repo) must get a specific
+    # "not inside the Git repository containing --after" error, not the bare
+    # "requires the edited skill to be inside a Git worktree" message that used
+    # to also fire here and made this failure indistinguishable from --after
+    # genuinely not being in a worktree at all.
+    outside_repo_path = tmp_path / "not-in-repo-at-all"
+    with pytest.raises(ValueError, match="not inside the Git repository containing"):
+        build_report(
+            before, renamed, baseline_origin="git-ref:HEAD", renamed_from=outside_repo_path
+        )
+
+
+def test_compare_cli_rejects_identical_current_to_current_baseline(tmp_path, capsys):
+    skill = _make_skill(tmp_path / "skill", "- Keep offline recovery available.")
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+
+    exit_code = main([
+        "compare",
+        "--before", str(before),
+        "--after", str(skill),
+        "--output", str(tmp_path / "review.json"),
+        "--baseline-origin", "pre-edit-snapshot",
+    ])
+
+    assert exit_code == 2
+    assert "before and after are identical" in capsys.readouterr().err
+
+
+def test_valid_marker_is_informational_and_cannot_bypass_packaging_review(tmp_path):
+    repo = tmp_path / "repo"
+    skill = _make_skill(repo / "skill", "- Keep offline recovery available.")
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "skill"], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(repo), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    subprocess.run(["git", "-C", str(repo), "update-ref", "refs/heads/main", commit], check=True)
+    before = tmp_path / "before"
+    create_baseline_snapshot(skill, before)
+    (skill / "SKILL.md").write_text(
+        (skill / "SKILL.md").read_text(encoding="utf-8").replace(
+            "Keep offline recovery available", "Use the online workflow"
+        ),
+        encoding="utf-8",
+    )
+    report = build_report(before, skill, baseline_origin="git-ref:HEAD")
+    for candidate in report["candidates"]:
+        candidate.update({
+            "disposition": "removed_by_explicit_user_request",
+            "reason": "Fixture explicitly retires the old mode.",
+            "user_approval": "Retire the old offline recovery fixture.",
+        })
+    review = _write_review(tmp_path / "review.json", report)
+    create_regression_marker(skill, review)
+
+    required, reason = requires_regression_review(skill)
+
+    assert required is True
+    assert "informational only" in reason
+
+
+@pytest.mark.parametrize(
+    ("before_body", "after_body", "needle", "expected_contains"),
+    [
+        (
+            "- Verify the signed-in unauthorized branch with a genuinely role-less account.",
+            "- Reworded: verify the signed-in unauthorized branch using a genuinely role-less account.",
+            "verify the signed-in unauthorized branch using a genuinely role-less account",
+            "verify the signed-in unauthorized branch using a genuinely role-less account",
+        ),
+        (
+            "- Record a successful run using the watcher logs before reporting completion.",
+            "- Record a successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher).",
+            "successful run using the [watcher logs]",
+            "- Record a successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher).",
+        ),
+        (
+            "- Record a successful run using the watcher logs before reporting completion.",
+            "- Record a successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher).",
+            "successful run using the [watcher",
+            "- Record a successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher).",
+        ),
+        (
+            "- Record a successful run using the watcher logs before reporting completion.",
+            "- Record a successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher).",
+            "successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher)",
+            "successful run using the "
+            "[watcher logs](local-source-sync-architecture.md#macos-watcher)",
+        ),
+    ],
+)
+def test_classify_fills_dispositions_and_verify_passes(
+    tmp_path, before_body, after_body, needle, expected_contains
+):
+    before = _make_skill(
+        tmp_path / "before",
+        before_body,
+    )
+    after = _make_skill(
+        tmp_path / "after",
+        after_body,
+    )
+    report = build_report(before, after)
+    assert report["candidates"], "fixture must produce at least one candidate"
+    review_path = _write_review(tmp_path / "review.json", report)
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "0": {
+                    "destination": "SKILL.md",
+                    "needle": needle,
+                    "reason": "guidance sentence reworded in place; the cited runtime check survives in SKILL.md",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    classified, unclassified = classify_review(review_path, after, map_path, "tester")
+
+    assert classified == 1
+    assert unclassified == []
+    classified_review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert classified_review["candidates"][0]["evidence"][0]["contains"] == expected_contains
+    ok, errors = verify_review(before, after, review_path)
+    assert ok, errors
+
+
+def test_classify_fail_fast_writes_nothing_on_bad_map(tmp_path):
+    after = _make_skill(
+        tmp_path / "after",
+        "- Record a successful run using the "
+        "[watcher logs](local-source-sync-architecture.md#macos-watcher).\n"
+        "- Use the online workflow.",
+    )
+    review_path = _write_review(
+        tmp_path / "review.json",
+        {
+            "candidates": [
+                {
+                    "id": "aaaa111111111111",
+                    "kind": "guidance",
+                    "text": "Record a successful run using the watcher logs.",
+                    "disposition": "unclassified",
+                },
+                {
+                    "id": "bbbb222222222222",
+                    "kind": "guidance",
+                    "text": "Keep the offline proof path available.",
+                    "disposition": "unclassified",
+                },
+            ]
+        },
+    )
+    original = review_path.read_text(encoding="utf-8")
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "0": {
+                    "destination": "SKILL.md",
+                    "needle": "successful run using the [watcher logs]",
+                    "reason": "the watcher evidence remains linked from the rewritten guidance",
+                },
+                "1": {
+                    "destination": "SKILL.md",
+                    "needle": "offline proof path remains available",
+                    "reason": "this proof is genuinely missing from the destination and must fail",
+                },
+                "99": {
+                    "destination": "SKILL.md",
+                    "needle": "irrelevant",
+                    "reason": "long enough reason for a key that matches no candidate",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    with pytest.raises(ValueError) as excinfo:
+        classify_review(review_path, after, map_path, "tester")
+
+    message = str(excinfo.value)
+    assert "needle not found" in message
+    assert "matches no candidate" in message
+    assert review_path.read_text(encoding="utf-8") == original
+
+
+def test_classify_rejects_short_reason(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "- Verify the signed-in unauthorized branch with a genuinely role-less account.",
+    )
+    after = _make_skill(
+        tmp_path / "after",
+        "- Reworded: verify the signed-in unauthorized branch using a genuinely role-less account.",
+    )
+    report = build_report(before, after)
+    review_path = _write_review(tmp_path / "review.json", report)
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "0": {
+                    "destination": "SKILL.md",
+                    "needle": "genuinely role-less account",
+                    "reason": "too short",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    with pytest.raises(ValueError, match="reason needs >= 20"):
+        classify_review(review_path, after, map_path, "tester")
+
+
+def _git_repo_with_commit(root: Path) -> str:
+    """git init + 提交全部内容，返回 commit sha（git-ref baseline 测试用）。"""
+    subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(root), "config", "user.email", "user@example.com"], check=True)
+    subprocess.run(["git", "-C", str(root), "config", "user.name", "Test User"], check=True)
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    tree = subprocess.run(
+        ["git", "-C", str(root), "write-tree"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    commit = subprocess.run(
+        ["git", "-C", str(root), "commit-tree", tree, "-m", "baseline"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "-C", str(root), "symbolic-ref", "HEAD", "refs/heads/master"], check=True)
+    subprocess.run(["git", "-C", str(root), "update-ref", "refs/heads/master", commit], check=True)
+    return commit
+
+
+def test_git_ref_baseline_when_skill_is_repo_root(tmp_path):
+    # skill 目录即仓根（SKILL.md 直接在 repo 根）：git-ref baseline 不得报
+    # "Git baseline does not contain ./SKILL.md"（prefix 曾恒拼成 "./" 永不匹配）
+    repo = tmp_path / "repo"
+    _make_skill(repo, "- Keep offline recovery available.")
+    commit = _git_repo_with_commit(repo)
+
+    report = build_report(repo, repo, baseline_origin=f"git-ref:{commit}")
+
+    assert report["before"]["tree_hash"]
+    assert report["before"]["provenance"]["origin"].startswith("git-ref:")
+
+
+def test_verify_uses_renamed_from_recorded_in_review(tmp_path):
+    # baseline snapshot 取自替身目录（如 git archive 物化的干净树）、--after 指向
+    # 真实 skill：identity 靠 compare 时记进 provenance 的 renamed_from 打通。
+    # 修复前 verify 不读该记录、也不接受 --renamed-from，此场景永不过。
+    pristine = _make_skill(tmp_path / "pristine", "- Keep offline recovery available.")
+    before = tmp_path / "snap"
+    create_baseline_snapshot(pristine, before)
+    after = _make_skill(tmp_path / "after", "- Keep offline recovery available.")
+
+    report = build_report(
+        before, after, baseline_origin="pre-edit-snapshot", renamed_from=pristine
+    )
+    review_path = _write_review(tmp_path / "review.json", report)
+
+    ok, errors = verify_review(before, after, review_path)
+
+    assert ok, errors
+
+
+def test_classify_accepts_unique_id_prefix(tmp_path):
+    before = _make_skill(tmp_path / "before", "- Keep offline recovery available.")
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    report = build_report(before, after, baseline_origin="test-fixture")
+    assert report["candidates"]
+    review_path = _write_review(tmp_path / "review.json", report)
+    cid = report["candidates"][0]["id"]
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                cid[:8]: {
+                    "destination": "SKILL.md",
+                    "needle": "Use the online workflow.",
+                    "reason": "candidate guidance moved into the rewritten online workflow line",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    staged, unclassified = classify_review(review_path, after, map_path, "tester")
+
+    assert staged == 1
+    assert unclassified == []
+
+
+def test_classify_rejects_ambiguous_id_prefix(tmp_path):
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    review_path = _write_review(
+        tmp_path / "review.json",
+        {
+            "candidates": [
+                {"id": "aaaa111111111111", "kind": "guidance", "text": "x"},
+                {"id": "aaaa222222222222", "kind": "guidance", "text": "y"},
+            ]
+        },
+    )
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "aaaa": {
+                    "destination": "SKILL.md",
+                    "needle": "x",
+                    "reason": "some reason long enough to pass",
+                }
+            }
+        ),
+        encoding='utf-8',
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    with pytest.raises(ValueError, match="ambiguous id prefix"):
+        classify_review(review_path, after, map_path, "tester")
+
+
+def test_classify_accepts_all_digit_unique_id_prefix(tmp_path):
+    # 候选 id 是 hex 截断，前几位全数字是常态（4 位全数字概率约 15%）；
+    # 索引解析失败（越界）后纯数字 key 仍应能按唯一前缀解析
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    review_path = _write_review(
+        tmp_path / "review.json",
+        {"candidates": [{"id": "1234abcd5678ef00", "kind": "guidance", "text": "x"}]},
+    )
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "1234": {
+                    "destination": "SKILL.md",
+                    "needle": "Use the online workflow.",
+                    "reason": "all-digit unique prefix resolves after index overflow",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    staged, unclassified = classify_review(review_path, after, map_path, "tester")
+
+    assert staged == 1
+    assert unclassified == []
+
+
+def test_classify_rejects_negative_index(tmp_path):
+    # "-1" 在 Python 里是合法索引但在这里是语义错乱（静默指向最后一个候选），
+    # 必须显式报错而不是解析成功
+    after = _make_skill(tmp_path / "after", "- Use the online workflow.")
+    review_path = _write_review(
+        tmp_path / "review.json",
+        {"candidates": [{"id": "aaaa111111111111", "kind": "guidance", "text": "x"}]},
+    )
+    map_path = tmp_path / "map.json"
+    map_path.write_text(
+        json.dumps(
+            {
+                "-1": {
+                    "destination": "SKILL.md",
+                    "needle": "Use the online workflow.",
+                    "reason": "negative index must not silently pick the last candidate",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    from scripts.audit_skill_regression import classify_review
+
+    with pytest.raises(ValueError, match="matches no candidate"):
+        classify_review(review_path, after, map_path, "tester")
+
+
+@pytest.mark.parametrize("change", ["content", "mode", "manifest"])
+def test_archive_rejects_source_change_after_initial_validation(tmp_path, monkeypatch, change):
+    from scripts import audit_skill_regression as audit
+
+    source = _make_skill(tmp_path / "source", "- Preserve this source.")
+    before = tmp_path / "before"
+    audit.create_baseline_snapshot(source, before)
+    original_validate = audit._validated_snapshot_policy
+
+    def mutate_after_validation(root):
+        policy = original_validate(root)
+        if change == "content":
+            (root / "SKILL.md").write_text("# Changed during archive\n")
+        elif change == "mode":
+            target = root / "SKILL.md"
+            target.chmod(target.stat().st_mode ^ 0o100)
+        else:
+            manifest = root / audit.BASELINE_MANIFEST
+            manifest.write_text(manifest.read_text() + "\n")
+        return policy
+
+    monkeypatch.setattr(audit, "_validated_snapshot_policy", mutate_after_validation)
+    output = tmp_path / "snapshot.zip"
+    with pytest.raises(ValueError, match="snapshot archive (content|provenance)"):
+        audit.archive_baseline_snapshot(before, output)
+    assert not output.exists()
+    assert not list(tmp_path.glob(".snapshot.zip.*.tmp"))
+
+
+def test_short_trigger_phrases_in_a_long_description_become_candidates(tmp_path):
+    # A long "Use when" sentence is split on commas; its short trigger phrases
+    # used to fall under the minimum clause length and vanish from the review,
+    # so dropping them from the description was never surfaced.
+    phrases = ["用哪个", "选哪个", "存哪里", "which library", "build or buy", "review this design"]
+    long_sentence = (
+        "Use when choosing a technical direction even if the user never says it, "
+        + ", ".join(phrases)
+        + ", or when the agent itself picks a library, a storage engine or a data format for the project."
+    )
+    assert len(long_sentence) > 220
+    before = _make_skill(tmp_path / "before", "Body.", description=long_sentence)
+    after = _make_skill(tmp_path / "after", "Body.", description="Chooses a technology.")
+
+    report = build_report(before, after)
+    joined = " ".join(
+        c["text"] for c in report["candidates"] if c["kind"] == "description_clause"
+    )
+    for phrase in phrases:
+        assert phrase in joined, phrase
+
+
+def test_short_trailing_description_sentence_is_not_dropped(tmp_path):
+    before = _make_skill(
+        tmp_path / "before",
+        "Body.",
+        description="Chooses a technology through gated filters and business anchors. Runs daily.",
+    )
+    after = _make_skill(tmp_path / "after", "Body.", description="Chooses a technology.")
+
+    report = build_report(before, after)
+    joined = " ".join(c["text"] for c in report["candidates"])
+    assert "Runs daily." in joined
+
+
+def test_block_description_with_blank_line_is_read_to_the_end(tmp_path):
+    before = tmp_path / "before"
+    before.mkdir()
+    (before / "SKILL.md").write_text(
+        "---\n"
+        "name: fixture-skill\n"
+        "description: |-\n"
+        "  Runs the sector research workflow end to end.\n"
+        "\n"
+        "  Trigger when the user asks for the top ten names in a sector today.\n"
+        "argument-hint: x\n"
+        "---\n\n# Fixture\n\nBody.\n",
+        encoding="utf-8",
+    )
+    after = _make_skill(tmp_path / "after", "Body.", description="Runs sector research.")
+
+    report = build_report(before, after)
+    joined = " ".join(c["text"] for c in report["candidates"])
+    assert "top ten names in a sector" in joined

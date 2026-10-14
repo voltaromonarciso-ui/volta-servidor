@@ -1,0 +1,32 @@
+const { chromium } = require('playwright');
+const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) process.exitCode = 1; };
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+  const p = await b.newPage({ viewport: { width: 390, height: 844 }, locale: 'es-ES' }); p.setDefaultTimeout(8000);
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(process.env.APP_URL); await p.waitForTimeout(1000);
+  await p.evaluate(() => { S.onboarded = true; S.name = 'Alex'; S.demo = true; S.lang = 'es'; S.log = []; S.nlog = {}; S.vx = {}; S.stack = []; tab('home'); });
+  await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !document.querySelector('#m .chips .chip[onclick="socGo()"]') && !!document.querySelector('#m .ib.vx-soc')), 'Social integrado en la fila de iconos');
+  ok(await p.evaluate(() => [...document.querySelectorAll('#m .ib')].every(e => e.getAttribute('role') === 'button' && e.getAttribute('aria-label'))), 'iconos de cabecera accesibles (rol y nombre)');
+  // los lunes la app avisa de que el resumen semanal está listo: se vacía el buzón para probar el caso «sin novedades»
+  await p.evaluate(() => { S.vx.inbox = []; R(); }); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !document.querySelector('.vx-dot')), 'sin punto cuando no hay novedades');
+  await p.screenshot({ path: 'shots/hdr.png', clip: { x: 0, y: 0, width: 390, height: 260 } });
+  // logro nuevo (tras la comprobación inicial) y récord → Actividad
+  await p.waitForTimeout(1700);
+  await p.evaluate(() => { S.log.push({ ex: 0, s: 1, w: 50, r: 8, rir: 2, t: Date.now() - 2 * 864e5 }); toast('🎉 NUEVO RÉCORD PERSONAL · Press de banca 90 kg'); });
+  await p.evaluate(() => { const k = lk(Date.now()); S.nlog[k] = { e: [{}, {}], w: 1750 }; S.log.push({ ex: 0, s: 1, w: 55, r: 8, rir: 2, t: Date.now() }); vxWater(250); });
+  await p.waitForTimeout(600);
+  const L = await p.evaluate(() => S.vx.inbox.map(n => n.icon + ' ' + n.text));
+  ok(L.some(x => /RÉCORD/.test(x)) && L.some(x => /Día perfecto|perfecto/.test(x)) && L.some(x => /Logro/.test(x)), 'Actividad guarda récord, día perfecto y logro: ' + L.length);
+  ok(await p.evaluate(() => !!document.querySelector('#m .vx-bell .vx-dot')), 'punto de novedades en la campana');
+  await p.focus('#m .vx-bell'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => S.stack[S.stack.length - 1]) === 'vx:inbox', 'la campana abre Actividad (con teclado)');
+  ok(await p.evaluate(() => document.querySelectorAll('.vx-ibi').length) >= 3, 'lista de actividad');
+  await p.screenshot({ path: 'shots/inbox.png' });
+  await p.evaluate(() => { back(); }); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !document.querySelector('.vx-dot')), 'al verla, el punto desaparece');
+  ok(errs.length === 0, 'sin errores JS ' + JSON.stringify(errs));
+  await b.close();
+})();

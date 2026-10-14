@@ -30,6 +30,29 @@ router.get('/', ah(async (req, res) => {
   });
 }));
 
+// GET /api/friends/leaderboard  → tú + amigos aceptados, semana en curso, por volumen
+router.get('/leaderboard', ah(async (req, res) => {
+  const { rows } = await query(
+    `WITH ids AS (
+       SELECT $1::uuid AS id
+       UNION SELECT CASE WHEN user_id_1 = $1 THEN user_id_2 ELSE user_id_1 END
+         FROM friends WHERE (user_id_1 = $1 OR user_id_2 = $1) AND status = 'accepted'
+     )
+     SELECT u.id, u.username,
+            CASE WHEN u.week_key = date_trunc('week', now())::date THEN u.week_days ELSE 0 END AS days,
+            CASE WHEN u.week_key = date_trunc('week', now())::date THEN u.week_sets ELSE 0 END AS sets,
+            CASE WHEN u.week_key = date_trunc('week', now())::date THEN u.week_volume ELSE 0 END AS volume,
+            date_trunc('week', now())::date::text AS week
+       FROM users u JOIN ids ON ids.id = u.id
+      ORDER BY volume DESC, days DESC, lower(u.username)`,
+    [req.user.id]
+  );
+  res.json({
+    week: rows[0] ? rows[0].week : null,
+    entries: rows.map((r) => ({ username: r.username, days: r.days, sets: r.sets, volume: r.volume, me: r.id === req.user.id })),
+  });
+}));
+
 // POST /api/friends/request   { username }
 router.post('/request', ah(async (req, res) => {
   const { username } = z.object({ username: z.string().trim().min(1).max(20) }).parse(req.body);
@@ -41,6 +64,11 @@ router.post('/request', ah(async (req, res) => {
   if (target.id === me) throw new HttpError(400, 'self', 'No puedes añadirte a ti mismo.');
 
   const result = await tx(async (c) => {
+    // Candado por pareja: si A→B y B→A llegan a la vez, la segunda espera y ve la fila de la primera
+    await c.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended(LEAST($1::uuid, $2::uuid)::text || GREATEST($1::uuid, $2::uuid)::text, 1))',
+      [me, target.id]
+    );
     const { rows } = await c.query(
       `SELECT id, user_id_1, status FROM friends
         WHERE (user_id_1 = $1 AND user_id_2 = $2) OR (user_id_1 = $2 AND user_id_2 = $1)

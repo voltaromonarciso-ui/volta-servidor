@@ -2,6 +2,10 @@
 const { WebSocketServer } = require('ws');
 const config = require('./config');
 const { verify } = require('./middleware/auth');
+const redis = require('./redis');
+
+// Con Redis, cada aviso se publica en este canal y TODAS las instancias lo entregan a sus conexiones locales.
+const CHANNEL = 'volta:ws';
 
 const sockets = new Map(); // userId -> Set<WebSocket>
 let wss;
@@ -63,17 +67,33 @@ function attach(server) {
 
 const send = (ws, data) => { if (ws.readyState === ws.OPEN) ws.send(data); };
 
-function sendToUser(userId, payload) {
-  const data = JSON.stringify(payload);
-  (sockets.get(userId) || []).forEach((ws) => send(ws, data));
+// Entrega local (conexiones de este proceso)
+function deliver({ u, p, close }) {
+  const data = p ? JSON.stringify(p) : null;
+  const each = (fn) => (u === '*' ? sockets.forEach((set) => set.forEach(fn)) : (sockets.get(u) || []).forEach(fn));
+  each((ws) => (close ? ws.close(4401, 'account deleted') : send(ws, data)));
+}
+if (redis.enabled) {
+  redis.sub.subscribe(CHANNEL, (raw) => { try { deliver(JSON.parse(raw)); } catch { /* mensaje corrupto: se ignora */ } })
+    .catch((e) => console.error('[redis] suscripción:', e.message));
+}
+// Con Redis se publica (llega también a esta instancia); sin Redis se entrega directamente
+function route(msg) {
+  if (redis.enabled) redis.pub.publish(CHANNEL, JSON.stringify(msg)).catch(() => deliver(msg));
+  else deliver(msg);
 }
 
-/** Envía a todos los usuarios autenticados. */
-function broadcast(payload) {
-  const data = JSON.stringify(payload);
-  sockets.forEach((set) => set.forEach((ws) => send(ws, data)));
-}
+const sendToUser = (userId, payload) => route({ u: userId, p: payload });
+
+/** Envía a todos los usuarios autenticados (de todas las instancias). */
+const broadcast = (payload) => route({ u: '*', p: payload });
+
+/** Cierra las conexiones de un usuario (p. ej. al borrar su cuenta). */
+const disconnectUser = (userId) => route({ u: userId, close: true });
+
+/** Conexiones abiertas en este proceso (para /health y métricas). */
+const stats = () => ({ users: sockets.size, sockets: wss ? wss.clients.size : 0 });
 
 const close = () => wss && wss.close();
 
-module.exports = { attach, sendToUser, broadcast, close };
+module.exports = { attach, sendToUser, broadcast, disconnectUser, close, stats };

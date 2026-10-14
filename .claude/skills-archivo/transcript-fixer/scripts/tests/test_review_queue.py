@@ -1,0 +1,1179 @@
+"""Tests for core.review_queue — the persistent review queue.
+
+These started life as an adversarial validation battery run against real-shaped
+payloads (CJK text, embedded quotes, trailing spaces) rather than synthetic
+ASCII: the failure modes this module guards against (anchor drift, ambiguous
+edits, partial application) only show up with realistic data.
+
+Covers:
+  * enqueue: normalization, priority-by-kind, dedupe (any status), temp-dir skip
+  * resolve: accept with explicit action pack (file_edit + dict_add),
+    convenience-default file_edit, override retargeting, guard rails
+    (no suggestion / missing override text)
+  * fail-closed: anchor drift -> ReAnchorNeeded, item stays pending, file untouched
+  * validate-all-first atomicity: one bad action vetoes the whole pack
+  * ambiguity: multiple anchor occurrences without a line hint are refused
+  * reopen: file edits reverted, dict_add explicitly NOT auto-reverted
+  * window disambiguation: the hinted line's occurrence wins over an earlier
+    in-window look-alike (regression test for a fixed first-match bug)
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from core.review_queue import (  # noqa: E402
+    ReAnchorNeeded,
+    ReviewQueue,
+    ReviewQueueError,
+    is_temp_path,
+    validate_actions,
+)
+
+SCHEMA_PATH = Path(__file__).parent.parent / "core" / "schema.sql"
+
+
+def test_same_line_repeated_span_is_not_the_first_match():
+    text = "先读旧词，再校对旧词。\n"
+    with pytest.raises(ReAnchorNeeded, match="more than once"):
+        ReviewQueue._locate_anchor(text, "旧词", 1, text.strip())
+
+
+def test_same_line_unique_context_selects_second_occurrence():
+    text = "先读旧词，再校对旧词。\n"
+    offset = ReviewQueue._locate_anchor(text, "旧词", 1, "再校对旧词。")
+    assert offset == text.rindex("旧词")
+
+
+def test_same_line_unique_span_still_works():
+    text = "先读说明，再校对旧词。\r\n"
+    assert ReviewQueue._locate_anchor(text, "旧词", 1, text.strip()) == text.index("旧词")
+
+
+def test_overlapping_same_line_span_refuses_ambiguous_context():
+    with pytest.raises(ReAnchorNeeded, match="more than once"):
+        ReviewQueue._locate_anchor("哈哈哈\n", "哈哈", 1, "哈哈哈")
+
+
+def test_overlapping_span_verdict_preserves_transcript_and_pending(queue, tmp_path):
+    target = tmp_path / "overlap.txt"
+    before = "哈哈哈\r\n".encode("utf-8")
+    target.write_bytes(before)
+    item_id = queue.enqueue([{"file": str(target), "line": 1, "original": "哈哈",
+                              "suggested": "笑声", "context": "哈哈哈"}])["added"][0]
+    with pytest.raises(ReAnchorNeeded, match="more than once"):
+        queue.resolve(item_id, "accepted")
+    assert target.read_bytes() == before
+    assert queue.get(item_id).status == "pending"
+
+
+def test_repeated_span_refusal_preserves_transcript_and_pending_verdict(queue, tmp_path):
+    target = tmp_path / "same-line.txt"
+    before = "先读旧词，再校对旧词。\r\n".encode("utf-8")
+    target.write_bytes(before)
+    item_id = queue.enqueue([{"file": str(target), "line": 1, "original": "旧词",
+                              "suggested": "新词", "context": before.decode().strip()}])["added"][0]
+    with pytest.raises(ReAnchorNeeded, match="more than once"):
+        queue.resolve(item_id, "accepted")
+    assert target.read_bytes() == before
+    assert queue.get(item_id).status == "pending"
+
+
+def test_unique_context_verdict_changes_only_the_selected_same_line_occurrence(queue, tmp_path):
+    target = tmp_path / "same-line.txt"
+    target.write_text("先读旧词，再校对旧词。", encoding="utf-8")
+    item_id = queue.enqueue([{"file": str(target), "line": 1, "original": "旧词",
+                              "suggested": "新词", "context": "再校对旧词。"}])["added"][0]
+    queue.resolve(item_id, "accepted")
+    assert target.read_text(encoding="utf-8") == "先读旧词，再校对新词。"
+    assert queue.get(item_id).status == "accepted"
+
+
+@pytest.fixture
+def fake_tempdir(tmp_path: Path, monkeypatch) -> Path:
+    """Redirect the temp-dir boundary is_temp_path() checks against.
+
+    On macOS, pytest's tmp_path itself lives under tempfile.gettempdir()
+    (/private/var/folders/...), so every file-anchored fixture would be
+    skipped as a "temp staging copy" — the guard working exactly as designed,
+    just aimed at the test harness. Pointing the boundary at a subdirectory
+    keeps the semantics testable and the rest of tmp_path "durable"."""
+    fake = tmp_path / "faketmp"
+    fake.mkdir()
+    import core.review_queue as rq
+
+    monkeypatch.setattr(rq.tempfile, "gettempdir", lambda: str(fake))
+    return fake
+
+
+@pytest.fixture
+def db_path(tmp_path: Path) -> Path:
+    path = tmp_path / "corrections.db"
+    conn = sqlite3.connect(path)
+    conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    conn.commit()
+    conn.close()
+    return path
+
+
+@pytest.fixture
+def dict_calls() -> list[tuple]:
+    return []
+
+
+@pytest.fixture
+def queue(db_path: Path, dict_calls: list, fake_tempdir: Path) -> ReviewQueue:
+    def dict_add(from_text: str, to_text: str, domain: str, note: str) -> None:
+        dict_calls.append((from_text, to_text, domain, note))
+
+    return ReviewQueue(db_path, dict_add_fn=dict_add)
+
+
+@pytest.fixture
+def transcript(tmp_path: Path) -> Path:
+    """A realistic transcript: CJK, speaker lines, trailing space, quotes."""
+    work = tmp_path / "work"
+    work.mkdir(exist_ok=True)
+    f = work / "meeting.md"
+    f.write_text(
+        "发言人甲 00:01:02 \n"
+        "今天我们请到了王晓明老师来讲课。 \n"
+        "\n"
+        "发言人乙 00:01:30\n"
+        '他说"这个方案不行"，要重新来。\n',
+        encoding="utf-8",
+    )
+    return f
+
+
+def _item(transcript: Path, **kw) -> dict:
+    base = {
+        "source": "native_pass",
+        "domain": "testdom",
+        "file": str(transcript),
+        "line": 2,
+        "original": "王晓明",
+        "suggested": "汪晓明",
+        "kind": "entity",
+        "evidence": "roster shows sound-alike",
+    }
+    base.update(kw)
+    return base
+
+
+# ==================== enqueue ====================
+
+
+class TestEnqueue:
+    def test_priority_by_kind_orders_queue(self, queue, transcript):
+        queue.enqueue([
+            _item(transcript, original="要重新来", suggested="要重新录",
+                  kind="homophone", line=5),
+            _item(transcript),  # entity
+            _item(transcript, original="重新来", suggested=None, kind="unknown", line=5),
+        ])
+        kinds = [i.kind for i in queue.list_items(status="pending")]
+        assert kinds == ["entity", "unknown", "homophone"]
+
+    def test_dedupe_same_payload_any_status(self, queue, transcript):
+        first = queue.enqueue([_item(transcript)])
+        assert len(first["added"]) == 1
+        # resolve it, then re-enqueue the identical payload: still skipped —
+        # an answered question is never re-asked
+        queue.resolve(first["added"][0], "kept_original")
+        again = queue.enqueue([_item(transcript)])
+        assert again["added"] == []
+        assert again["skipped_duplicates"] == 1
+
+    def test_exact_file_filter_and_stats_do_not_leak_global_queue(self, queue, transcript):
+        other = transcript.parent / "other-meeting.md"
+        other.write_text(transcript.read_text(encoding="utf-8"), encoding="utf-8")
+        first = queue.enqueue([_item(transcript)])["added"][0]
+        queue.enqueue([_item(other)])
+
+        scoped = queue.list_items(status="pending", file_path=str(transcript))
+        assert [item.id for item in scoped] == [first]
+        assert scoped[0].file_path == str(transcript.resolve())
+
+        queue.resolve(first, "kept_original")
+        assert queue.stats(file_path=str(transcript))["by_status"] == {
+            "kept_original": 1,
+        }
+        assert queue.stats(file_path=str(transcript))["pending_total"] == 0
+        assert queue.stats(file_path=str(other))["pending_total"] == 1
+
+    def test_temp_dir_anchor_skipped(self, queue, fake_tempdir):
+        staged = fake_tempdir / "staged-copy.md"
+        staged.write_text("临时目录里的待改词。\n", encoding="utf-8")
+        result = queue.enqueue([{
+            "source": "stage1_deferred", "domain": "testdom",
+            "file": str(staged), "original": "待改词", "suggested": "已改词",
+            "kind": "homophone",
+        }])
+        assert result["added"] == []
+        assert result["skipped_temp"] == 1
+
+    def test_missing_original_rejected(self, queue):
+        with pytest.raises(ReviewQueueError, match="original"):
+            queue.enqueue([{"source": "manual", "suggested": "x"}])
+
+    def test_malformed_action_rejected_at_enqueue(self, queue, transcript):
+        with pytest.raises(ReviewQueueError, match="missing keys"):
+            queue.enqueue([_item(transcript, actions=[{"type": "dict_add", "from": "a"}])])
+
+    def test_unknown_action_type_rejected(self):
+        with pytest.raises(ReviewQueueError, match="unknown type"):
+            validate_actions([{"type": "shell_exec", "cmd": "true"}])
+
+    def test_is_temp_path_boundaries(self, tmp_path, fake_tempdir):
+        assert is_temp_path(fake_tempdir / "x.md") is True
+        assert is_temp_path(tmp_path / "work" / "x.md") is False
+        assert is_temp_path(Path.home() / "not-a-temp-file.md") is False
+
+
+# ==================== resolve: accept ====================
+
+
+class TestAccept:
+    def test_explicit_pack_edits_file_and_adds_dict_rule(
+        self, queue, transcript, dict_calls
+    ):
+        ids = queue.enqueue([_item(transcript, actions=[
+            {"type": "file_edit", "path": str(transcript),
+             "old": "王晓明", "new": "汪晓明"},
+            {"type": "dict_add", "from": "王晓明", "to": "汪晓明", "domain": "testdom"},
+        ])])["added"]
+        result = queue.resolve(ids[0], "accepted", by="tester")
+        content = transcript.read_text(encoding="utf-8")
+        assert "汪晓明" in content and "王晓明" not in content
+        assert dict_calls == [
+            ("王晓明", "汪晓明", "testdom", f"confirmed via review queue item #{ids[0]}"),
+        ]
+        item = result["item"]
+        assert item["status"] == "accepted"
+        assert item["resolved_text"] == "汪晓明"
+        assert all(e["ok"] for e in item["apply_log"])
+
+    def test_convenience_default_file_edit(self, queue, transcript, dict_calls):
+        """No explicit action pack + file anchor => default single file_edit."""
+        ids = queue.enqueue([_item(transcript, original="要重新来",
+                                   suggested="要重新录", kind="homophone", line=5)])["added"]
+        queue.resolve(ids[0], "accepted")
+        assert "要重新录" in transcript.read_text(encoding="utf-8")
+        assert dict_calls == []  # nothing beyond the file edit
+
+    def test_accept_without_suggestion_refused(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript, original="重新来", suggested=None,
+                                   kind="unknown", line=5)])["added"]
+        with pytest.raises(ReviewQueueError, match="no suggestion"):
+            queue.resolve(ids[0], "accepted")
+
+    def test_realistic_payload_quotes_and_trailing_space(self, queue, tmp_path):
+        f = tmp_path / "quotes.md"
+        f.write_text('他说 "cloud code" 很好用 \n', encoding="utf-8")
+        ids = queue.enqueue([{
+            "source": "native_pass", "domain": "testdom", "file": str(f), "line": 1,
+            "original": '"cloud code" 很好用 ', "suggested": '"Claude Code" 很好用',
+            "kind": "entity",
+        }])["added"]
+        queue.resolve(ids[0], "accepted")
+        assert '"Claude Code" 很好用' in f.read_text(encoding="utf-8")
+
+
+# ==================== resolve: override / keep / skip ====================
+
+
+class TestOverrideKeepSkip:
+    def test_override_retargets_file_edit_and_skips_dict_add(
+        self, queue, transcript, dict_calls
+    ):
+        ids = queue.enqueue([_item(transcript, actions=[
+            {"type": "file_edit", "path": str(transcript),
+             "old": "王晓明", "new": "汪晓明"},
+            {"type": "dict_add", "from": "王晓明", "to": "汪晓明", "domain": "testdom"},
+        ])])["added"]
+        queue.resolve(ids[0], "overridden", override_to="王笑明")
+        assert "王笑明" in transcript.read_text(encoding="utf-8")
+        # dict_add was planned for the SUGGESTION; a human override needs a
+        # fresh plan, so it must not fire with stale text
+        assert dict_calls == []
+
+    def test_override_skips_dict_add_when_item_has_no_file_anchor(
+        self, queue, dict_calls
+    ):
+        # Regression: the retarget/drop block used to be gated on
+        # item.file_path, so an anchor-less item (file is optional in the
+        # enqueue schema) skipped it entirely and executed dict_add with the
+        # REJECTED suggestion — writing the answer the human just refused into
+        # a dictionary that then auto-applies it to every future transcript.
+        ids = queue.enqueue([{
+            "original_text": "GARBLED",
+            "suggested_text": "WrongGuess",
+            "kind": "entity",
+            "domain": "testdom",
+            "actions": [
+                {"type": "dict_add", "from": "GARBLED",
+                 "to": "WrongGuess", "domain": "testdom"},
+            ],
+        }])["added"]
+        queue.resolve(ids[0], "overridden", override_to="HumanTruth")
+        assert dict_calls == []
+        assert queue.get(ids[0]).resolved_text == "HumanTruth"
+
+    def test_override_retargets_file_edit_when_item_has_no_file_anchor(
+        self, queue, tmp_path
+    ):
+        # Sibling of the dict_add case above, and the worse symptom: the same
+        # file_path gate meant an anchor-less item carrying an explicit
+        # file_edit wrote the REJECTED suggestion into the transcript.
+        target = tmp_path / "anchorless.md"
+        target.write_text("A 00:00:01.000\nGARBLED spoke\n", encoding="utf-8")
+        ids = queue.enqueue([{
+            "original_text": "GARBLED",
+            "suggested_text": "WrongGuess",
+            "kind": "entity",
+            "domain": "testdom",
+            "actions": [
+                {"type": "file_edit", "path": str(target),
+                 "old": "GARBLED", "new": "WrongGuess"},
+            ],
+        }])["added"]
+        queue.resolve(ids[0], "overridden", override_to="HumanTruth")
+        text = target.read_text(encoding="utf-8")
+        assert "HumanTruth" in text
+        assert "WrongGuess" not in text
+
+    def test_override_requires_text(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        with pytest.raises(ReviewQueueError, match="override-to"):
+            queue.resolve(ids[0], "overridden")
+
+    def test_keep_and_skip_touch_nothing(self, queue, transcript):
+        before = transcript.read_text(encoding="utf-8")
+        ids = queue.enqueue([
+            _item(transcript),
+            _item(transcript, original="要重新来", suggested="要重新录",
+                  kind="homophone", line=5),
+        ])["added"]
+        queue.resolve(ids[0], "kept_original", note="原文正确")
+        queue.resolve(ids[1], "skipped")
+        assert transcript.read_text(encoding="utf-8") == before
+
+    def test_double_resolve_refused(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        queue.resolve(ids[0], "kept_original")
+        with pytest.raises(ReviewQueueError, match="not pending"):
+            queue.resolve(ids[0], "kept_original")
+
+    def test_invalid_decision_rejected(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        with pytest.raises(ReviewQueueError, match="invalid decision"):
+            queue.resolve(ids[0], "approved")
+
+
+# ==================== fail-closed anchoring ====================
+
+
+class TestFailClosed:
+    def test_anchor_drift_raises_and_records_nothing(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        transcript.write_text("内容被外部会话整个重写了。\n", encoding="utf-8")
+        with pytest.raises(ReAnchorNeeded, match="not found"):
+            queue.resolve(ids[0], "accepted")
+        item = queue.get(ids[0])
+        assert item.status == "pending"
+        assert item.apply_log is None
+
+    def test_file_gone_raises(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        transcript.unlink()
+        with pytest.raises(ReAnchorNeeded, match="file gone"):
+            queue.resolve(ids[0], "accepted")
+
+    def test_ambiguous_anchor_without_line_hint_refused(self, queue, tmp_path):
+        f = tmp_path / "ambiguous.md"
+        f.write_text("A 行:模糊词在此。\nB 行:模糊词在此。\n", encoding="utf-8")
+        ids = queue.enqueue([{
+            "source": "native_pass", "domain": "testdom", "file": str(f),
+            "original": "模糊词", "suggested": "清晰词", "kind": "homophone",
+        }])["added"]
+        with pytest.raises(ReAnchorNeeded, match="no line"):
+            queue.resolve(ids[0], "accepted")
+        assert f.read_text(encoding="utf-8").count("模糊词") == 2
+
+    def test_validate_all_first_one_bad_action_vetoes_pack(self, queue, tmp_path):
+        """Atomicity: a broken append_note anchor must veto the valid file_edit."""
+        body = tmp_path / "body.md"
+        body.write_text("正文里有待改词。\n", encoding="utf-8")
+        ctx = tmp_path / "ctx.md"
+        ctx.write_text("# 语境\n## Homophone traps\n- 已有条目\n", encoding="utf-8")
+        ids = queue.enqueue([{
+            "source": "native_pass", "domain": "testdom", "file": str(body), "line": 1,
+            "original": "待改词", "suggested": "已改词", "kind": "homophone",
+            "actions": [
+                {"type": "file_edit", "path": str(body), "old": "待改词", "new": "已改词"},
+                {"type": "append_note", "path": str(ctx),
+                 "anchor": "## 不存在的节", "text": "- 新条目"},
+            ],
+        }])["added"]
+        with pytest.raises(ReAnchorNeeded, match="不存在的节"):
+            queue.resolve(ids[0], "accepted")
+        assert "待改词" in body.read_text(encoding="utf-8")  # file_edit did NOT run
+        assert queue.get(ids[0]).status == "pending"
+
+    def test_multiple_matches_inside_window_must_not_edit_wrong_line(
+        self, queue, tmp_path
+    ):
+        f = tmp_path / "window.md"
+        f.write_text("A 行:模糊词在此。\nB 行:模糊词在此。\nC 行:结尾。\n", encoding="utf-8")
+        ids = queue.enqueue([{
+            "source": "native_pass", "domain": "testdom", "file": str(f), "line": 2,
+            "original": "模糊词", "suggested": "明确词", "kind": "homophone",
+        }])["added"]
+        try:
+            queue.resolve(ids[0], "accepted")
+        except ReAnchorNeeded:
+            pass  # failing closed would also be acceptable behavior
+        else:
+            lines = f.read_text(encoding="utf-8").splitlines()
+            assert "明确词" in lines[1], "line hint said line 2, but another line was edited"
+            assert "模糊词" in lines[0], "line 1 must be untouched"
+
+
+# ==================== reopen ====================
+
+
+class TestReopen:
+    def test_reopen_reverts_file_edit_but_not_dict_add(
+        self, queue, transcript, dict_calls
+    ):
+        ids = queue.enqueue([_item(transcript, actions=[
+            {"type": "file_edit", "path": str(transcript),
+             "old": "王晓明", "new": "汪晓明"},
+            {"type": "dict_add", "from": "王晓明", "to": "汪晓明", "domain": "testdom"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        result = queue.resolve(ids[0], "reopen", note="改判")
+        assert "王晓明" in transcript.read_text(encoding="utf-8")
+        item = queue.get(ids[0])
+        assert item.status == "pending"
+        # dict_add is a human-owned asset: never auto-deleted, the log says so
+        dict_reverts = [e for e in result["revert_log"]
+                        if e["action"]["type"] == "dict_add"]
+        assert dict_reverts and not dict_reverts[0]["ok"]
+        assert "manually" in dict_reverts[0]["msg"]
+
+    def test_reopen_pending_refused(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        with pytest.raises(ReviewQueueError, match="already pending"):
+            queue.resolve(ids[0], "reopen")
+
+
+# ==================== audit trail ====================
+
+
+class TestAudit:
+    def test_enqueue_and_resolve_write_audit_rows(self, queue, db_path, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        queue.resolve(ids[0], "kept_original", by="tester")
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute(
+            "SELECT action, entity_id, user FROM audit_log "
+            "WHERE entity_type='review_item' ORDER BY id"
+        ).fetchall()
+        conn.close()
+        assert ("review_enqueue", ids[0], None) in rows
+        assert ("review_resolve", ids[0], "tester") in rows
+
+
+# ==================== anchor validation + reanchor (2026-08-03) ====================
+
+
+class TestAnchorValidation:
+    """Enqueue verbatim-anchor validation: authoring errors die at enqueue."""
+
+    def test_reject_paraphrased_context(self, queue, transcript):
+        result = queue.enqueue([_item(transcript, context="我写的转述不是原文")])
+        assert result["added"] == []
+        assert len(result["rejected_unanchored"]) == 1
+        assert "逐字" in result["rejected_unanchored"][0]["reason"]
+
+    def test_reject_original_not_in_file(self, queue, transcript):
+        result = queue.enqueue([_item(transcript, original="不存在的词")])
+        assert result["added"] == []
+        assert len(result["rejected_unanchored"]) == 1
+
+    def test_stage1_deferred_exempt(self, queue, transcript):
+        """Engine-evolved from_text legitimately absent from the input file."""
+        result = queue.enqueue([_item(transcript, original="演化后的文本",
+                                      source="stage1_deferred")])
+        assert len(result["added"]) == 1
+        assert result["rejected_unanchored"] == []
+
+    def test_hint_within_window_kept(self, queue, transcript):
+        """A hint inside the ±3 resolve window is functional — never rewrite it."""
+        result = queue.enqueue([_item(transcript, line=1)])  # original on line 2
+        assert result["repaired_hints"] == []
+
+    def test_hint_outside_window_repaired_and_reported(self, queue, transcript):
+        result = queue.enqueue([_item(transcript, line=100)])  # original on line 2
+        assert result["repaired_hints"] == [
+            {"original": "王晓明", "from": 100, "to": 2}]
+        item = queue.get(result["added"][0])
+        assert item.line_number == 2
+
+
+class TestReanchor:
+    """--reanchor-review: repair drifted/moved anchors, fail closed on ambiguity."""
+
+    def _drift_file(self, path: Path, old: str, new: str) -> None:
+        path.write_text(path.read_text(encoding="utf-8").replace(old, new),
+                        encoding="utf-8")
+
+    def test_in_place_drift_prefers_recorded_context(self, queue, transcript, tmp_path):
+        """Multi-occurrence + drifted line: recorded context must pick the line."""
+        f = tmp_path / "work" / "multi.md"
+        f.write_text(
+            "甲说：重复词。\n乙说：重复词，继续。\n丙说：重复词。\n", encoding="utf-8")
+        ids = queue.enqueue([_item(f, original="重复词", line=2,
+                                   context="乙说：重复词，继续。")])["added"]
+        self._drift_file(f, "乙说：重复词，继续。", "乙说：重复词，改口。")
+        r = queue.reanchor(ids[0])
+        assert r["line_number"] == 2
+        assert "改口" in r["context_snippet"]
+        queue.resolve(ids[0], "accepted")
+        body = f.read_text(encoding="utf-8")
+        assert "乙说：汪晓明，改口。" in body  # resolved via default file_edit
+        assert "甲说：重复词。" in body  # sibling occurrences untouched
+
+    def test_file_gone_unique_search_repoints(self, queue, transcript, tmp_path):
+        ids = queue.enqueue([_item(transcript, original="王晓明")])["added"]
+        moved = tmp_path / "elsewhere" / "renamed.md"
+        moved.parent.mkdir()
+        transcript.rename(moved)
+        r = queue.reanchor(ids[0], search_roots=[str(tmp_path)])
+        assert r["file_repointed"] is True
+        assert r["file_path"] == str(moved.resolve())
+
+    def test_file_gone_ambiguous_then_explicit_to(self, queue, transcript, tmp_path):
+        ids = queue.enqueue([_item(transcript, original="王晓明")])["added"]
+        copy2 = tmp_path / "copy2.md"
+        copy2.write_text(transcript.read_text(encoding="utf-8"), encoding="utf-8")
+        copy3 = tmp_path / "copy3.md"
+        copy3.write_text(transcript.read_text(encoding="utf-8"), encoding="utf-8")
+        transcript.unlink()
+        with pytest.raises(ReviewQueueError, match="ambiguous"):
+            queue.reanchor(ids[0], search_roots=[str(tmp_path)])
+        r = queue.reanchor(ids[0], reanchor_to=str(copy2))
+        assert r["file_repointed"] is True
+        nope = tmp_path / "nope.md"
+        nope.write_text("完全没有那个词。\n", encoding="utf-8")
+        with pytest.raises(ReviewQueueError, match="not in explicit target"):
+            queue.reanchor(ids[0], reanchor_to=str(nope))
+
+    def test_overlapping_roots_not_double_counted(self, queue, transcript, tmp_path):
+        """recorded parent ⊆ search root: same file must not count twice (F3)."""
+        sub = tmp_path / "root" / "sub"
+        sub.mkdir(parents=True)
+        f = sub / "old.md"
+        f.write_text(transcript.read_text(encoding="utf-8"), encoding="utf-8")
+        ids = queue.enqueue([_item(f, original="王晓明")])["added"]
+        new = sub / "new.md"
+        f.rename(new)
+        r = queue.reanchor(ids[0], search_roots=[str(tmp_path / "root")])
+        assert r["file_repointed"] is True
+        assert r["file_path"] == str(new.resolve())
+
+    def test_reanchor_refuses_dedup_collision(self, queue, transcript, tmp_path):
+        copy2 = tmp_path / "copy2.md"
+        copy2.write_text(transcript.read_text(encoding="utf-8"), encoding="utf-8")
+        ids_a = queue.enqueue([_item(transcript, original="王晓明")])["added"]
+        queue.enqueue([_item(copy2, original="王晓明")])["added"]
+        transcript.unlink()
+        with pytest.raises(ReviewQueueError, match="collide"):
+            queue.reanchor(ids_a[0], reanchor_to=str(copy2))
+
+    def test_reanchor_rewrites_action_pack_paths(self, queue, transcript, tmp_path):
+        ids = queue.enqueue([_item(
+            transcript, original="王晓明",
+            actions=[{"type": "file_edit", "path": str(transcript),
+                      "old": "王晓明", "new": "汪晓明"}])])["added"]
+        moved = tmp_path / "moved.md"
+        transcript.rename(moved)
+        queue.reanchor(ids[0], reanchor_to=str(moved))
+        queue.resolve(ids[0], "accepted")
+        assert "汪晓明" in moved.read_text(encoding="utf-8")
+
+    def test_reanchor_rejects_non_pending(self, queue, transcript):
+        ids = queue.enqueue([_item(transcript)])["added"]
+        queue.resolve(ids[0], "kept_original")
+        with pytest.raises(ReviewQueueError, match="pending"):
+            queue.reanchor(ids[0])
+
+    def test_line_shift_prefers_context_over_distance(self, queue, tmp_path):
+        """Discriminating case: after inserting a line above, the recorded
+        context still identifies the right occurrence — a distance-only pick
+        would land on the wrong line (the review-round-2 'test was vacuous' fix)."""
+        f = tmp_path / "work" / "multi.md"
+        f.parent.mkdir(exist_ok=True)
+        f.write_text("甲说：重复词。\n乙说：重复词，继续。\n丙说：重复词。\n",
+                     encoding="utf-8")
+        ids = queue.enqueue([_item(f, original="重复词", line=2,
+                                   context="乙说：重复词，继续。")])["added"]
+        f.write_text("插入一行在最顶上。\n" + f.read_text(encoding="utf-8"),
+                     encoding="utf-8")  # target shifts 2→3; distance-0 line 2 is 甲
+        r = queue.reanchor(ids[0])
+        assert r["line_number"] == 3
+        queue.resolve(ids[0], "accepted")
+        body = f.read_text(encoding="utf-8")
+        assert "乙说：汪晓明，继续。" in body
+        assert "甲说：重复词。" in body
+
+    def test_equidistant_tie_refused(self, queue, tmp_path):
+        """No context discrimination + equidistant tie = fail closed (same
+        standard as resolve), never a fabricated context."""
+        f = tmp_path / "work" / "tie.md"
+        f.parent.mkdir(exist_ok=True)
+        f.write_text("重复词 出现在这。\n中间隔一行。\n重复词 又出现。\n",
+                     encoding="utf-8")
+        ids = queue.enqueue([_item(f, original="重复词", line=2,
+                                   context="中间隔一行。")])["added"]
+        # Drift the recorded context line so it no longer discriminates,
+        # leaving two equidistant occurrences.
+        f.write_text(f.read_text(encoding="utf-8").replace("中间隔一行。", "整行全换了。"),
+                     encoding="utf-8")
+        with pytest.raises(ReviewQueueError, match="equally near"):
+            queue.reanchor(ids[0])
+
+    def test_in_place_reanchor_refreshes_expect_line(self, queue, tmp_path):
+        """Ping-pong regression: stale pack expect_line outranks the item's
+        refreshed line at resolve — it must follow any in-place line move."""
+        f = tmp_path / "work" / "pack.md"
+        f.parent.mkdir(exist_ok=True)
+        f.write_text("别的内容一。\n锚词在这里。\n别的内容二。\n", encoding="utf-8")
+        ids = queue.enqueue([_item(
+            f, original="锚词", line=2,
+            actions=[{"type": "file_edit", "path": str(f),
+                      "old": "锚词", "new": "定词", "expect_line": 2}])])["added"]
+        pad = "\n".join(f"上方插入第{i}行。" for i in range(10)) + "\n"
+        f.write_text(pad + f.read_text(encoding="utf-8"),
+                     encoding="utf-8")  # target drifts 2→12
+        queue.reanchor(ids[0])
+        queue.resolve(ids[0], "accepted")  # must NOT bounce on stale expect_line=2
+        assert "定词在这里。" in f.read_text(encoding="utf-8")
+
+
+# ==================== ledger (asr_note) protection on the accept path ====================
+
+
+class TestLedgerFrontmatterIsNotRewritten:
+    """`asr_note` cites old forms on purpose; accepting an item must not edit it.
+
+    Stage 1 (dictionary_processor._mask_ledger_spans) and trap-scan both mask
+    the ledger. The accept path did not — and dictionary_processor's own
+    comment predicted the consequence: a phantom item "whose accept would
+    corrupt the ledger". Real occurrence 2026-09-01: an agent applied a name
+    fix by hand, then resolved the matching queue item; the anchored line no
+    longer held the old form, the ledger's citation was the only occurrence
+    left, `count == 1` took the unvalidated fast path, and the provenance
+    record was rewritten into a self-contradiction (`<正名>→<正名>`).
+    """
+
+    @pytest.fixture
+    def ledger_transcript(self, tmp_path: Path) -> Path:
+        work = tmp_path / "work"
+        work.mkdir(exist_ok=True)
+        f = work / "ledger-meeting.md"
+        f.write_text(
+            "---\n"
+            "participants: [陈一, 周明轩, 李二]\n"
+            "asr_note: 2026-09-01 修正含：周明轩→邹明轩、孙立成→孙丽成\n"
+            "---\n"
+            "\n"
+            "周明轩 00:01:22\n"
+            "这个链接得从浏览器复制。\n",
+            encoding="utf-8",
+        )
+        return f
+
+    def test_ledger_citation_is_never_the_edit_target(self, queue, ledger_transcript):
+        """The anchored line is edited; the ledger's identical citation is not."""
+        added = queue.enqueue([{
+            "source": "stage1_deferred", "domain": "embodied_ai",
+            "file": str(ledger_transcript), "line": 2,
+            "original": "周明轩", "suggested": "邹明轩", "kind": "homophone",
+            "context": "participants: [陈一, 周明轩, 李二]",
+            "evidence": "roster: 邹明轩 is canonical",
+        }])["added"]
+        queue.resolve(added[0], "accepted", by="test")
+        text = ledger_transcript.read_text(encoding="utf-8")
+        assert "participants: [陈一, 邹明轩, 李二]" in text
+        assert "asr_note: 2026-09-01 修正含：周明轩→邹明轩、孙立成→孙丽成" in text
+
+    def _hand_applied(self, queue, ledger_transcript, replacement="邹明轩"):
+        added = queue.enqueue([{
+            "source": "stage1_deferred", "domain": "embodied_ai",
+            "file": str(ledger_transcript), "line": 2,
+            "original": "周明轩", "suggested": "邹明轩", "kind": "homophone",
+            "context": "participants: [陈一, 周明轩, 李二]",
+            "evidence": "roster: 邹明轩 is canonical",
+        }])["added"]
+        # the agent applies the frontmatter + body fix by hand first
+        text = ledger_transcript.read_text(encoding="utf-8")
+        ledger_transcript.write_text(
+            text.replace("participants: [陈一, 周明轩, 李二]",
+                         f"participants: [陈一, {replacement}, 李二]")
+                .replace("周明轩 00:01:22", f"{replacement} 00:01:22"),
+            encoding="utf-8",
+        )
+        return added[0], ledger_transcript.read_text(encoding="utf-8")
+
+    def test_hand_applied_fix_is_recorded_without_touching_the_ledger(
+        self, queue, ledger_transcript
+    ):
+        """Anchored line already fixed by hand -> the verdict is still
+        `accepted`; nothing is written, and the ledger citation is never
+        reached (the 2026-09-01 corruption). Before this shape was
+        recognised the only exit was `kept_original`, which describes a
+        transcript that was right as spoken — the opposite of what happened."""
+        item_id, before = self._hand_applied(queue, ledger_transcript)
+        result = queue.resolve(item_id, "accepted", by="test")
+        assert result["item"]["status"] == "accepted"
+        (entry,) = result["apply_log"]
+        assert entry["ok"] and entry["skipped"]
+        assert "already in place" in entry["msg"]
+        assert ledger_transcript.read_text(encoding="utf-8") == before
+        assert "asr_note: 2026-09-01 修正含：周明轩→邹明轩、孙立成→孙丽成" in before
+
+    def test_hand_applied_then_reopen_reverts_nothing(self, queue, ledger_transcript):
+        item_id, before = self._hand_applied(queue, ledger_transcript)
+        queue.resolve(item_id, "accepted", by="test")
+        queue.resolve(item_id, "reopen", by="test")
+        assert queue.get(item_id).status == "pending"
+        assert ledger_transcript.read_text(encoding="utf-8") == before
+
+    def test_hand_edit_to_a_different_word_still_fails_closed(
+        self, queue, ledger_transcript
+    ):
+        """The anchor is gone but the suggestion is NOT what replaced it:
+        that is drift, not a hand-applied fix — refuse as before."""
+        item_id, before = self._hand_applied(queue, ledger_transcript, replacement="周明")
+        with pytest.raises(ReAnchorNeeded):
+            queue.resolve(item_id, "accepted", by="test")
+        assert ledger_transcript.read_text(encoding="utf-8") == before
+        assert queue.get(item_id).status == "pending"
+
+    def test_already_applied_needs_context(self):
+        """Without a recorded context there is nothing to compare the new
+        text against — fail closed, do not guess. A line hint is not needed:
+        the whole file is searched, so a hint that drifted past the resolve
+        window cannot strand a fix that is in place."""
+        from core.review_queue import ReviewQueue
+        content = "今天我们请到了汪晓明老师来讲课。\n"
+        snippet = "今天我们请到了王晓明老师来讲课。"
+        assert ReviewQueue._already_applied(content, "王晓明", "汪晓明", None) is False
+        assert ReviewQueue._already_applied(content, "王晓明", "汪晓明", "   ") is False
+        assert ReviewQueue._already_applied(content, "王晓明", "汪晓明", snippet) is True
+        # A snippet that is the bare token carries no neighbours to verify.
+        assert ReviewQueue._already_applied("汪晓明\n", "王晓明", "汪晓明", "王晓明") is False
+        # A one-sided neighbourhood shorter than three characters is not
+        # enough to stand in for the missing side.
+        assert ReviewQueue._already_applied("汪晓明老\n", "王晓明", "汪晓明", "王晓明老") is False
+
+    def test_already_applied_survives_an_adjacent_edit_on_the_same_line(self):
+        """Two corrections side by side: the neighbour of this anchor was
+        itself corrected, so the widest neighbourhood no longer matches and
+        the check must fall back to a narrower one. An edit touching the slot
+        leaves no recorded neighbour on that side — fail closed."""
+        from core.review_queue import ReviewQueue
+        snippet = "先看巨神模型 voa 这条路线再说"
+        content = "先看具身模型 VLA 这条路线再说\n"
+        assert ReviewQueue._already_applied(content, "巨神", "具身", snippet) is True
+        assert ReviewQueue._already_applied(
+            "先看具身VLA这条路线再说\n", "巨神", "具身", "先看巨神voa这条路线再说") is False
+
+    def test_already_applied_survives_drift_past_the_resolve_window(self):
+        """Frontmatter grew by more lines than the ±3 resolve window after
+        enqueue; the fix is in place on the shifted line. The original is gone,
+        so --reanchor-review has nothing to re-locate — this check is the only
+        exit that records what happened."""
+        from core.review_queue import ReviewQueue
+        content = "---\n" + "k: v\n" * 6 + "---\n今天我们请到了汪晓明老师来讲课。\n"
+        assert ReviewQueue._already_applied(
+            content, "王晓明", "汪晓明", "今天我们请到了王晓明老师来讲课。") is True
+
+    def test_already_applied_refuses_when_a_sibling_carries_a_third_form(self):
+        """The recorded neighbourhood appears twice: once with the suggestion,
+        once with a third form (the anchored utterance hand-edited to something
+        else, or a look-alike). Which one the row meant is ambiguous — fail
+        closed rather than close the row over the wrong text."""
+        from core.review_queue import ReviewQueue
+        snippet = "我们请到了王晓明老师来讲课。"
+        content = "我们请到了汪晓明老师来讲课。\n我们请到了王小明老师来讲课。\n"
+        assert ReviewQueue._already_applied(content, "王晓明", "汪晓明", snippet) is False
+        # Same neighbourhood used as a sentence template with other names:
+        # the guard cannot tell a template from a mis-edit, so it also refuses.
+        template = "我们请到了汪晓明老师来讲课。\n我们请到了李四老师来讲课。\n"
+        assert ReviewQueue._already_applied(template, "王晓明", "汪晓明", snippet) is False
+        # One-sided neighbourhoods get the same guard.
+        assert ReviewQueue._already_applied(
+            "汪晓明老师来讲课。\n王小明老师来讲课。\n", "王晓明", "汪晓明",
+            "王晓明老师来讲课。") is False
+        assert ReviewQueue._already_applied(
+            "请到了汪晓明\n请到了王小明\n", "王晓明", "汪晓明", "请到了王晓明") is False
+
+    def test_already_applied_cannot_see_a_deleted_anchor_behind_a_twin(self):
+        """Documented boundary, not a target: the anchored utterance deleted
+        outright while an identical neighbourhood elsewhere already reads with
+        the suggestion is indistinguishable from drift. Nothing is written
+        either way and `reopen` re-pends the row."""
+        from core.review_queue import ReviewQueue
+        assert ReviewQueue._already_applied(
+            "我们请到了汪晓明老师来讲课。\n别的话。\n", "王晓明", "汪晓明",
+            "我们请到了王晓明老师来讲课。") is True
+
+
+    # ---- 2026-09-05 second-round review (rows numbered as in that table) ----
+
+    def _enqueue(self, queue, f, line, original, suggested, context):
+        return queue.enqueue([{
+            "source": "stage1_deferred", "domain": "general",
+            "file": str(f), "line": line,
+            "original": original, "suggested": suggested, "kind": "homophone",
+            "context": context, "evidence": "roster",
+        }])["added"][0]
+
+    def test_surviving_original_in_another_utterance_is_not_this_rows_edit(
+        self, queue, tmp_path
+    ):
+        """Row 1: the anchored line is hand-fixed and the same garble survives
+        in a different sentence two lines down. Neither accept nor
+        --reanchor-review may land on that other sentence."""
+        f = tmp_path / "survivor.md"
+        f.write_text("今天我们请到了王晓明老师来讲课。\n王晓明老师说了很多。\n", encoding="utf-8")
+        item_id = self._enqueue(queue, f, 1, "王晓明", "汪晓明", "今天我们请到了王晓明老师来讲课。")
+        f.write_text("今天我们请到了汪晓明老师来讲课。\n王晓明老师说了很多。\n", encoding="utf-8")
+        before = f.read_text(encoding="utf-8")
+        with pytest.raises(ReAnchorNeeded, match="do not --reanchor-review"):
+            queue.resolve(item_id, "accepted", by="test")
+        assert f.read_text(encoding="utf-8") == before
+        with pytest.raises(ReviewQueueError, match="already reads with"):
+            queue.reanchor(item_id)
+        item = queue.get(item_id)
+        assert item.status == "pending" and item.line_number == 1
+        assert item.context_snippet == "今天我们请到了王晓明老师来讲课。"
+        # Once the other utterance is settled (here: by hand), this row closes.
+        f.write_text("今天我们请到了汪晓明老师来讲课。\n汪晓明老师说了很多。\n", encoding="utf-8")
+        result = queue.resolve(item_id, "accepted", by="test")
+        assert result["item"]["status"] == "accepted"
+        assert result["apply_log"][0]["skipped"] is True
+
+    def test_suggestion_containing_the_original_is_not_applied_twice(self, queue, tmp_path):
+        """Row 2: 阿里→阿里云 leaves the original inside the fix forever; a
+        hand-applied fix must be recognised, not re-replaced into 阿里云云."""
+        f = tmp_path / "contains.md"
+        f.write_text("我们用阿里的服务。\n", encoding="utf-8")
+        item_id = self._enqueue(queue, f, 1, "阿里", "阿里云", "我们用阿里的服务。")
+        f.write_text("我们用阿里云的服务。\n", encoding="utf-8")
+        result = queue.resolve(item_id, "accepted", by="test")
+        assert result["item"]["status"] == "accepted"
+        assert result["apply_log"][0]["skipped"] is True
+        assert f.read_text(encoding="utf-8") == "我们用阿里云的服务。\n"
+        # The unfixed shape still takes the normal edit path.
+        g = tmp_path / "contains-unfixed.md"
+        g.write_text("我们用阿里的服务。\n", encoding="utf-8")
+        item_id = self._enqueue(queue, g, 1, "阿里", "阿里云", "我们用阿里的服务。")
+        queue.resolve(item_id, "accepted", by="test")
+        assert g.read_text(encoding="utf-8") == "我们用阿里云的服务。\n"
+
+    def test_third_form_of_any_length_is_seen(self):
+        """Row 3: the ambiguity guard is not bounded by the token length."""
+        from core.review_queue import ReviewQueue
+        snippet = "我们请到了王晓明老师来讲课。"
+        assert ReviewQueue._already_applied(
+            "我们请到了汪晓明老师来讲课。\n我们请到了王小明（待核实）老师来讲课。\n",
+            "王晓明", "汪晓明", snippet) is False
+        assert ReviewQueue._already_applied(
+            "先看具身模型这条路线再说\n先看Embodied模型这条路线再说\n",
+            "巨神", "具身", "先看巨神模型这条路线再说") is False
+
+    def test_coedited_third_form_near_the_hint_is_seen(self):
+        """Row 4: the anchored line was hand-edited to a third form AND had an
+        adjacent co-edit; within the hint window the guard tries every
+        neighbour width, so two surviving characters a side are enough."""
+        from core.review_queue import ReviewQueue
+        snippet = "我们请到了王晓明老师来讲课。"
+        fixed = "我们请到了汪晓明老师来讲课。\n"
+        for anchored in (
+            "我们请到了王小明老师来讲课，\n",
+            "我们请到了王小明老师来上课。\n",
+            "我们请到了王小明老师也来讲课。\n",
+        ):
+            assert ReviewQueue._already_applied(
+                fixed + anchored, "王晓明", "汪晓明", snippet, line_no=2) is False, anchored
+        # Documented boundary: both recorded neighbours on one side gone.
+        assert ReviewQueue._already_applied(
+            fixed + "我们请到了王小明来讲课。\n", "王晓明", "汪晓明", snippet, line_no=2) is True
+
+    def test_third_form_at_queue_level_with_a_coedit_stays_pending(self, queue, tmp_path):
+        f = tmp_path / "coedit.md"
+        f.write_text("我们请到了汪晓明老师来讲课。\n我们请到了王晓明老师来讲课。\n", encoding="utf-8")
+        item_id = self._enqueue(queue, f, 2, "王晓明", "汪晓明", "我们请到了王晓明老师来讲课。")
+        f.write_text("我们请到了汪晓明老师来讲课。\n我们请到了王小明老师来讲课，\n", encoding="utf-8")
+        before = f.read_text(encoding="utf-8")
+        with pytest.raises(ReAnchorNeeded, match="different form"):
+            queue.resolve(item_id, "accepted", by="test")
+        assert f.read_text(encoding="utf-8") == before
+        assert queue.get(item_id).status == "pending"
+
+    def test_overlapping_neighbourhoods_are_all_examined(self):
+        """Row 5: left and right neighbour are the same string."""
+        from core.review_queue import ReviewQueue
+        assert ReviewQueue._already_applied(
+            "老师汪晓明老师王小明老师\n", "王晓明", "汪晓明", "老师王晓明老师") is False
+
+    def test_reanchor_refuses_a_row_whose_context_already_reads_fixed(self, queue, tmp_path):
+        """Row 1 (reanchor half): --reanchor-review must not silently re-point
+        a hand-applied row at a surviving occurrence of the original."""
+        f = tmp_path / "repoint.md"
+        f.write_text("今天我们请到了王晓明老师来讲课。\n王晓明老师说了很多。\n", encoding="utf-8")
+        item_id = self._enqueue(queue, f, 1, "王晓明", "汪晓明", "今天我们请到了王晓明老师来讲课。")
+        f.write_text("今天我们请到了汪晓明老师来讲课。\n王晓明老师说了很多。\n", encoding="utf-8")
+        with pytest.raises(ReviewQueueError, match="nothing to re-anchor"):
+            queue.reanchor(item_id)
+        assert queue.get(item_id).line_number == 1
+
+    def test_sibling_with_a_third_form_fails_closed_at_queue_level(self, queue, tmp_path):
+        """Row 12 of the 2026-09-05 review: line 2 hand-edited to a third form
+        while line 1 already carried the corrected phrase closed the row
+        `accepted` with the wrong text still on line 2."""
+        f = tmp_path / "sibling.md"
+        f.write_text("我们请到了汪晓明老师来讲课。\n我们请到了王晓明老师来讲课。\n", encoding="utf-8")
+        item_id = queue.enqueue([{
+            "source": "stage1_deferred", "domain": "general",
+            "file": str(f), "line": 2,
+            "original": "王晓明", "suggested": "汪晓明", "kind": "homophone",
+            "context": "我们请到了王晓明老师来讲课。", "evidence": "roster",
+        }])["added"][0]
+        f.write_text("我们请到了汪晓明老师来讲课。\n我们请到了王小明老师来讲课。\n", encoding="utf-8")
+        before = f.read_text(encoding="utf-8")
+        with pytest.raises(ReAnchorNeeded, match="carry a different form"):
+            queue.resolve(item_id, "accepted", by="test")
+        assert f.read_text(encoding="utf-8") == before
+        assert queue.get(item_id).status == "pending"
+
+    def test_hand_applied_fix_past_the_resolve_window_is_recorded(self, queue, tmp_path):
+        """Row 1 of the 2026-09-05 review: hand-applied fix plus five lines of
+        frontmatter growth. accept must record it; before, accept raised
+        ReAnchorNeeded and --reanchor-review refused (original gone)."""
+        f = tmp_path / "drift.md"
+        f.write_text("今天我们请到了王晓明老师来讲课。\n", encoding="utf-8")
+        item_id = queue.enqueue([{
+            "source": "stage1_deferred", "domain": "general",
+            "file": str(f), "line": 1,
+            "original": "王晓明", "suggested": "汪晓明", "kind": "homophone",
+            "context": "今天我们请到了王晓明老师来讲课。", "evidence": "roster",
+        }])["added"][0]
+        f.write_text("---\n" + "k: v\n" * 5 + "---\n今天我们请到了汪晓明老师来讲课。\n",
+                     encoding="utf-8")
+        before = f.read_text(encoding="utf-8")
+        result = queue.resolve(item_id, "accepted", by="test")
+        assert result["item"]["status"] == "accepted"
+        (entry,) = result["apply_log"]
+        assert entry["ok"] and entry["skipped"]
+        assert f.read_text(encoding="utf-8") == before
+
+    def test_override_text_already_in_place_is_recorded_without_writing(
+        self, queue, ledger_transcript
+    ):
+        """`overridden` takes the same path for its override text."""
+        item_id, before = self._hand_applied(queue, ledger_transcript, replacement="周铭轩")
+        result = queue.resolve(item_id, "overridden", override_to="周铭轩", by="test")
+        assert result["item"]["status"] == "overridden"
+        (entry,) = result["apply_log"]
+        assert entry["ok"] and entry["skipped"]
+        assert ledger_transcript.read_text(encoding="utf-8") == before
+
+
+class TestLedgerSafeRevertAndReanchor:
+    """asr_note 台账行故意引用旧形（"修正含：<旧形>→<正确形>"）。reopen 的回退
+    与 reanchor 的重定位都必须在台账屏蔽后工作——2026-09-20 #2241：reopen 的
+    全文计数回退把台账里唯一幸存的新形改回旧形，asr_note 一度变成「旧词→旧词」；
+    #1107：reanchor 把行重锚到 asr_note 自己那一行。"""
+
+    BODY = "正文里说的是旧词的事情。\n"
+
+    def _doc(self, ledger="", body=None):
+        return ("---\n" + ledger + "---\n\n" + (body or self.BODY))
+
+    def test_reopen_revert_skips_ledger_only_survivor(self, queue, tmp_path):
+        # 新形只活在台账里（正文从没落改）时，reopen 不许动台账、还原正文。
+        p = tmp_path / "ledgered.md"
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n'), encoding="utf-8")
+        ids = queue.enqueue([_item(p, original="旧词", suggested="新词", actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        # 手工把正文也改掉，再撤回正文那处，让台账成为唯一幸存
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n',
+            body="正文里说的是新词的事情。\n"), encoding="utf-8")
+        result = queue.resolve(ids[0], "reopen", note="误裁回退")
+        text = p.read_text(encoding="utf-8")
+        assert "旧词->新词" in text, "台账行被 revert 误伤"
+        assert "正文里说的是旧词的事情。" in text, "正文应当被还原"
+        assert any(e["ok"] for e in result["revert_log"]), "正文那一处应当成功还原"
+
+    def test_reopen_revert_refuses_when_only_ledger_has_it(self, queue, tmp_path):
+        # 极端形状：新形全文只出现在台账行——什么都不写，并说明原因。
+        p = tmp_path / "ledgered.md"
+        before = self._doc(ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n')
+        p.write_text(before, encoding="utf-8")
+        ids = queue.enqueue([_item(p, original="旧词", suggested="新词", actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        p.write_text(before, encoding="utf-8")  # 正文从未落改
+        result = queue.resolve(ids[0], "reopen", note="误裁回退")
+        text = p.read_text(encoding="utf-8")
+        assert text == before, "文件必须一字不动"
+        assert any("ledger" in (e.get("msg") or "") for e in result["revert_log"])
+
+    def test_reanchor_ignores_ledger_occurrence(self, queue, tmp_path):
+        # 旧形从正文消失、只在台账行幸存时，reanchor 必须报「不在文件里」，
+        # 而不是把行重锚到 asr_note 自己那一行（2026-09-20 #1107 形状）。
+        p = tmp_path / "ledgered.md"
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n'), encoding="utf-8")
+        ids = queue.enqueue([_item(p, line=6, original="旧词",
+                                   suggested="新词")])["added"]
+        # 入队后正文那处被删掉，台账仍引用旧词
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n',
+            body="正文说的是别的事情。\n"), encoding="utf-8")
+        with pytest.raises(ReviewQueueError, match="no longer in"):
+            queue.reanchor(ids[0])
+
+
+class TestRevertCountsOccurrencesNotLines:
+    """同行双现：hits 数的是**行**，`replace(..., 1)` 只换该行**第一处**。
+
+    同一行出现两次新词时，`len(hits) == 1` 让 reopen 返回 `{"ok": True,
+    "msg": "reverted"}`，而文件里还剩一处未撤回——reopen 是 undo 路径，调用方
+    （含 `_reopen` 里 `(N/M reverted)` 的并发回滚文案）据此认为改动已撤销。
+    更糟的是被换掉的往往是**另一处**：accept 落在第二处，撤回改的是第一处，
+    于是一处本来正确的文本被改写、已接受的改动却留在文件里。origin/main 在
+    这个形状上是**拒绝**的（`appears 3 times (need exactly 1)`），所以这是
+    本次 PR 引入的能力退化，不是修了个老 bug。
+
+    形状里同时带 asr_note 台账：台账行本身也含新形，行级计数必须把它排除在
+    hits 外、又必须看清命中行内的次数——两个维度都要数。"""
+
+    BODY = "新词在先，旧词在后。\n"
+
+    def _doc(self, ledger="", body=None):
+        return ("---\n" + ledger + "---\n\n" + (body or self.BODY))
+
+    def _prepare(self, queue, p):
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n'), encoding="utf-8")
+        ids = queue.enqueue([_item(p, line=5, original="旧词", suggested="新词",
+                                   context="旧词在后。", actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        assert p.read_text(encoding="utf-8") == self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n',
+            body="新词在先，新词在后。\n")
+        return ids[0]
+
+    def test_same_line_twice_refused_and_nothing_written(self, queue, tmp_path):
+        p = tmp_path / "twice.md"
+        item_id = self._prepare(queue, p)
+        before = p.read_text(encoding="utf-8")
+        result = queue.resolve(item_id, "reopen", note="误裁回退")
+        (entry,) = result["revert_log"]
+        assert entry["ok"] is False, "一行两次出现不许报 reverted"
+        assert "2 times on line 5" in entry["msg"]
+        assert "need exactly 1" in entry["msg"]
+        assert p.read_text(encoding="utf-8") == before, "一个字节都不能动"
+
+    def test_single_occurrence_still_reverts(self, queue, tmp_path):
+        # 收窄判据不能把正常的单处还原一起拦掉
+        p = tmp_path / "once.md"
+        p.write_text(self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n',
+            body="正文里说的是旧词的事情。\n"), encoding="utf-8")
+        ids = queue.enqueue([_item(p, line=5, original="旧词", suggested="新词",
+                                   context="正文里说的是旧词的事情。", actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        assert "正文里说的是新词的事情。" in p.read_text(encoding="utf-8")
+        result = queue.resolve(ids[0], "reopen", note="误裁回退")
+        (entry,) = result["revert_log"]
+        assert entry["ok"] is True
+        assert p.read_text(encoding="utf-8") == self._doc(
+            ledger='asr_note: "2026-09-20 修正含：旧词->新词"\n',
+            body="正文里说的是旧词的事情。\n")
+
+
+class TestRevertLedgerIsTheAsrNoteKeyNotTheWholeFrontmatter:
+    """`_ledger_line_flags` 曾把**整个 frontmatter 块**标成台账。
+
+    后果是「写得进、撤不回」：accept 路径的台账定义是
+    `dictionary_processor._mask_ledger_spans`，它只屏蔽 `asr_note:` 的值，
+    于是 `title: 旧词相关会议` 能被 accept 改成 `新词相关会议`，reopen 却因整块
+    被标成台账而拒绝还原——并且返回的理由是 "the replacement text survives
+    only in the asr_note ledger"，把操作者引向一个根本不存在的排查方向。
+    函数自己的 docstring 写的也是「or an `asr_note:` line anywhere」，作者本意
+    从来不是「整个 frontmatter 都是台账」。"""
+
+    def _doc(self, title="旧词相关会议", body="正文说的是别的事情。\n"):
+        return (f"---\ntitle: {title}\n"
+                'asr_note: "2026-09-20 修正含：别的->新词"\n'
+                f"---\n\n{body}")
+
+    def test_non_ledger_frontmatter_key_reverted_on_reopen(self, queue, tmp_path):
+        p = tmp_path / "fm.md"
+        before = self._doc()
+        p.write_text(before, encoding="utf-8")
+        ids = queue.enqueue([_item(p, line=2, original="旧词", suggested="新词",
+                                   context="title: 旧词相关会议", actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        accepted = queue.resolve(ids[0], "accepted")
+        assert accepted["item"]["status"] == "accepted"
+        assert "title: 新词相关会议" in p.read_text(encoding="utf-8"), \
+            "accept 能改非台账 frontmatter 键——这是这个缺陷的另一半"
+        result = queue.resolve(ids[0], "reopen", note="误裁回退")
+        (entry,) = result["revert_log"]
+        assert entry["ok"] is True, "reopen 必须能还原它写进过的键"
+        assert p.read_text(encoding="utf-8") == before
+
+    def test_asr_note_line_still_protected_from_revert(self, queue, tmp_path):
+        # 收窄台账定义不能把 asr_note 的保护一起收窄：新形只活在台账里时，
+        # reopen 仍必须一字不动，并且报出真实原因。
+        p = tmp_path / "ledger-only.md"
+        before = self._doc()
+        p.write_text(before, encoding="utf-8")
+        ids = queue.enqueue([_item(p, line=6, original="旧词", suggested="新词",
+                                   actions=[
+            {"type": "file_edit", "path": str(p), "old": "旧词", "new": "新词"},
+        ])])["added"]
+        queue.resolve(ids[0], "accepted")
+        p.write_text(before, encoding="utf-8")   # 正文从未落改
+        result = queue.resolve(ids[0], "reopen", note="误裁回退")
+        assert p.read_text(encoding="utf-8") == before, "文件必须一字不动"
+        (entry,) = result["revert_log"]
+        assert entry["ok"] is False
+        assert "asr_note ledger" in entry["msg"]
+        assert "title" not in entry["msg"], "不许把操作者引向无关的 frontmatter 键"

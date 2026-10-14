@@ -1,0 +1,62 @@
+name: App de móvil
+
+# Construye el APK de Android (versión de pruebas) con Capacitor y lo publica en la Release «App Android (pruebas)»
+# del repositorio (página principal › Releases, también desde el móvil). Además queda en Actions › Artifacts.
+on:
+  push:
+    paths:
+      - 'Volta-app.html'
+      - 'public/**'
+      - 'movil/**'
+      - '.github/workflows/movil.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # para publicar el APK en la Release
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: movil/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      # El SDK de Android ya viene en ubuntu-latest (ANDROID_HOME); Gradle baja lo que falte (plataforma 36…)
+      - name: SDK de Android
+        run: echo "ANDROID_HOME=$ANDROID_HOME" && yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Dependencias de Capacitor
+        working-directory: movil
+        run: npm ci
+      - name: Copiar la app y sincronizar Android
+        working-directory: movil
+        run: node scripts/www.js && npx cap sync android
+      - name: Construir el APK
+        working-directory: movil/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Renombrar
+        run: cp movil/android/app/build/outputs/apk/debug/app-debug.apk volta-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: volta-android
+          path: volta-android.apk
+          retention-days: 30
+      - name: Publicar en la Release «App Android (pruebas)»
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-pruebas
+          name: App Android (pruebas)
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          files: volta-android.apk
+          body: |
+            Última versión de pruebas de Volta para Android (se actualiza sola con cada cambio de la app).
+            Descarga **volta-android.apk** aquí abajo, ábrelo en el móvil y acepta «instalar apps de origen desconocido».
+            Versión: ${{ github.sha }}

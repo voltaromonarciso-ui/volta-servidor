@@ -1,0 +1,80 @@
+[submodule "repos/emilkowalski-skills"]
+	path = repos/emilkowalski-skills
+	url = https://github.com/emilkowalski/skills.git
+	shallow = true
+[submodule "repos/claude-code-skills"]
+	path = repos/claude-code-skills
+	url = https://github.com/daymade/claude-code-skills.git
+	shallow = true
+[submodule "repos/superpowers"]
+	path = repos/superpowers
+	url = https://github.com/obra/superpowers.git
+	shallow = true
+[submodule "repos/everything-claude-code"]
+	path = repos/everything-claude-code
+	url = https://github.com/WorldFlowAI/everything-claude-code.git
+	shallow = true
+[submodule "repos/claude-token-efficient"]
+	path = repos/claude-token-efficient
+	url = https://github.com/drona23/claude-token-efficient.git
+	shallow = true
+[submodule "repos/claude-seo"]
+	path = repos/claude-seo
+	url = https://github.com/AgriciDaniel/claude-seo.git
+	shallow = true
+[submodule "repos/agent-browser"]
+	path = repos/agent-browser
+	url = https://github.com/vercel-labs/agent-browser.git
+	shallow = true
+[submodule "repos/prompt-master"]
+	path = repos/prompt-master
+	url = https://github.com/nidhinjs/prompt-master.git
+	shallow = true
+[submodule "repos/graphify"]
+	path = repos/graphify
+	url = https://github.com/Graphify-Labs/graphify.git
+	shallow = true
+[submodule "repos/gstack"]
+	path = repos/gstack
+	url = https://github.com/garrytan/gstack.git
+	shallow = true
+[submodule "repos/ponytail"]
+	path = repos/ponytail
+	url = https://github.com/DietrichGebert/ponytail.git
+	shallow = true
+[submodule "repos/strix"]
+	path = repos/strix
+	url = https://github.com/usestrix/strix.git
+	shallow = true
+[submodule "repos/ECC"]
+	path = repos/ECC
+	url = https://github.com/affaan-m/ECC.git
+	shallow = true
+[submodule "repos/ui-ux-pro-max-skill"]
+	path = repos/ui-ux-pro-max-skill
+	url = https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git
+	shallow = true
+[submodule "repos/codegraph"]
+	path = repos/codegraph
+	url = https://github.com/colbymchenry/codegraph.git
+	shallow = true
+[submodule "repos/claude-mem"]
+	path = repos/claude-mem
+	url = https://github.com/thedotmack/claude-mem.git
+	shallow = true
+[submodule "repos/headroom"]
+	path = repos/headroom
+	url = https://github.com/headroomlabs-ai/headroom.git
+	shallow = true
+[submodule "repos/playwright"]
+	path = repos/playwright
+	url = https://github.com/microsoft/playwright.git
+	shallow = true
+[submodule "repos/supabase"]
+	path = repos/supabase
+	url = https://github.com/supabase/supabase.git
+	shallow = true
+[submodule "repos/scroll-world"]
+	path = repos/scroll-world
+	url = https://github.com/oso95/scroll-world.git
+	shallow = true

@@ -1,0 +1,2822 @@
+from __future__ import annotations
+
+import importlib.util
+import contextlib
+import io
+import json
+from contextlib import contextmanager, redirect_stderr
+import os
+from pathlib import Path
+import shutil
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+
+SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "scripts"
+    / "sync-local-skill-sources.py"
+)
+SPEC = importlib.util.spec_from_file_location("sync_local_skill_sources", SCRIPT)
+assert SPEC is not None and SPEC.loader is not None
+sync = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = sync
+SPEC.loader.exec_module(sync)
+
+
+class SourcePreferenceTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        patch = mock.patch.object(sync, "LOCAL_MARKETPLACE_NAMES", ("market-a", "market-b", "market-c"))
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.repos = []
+        for market in ("market-a", "market-b"):
+            repo = self.root / market
+            (repo / ".claude-plugin").mkdir(parents=True)
+            (repo / "bundle/member").mkdir(parents=True)
+            (repo / "bundle/member/SKILL.md").write_text(
+                f"---\nname: shared\ndescription: example\n---\n{market} content\n")
+            (repo / ".claude-plugin/marketplace.json").write_text(json.dumps({
+                "name": market, "plugins": [{"name": "suite", "source": "./bundle",
+                "version": "1.0.0", "skills": ["./member"]}]}))
+            self.repos.append(repo)
+        self.sources = [sync.load_marketplace(repo) for repo in self.repos]
+        self.preferences = {"shared": {"prefer": "suite@market-a", "over": ["suite@market-b"]}}
+        self.manifest = self.root / "policy.json"
+        self.policy = {"schema_version": 3, "active_skills": ["shared"],
+                       "active_marketplaces": ["market-b"], "claude_active_marketplaces": ["market-b"],
+                       "legacy_codex_compat_skills": ["shared"], "source_preferences": self.preferences}
+        self.write_policy()
+
+    def write_policy(self):
+        self.manifest.write_text(json.dumps(self.policy))
+
+    def args(self):
+        return ["--repo", str(self.repos[0]), "--repo", str(self.repos[1]),
+                "--active-skills-manifest", str(self.manifest),
+                "--claude-dir", str(self.root / "claude"),
+                "--agents-skills", str(self.root / "agents/skills"),
+                "--codex-skills", str(self.root / "legacy/skills"),
+                "--skip-claude-cache", "--skip-marketplace-source"]
+
+    def test_explicit_choice_is_order_independent_and_preserves_bundles(self):
+        before = [dict(source.skills) for source in self.sources]
+        for sources in (self.sources, self.sources[::-1]):
+            selected = sync.merge_source_skills(sources, self.preferences)
+            self.assertIs(selected["shared"], self.sources[0].skills["shared"])
+        self.assertEqual(before, [source.skills for source in self.sources])
+        for repo in self.repos:
+            self.assertIn(repo.name, (repo / "bundle/member/SKILL.md").read_text())
+
+    def test_choice_can_select_second_source_and_normalizes_all_alternatives(self):
+        third = sync.MarketplaceSource("market-c", self.root / "third", {}, {
+            "shared": sync.SkillSource("shared", self.root / "third/shared", "suite@market-c")})
+        prefs = {"shared": {"prefer": "suite@market-b", "over": ["suite@market-c", "suite@market-a"]}}
+        for sources in (self.sources + [third], [third] + self.sources[::-1]):
+            selected = sync.merge_source_skills(sources, prefs)
+            self.assertIs(selected["shared"], self.sources[1].skills["shared"])
+        self.assertEqual(["suite@market-a", "suite@market-c"],
+                         sync.validate_source_preferences(prefs)["shared"]["over"])
+        self.assertEqual(["suite@market-c", "suite@market-a"], prefs["shared"]["over"])
+
+    def test_no_preference_still_rejects_duplicates(self):
+        for prefs in (None, {}):
+            with self.assertRaisesRegex(ValueError, "duplicate source skill name"):
+                sync.merge_source_skills(self.sources, prefs)
+
+    def test_incomplete_or_stale_candidate_sets_fail(self):
+        third = sync.MarketplaceSource("market-c", self.root / "third", {}, {
+            "shared": sync.SkillSource("shared", self.root / "third/shared", "suite@market-c")})
+        for sources in ([], self.sources[:1], self.sources[1:], self.sources + [third]):
+            with self.subTest(markets=[s.name for s in sources]):
+                with self.assertRaisesRegex(ValueError, "candidate mismatch"):
+                    sync.merge_source_skills(sources, self.preferences)
+        with self.assertRaisesRegex(ValueError, "candidate mismatch"):
+            sync.merge_source_skills(self.sources, {"wrong-name": self.preferences["shared"]})
+        with self.assertRaisesRegex(ValueError, "candidate mismatch"):
+            sync.merge_source_skills(self.sources, {"shared": {
+                "prefer": "other-suite@market-a", "over": ["suite@market-b"]}})
+
+    def test_duplicate_marketplace_cannot_be_hidden_by_choice(self):
+        duplicate = sync.MarketplaceSource("market-a", self.root / "another-checkout", {}, {})
+        with self.assertRaisesRegex(ValueError, "duplicate marketplace identity"):
+            sync.merge_source_skills(self.sources + [duplicate], self.preferences)
+
+    def test_malformed_preference_fields_are_rejected(self):
+        invalid = [None, [], "", {"shared": None}, {"shared": {}},
+                   {"shared": {"prefer": "suite@market-a"}},
+                   {"shared": {"over": ["suite@market-b"]}},
+                   {"shared": {"prefer": "suite@market-a", "over": []}},
+                   {"shared": {"prefer": "suite@market-a", "over": None}},
+                   {"shared": {"prefer": "suite@market-a", "over": "suite@market-b"}},
+                   {"shared": {"prefer": "suite@market-a", "over": ["suite@market-a"]}},
+                   {"shared": {"prefer": "suite@market-a", "over": ["suite@market-b"] * 2}},
+                   {"shared": {"prefer": "suite@market-a", "over": ["suite@market-b"], "extra": True}},
+                   {"invalid/name": self.preferences["shared"]}]
+        for identity in (None, True, "", "suite", "suite@unknown", "suite@@market-a", " suite@market-a", "suite@market-a "):
+            invalid.append({"shared": {"prefer": identity, "over": ["suite@market-b"]}})
+            invalid.append({"shared": {"prefer": "suite@market-a", "over": [identity]}})
+        for raw in invalid:
+            with self.subTest(raw=raw):
+                self.policy["source_preferences"] = raw
+                self.write_policy()
+                with self.assertRaises(ValueError):
+                    sync.load_skill_activation_policy(self.manifest)
+
+    def test_schema_compatibility_and_typo_validation(self):
+        for version in (1, 2, 3):
+            self.policy = {"schema_version": version, "active_skills": []}
+            self.write_policy()
+            self.assertEqual({}, sync.load_skill_activation_policy(self.manifest).source_preferences)
+            if version < 3:
+                self.policy["source_preferences"] = self.preferences
+                self.write_policy()
+                with self.assertRaisesRegex(ValueError, "requires schema_version 3"):
+                    sync.load_skill_activation_policy(self.manifest)
+        for version in (True, 3.0, "3", None, 4):
+            self.policy = {"schema_version": version, "active_skills": []}
+            self.write_policy()
+            with self.assertRaises(ValueError):
+                sync.load_skill_activation_policy(self.manifest)
+        self.policy = {"schema_version": 3, "active_skills": [], "source_preference": {}}
+        self.write_policy()
+        with self.assertRaisesRegex(ValueError, "unknown activation fields"):
+            sync.load_skill_activation_policy(self.manifest)
+
+    def test_duplicate_json_keys_cannot_overwrite_choice(self):
+        cases = ['{"schema_version":3,"active_skills":[],"source_preferences":{},"source_preferences":{}}',
+                 '{"schema_version":3,"active_skills":[],"source_preferences":{"shared":{"prefer":"suite@market-a","prefer":"suite@market-b","over":["suite@market-b"]}}}']
+        for raw in cases:
+            self.manifest.write_text(raw)
+            with self.assertRaisesRegex(ValueError, "duplicate JSON key"):
+                sync.load_skill_activation_policy(self.manifest)
+
+    def test_apply_in_temporary_roots_uses_same_choice_in_all_hosts(self):
+        # A marketplace opts in names; preference selects their source for both hosts.
+        (self.root / "claude").mkdir()
+        with mock.patch.object(sync, "infer_repos", side_effect=AssertionError("unexpected real discovery")):
+            self.assertEqual(0, sync.main(self.args() + ["--apply"]))
+            self.assertEqual(0, sync.main(self.args() + ["--apply"]))
+        expected = self.repos[0] / "bundle/member"
+        for root in ("claude/skills", "agents/skills", "legacy/skills"):
+            self.assertEqual(expected, (self.root / root / "shared").resolve())
+        for repo in self.repos:
+            self.assertTrue((repo / "bundle/member/SKILL.md").is_file())
+
+    def test_disabled_preferred_plugin_does_not_fall_back_to_other_source(self):
+        (self.root / "claude").mkdir()
+        (self.root / "claude/settings.json").write_text(json.dumps({
+            "enabledPlugins": {"suite@market-a": False, "suite@market-b": True}}))
+        self.assertEqual(0, sync.main(self.args() + ["--apply"]))
+        self.assertFalse((self.root / "claude/skills/shared").exists())
+        self.assertEqual(self.repos[0] / "bundle/member", (self.root / "agents/skills/shared").resolve())
+
+    def test_bad_policy_aborts_before_roots_or_lock_or_cache_writes(self):
+        self.policy["source_preferences"]["shared"]["prefer"] = "absent@market-a"
+        self.write_policy()
+        with mock.patch.object(sync, "sync_lock", side_effect=AssertionError("entered write phase")):
+            with self.assertRaisesRegex(ValueError, "candidate mismatch"):
+                sync.main(self.args() + ["--apply"])
+        for root in ("claude", "agents", "legacy"):
+            self.assertFalse((self.root / root).exists())
+
+    def test_inventory_retains_all_candidates_and_exposes_canonical_choice(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(0, sync.main(self.args() + ["--print-source-inventory"]))
+        payload = json.loads(output.getvalue())
+        self.assertEqual(2, payload["schema_version"])
+        self.assertEqual(self.preferences, payload["source_preferences"])
+        self.assertEqual({"source_dir": str(self.repos[0] / "bundle/member"),
+                          "plugin_id": "suite@market-a"}, payload["selected_skills"]["shared"])
+        self.assertEqual({"market-a", "market-b"}, set(payload["marketplaces"]))
+        self.assertEqual("suite@market-b", payload["marketplaces"]["market-b"]["shared"]["plugin_id"])
+        self.assertFalse((self.root / "claude").exists())
+        self.policy["source_preferences"] = {}
+        self.write_policy()
+        with self.assertRaisesRegex(ValueError, "duplicate source skill name"):
+            sync.main(self.args() + ["--print-source-inventory"])
+
+    def test_cold_duplicate_is_validated_without_being_activated(self):
+        self.policy.update(active_skills=[], active_marketplaces=[], claude_active_marketplaces=[],
+                           legacy_codex_compat_skills=[])
+        self.write_policy()
+        policy = sync.load_skill_activation_policy(self.manifest)
+        selected = sync.merge_source_skills(self.sources, policy.source_preferences)
+        self.assertEqual((frozenset(), ()), sync.resolve_activation(policy, selected, self.sources))
+        self.assertEqual(0, sync.main(self.args()))
+        self.assertFalse((self.root / "agents").exists())
+
+
+class ActiveManifestTests(unittest.TestCase):
+    def test_cmks_marketplace_is_managed_and_discovered_from_common_workspace(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            fake_home = root / "home"
+            repo = fake_home / "workspace" / "md" / "cemakanshan-skills"
+            (repo / ".claude-plugin").mkdir(parents=True)
+            (repo / ".claude-plugin" / "marketplace.json").write_text(
+                json.dumps({"name": "cmks-skills", "plugins": []}),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(sync, "HOME", fake_home):
+                repos = sync.infer_repos(root / "outside" / "sync.py", root / "claude")
+
+            self.assertIn("cmks-skills", sync.LOCAL_MARKETPLACE_NAMES)
+            self.assertEqual(repos, [repo.resolve()])
+
+    def test_active_marketplaces_defaults_to_empty_when_absent(self) -> None:
+        """An existing manifest without the key must keep per-skill curation."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps({"schema_version": 2, "active_skills": ["alpha"]}),
+                encoding="utf-8",
+            )
+            policy = sync.load_skill_activation_policy(manifest)
+            self.assertEqual(policy.active_marketplaces, ())
+
+    def test_v1_manifest_is_accepted_with_empty_include_exclude(self) -> None:
+        """Rollout tolerance: the v2 reader must keep working on a v1 manifest.
+
+        The live manifest migrates to schema_version 2 only as the last
+        rollout step, so "v2 reader + v1 manifest" is a production state —
+        and was the exact combination that aborted every csg launch when the
+        reader only accepted its own version.
+        """
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps({"schema_version": 1, "active_skills": ["alpha"]}),
+                encoding="utf-8",
+            )
+            policy = sync.load_skill_activation_policy(manifest)
+            self.assertEqual(policy.active_names, ("alpha",))
+            self.assertEqual(policy.include_skills, ())
+            self.assertEqual(policy.exclude_skills, ())
+
+    def test_unsupported_schema_version_still_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps({"schema_version": 99, "active_skills": []}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError):
+                sync.load_skill_activation_policy(manifest)
+
+    def test_active_marketplaces_is_read_from_the_manifest(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha"],
+                        "active_marketplaces": ["cmks-skills"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            policy = sync.load_skill_activation_policy(manifest)
+            self.assertEqual(policy.active_marketplaces, ("cmks-skills",))
+
+    def test_unknown_active_marketplace_fails_before_any_mutation(self) -> None:
+        """A typo must abort at manifest load, not silently select nothing."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha"],
+                        "active_marketplaces": ["not-a-real-marketplace"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "not-a-real-marketplace"):
+                sync.load_skill_activation_policy(manifest)
+
+    def test_whole_marketplace_selection_unions_with_explicit_names(self) -> None:
+        """The union main() computes: every member of a declared marketplace, plus
+        the explicitly listed skills from anywhere else."""
+        def skill(name: str, marketplace: str) -> "sync.SkillSource":
+            return sync.SkillSource(
+                name=name,
+                source_dir=Path("/tmp") / name,
+                plugin_id=f"{name}@{marketplace}",
+            )
+
+        alpha = skill("alpha", "cmks-skills")
+        beta = skill("beta", "cmks-skills")
+        curated = skill("curated", "daymade-skills")
+        whole = sync.MarketplaceSource(
+            name="cmks-skills",
+            repo=Path("/tmp/cmks"),
+            plugins={},
+            skills={"alpha": alpha, "beta": beta},
+        )
+        other = sync.MarketplaceSource(
+            name="daymade-skills",
+            repo=Path("/tmp/daymade"),
+            plugins={},
+            skills={"curated": curated},
+        )
+        sources = [whole, other]
+        policy = sync.SkillActivationPolicy(("curated",), (), ("cmks-skills",))
+
+        selected = {
+            name
+            for src in sources
+            if src.name in policy.active_marketplaces
+            for name in src.skills
+        } | set(policy.active_names)
+
+        self.assertEqual(selected, {"alpha", "beta", "curated"})
+        # An unselected member of a NON-declared marketplace stays cold inventory.
+        self.assertNotIn("uncurated", selected)
+
+    def test_legacy_codex_compatibility_is_not_required_to_be_an_active_subset(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha", "beta"],
+                        "legacy_codex_compat_skills": ["alpha"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            policy = sync.load_skill_activation_policy(manifest)
+            self.assertEqual(policy.active_names, ("alpha", "beta"))
+            self.assertEqual(policy.legacy_codex_compat_names, ("alpha",))
+
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha"],
+                        "legacy_codex_compat_skills": ["missing-legacy-name"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            # v2 allows legacy compatibility names that are not in active_skills,
+            # because the syncer resolves them separately and they do not represent
+            # author-selected activation decisions.
+            policy = sync.load_skill_activation_policy(manifest)
+            self.assertEqual(policy.legacy_codex_compat_names, ("missing-legacy-name",))
+
+    def test_legacy_codex_compatibility_names_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha"],
+                        "legacy_codex_compat_skills": ["alpha", "alpha"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                "duplicate legacy Codex compatibility skill name",
+            ):
+                sync.load_skill_activation_policy(manifest)
+
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha"],
+                        "legacy_codex_compat_skills": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                "legacy_codex_compat_skills must be an array",
+            ):
+                sync.load_skill_activation_policy(manifest)
+
+    def test_manifest_requires_unique_trimmed_names(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["alpha", "alpha"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate active skill name"):
+                sync.load_active_skill_names(manifest)
+
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": [" alpha"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "non-empty trimmed string"):
+                sync.load_active_skill_names(manifest)
+
+    def test_unresolved_selected_name_is_returned_not_raised(self) -> None:
+        """A name no source registers must not abort the pass: the checkout the
+        syncer reads may sit on a branch that predates the skill. The name comes
+        back separately so main() can report it and still link the rest."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            available = {
+                "alpha": sync.SkillSource("alpha", Path(raw) / "alpha", "plugin")
+            }
+            selected, unresolved = sync.select_active_skills(
+                available, ("missing", "alpha")
+            )
+            self.assertEqual(list(selected), ["alpha"])
+            self.assertIs(selected["alpha"], available["alpha"])
+            self.assertEqual(unresolved, ("missing",))
+
+    def test_checkout_head_hint_reads_branch_detached_and_linked_worktree(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            on_branch = root / "on-branch"
+            (on_branch / ".git").mkdir(parents=True)
+            (on_branch / ".git" / "HEAD").write_text(
+                "ref: refs/heads/feat/other-work\n", encoding="utf-8"
+            )
+            detached = root / "detached"
+            (detached / ".git").mkdir(parents=True)
+            (detached / ".git" / "HEAD").write_text(
+                "0123456789abcdef0123456789abcdef01234567\n", encoding="utf-8"
+            )
+            real_git_dir = root / "primary" / ".git" / "worktrees" / "wt"
+            real_git_dir.mkdir(parents=True)
+            (real_git_dir / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+            linked = root / "linked-worktree"
+            linked.mkdir()
+            (linked / ".git").write_text(f"gitdir: {real_git_dir}\n", encoding="utf-8")
+            plain = root / "not-a-checkout"
+            plain.mkdir()
+
+            self.assertEqual(sync.checkout_head_hint(on_branch), "branch feat/other-work")
+            self.assertEqual(sync.checkout_head_hint(detached), "detached 0123456789ab")
+            self.assertEqual(sync.checkout_head_hint(linked), "branch main")
+            self.assertIsNone(sync.checkout_head_hint(plain))
+
+    def test_manifest_rejects_names_that_are_not_one_kebab_case_segment(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            manifest = Path(raw) / "active.json"
+            for unsafe in ["../escape", "/absolute", "nested/name", "nested\\name", ".system", "two--hyphens"]:
+                with self.subTest(unsafe=unsafe):
+                    manifest.write_text(
+                        json.dumps(
+                            {
+                                "schema_version": 2,
+                                "active_skills": [unsafe],
+                            }
+                        ),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaisesRegex(ValueError, "invalid skill name"):
+                        sync.load_active_skill_names(manifest)
+
+    def test_duplicate_source_name_is_not_silently_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            first = root / "first"
+            second = root / "second"
+            first.mkdir()
+            second.mkdir()
+            source_a = sync.MarketplaceSource(
+                "market-a",
+                root / "repo-a",
+                {},
+                {"same": sync.SkillSource("same", first, "same@market-a")},
+            )
+            source_b = sync.MarketplaceSource(
+                "market-b",
+                root / "repo-b",
+                {},
+                {"same": sync.SkillSource("same", second, "same@market-b")},
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate source skill name"):
+                sync.merge_source_skills([source_a, source_b])
+
+            source_b_same_path = sync.MarketplaceSource(
+                "market-b",
+                root / "repo-b",
+                {},
+                {"same": sync.SkillSource("same", first, "same@market-b")},
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate source skill name"):
+                sync.merge_source_skills([source_a, source_b_same_path])
+
+    def test_duplicate_name_inside_one_marketplace_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw)
+            (repo / ".claude-plugin").mkdir()
+            for directory in ["first", "second"]:
+                skill_dir = repo / directory
+                skill_dir.mkdir()
+                (skill_dir / "SKILL.md").write_text(
+                    "---\nname: same\ndescription: test\n---\n",
+                    encoding="utf-8",
+                )
+            (repo / ".claude-plugin" / "marketplace.json").write_text(
+                json.dumps(
+                    {
+                        "name": "daymade-skills",
+                        "plugins": [
+                            {
+                                "name": "first",
+                                "version": "1.0.0",
+                                "source": "./first",
+                            },
+                            {
+                                "name": "second",
+                                "version": "1.0.0",
+                                "source": "./second",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "duplicate source skill name"):
+                sync.load_marketplace(repo)
+
+    def test_unsafe_source_frontmatter_name_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw)
+            skill_dir = repo / "safe-directory"
+            (repo / ".claude-plugin").mkdir()
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: ../../escaped\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (repo / ".claude-plugin" / "marketplace.json").write_text(
+                json.dumps(
+                    {
+                        "name": "daymade-skills",
+                        "plugins": [
+                            {
+                                "name": "safe-directory",
+                                "version": "1.0.0",
+                                "source": "./safe-directory",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "invalid skill name"):
+                sync.load_marketplace(repo)
+
+    def test_marketplace_rejects_plugin_source_outside_repo(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo = root / "repo"
+            external = root / "external-skill"
+            (repo / ".claude-plugin").mkdir(parents=True)
+            external.mkdir()
+            (external / "SKILL.md").write_text(
+                "---\nname: escaped\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (repo / ".claude-plugin" / "marketplace.json").write_text(
+                json.dumps(
+                    {
+                        "name": "daymade-skills",
+                        "plugins": [
+                            {
+                                "name": "escaped",
+                                "version": "1.0.0",
+                                "source": "../external-skill",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "escapes marketplace repo"):
+                sync.load_marketplace(repo)
+
+    def test_marketplace_rejects_symlink_source_escape(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo = root / "repo"
+            external = root / "external-skill"
+            (repo / ".claude-plugin").mkdir(parents=True)
+            external.mkdir()
+            (external / "SKILL.md").write_text(
+                "---\nname: escaped\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (repo / "linked-skill").symlink_to(external, target_is_directory=True)
+            (repo / ".claude-plugin" / "marketplace.json").write_text(
+                json.dumps(
+                    {
+                        "name": "daymade-skills",
+                        "plugins": [
+                            {
+                                "name": "escaped",
+                                "version": "1.0.0",
+                                "source": "./linked-skill",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "escapes marketplace repo"):
+                sync.load_marketplace(repo)
+
+
+class MarketplaceManifestStateTests(unittest.TestCase):
+    """A present-but-unusable manifest must fail loudly; only "no manifest" is silent.
+
+    marketplace_name() used to answer None for all three states, so a repo whose
+    manifest was momentarily unreadable dropped out of discovery and the later
+    hard check reported "marketplace activation fields name repos not
+    discovered" — an error pointing at the wrong cause. The production trigger
+    is a shared checkout rewriting .claude-plugin/marketplace.json while the
+    sync daemon (that file is one of its WatchPaths) reads it mid-write.
+    """
+
+    def _manifest_repo(self, root: Path, body: str, marketplace: str) -> Path:
+        repo = root / f"repo-{marketplace}"
+        (repo / ".claude-plugin").mkdir(parents=True)
+        (repo / ".claude-plugin" / "marketplace.json").write_text(body, encoding="utf-8")
+        return repo
+
+    # Manifest present, but open/json.load fails. Retrying is the right answer here.
+    UNREADABLE_BODIES = {
+        "truncated-json": '{"name": "daymade-skills", "plugins": [',
+        "empty-file": "",
+        "trailing-garbage": '{"name": "daymade-skills", "plugins": []} extra',
+    }
+
+    # Manifest reads whole, but declares no usable name. Retrying is NOT the answer.
+    INVALID_BODIES = {
+        "no-name": '{"plugins": []}',
+        "name-not-a-string": '{"name": 42, "plugins": []}',
+        "root-not-an-object": '["daymade-skills"]',
+        "name-empty-string": '{"name": "", "plugins": []}',
+    }
+
+    def test_missing_manifest_stays_silent(self) -> None:
+        """The one state discovery must keep skipping silently: infer_repos() calls
+        this for every ancestor of its own script path, plus hardcoded bases that
+        do not exist."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw) / "repo"
+            repo.mkdir()
+            self.assertIsNone(sync.marketplace_name(repo))
+
+            repos: list[Path] = []
+            sync.add_repo(repos, repo)
+            self.assertEqual(repos, [])
+
+    def test_valid_manifest_returns_its_name(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = self._manifest_repo(
+                Path(raw), json.dumps({"name": "daymade-skills", "plugins": []}), "daymade-skills"
+            )
+            self.assertEqual(sync.marketplace_name(repo), "daymade-skills")
+
+            repos: list[Path] = []
+            sync.add_repo(repos, repo)
+            self.assertEqual(repos, [repo.resolve()])
+
+    def test_unmanaged_marketplace_name_is_skipped_without_raising(self) -> None:
+        """A valid manifest naming a marketplace this syncer does not manage is a
+        normal answer, not a defect — and it must not stop the others."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            foreign = self._manifest_repo(
+                root,
+                json.dumps({"name": "someone-elses-marketplace", "plugins": []}),
+                "foreign",
+            )
+            managed = self._manifest_repo(
+                root, json.dumps({"name": "cmks-skills", "plugins": []}), "managed"
+            )
+            self.assertEqual(sync.marketplace_name(foreign), "someone-elses-marketplace")
+
+            repos: list[Path] = []
+            sync.add_repo(repos, foreign)
+            self.assertEqual(repos, [])
+            sync.add_repo(repos, managed)
+            self.assertEqual(repos, [managed.resolve()])
+
+    def test_unreadable_manifest_fails_instead_of_disappearing(self) -> None:
+        for label, body in self.UNREADABLE_BODIES.items():
+            with self.subTest(body=label):
+                with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+                    repo = self._manifest_repo(Path(raw), body, "daymade-skills")
+                    manifest = repo / ".claude-plugin" / "marketplace.json"
+                    with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                        sync.marketplace_name(repo)
+                    message = str(raised.exception)
+                    self.assertIn(str(manifest), message)
+                    # The underlying error travels with the report.
+                    self.assertIn("JSONDecodeError", message)
+                    # The remediation for this state: a mid-flight writer clears
+                    # on its own, so ONE retry is what the reader should do.
+                    self.assertIn("retry", message.lower())
+
+    def test_unreadable_for_reasons_other_than_bad_json(self) -> None:
+        """UnicodeDecodeError is a ValueError, not an OSError or JSONDecodeError,
+        so the first cut of the handler let it through unnamed — and it is the
+        realistic torn-read shape for a manifest full of CJK text, where cutting
+        mid-multibyte-character fails to decode before json ever parses."""
+
+        def non_utf8(repo: Path) -> None:
+            (repo / ".claude-plugin" / "marketplace.json").write_bytes(
+                b'\xff\xfe{"name": "daymade-skills"}'
+            )
+
+        def torn_mid_multibyte(repo: Path) -> None:
+            # [:11] lands inside 日's three-byte UTF-8 sequence (e6 97 a5), which
+            # is the whole point: the decode fails before json ever parses. An
+            # earlier cut of this fixture used [:8] — a pure-ASCII prefix that
+            # only reaches JSONDecodeError, so the case it names was not the case
+            # it made. Verify the offset, don't trust the label.
+            body = '{"name": "日"'.encode("utf-8")
+            assert body[:11] == b'{"name": "\xe6', "no longer cut mid-multibyte"
+            (repo / ".claude-plugin" / "marketplace.json").write_bytes(body[:11])
+
+        def dangling_symlink(repo: Path) -> None:
+            os.symlink(
+                "/nonexistent-target",
+                repo / ".claude-plugin" / "marketplace.json",
+            )
+
+        def manifest_is_a_directory(repo: Path) -> None:
+            (repo / ".claude-plugin" / "marketplace.json").mkdir()
+
+        cases = {
+            "non-utf8-bytes": non_utf8,
+            "torn-mid-multibyte": torn_mid_multibyte,
+            "dangling-symlink": dangling_symlink,
+            "manifest-is-a-directory": manifest_is_a_directory,
+        }
+        for label, setup in cases.items():
+            with self.subTest(case=label):
+                with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+                    repo = Path(raw) / "repo"
+                    (repo / ".claude-plugin").mkdir(parents=True)
+                    setup(repo)
+                    manifest = repo / ".claude-plugin" / "marketplace.json"
+                    with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                        sync.marketplace_name(repo)
+                    # The whole point: the reader is told WHICH manifest, instead
+                    # of getting a bare UnicodeDecodeError/IsADirectoryError with
+                    # no path, or the repo silently vanishing.
+                    self.assertIn(str(manifest), str(raised.exception))
+
+    def test_message_names_a_class_of_writer_without_ruling_one_out(self) -> None:
+        """Two earlier cuts of this message each asserted more than a failed read
+        establishes, and both were wrong in opposite directions:
+
+        1. "the usual cause is a shared checkout being rewritten by git right now"
+           — asserted a specific cause that was never established;
+        2. "git swaps a whole file into place, so it cannot leave a torn read"
+           — asserted a class of writer is impossible. Measured on a 160 KB CJK
+           manifest, a concurrent reader saw 43 torn reads and 232 momentary
+           FileNotFoundError while branch switches were in flight, because git
+           unlinks and rewrites in place rather than swapping atomically.
+
+        So this guards phrases, not the discipline itself — say so honestly, because
+        a phrase blocklist is not a proof that every wrong story goes red. What it
+        does catch: the two historical wrong stories above, a claim that a specific
+        writer IS the cause, and dropping the retry advice. What it cannot catch:
+        some new over-claim phrased in words none of these match. If you widen the
+        claim this test backs, widen the blocklist with it."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = self._manifest_repo(
+                Path(raw), '{"name": "daymade-skills", ', "daymade-skills"
+            )
+            with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                sync.marketplace_name(repo)
+            message = str(raised.exception)
+            lowered = message.lower()
+            # The honest framing is present...
+            self.assertIn("mid-flight", message)
+            self.assertIn("retry", lowered)
+            # ...and no over-claim slips through these phrases.
+            for absolute in (
+                "cannot leave a torn read",
+                "swap a whole file into place",
+                "rewritten by git right now",
+                "cannot be the writer",
+                "is the cause",
+                "ruled out",
+                "caused this failure",
+            ):
+                self.assertNotIn(absolute, lowered)
+
+    def test_load_marketplace_reports_an_undecodable_manifest_by_path(self) -> None:
+        """load_marketplace() got the same three-way catch as marketplace_name(),
+        so an explicitly requested --repo names the manifest it could not read.
+        Without this test the catch can be dropped and nothing notices — the
+        UnicodeDecodeError escapes unnamed again, which is exactly the shape
+        marketplace_name() was fixed for."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw) / "repo"
+            (repo / ".claude-plugin").mkdir(parents=True)
+            manifest = repo / ".claude-plugin" / "marketplace.json"
+            manifest.write_bytes(b'\xff\xfe{"name": "daymade-skills", "plugins": []}')
+            with self.assertRaises(ValueError) as raised:
+                sync.load_marketplace(repo)
+            message = str(raised.exception)
+            self.assertIn(str(manifest), message)
+            self.assertIn("UnicodeDecodeError", message)
+
+    def test_an_unsearchable_plugin_dir_is_not_read_as_absent(self) -> None:
+        """EACCES on .claude-plugin must not answer the "no manifest" question.
+
+        Path.is_file() raises here. os.path.lexists() would answer False — which
+        is the absent answer — and the repo would silently vanish from discovery,
+        reopening the exact door this change closes. So lstat is asked directly
+        and a permission error is reported as "exists but could not be checked".
+        """
+        if os.geteuid() == 0:
+            self.skipTest("chmod does not restrict root, so EACCES cannot be staged")
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw) / "repo"
+            (repo / ".claude-plugin").mkdir(parents=True)
+            manifest = repo / ".claude-plugin" / "marketplace.json"
+            manifest.write_text('{"name": "daymade-skills", "plugins": []}')
+            os.chmod(repo / ".claude-plugin", 0o000)
+            try:
+                with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                    sync.marketplace_name(repo)
+                self.assertIn(str(manifest), str(raised.exception))
+            finally:
+                os.chmod(repo / ".claude-plugin", 0o755)
+
+    def test_manifest_path_that_does_not_exist_is_still_silent(self) -> None:
+        """A .claude-plugin that is a plain file means the manifest path genuinely
+        does not exist, so "no manifest" is the true answer — not a broken one.
+        Raising here would turn a weird-but-harmless layout into a hard failure."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            repo = Path(raw) / "repo"
+            repo.mkdir()
+            (repo / ".claude-plugin").write_text("not a directory")
+            self.assertIsNone(sync.marketplace_name(repo))
+
+            repos: list[Path] = []
+            sync.add_repo(repos, repo)
+            self.assertEqual(repos, [])
+
+    def test_invalid_manifest_fails_with_a_different_message(self) -> None:
+        for label, body in self.INVALID_BODIES.items():
+            with self.subTest(body=label):
+                with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+                    repo = self._manifest_repo(Path(raw), body, "daymade-skills")
+                    manifest = repo / ".claude-plugin" / "marketplace.json"
+                    with self.assertRaises(sync.InvalidMarketplaceManifest) as raised:
+                        sync.marketplace_name(repo)
+                    message = str(raised.exception)
+                    self.assertIn(str(manifest), message)
+                    # A whole-file read: the remedy is repair in that checkout, not a retry.
+                    self.assertIn("retrying will not help", message)
+                    self.assertNotIn("could not be read", message)
+
+    def test_the_two_failure_states_are_told_apart(self) -> None:
+        """Both raise, but they name different causes and different repairs — a reader
+        must be able to tell which one they have from the message alone."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            unreadable_repo = self._manifest_repo(
+                root, '{"name": "daymade-skills", ', "daymade-skills"
+            )
+            invalid_repo = self._manifest_repo(
+                root, '{"plugins": []}', "daymade-skills-pro"
+            )
+            with self.assertRaises(sync.UnreadableMarketplaceManifest) as unreadable:
+                sync.marketplace_name(unreadable_repo)
+            with self.assertRaises(sync.InvalidMarketplaceManifest) as invalid:
+                sync.marketplace_name(invalid_repo)
+
+            self.assertNotIsInstance(unreadable.exception, sync.InvalidMarketplaceManifest)
+            self.assertNotEqual(str(unreadable.exception), str(invalid.exception))
+
+    def test_absent_key_and_empty_name_are_told_apart(self) -> None:
+        """Two different authors' mistakes with the same unusable result: a reader
+        must see whether the key was never written or was written empty. This is
+        the same judgement load_marketplace() applies, which rejected "" all along —
+        returning "" here re-opened the silent-skip path, since "" is not in
+        LOCAL_MARKETPLACE_NAMES."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            absent = self._manifest_repo(root, '{"plugins": []}', "daymade-skills")
+            empty = self._manifest_repo(
+                root, '{"name": "", "plugins": []}', "daymade-skills-pro"
+            )
+            with self.assertRaises(sync.InvalidMarketplaceManifest) as absent_error:
+                sync.marketplace_name(absent)
+            with self.assertRaises(sync.InvalidMarketplaceManifest) as empty_error:
+                sync.marketplace_name(empty)
+
+            self.assertIn("the name key is absent", str(absent_error.exception))
+            self.assertIn("name is an empty string", str(empty_error.exception))
+            self.assertNotEqual(str(absent_error.exception), str(empty_error.exception))
+
+    def test_discovery_reports_the_manifest_it_could_not_read(self) -> None:
+        """Through the real discovery path (add_repo), the manifest error must reach
+        the caller instead of the repo vanishing and a later check guessing why."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo = self._manifest_repo(
+                root, '{"name": "daymade-skills", "plugins": [', "daymade-skills"
+            )
+            (root / "claude").mkdir()
+            env = {"DAYMADE_SKILL_SOURCE_REPOS": str(repo)}
+            with mock.patch.object(sync, "HOME", root / "home"):
+                with mock.patch.dict(os.environ, env):
+                    with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                        sync.infer_repos(root / "elsewhere" / "sync.py", root / "claude")
+            self.assertIn(
+                str(repo / ".claude-plugin" / "marketplace.json"), str(raised.exception)
+            )
+
+    def test_empty_name_no_longer_disappears_from_discovery(self) -> None:
+        """The regression itself: add_repo() used to receive "" (never in
+        LOCAL_MARKETPLACE_NAMES) and return silently, so the repo vanished and the
+        later hard check blamed the wrong cause. Through the real discovery path it
+        must now name the manifest."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo = self._manifest_repo(root, '{"name": "", "plugins": []}', "daymade-skills")
+            (root / "claude").mkdir()
+            env = {"DAYMADE_SKILL_SOURCE_REPOS": str(repo)}
+            with mock.patch.object(sync, "HOME", root / "home"):
+                with mock.patch.dict(os.environ, env):
+                    with self.assertRaises(sync.InvalidMarketplaceManifest) as raised:
+                        sync.infer_repos(root / "elsewhere" / "sync.py", root / "claude")
+            message = str(raised.exception)
+            self.assertIn(
+                str(repo / ".claude-plugin" / "marketplace.json"), message
+            )
+            self.assertIn("empty string", message)
+            self.assertNotIn("not discovered", message)
+
+    def test_ancestor_walk_stays_silent_past_manifestless_parents(self) -> None:
+        """infer_repos() walks every parent of its own script path; those reads must
+        keep returning None so a normal checkout still discovers its repos."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            deep = root / "a" / "b" / "c" / "scripts"
+            deep.mkdir(parents=True)
+            managed = self._manifest_repo(
+                root, json.dumps({"name": "cmks-skills", "plugins": []}), "managed"
+            )
+            (root / "claude").mkdir()
+            env = {"DAYMADE_SKILL_SOURCE_REPOS": str(managed)}
+            with mock.patch.object(sync, "HOME", root / "home"):
+                with mock.patch.dict(os.environ, env):
+                    repos = sync.infer_repos(deep / "sync.py", root / "claude")
+            self.assertEqual(repos, [managed.resolve()])
+
+    def test_ancestor_walk_reports_an_unreadable_parent_manifest(self) -> None:
+        """Running from a source checkout whose own manifest is mid-rewrite is the
+        production shape: the walk finds one manifest and must not swallow it."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            checkout = root / "checkout"
+            deep = checkout / "daymade-claude-code" / "claude-switch-models-setup" / "scripts"
+            deep.mkdir(parents=True)
+            (checkout / ".claude-plugin").mkdir()
+            (checkout / ".claude-plugin" / "marketplace.json").write_text(
+                '{"name": "daymade-skills", "plugins": [', encoding="utf-8"
+            )
+            (root / "claude").mkdir()
+            with mock.patch.object(sync, "HOME", root / "home"):
+                with self.assertRaises(sync.UnreadableMarketplaceManifest) as raised:
+                    sync.infer_repos(deep / "sync.py", root / "claude")
+            self.assertIn(
+                str(checkout / ".claude-plugin" / "marketplace.json"), str(raised.exception)
+            )
+
+
+class UserRootMigrationTests(unittest.TestCase):
+    def _skill(self, root: Path, name: str) -> sync.SkillSource:
+        source = root / name
+        source.mkdir(parents=True)
+        (source / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: test\n---\n",
+            encoding="utf-8",
+        )
+        return sync.SkillSource(name, source, f"{name}@test")
+
+    def _marketplace(self, root: Path, name: str = "selected") -> tuple[Path, Path]:
+        repo = root / "repo"
+        skill_dir = repo / name
+        (repo / ".claude-plugin").mkdir(parents=True)
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: test\n---\n",
+            encoding="utf-8",
+        )
+        (repo / ".claude-plugin" / "marketplace.json").write_text(
+            json.dumps(
+                {
+                    "name": "daymade-skills",
+                    "plugins": [
+                        {
+                            "name": name,
+                            "version": "1.0.0",
+                            "source": f"./{name}",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        manifest = root / "active.json"
+        manifest.write_text(
+            json.dumps({"schema_version": 2, "active_skills": [name]}),
+            encoding="utf-8",
+        )
+        return repo, manifest
+
+    def test_selected_links_exist_before_stale_legacy_links_are_reported(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            agents_root = root / "agents" / "skills"
+            codex_root = root / "codex" / "skills"
+            agents_root.mkdir(parents=True)
+            codex_root.mkdir(parents=True)
+            (codex_root / ".system").mkdir()
+            (codex_root / "real-user-skill").mkdir()
+            (codex_root / "selected").symlink_to(selected.source_dir)
+
+            sync.sync_skill_root(
+                agents_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=True,
+                create_missing=True,
+            )
+            sync.verify_selected_skill_links(agents_root, {"selected": selected})
+            stale_links = sync.report_stale_legacy_managed_links(
+                codex_root,
+                [source_root],
+            )
+
+            self.assertEqual(
+                (agents_root / "selected").resolve(),
+                selected.source_dir.resolve(),
+            )
+            self.assertTrue((codex_root / "selected").is_symlink())
+            self.assertEqual(
+                stale_links,
+                (sync.absolute_without_symlink_resolution(codex_root) / "selected",),
+            )
+            self.assertTrue((codex_root / ".system").is_dir())
+            self.assertTrue((codex_root / "real-user-skill").is_dir())
+
+    def test_main_keeps_explicit_legacy_compatibility_on_the_same_source(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["selected"],
+                        "legacy_codex_compat_skills": ["selected"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            agents_root = root / "agents" / "skills"
+            codex_root = root / "codex" / "skills"
+            (root / "claude").mkdir()
+            codex_root.mkdir(parents=True)
+            stale_source = repo / "stale"
+            stale_source.mkdir()
+            (codex_root / "stale").symlink_to(stale_source)
+
+            result = sync.main(
+                [
+                    "--repo",
+                    str(repo),
+                    "--claude-dir",
+                    str(root / "claude"),
+                    "--agents-skills",
+                    str(agents_root),
+                    "--codex-skills",
+                    str(codex_root),
+                    "--active-skills-manifest",
+                    str(manifest),
+                    "--skip-claude-cache",
+                    "--skip-marketplace-source",
+                    "--apply",
+                    "--quiet",
+                ]
+            )
+
+            selected_source = (repo / "selected").resolve()
+            self.assertEqual(result, 0)
+            self.assertTrue((agents_root / "selected").is_symlink())
+            self.assertTrue((codex_root / "selected").is_symlink())
+            self.assertEqual((agents_root / "selected").resolve(), selected_source)
+            self.assertEqual((codex_root / "selected").resolve(), selected_source)
+            self.assertTrue((codex_root / "stale").is_symlink())
+
+    def _register(self, repo: Path, names: list[str]) -> None:
+        """Rewrite the fixture marketplace so exactly `names` are registered, the
+        way a checkout moving between branches changes what it registers."""
+        (repo / ".claude-plugin" / "marketplace.json").write_text(
+            json.dumps(
+                {
+                    "name": "daymade-skills",
+                    "plugins": [
+                        {"name": name, "version": "1.0.0", "source": f"./{name}"}
+                        for name in names
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def _main_args(self, root: Path, repo: Path, manifest: Path) -> list[str]:
+        return [
+            "--repo",
+            str(repo),
+            "--claude-dir",
+            str(root / "claude"),
+            "--agents-skills",
+            str(root / "agents" / "skills"),
+            "--codex-skills",
+            str(root / "codex" / "skills"),
+            "--active-skills-manifest",
+            str(manifest),
+            "--skip-claude-cache",
+            "--skip-marketplace-source",
+            "--apply",
+            "--quiet",
+        ]
+
+    def test_main_skips_a_name_no_checkout_registers_and_links_the_rest(self) -> None:
+        """The manifest is written against the published marketplace; the checkout
+        it is judged against may sit on a branch that predates one skill. That
+        name is reported on stderr and skipped — the pass still converges for
+        every other name, and --quiet does not hide the report."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            manifest.write_text(
+                json.dumps(
+                    {"schema_version": 2, "active_skills": ["not-yet-merged", "selected"]}
+                ),
+                encoding="utf-8",
+            )
+            (repo / ".git").mkdir()
+            (repo / ".git" / "HEAD").write_text(
+                "ref: refs/heads/feat/other-work\n", encoding="utf-8"
+            )
+            (root / "claude").mkdir()
+            (root / "codex" / "skills").mkdir(parents=True)
+            agents_root = root / "agents" / "skills"
+
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                result = sync.main(self._main_args(root, repo, manifest))
+
+            self.assertEqual(result, 0)
+            self.assertEqual(
+                (agents_root / "selected").resolve(), (repo / "selected").resolve()
+            )
+            self.assertFalse((agents_root / "not-yet-merged").is_symlink())
+            self.assertFalse((agents_root / "not-yet-merged").exists())
+            report = stderr.getvalue()
+            self.assertIn("skipped this pass: not-yet-merged", report)
+            self.assertIn(f"scanned daymade-skills: {repo.resolve()}", report)
+            self.assertIn("branch feat/other-work", report)
+
+    def test_unresolved_name_links_on_the_first_pass_after_it_is_registered(self) -> None:
+        """Self-healing: once the checkout registers the skill, the next pass links
+        it with no manual step and no further warning."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            manifest.write_text(
+                json.dumps(
+                    {"schema_version": 2, "active_skills": ["not-yet-merged", "selected"]}
+                ),
+                encoding="utf-8",
+            )
+            (root / "claude").mkdir()
+            (root / "codex" / "skills").mkdir(parents=True)
+            agents_root = root / "agents" / "skills"
+
+            first = io.StringIO()
+            with redirect_stderr(first):
+                self.assertEqual(sync.main(self._main_args(root, repo, manifest)), 0)
+            self.assertFalse((agents_root / "not-yet-merged").exists())
+            self.assertIn("not-yet-merged", first.getvalue())
+
+            # The checkout catches up: the skill directory and its registry entry appear.
+            self._skill(repo, "not-yet-merged")
+            self._register(repo, ["selected", "not-yet-merged"])
+
+            second = io.StringIO()
+            with redirect_stderr(second):
+                self.assertEqual(sync.main(self._main_args(root, repo, manifest)), 0)
+            self.assertEqual(
+                (agents_root / "not-yet-merged").resolve(),
+                (repo / "not-yet-merged").resolve(),
+            )
+            self.assertEqual(second.getvalue(), "")
+
+    def test_link_for_a_name_the_checkout_stopped_registering_is_pruned_not_fatal(self) -> None:
+        """The other direction of a branch move: a skill the checkout registered
+        yesterday is gone today. Its managed link is retired to recoverable
+        storage like any other stale link, the name is reported, and the pass
+        still succeeds."""
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            self._skill(repo, "gone")
+            self._register(repo, ["selected", "gone"])
+            manifest.write_text(
+                json.dumps({"schema_version": 2, "active_skills": ["gone", "selected"]}),
+                encoding="utf-8",
+            )
+            (root / "claude").mkdir()
+            (root / "codex" / "skills").mkdir(parents=True)
+            agents_root = root / "agents" / "skills"
+
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(sync.main(self._main_args(root, repo, manifest)), 0)
+            self.assertTrue((agents_root / "gone").is_symlink())
+
+            # The checkout moves to a branch that never had the skill.
+            shutil.rmtree(repo / "gone")
+            self._register(repo, ["selected"])
+
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(sync.main(self._main_args(root, repo, manifest)), 0)
+
+            self.assertFalse((agents_root / "gone").is_symlink())
+            self.assertFalse((agents_root / "gone").exists())
+            retired = list((agents_root / ".source-sync-backups").glob("*/gone.*/entry"))
+            self.assertEqual(len(retired), 1)
+            self.assertTrue(retired[0].is_symlink())
+            self.assertTrue((agents_root / "selected").is_symlink())
+            self.assertIn("skipped this pass: gone", stderr.getvalue())
+
+    def test_legacy_compatibility_never_replaces_a_real_directory(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_root = root / "codex" / "skills"
+            collision = codex_root / "selected"
+            collision.mkdir(parents=True)
+            marker = collision / "keep.txt"
+            marker.write_text("user-owned", encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "legacy Codex compatibility path is a real directory",
+            ):
+                sync.sync_legacy_codex_compat_links(
+                    codex_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                )
+
+            self.assertTrue(collision.is_dir())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "user-owned")
+
+    def test_legacy_compatibility_never_replaces_a_third_party_symlink(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            vendor_root = root / "vendor"
+            vendor = self._skill(vendor_root, "vendor-selected")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            collision.symlink_to(vendor.source_dir)
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "legacy Codex compatibility path points to an unexpected target",
+            ):
+                sync.sync_legacy_codex_compat_links(
+                    codex_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                )
+
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), vendor.source_dir.resolve())
+
+    def test_legacy_compatibility_never_replaces_a_wrong_managed_symlink(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            wrong = self._skill(source_root, "wrong")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            collision.symlink_to(wrong.source_dir)
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "legacy Codex compatibility path points to an unexpected target",
+            ):
+                sync.sync_legacy_codex_compat_links(
+                    codex_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                )
+
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), wrong.source_dir.resolve())
+
+    def test_legacy_compatibility_creation_race_fails_without_replacing_winner(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            vendor_root = root / "vendor"
+            vendor = self._skill(vendor_root, "vendor-selected")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            real_os_symlink = sync.os.symlink
+            real_os_link = sync.os.link
+            injected = False
+
+            def racing_link(
+                source: str,
+                path: str,
+                *,
+                src_dir_fd: int | None = None,
+                dst_dir_fd: int | None = None,
+                follow_symlinks: bool = True,
+            ) -> None:
+                nonlocal injected
+                if path == "selected" and not injected:
+                    injected = True
+                    real_os_symlink(
+                        vendor.source_dir,
+                        path,
+                        target_is_directory=True,
+                        dir_fd=dst_dir_fd,
+                    )
+                    raise FileExistsError("simulated competing writer")
+                real_os_link(
+                    source,
+                    path,
+                    src_dir_fd=src_dir_fd,
+                    dst_dir_fd=dst_dir_fd,
+                    follow_symlinks=follow_symlinks,
+                )
+
+            with mock.patch.object(sync.os, "link", side_effect=racing_link):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "legacy Codex compatibility path appeared during sync",
+                ):
+                    sync.sync_legacy_codex_compat_links(
+                        codex_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                    )
+
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), vendor.source_dir.resolve())
+
+    def test_legacy_compatibility_same_source_race_winner_is_not_accepted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            real_os_symlink = sync.os.symlink
+            real_os_link = sync.os.link
+            injected = False
+
+            def racing_link(
+                source: str,
+                path: str,
+                *,
+                src_dir_fd: int | None = None,
+                dst_dir_fd: int | None = None,
+                follow_symlinks: bool = True,
+            ) -> None:
+                nonlocal injected
+                if path == "selected" and not injected:
+                    injected = True
+                    real_os_symlink(
+                        selected.source_dir,
+                        path,
+                        target_is_directory=True,
+                        dir_fd=dst_dir_fd,
+                    )
+                    raise FileExistsError("simulated same-source writer")
+                real_os_link(
+                    source,
+                    path,
+                    src_dir_fd=src_dir_fd,
+                    dst_dir_fd=dst_dir_fd,
+                    follow_symlinks=follow_symlinks,
+                )
+
+            with mock.patch.object(sync.os, "link", side_effect=racing_link):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "refusing to replace or accept it",
+                ):
+                    sync.sync_legacy_codex_compat_links(
+                        codex_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                    )
+
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), selected.source_dir.resolve())
+
+    def test_legacy_same_source_winner_after_preflight_is_not_accepted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            original_preflight = sync._preflight_pinned_legacy_compatibility
+            injected = False
+
+            def inject_after_preflight(
+                pinned_root: sync.PinnedSkillRoot,
+                skills: dict[str, sync.SkillSource],
+            ) -> dict[str, sync.PinnedEntrySnapshot | None]:
+                nonlocal injected
+                observed = original_preflight(pinned_root, skills)
+                sync.create_pinned_symlink(
+                    pinned_root,
+                    "selected",
+                    selected.source_dir.resolve(strict=True),
+                )
+                injected = True
+                return observed
+
+            with mock.patch.object(
+                sync,
+                "_preflight_pinned_legacy_compatibility",
+                side_effect=inject_after_preflight,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "appeared during sync"):
+                    sync.sync_legacy_codex_compat_links(
+                        codex_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                    )
+
+            self.assertTrue(injected)
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), selected.source_dir.resolve())
+
+    def test_legacy_same_source_replacement_after_publish_is_not_accepted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            collision = codex_root / "selected"
+            original_snapshot = sync.capture_entry_snapshot
+            real_os_unlink = sync.os.unlink
+            real_os_symlink = sync.os.symlink
+            swapped = False
+
+            def replace_after_publish(
+                pinned_root: sync.PinnedSkillRoot,
+                name: str,
+            ) -> sync.PinnedEntrySnapshot | None:
+                nonlocal swapped
+                current = original_snapshot(pinned_root, name)
+                if name == "selected" and current is not None and not swapped:
+                    real_os_unlink(name, dir_fd=pinned_root.fd)
+                    real_os_symlink(
+                        selected.source_dir,
+                        name,
+                        target_is_directory=True,
+                        dir_fd=pinned_root.fd,
+                    )
+                    swapped = True
+                    return original_snapshot(pinned_root, name)
+                return current
+
+            with mock.patch.object(
+                sync,
+                "capture_entry_snapshot",
+                side_effect=replace_after_publish,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "changed during atomic publication",
+                ):
+                    sync.sync_legacy_codex_compat_links(
+                        codex_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                    )
+
+            self.assertTrue(swapped)
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), selected.source_dir.resolve())
+
+    def test_missing_legacy_root_rejects_a_concurrent_symlink_winner(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_parent = root / "codex"
+            codex_parent.mkdir()
+            codex_root = codex_parent / "skills"
+            outside = root / "outside"
+            outside.mkdir()
+            real_os_mkdir = sync.os.mkdir
+            real_os_symlink = sync.os.symlink
+            injected = False
+
+            def racing_mkdir(
+                path: str,
+                mode: int = 0o777,
+                *,
+                dir_fd: int | None = None,
+            ) -> None:
+                nonlocal injected
+                if path == "skills" and dir_fd is not None and not injected:
+                    injected = True
+                    real_os_symlink(
+                        outside,
+                        path,
+                        target_is_directory=True,
+                        dir_fd=dir_fd,
+                    )
+                    raise FileExistsError("simulated root winner")
+                real_os_mkdir(path, mode=mode, dir_fd=dir_fd)
+
+            with mock.patch.object(sync.os, "mkdir", side_effect=racing_mkdir):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "appeared during exclusive creation",
+                ):
+                    sync.sync_legacy_codex_compat_links(
+                        codex_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                    )
+
+            self.assertTrue(codex_root.is_symlink())
+            self.assertFalse((outside / "selected").exists())
+
+    def test_legacy_reporting_race_preserves_concurrent_replacement(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            cold = self._skill(source_root, "cold")
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            stale = codex_root / "cold"
+            stale.symlink_to(cold.source_dir)
+            replacement = root / "user-owned.txt"
+            replacement.write_text("user-owned", encoding="utf-8")
+            original_log = sync.log
+            swapped = False
+
+            def swap_after_classification(message: str) -> None:
+                nonlocal swapped
+                if message.startswith("legacy Codex skill cold:") and not swapped:
+                    swapped = True
+                    replacement.replace(stale)
+                original_log(message)
+
+            with mock.patch.object(sync, "log", side_effect=swap_after_classification):
+                sync.report_stale_legacy_managed_links(
+                    codex_root,
+                    [source_root],
+                )
+
+            self.assertTrue(swapped)
+            self.assertTrue(stale.is_file())
+            self.assertEqual(stale.read_text(encoding="utf-8"), "user-owned")
+
+    def test_unselected_managed_link_is_pruned_without_touching_third_party(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            cold = self._skill(source_root, "cold")
+            third_party = self._skill(root / "vendor", "vendor")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            (agents_root / "cold").symlink_to(cold.source_dir)
+            (agents_root / "vendor").symlink_to(third_party.source_dir)
+            (agents_root / "real-skill").mkdir()
+
+            sync.sync_skill_root(
+                agents_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=True,
+                create_missing=True,
+            )
+
+            self.assertTrue((agents_root / "selected").is_symlink())
+            self.assertFalse((agents_root / "cold").exists())
+            retired = list(
+                (
+                    agents_root
+                    / ".source-sync-backups"
+                    / "stamp"
+                ).glob("cold.*/entry")
+            )
+            self.assertEqual(len(retired), 1)
+            self.assertTrue(retired[0].is_symlink())
+            self.assertTrue((agents_root / "vendor").is_symlink())
+            self.assertTrue((agents_root / "real-skill").is_dir())
+
+    def test_selected_third_party_link_fails_without_moving_it(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            vendor = self._skill(root / "vendor", "vendor-selected")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            collision = agents_root / "selected"
+            collision.symlink_to(vendor.source_dir)
+
+            with self.assertRaisesRegex(RuntimeError, "third-party"):
+                sync.sync_skill_root(
+                    agents_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                    create_missing=True,
+                )
+
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), vendor.source_dir.resolve())
+            self.assertFalse((agents_root / ".source-sync-backups").exists())
+
+    def test_selected_real_directory_fails_without_moving_it(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            agents_root = root / "agents"
+            collision = agents_root / "selected"
+            collision.mkdir(parents=True)
+            marker = collision / "user-owned.txt"
+            marker.write_text("keep", encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "real directory"):
+                sync.sync_skill_root(
+                    agents_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                    create_missing=True,
+                )
+
+            self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
+            self.assertFalse((agents_root / ".source-sync-backups").exists())
+
+    def test_unselected_absolute_loop_is_preserved_in_agents_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            loop = agents_root / "foreign-loop"
+            loop.symlink_to(loop)
+
+            sync.sync_skill_root(
+                agents_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=True,
+                create_missing=True,
+            )
+
+            self.assertTrue(loop.is_symlink())
+            self.assertEqual(os.readlink(loop), str(loop))
+            self.assertEqual(
+                (agents_root / "selected").resolve(),
+                selected.source_dir.resolve(),
+            )
+
+    def test_unselected_absolute_loop_is_preserved_in_legacy_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            codex_root = root / "codex"
+            codex_root.mkdir()
+            loop = codex_root / "foreign-loop"
+            loop.symlink_to(loop)
+
+            sync.sync_legacy_codex_compat_links(
+                codex_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=True,
+            )
+
+            self.assertTrue(loop.is_symlink())
+            self.assertEqual(os.readlink(loop), str(loop))
+            self.assertEqual(
+                (codex_root / "selected").resolve(),
+                selected.source_dir.resolve(),
+            )
+
+    def test_active_pruning_restores_a_concurrent_replacement_in_place(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            cold = self._skill(source_root, "cold")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            stale = agents_root / "cold"
+            stale.symlink_to(cold.source_dir)
+            replacement = root / "user-owned.txt"
+            replacement.write_text("user-owned", encoding="utf-8")
+            real_exclusive_rename = sync.exclusive_rename
+            injected = False
+
+            def racing_rename(
+                source_fd: int,
+                source: str,
+                destination_fd: int,
+                destination: str,
+            ) -> None:
+                nonlocal injected
+                if source == "cold" and destination == "entry" and not injected:
+                    injected = True
+                    replacement.replace(stale)
+                real_exclusive_rename(
+                    source_fd,
+                    source,
+                    destination_fd,
+                    destination,
+                )
+
+            with mock.patch.object(
+                sync,
+                "exclusive_rename",
+                side_effect=racing_rename,
+            ):
+                sync.sync_skill_root(
+                    agents_root,
+                    {},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                    create_missing=True,
+                )
+
+            self.assertTrue(injected)
+            self.assertTrue(stale.is_file())
+            self.assertEqual(stale.read_text(encoding="utf-8"), "user-owned")
+            retained = list(
+                (
+                    agents_root
+                    / ".source-sync-backups"
+                    / "stamp"
+                ).glob("cold.*/entry")
+            )
+            self.assertEqual(retained, [])
+
+    def test_selected_managed_collision_restores_third_party_race_winner(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            old_managed = self._skill(source_root, "old-selected")
+            vendor = self._skill(root / "vendor", "vendor-selected")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            collision = agents_root / "selected"
+            collision.symlink_to(old_managed.source_dir)
+            real_exclusive_rename = sync.exclusive_rename
+            injected = False
+
+            def racing_rename(
+                source_fd: int,
+                source: str,
+                destination_fd: int,
+                destination: str,
+            ) -> None:
+                nonlocal injected
+                if source == "selected" and destination == "entry" and not injected:
+                    injected = True
+                    collision.unlink()
+                    collision.symlink_to(vendor.source_dir)
+                real_exclusive_rename(
+                    source_fd,
+                    source,
+                    destination_fd,
+                    destination,
+                )
+
+            with mock.patch.object(
+                sync,
+                "exclusive_rename",
+                side_effect=racing_rename,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "restored to its original path"):
+                    sync.sync_skill_root(
+                        agents_root,
+                        {"selected": selected},
+                        [source_root],
+                        "stamp",
+                        apply=True,
+                        create_missing=True,
+                    )
+
+            self.assertTrue(injected)
+            self.assertTrue(collision.is_symlink())
+            self.assertEqual(collision.resolve(), vendor.source_dir.resolve())
+            retained = list(
+                (agents_root / ".source-sync-backups" / "stamp").glob(
+                    "selected.*/entry"
+                )
+            )
+            self.assertEqual(retained, [])
+
+    def test_unselected_broken_race_winner_is_restored_and_does_not_abort(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            cold = self._skill(source_root, "cold")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            stale = agents_root / "cold"
+            stale.symlink_to(cold.source_dir)
+            broken_target = root / "missing-vendor-skill"
+            real_exclusive_rename = sync.exclusive_rename
+            injected = False
+
+            def racing_rename(
+                source_fd: int,
+                source: str,
+                destination_fd: int,
+                destination: str,
+            ) -> None:
+                nonlocal injected
+                if source == "cold" and destination == "entry" and not injected:
+                    injected = True
+                    stale.unlink()
+                    stale.symlink_to(broken_target)
+                real_exclusive_rename(
+                    source_fd,
+                    source,
+                    destination_fd,
+                    destination,
+                )
+
+            with mock.patch.object(
+                sync,
+                "exclusive_rename",
+                side_effect=racing_rename,
+            ):
+                sync.sync_skill_root(
+                    agents_root,
+                    {"selected": selected},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                    create_missing=True,
+                )
+
+            self.assertTrue(injected)
+            self.assertEqual(os.readlink(stale), str(broken_target))
+            self.assertEqual(
+                (agents_root / "selected").resolve(),
+                selected.source_dir.resolve(),
+            )
+            retained = list(
+                (agents_root / ".source-sync-backups" / "stamp").glob("cold.*/entry")
+            )
+            self.assertEqual(retained, [])
+
+    def test_active_pruning_reclassifies_a_winner_before_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            cold = self._skill(source_root, "cold")
+            agents_root = root / "agents"
+            agents_root.mkdir()
+            stale = agents_root / "cold"
+            stale.symlink_to(cold.source_dir)
+            replacement = root / "user-owned.txt"
+            replacement.write_text("user-owned", encoding="utf-8")
+            original_snapshot = sync.capture_entry_snapshot
+            swapped = False
+
+            def swap_before_snapshot(
+                pinned_root: sync.PinnedSkillRoot,
+                name: str,
+            ) -> sync.PinnedEntrySnapshot | None:
+                nonlocal swapped
+                if name == "cold" and not swapped:
+                    replacement.replace(stale)
+                    swapped = True
+                return original_snapshot(pinned_root, name)
+
+            with mock.patch.object(
+                sync,
+                "capture_entry_snapshot",
+                side_effect=swap_before_snapshot,
+            ):
+                sync.sync_skill_root(
+                    agents_root,
+                    {},
+                    [source_root],
+                    "stamp",
+                    apply=True,
+                    create_missing=True,
+                )
+
+            self.assertTrue(swapped)
+            self.assertTrue(stale.is_file())
+            self.assertEqual(stale.read_text(encoding="utf-8"), "user-owned")
+
+    def test_dry_run_changes_neither_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            agents_root = root / "agents"
+            codex_root = root / "codex"
+            agents_root.mkdir()
+            codex_root.mkdir()
+            legacy = codex_root / "selected"
+            legacy.symlink_to(selected.source_dir)
+
+            sync.sync_skill_root(
+                agents_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=False,
+                create_missing=True,
+            )
+            sync.report_stale_legacy_managed_links(
+                codex_root,
+                [source_root],
+            )
+
+            self.assertFalse((agents_root / "selected").exists())
+            self.assertTrue(legacy.is_symlink())
+
+    def test_dry_run_accepts_a_missing_user_root_without_creating_it(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            agents_root = root / "missing" / "skills"
+
+            sync.sync_skill_root(
+                agents_root,
+                {"selected": selected},
+                [source_root],
+                "stamp",
+                apply=False,
+                create_missing=True,
+            )
+
+            self.assertFalse(agents_root.exists())
+
+    def test_apply_with_empty_selection_does_not_create_missing_user_roots(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            manifest.write_text(
+                json.dumps({"schema_version": 2, "active_skills": []}),
+                encoding="utf-8",
+            )
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            agents_root = root / "missing-agents" / "skills"
+            codex_root = root / "missing-codex" / "skills"
+
+            result = sync.main(
+                [
+                    "--repo",
+                    str(repo),
+                    "--claude-dir",
+                    str(claude_dir),
+                    "--agents-skills",
+                    str(agents_root),
+                    "--codex-skills",
+                    str(codex_root),
+                    "--active-skills-manifest",
+                    str(manifest),
+                    "--skip-claude-cache",
+                    "--skip-marketplace-source",
+                    "--apply",
+                    "--quiet",
+                ]
+            )
+
+            self.assertEqual(result, 0)
+            self.assertFalse(agents_root.exists())
+            self.assertFalse(codex_root.exists())
+
+    def test_main_rejects_physical_root_alias_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            shared_root = root / "shared-skills"
+            shared_root.mkdir()
+            selected_source = repo / "selected"
+            selected_link = shared_root / "selected"
+            selected_link.symlink_to(selected_source)
+            codex_alias = root / "codex-alias"
+            codex_alias.symlink_to(shared_root, target_is_directory=True)
+
+            with self.assertRaisesRegex(ValueError, "physically separate"):
+                sync.main(
+                    [
+                        "--repo",
+                        str(repo),
+                        "--claude-dir",
+                        str(root / "claude"),
+                        "--agents-skills",
+                        str(shared_root),
+                        "--codex-skills",
+                        str(codex_alias),
+                        "--active-skills-manifest",
+                        str(manifest),
+                        "--skip-claude-cache",
+                        "--skip-marketplace-source",
+                        "--apply",
+                        "--quiet",
+                    ]
+                )
+
+            self.assertTrue(selected_link.is_symlink())
+            self.assertEqual(selected_link.resolve(), selected_source.resolve())
+
+    def test_main_pins_roots_before_active_pruning(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            agents_root = root / "agents" / "skills"
+            agents_root.mkdir(parents=True)
+            codex_root = root / "codex" / "skills"
+            codex_root.mkdir(parents=True)
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            legacy = codex_root / "legacy"
+            legacy.symlink_to(repo / "selected")
+            parked_agents = root / "agents-pinned-original"
+            original_sync = sync._sync_pinned_skill_root
+            swapped = False
+
+            def swap_root_then_sync(*args: object, **kwargs: object) -> None:
+                nonlocal swapped
+                agents_root.rename(parked_agents)
+                agents_root.symlink_to(codex_root, target_is_directory=True)
+                swapped = True
+                original_sync(*args, **kwargs)
+
+            with mock.patch.object(
+                sync,
+                "_sync_pinned_skill_root",
+                side_effect=swap_root_then_sync,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "changed after pinning"):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(codex_root),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertTrue(legacy.is_symlink())
+            self.assertEqual(legacy.resolve(), (repo / "selected").resolve())
+
+    def test_main_rejects_source_swap_between_agents_and_legacy(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "active_skills": ["selected"],
+                        "legacy_codex_compat_skills": ["selected"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            source_a = repo / "selected"
+            (source_a / "marker.txt").write_text("A", encoding="utf-8")
+            source_b = repo / "selected-b"
+            source_b.mkdir()
+            (source_b / "SKILL.md").write_text(
+                "---\nname: selected\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (source_b / "marker.txt").write_text("B", encoding="utf-8")
+            parked_a = repo / "selected-a"
+            agents_root = root / "agents" / "skills"
+            codex_root = root / "codex" / "skills"
+            agents_root.mkdir(parents=True)
+            codex_root.mkdir(parents=True)
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            original_legacy_sync = sync.sync_legacy_codex_compat_links
+            swapped = False
+
+            def swap_source_then_sync(*args: object, **kwargs: object) -> None:
+                nonlocal swapped
+                source_a.rename(parked_a)
+                source_a.symlink_to(source_b, target_is_directory=True)
+                swapped = True
+                try:
+                    original_legacy_sync(*args, **kwargs)
+                finally:
+                    source_a.unlink()
+                    parked_a.rename(source_a)
+
+            with mock.patch.object(
+                sync,
+                "sync_legacy_codex_compat_links",
+                side_effect=swap_source_then_sync,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "source changed after it was frozen",
+                ):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(codex_root),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertEqual((agents_root / "selected" / "marker.txt").read_text(), "A")
+            self.assertFalse((codex_root / "selected").exists())
+
+    def test_main_revalidates_repo_containment_at_source_freeze(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            source = repo / "selected"
+            parked = repo / "selected-inside"
+            outside = root / "outside-selected"
+            outside.mkdir()
+            (outside / "SKILL.md").write_text(
+                "---\nname: selected\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (outside / "marker.txt").write_text("outside", encoding="utf-8")
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            agents_root = root / "agents" / "skills"
+            original_freeze = sync.freeze_selected_skill_sources
+            swapped = False
+
+            def escape_after_load(
+                skills: dict[str, sync.SkillSource],
+            ) -> dict[str, sync.SkillSource]:
+                nonlocal swapped
+                source.rename(parked)
+                source.symlink_to(outside, target_is_directory=True)
+                swapped = True
+                try:
+                    return original_freeze(skills)
+                finally:
+                    source.unlink()
+                    parked.rename(source)
+
+            with mock.patch.object(
+                sync,
+                "freeze_selected_skill_sources",
+                side_effect=escape_after_load,
+            ):
+                with self.assertRaisesRegex(ValueError, "escapes marketplace repo"):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(root / "codex" / "skills"),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--skip-codex",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertFalse(agents_root.exists())
+
+    def test_main_revalidates_source_inode_at_freeze(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            source = repo / "selected"
+            parked = repo / "selected-original"
+            replacement = repo / "selected-replacement"
+            replacement.mkdir()
+            (replacement / "SKILL.md").write_text(
+                "---\nname: selected\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            agents_root = root / "agents" / "skills"
+            original_freeze = sync.freeze_selected_skill_sources
+            swapped = False
+
+            def replace_after_load(
+                skills: dict[str, sync.SkillSource],
+            ) -> dict[str, sync.SkillSource]:
+                nonlocal swapped
+                source.rename(parked)
+                replacement.rename(source)
+                swapped = True
+                try:
+                    return original_freeze(skills)
+                finally:
+                    source.rename(replacement)
+                    parked.rename(source)
+
+            with mock.patch.object(
+                sync,
+                "freeze_selected_skill_sources",
+                side_effect=replace_after_load,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "changed after marketplace validation",
+                ):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(root / "codex" / "skills"),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--skip-codex",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertFalse(agents_root.exists())
+
+    def test_final_cross_root_check_rechecks_frozen_source_after_link_snapshots(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            source_root = root / "source"
+            source_root.mkdir()
+            selected = self._skill(source_root, "selected")
+            (selected.source_dir / "marker.txt").write_text("A", encoding="utf-8")
+            replacement = root / "replacement"
+            replacement.mkdir()
+            (replacement / "SKILL.md").write_text(
+                "---\nname: selected\ndescription: test\n---\n",
+                encoding="utf-8",
+            )
+            (replacement / "marker.txt").write_text("B", encoding="utf-8")
+            frozen = sync.freeze_selected_skill_sources({"selected": selected})
+            parked = root / "selected-frozen-a"
+            agents_root = root / "agents"
+            legacy_root = root / "legacy"
+            agents_root.mkdir()
+            legacy_root.mkdir()
+            (agents_root / "selected").symlink_to(selected.source_dir)
+            (legacy_root / "selected").symlink_to(selected.source_dir)
+            original_expected = sync.expected_skill_source_path
+            swapped = False
+            configured_agents = sync.absolute_without_symlink_resolution(agents_root)
+            configured_legacy = sync.absolute_without_symlink_resolution(legacy_root)
+
+            def swap_after_precheck(skill: sync.SkillSource) -> Path:
+                nonlocal swapped
+                expected = original_expected(skill)
+                if not swapped:
+                    selected.source_dir.rename(parked)
+                    replacement.rename(selected.source_dir)
+                    swapped = True
+                return expected
+
+            try:
+                with sync.pin_skill_root(
+                    configured_agents,
+                    label="agents skill root",
+                    apply=True,
+                    create_missing=False,
+                ) as agents_pinned, sync.pin_skill_root(
+                    configured_legacy,
+                    label="legacy Codex skill root",
+                    apply=True,
+                    create_missing=False,
+                ) as legacy_pinned:
+                    assert agents_pinned is not None and legacy_pinned is not None
+                    with mock.patch.object(
+                        sync,
+                        "expected_skill_source_path",
+                        side_effect=swap_after_precheck,
+                    ):
+                        with self.assertRaisesRegex(
+                            RuntimeError,
+                            "source changed after it was frozen",
+                        ):
+                            sync.verify_legacy_links_match_agents(
+                                agents_pinned,
+                                legacy_pinned,
+                                frozen,
+                            )
+            finally:
+                if swapped:
+                    selected.source_dir.rename(replacement)
+                    parked.rename(selected.source_dir)
+
+            self.assertTrue(swapped)
+            self.assertEqual(
+                (agents_root / "selected" / "marker.txt").read_text(),
+                "A",
+            )
+            self.assertEqual(
+                (legacy_root / "selected" / "marker.txt").read_text(),
+                "A",
+            )
+
+    def test_main_rejects_real_root_swap_after_topology_capture(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            agents_parent = root / "agents"
+            agents_root = agents_parent / "skills"
+            agents_root.mkdir(parents=True)
+            codex_parent = root / "codex"
+            codex_root = codex_parent / "skills"
+            legacy_selected = codex_root / "selected"
+            legacy_selected.mkdir(parents=True)
+            marker = legacy_selected / "legacy-marker.txt"
+            marker.write_text("keep", encoding="utf-8")
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            parked = root / "root-swap-parked"
+            original_pin = sync.pin_skill_root
+            swapped = False
+
+            @contextmanager
+            def swap_real_roots_then_pin(
+                path: Path,
+                *,
+                label: str,
+                apply: bool,
+                create_missing: bool,
+                expected: sync.SkillRootExpectation | None = None,
+            ):
+                nonlocal swapped
+                if label == "agents skill root" and not swapped:
+                    agents_parent.rename(parked)
+                    codex_parent.rename(agents_parent)
+                    parked.rename(codex_parent)
+                    swapped = True
+                try:
+                    with original_pin(
+                        path,
+                        label=label,
+                        apply=apply,
+                        create_missing=create_missing,
+                        expected=expected,
+                    ) as pinned:
+                        yield pinned
+                finally:
+                    if swapped and agents_parent.exists() and codex_parent.exists():
+                        codex_parent.rename(parked)
+                        agents_parent.rename(codex_parent)
+                        parked.rename(agents_parent)
+
+            with mock.patch.object(
+                sync,
+                "pin_skill_root",
+                side_effect=swap_real_roots_then_pin,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "changed after topology capture",
+                ):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(codex_root),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
+            self.assertFalse((agents_root / "selected").exists())
+            self.assertFalse((codex_root / ".source-sync-backups").exists())
+
+    def test_main_rejects_an_ancestor_symlink_swap_before_pinning(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            agents_parent = root / "agents"
+            agents_root = agents_parent / "skills"
+            agents_root.mkdir(parents=True)
+            codex_parent = root / "codex"
+            codex_root = codex_parent / "skills"
+            legacy_selected = codex_root / "selected"
+            legacy_selected.mkdir(parents=True)
+            marker = legacy_selected / "user-owned.txt"
+            marker.write_text("user-owned", encoding="utf-8")
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            parked_agents = root / "agents-original"
+            original_open = sync.open_real_directory
+            swapped = False
+
+            def swap_ancestor_then_open(path: Path, label: str) -> int:
+                nonlocal swapped
+                if label == "agents skill root" and not swapped:
+                    agents_parent.rename(parked_agents)
+                    agents_parent.symlink_to(codex_parent, target_is_directory=True)
+                    swapped = True
+                return original_open(path, label)
+
+            with mock.patch.object(
+                sync,
+                "open_real_directory",
+                side_effect=swap_ancestor_then_open,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "path components must be real directories",
+                ):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(codex_root),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertTrue(legacy_selected.is_dir())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "user-owned")
+
+    def test_main_does_not_reresolve_a_frozen_root_before_pinning(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            agents_parent = root / "agents"
+            agents_root = agents_parent / "skills"
+            agents_root.mkdir(parents=True)
+            codex_root = root / "codex" / "skills"
+            redirected_agents_root = codex_root / "skills"
+            redirected_selected = redirected_agents_root / "selected"
+            redirected_selected.mkdir(parents=True)
+            marker = redirected_selected / "user-owned.txt"
+            marker.write_text("user-owned", encoding="utf-8")
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            parked_agents = root / "agents-original"
+            original_pin = sync.pin_skill_root
+            swapped = False
+
+            @contextmanager
+            def swap_before_pin(
+                path: Path,
+                *,
+                label: str,
+                apply: bool,
+                create_missing: bool,
+                expected: sync.SkillRootExpectation | None = None,
+            ):
+                nonlocal swapped
+                if label == "agents skill root" and not swapped:
+                    agents_parent.rename(parked_agents)
+                    agents_parent.symlink_to(codex_root, target_is_directory=True)
+                    swapped = True
+                with original_pin(
+                    path,
+                    label=label,
+                    apply=apply,
+                    create_missing=create_missing,
+                    expected=expected,
+                ) as pinned:
+                    yield pinned
+
+            with mock.patch.object(sync, "pin_skill_root", side_effect=swap_before_pin):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "path components must be real directories",
+                ):
+                    sync.main(
+                        [
+                            "--repo",
+                            str(repo),
+                            "--claude-dir",
+                            str(claude_dir),
+                            "--agents-skills",
+                            str(agents_root),
+                            "--codex-skills",
+                            str(codex_root),
+                            "--active-skills-manifest",
+                            str(manifest),
+                            "--skip-claude-cache",
+                            "--skip-marketplace-source",
+                            "--apply",
+                            "--quiet",
+                        ]
+                    )
+
+            self.assertTrue(swapped)
+            self.assertTrue(redirected_selected.is_dir())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "user-owned")
+
+    def test_root_topology_rejects_case_only_alias_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            agents_root = root / "shared" / "Skills"
+            agents_root.mkdir(parents=True)
+            codex_root = root / "shared" / "skills"
+
+            with self.assertRaisesRegex(ValueError, "physically separate"):
+                sync.validate_skill_root_topology(agents_root, codex_root)
+
+    def test_main_dry_run_never_enters_write_lock_or_creates_missing_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tinkle_skill_sync_") as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            claude_dir = root / "claude"
+            claude_dir.mkdir()
+            agents_root = root / "missing-agents" / "skills"
+
+            with mock.patch.object(
+                sync,
+                "sync_lock",
+                side_effect=AssertionError("dry-run entered the write lock"),
+            ):
+                result = sync.main(
+                    [
+                        "--repo",
+                        str(repo),
+                        "--claude-dir",
+                        str(claude_dir),
+                        "--agents-skills",
+                        str(agents_root),
+                        "--codex-skills",
+                        str(root / "codex" / "skills"),
+                        "--active-skills-manifest",
+                        str(manifest),
+                        "--skip-claude-cache",
+                        "--skip-marketplace-source",
+                        "--quiet",
+                    ]
+                )
+
+            self.assertEqual(result, 0)
+            self.assertFalse(agents_root.exists())
+            self.assertFalse((claude_dir / sync.SYNC_LOCK_NAME).exists())
+
+
+class ClaudeActivationTests(unittest.TestCase):
+    _marketplace = UserRootMigrationTests._marketplace
+    _main_args = UserRootMigrationTests._main_args
+
+    def setup_case(self, root):
+        repo, manifest = self._marketplace(root)
+        (root / "claude").mkdir()
+        manifest.write_text(json.dumps({
+            "schema_version": 2, "active_skills": [],
+            "active_marketplaces": ["daymade-skills"],
+            "claude_active_marketplaces": ["daymade-skills"],
+        }))
+        return repo, manifest, self._main_args(root, repo, manifest)
+
+    def test_registration_alone_activates_future_member_in_both_hosts(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            repo, manifest, args = self.setup_case(root)
+            self.assertEqual(sync.main(args), 0)
+            unchanged_policy = manifest.read_bytes()
+            catalog = repo / ".claude-plugin/marketplace.json"
+            data = json.loads(catalog.read_text())
+            (repo / "later").mkdir()
+            (repo / "later/SKILL.md").write_text("---\nname: later\ndescription: added later\n---\n")
+            data["plugins"].append({"name": "later", "source": "./later", "version": "1.0.0"})
+            catalog.write_text(json.dumps(data))
+            self.assertEqual(sync.main(args), 0)
+            for host in [root / "claude/skills", root / "agents/skills"]:
+                self.assertEqual((host / "later").resolve(), (repo / "later").resolve())
+                self.assertEqual((host / "selected").resolve(), (repo / "selected").resolve())
+            self.assertEqual(manifest.read_bytes(), unchanged_policy)
+            self.assertEqual(sync.main(args), 0)
+
+    def test_disabled_plugin_does_not_gain_a_new_direct_alias(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            repo, _, args = self.setup_case(root)
+            (root / "claude").mkdir(exist_ok=True)
+            (root / "claude/settings.json").write_text(json.dumps({
+                "enabledPlugins": {"selected@daymade-skills": False},
+            }))
+            self.assertEqual(sync.main(args), 0)
+            self.assertFalse((root / "claude/skills/selected").exists())
+            self.assertTrue((root / "agents/skills/selected").is_symlink())
+            # A pre-existing direct entry is independent of its disabled plugin.
+            (root / "claude/skills/selected").symlink_to(repo / "selected")
+            self.assertEqual(sync.main(args), 0)
+            self.assertTrue((root / "claude/skills/selected").is_symlink())
+
+    def test_enabled_user_plugin_does_not_gain_a_duplicate_direct_entry(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            repo, _, args = self.setup_case(root)
+            (root / "claude/plugins").mkdir(parents=True)
+            (root / "claude/settings.json").write_text(json.dumps({
+                "enabledPlugins": {"selected@daymade-skills": True},
+            }))
+            (root / "claude/plugins/installed_plugins.json").write_text(json.dumps({
+                "plugins": {"selected@daymade-skills": [{"scope": "user", "installPath": str(repo / "selected")}]},
+            }))
+            self.assertEqual(sync.main(args), 0)
+            self.assertFalse((root / "claude/skills/selected").exists())
+
+    def test_real_personal_bundle_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            _, _, args = self.setup_case(root)
+            collision = root / "claude/skills/selected"
+            collision.mkdir(parents=True)
+            (collision / "keep.txt").write_text("user-owned")
+            with self.assertRaisesRegex(RuntimeError, "real directory"):
+                sync.main(args)
+            self.assertEqual((collision / "keep.txt").read_text(), "user-owned")
+
+    def test_source_inventory_is_read_only_and_retains_registered_identity(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            repo, manifest = self._marketplace(root)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(sync.main(["--repo", str(repo), "--active-skills-manifest", str(manifest), "--print-source-inventory"]), 0)
+            self.assertIn("selected", json.loads(output.getvalue())["marketplaces"]["daymade-skills"])
+            self.assertFalse((root / "claude").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -24,6 +24,15 @@ npm run migrate               # aplica sql/schema.sql  (o pégalo en el SQL Edit
 npm run dev                   # http://localhost:3000
 ```
 
+**Tests** (necesitan un PostgreSQL de pruebas; se vacía en cada test):
+
+```bash
+createdb volta_test
+TEST_DATABASE_URL=postgres://usuario:clave@localhost:5432/volta_test npm test
+```
+
+`npm run mock` arranca un servidor simulado sin base de datos para probar la interfaz.
+
 **Supabase:** usa la cadena de conexión de *Project Settings → Database* en `DATABASE_URL` y pon `PGSSL=true`.
 El esquema activa RLS sin políticas: la *anon key* no puede tocar las tablas; solo este servidor.
 **Firebase/Firestore:** no se ha usado; el modelo es relacional (parejas únicas de amigos, cursor por `created_at`).
@@ -37,15 +46,23 @@ Rutas con 🔒 requieren `Authorization: Bearer <token>`.
 |---|---|---|
 | `POST /api/auth/register` | `{username, email, password}` | `201 {token, user}` · `400` nombre malsonante o formato · `409` usuario/correo en uso |
 | `POST /api/auth/login` | `{identifier, password}` (correo **o** usuario) | `200 {token, user}` · `401` |
+| `POST /api/auth/refresh` | Bearer | `200 {token, user}` (sesión renovada) · `401` si la cuenta ya no existe |
 | 🔒 `GET /api/auth/me` | | `{user}` |
+| 🔒 `DELETE /api/auth/me` | `{password}` | `204` borra la cuenta, sus mensajes y amistades · `403` contraseña incorrecta (la sesión sigue abierta) |
 | `GET /api/users/check-username?username=xyz` | | `{available, reason?, message?}` (`reason`: `banned` · `format` · `taken`) |
 | 🔒 `GET /api/users/search?q=an` | mín. 2 letras | `{users:[{username}]}` |
+| 🔒 `POST /api/users/stats` | `{days, sets, volume}` (semana en curso) | `{score, xp, league, level, flagged}` · `422 implausible` si las cifras son imposibles |
+| 🔒 `GET /api/friends/leaderboard` | | `{week, entries:[{username, days, sets, volume, me}]}` tú + amigos, por volumen |
+| 🔒 `GET /api/compete/leaderboard?scope=league\|global&limit=50` | | `{week, league, entries:[{rank, username, days, sets, score, league, level, me}], me:{rank, score, xp, level, league, nextLeague, flagged}}` |
+| 🔒 `GET /api/compete/profile/:username` | | Perfil público: `{username, memberSince, online, friendship, xp, level, league, week:{days, sets, score, rank}}` (sin correo) |
+| 🔒 `POST /api/compete/report` | `{username, reason: cheating\|offensive_name\|offensive_content\|other, details?}` | `201` |
+| 🔒 `GET /api/compete/leagues` | | Umbrales de XP de cada liga |
 | 🔒 `POST /api/users/heartbeat` | | `204` (actualiza "en línea") |
 | 🔒 `GET /api/friends` | | `{friends, incoming, outgoing}` |
 | 🔒 `POST /api/friends/request` | `{username}` | `201 {status:"pending"}` · `200 {status:"accepted"}` si ya te había invitado · `404` · `409` |
 | 🔒 `PUT /api/friends/respond` | `{requestId \| username, action:"accept"\|"reject"}` | `200` · `404` si no hay solicitud pendiente tuya |
 | 🔒 `GET /api/forum/posts?limit=20&cursor=` | | `{posts, nextCursor}` (más recientes primero) |
-| 🔒 `POST /api/forum/posts` | `{content?, progressData?}` | `201 {post}` · **`429`** `{message:"Debes esperar 10 segundos entre mensajes.", retryAfter}` + cabecera `Retry-After` · `422` mensaje no permitido |
+| 🔒 `POST /api/forum/posts` | `{content?, progressData?}` (tarjeta: `{type?, icon, title, stats:[[etiqueta, valor]…] (máx. 8), note}`) | `201 {post}` · **`429`** `{message:"Debes esperar 10 segundos entre mensajes.", retryAfter}` + cabecera `Retry-After` · `422` mensaje no permitido |
 
 **Cooldown de 10 s:** el middleware consulta el `created_at` del último post del `user_id` con el reloj de la base de datos.
 Además, dentro de la transacción se toma un candado por usuario (`pg_advisory_xact_lock`) y se vuelve a comprobar, así que dos peticiones simultáneas no pueden saltárselo.
@@ -110,7 +127,7 @@ Además, dentro de la transacción se toma un candado por usuario (`pg_advisory_
 ## 4. Seguridad: lo que hay y lo que debes saber
 
 - Contraseñas con **bcrypt** (coste 12); límite de 72 bytes porque bcrypt ignora el resto.
-- **JWT** HS256 con caducidad (`JWT_EXPIRES`). `JWT_SECRET` ≥ 32 caracteres; cámbialo → se invalidan todas las sesiones.
+- **JWT** HS256 con caducidad (`JWT_EXPIRES`, 180 días). La app la renueva sola al abrirse (`POST /api/auth/refresh`), así la cuenta queda recordada hasta que el usuario cierre sesión o borre sus datos. `JWT_SECRET` ≥ 32 caracteres; cámbialo → se invalidan todas las sesiones.
 - Login con tiempos igualados (no revela si el usuario existe) y límite de 20 intentos / 15 min por IP. Detrás de proxy pon `TRUST_PROXY=1`.
 - Todas las consultas van parametrizadas; entrada validada con zod; cuerpo máx. 16 KB; tarjeta de progreso máx. 4 KB.
 - Usernames únicos sin distinguir mayúsculas (índice `lower(username)`).
@@ -129,3 +146,40 @@ Para el servidor real: `npm install`, `npm run migrate`, `npm run dev`.
 
 **Corrección en el filtro de nombres:** `lib/moderation.js` (y la copia dentro del HTML) rechazaba por error cualquier nombre con la letra «k»
 (la palabra «kkk» se reducía a «k»). Ya está corregido en ambos sitios.
+
+## 4. App web (`Volta-app.html`) e instalación como app
+
+El servidor también sirve la app en `/` (además de `manifest.webmanifest`, iconos y `sw.js` desde `public/`):
+
+- **Misma dirección para app y API:** al servirla, el servidor añade `<meta name="volta-api">` y la app usa su propio origen como API (sin CORS).
+- **Instalable y sin conexión:** desde el móvil, abre la URL del servidor → *Añadir a pantalla de inicio*. El service worker guarda la app; la API y el WebSocket siempre van a la red.
+- **Comprimida:** viaja con gzip (≈2,0 MB en vez de 2,9 MB).
+
+Las mejoras sobre el HTML original están en `frontend/mejoras.js` y `frontend/mejoras.css`. Tras editarlas:
+
+```bash
+npm run build:app      # las inyecta en Volta-app.html (entre los marcadores VOLTA-MEJORAS)
+```
+
+Qué añaden: series prerrellenadas con el objetivo de sobrecarga progresiva, pantalla siempre encendida al entrenar,
+confeti y vibración al batir un récord, resumen de la sesión con imagen para compartir, traducción completa
+(EN/FR/PT, incluidos los 145 ejercicios), imágenes incrustadas sin 404, etiquetas accesibles y foco visible.
+
+## Competición y juego limpio
+
+- **La puntuación la calcula el servidor** (`src/lib/score.js`): el cliente solo envía días, series y volumen de la semana.
+  Puntos = 100 por día entrenado + 5 por serie (máx. 30 series/día) + volumen en escala logarítmica + hasta 200 por
+  progresar frente a tu semana anterior. Así compiten igual un principiante y alguien que levanta el triple.
+- **Ligas del Olimpo por XP** (suma de semanas cerradas): Hermes 0 · Artemisa 1 500 · Ares 5 000 · Atenea 12 000 · Poseidón 25 000 · Zeus 50 000.
+- **Antitrampas**: límites físicos (días ≤ días transcurridos, ≤ 60 series/día, ≤ 3 000 kg·reps/serie); cada envío imposible
+  se rechaza con `422` y suma un aviso; con 3 avisos en la semana la cuenta sale del ranking hasta el lunes y esa semana no suma XP.
+  Con 3 denuncias de trampas de personas distintas en 14 días, la cuenta se aparta del ranking para revisión.
+  Envíos limitados a 20/min por usuario; denuncias a 20/hora.
+- **Sin mal lenguaje**: nombres de usuario, mensajes del foro y texto de las denuncias pasan por `src/lib/moderation.js`.
+- Tras actualizar, ejecuta `npm run migrate` (añade columnas, índices de ranking y la tabla `reports`).
+
+## Escalado
+
+Con una instancia basta `npm start`. Para varias instancias o todos los núcleos (`npm run start:cluster`) configura `REDIS_URL`. Medidas, arquitectura para el millón de usuarios y lista de comprobación en [ESCALADO.md](ESCALADO.md).
+
+Guía de los cambios de diseño (Inicio/Entrenos, imágenes de ejercicios, Oráculo y temas): [docs/GUIA_CAMBIOS.md](docs/GUIA_CAMBIOS.md).

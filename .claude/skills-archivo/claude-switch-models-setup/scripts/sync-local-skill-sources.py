@@ -1,0 +1,2394 @@
+#!/usr/bin/env python3
+"""Keep local skill source repos wired into Claude Code and Codex installs.
+
+Default mode is a dry-run audit. Use --apply to:
+
+- point configured managed marketplaces at local directory sources;
+- replace installed Claude plugin cache version directories with symlinks to the
+  local source directories;
+- update the latest installed_plugins.json records for those local plugins;
+- activate eligible Claude personal links under the independent Claude marketplace policy;
+- activate Codex names selected individually or by whole marketplace in ~/.agents/skills; a selected
+  name that no discovered source checkout registers is reported on stderr and
+  skipped for the pass instead of aborting it;
+- create explicitly selected compatibility symlinks in ~/.codex/skills after
+  the selected ~/.agents/skills links are verified, and report other managed
+  legacy links for reviewed cleanup without deleting them in the daemon.
+
+Real files/directories and third-party links are never deleted or automatically
+moved. At an explicitly selected ~/.agents destination, only a wrong link into a
+managed source repo moves into a timestamped backup before replacement; stale
+unselected source-owned links are pruned from the active namespace the same
+recoverable way. Selected source and root identities are frozen before mutation,
+and affected user roots are opened once as no-follow directory handles, so concurrent
+source/root swaps fail instead of redirecting an operation. The legacy Codex root
+is report-only for stale entries; background sync never deletes a path there
+because unrelated writers do not share this process lock.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ctypes
+from contextlib import ExitStack, contextmanager, nullcontext
+import json
+import os
+import re
+import shutil
+import stat
+import sys
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+HOME = Path.home()
+DEFAULT_CLAUDE_DIR = HOME / ".claude"
+DEFAULT_CODEX_SKILLS = HOME / ".codex" / "skills"
+DEFAULT_AGENTS_SKILLS = HOME / ".agents" / "skills"
+DEFAULT_ACTIVE_SKILLS_MANIFEST = (
+    HOME / ".config" / "claude-switch-models-setup" / "codex-active-skills.json"
+)
+ACTIVE_SKILLS_SCHEMA_VERSION = 3
+SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+LOCAL_MARKETPLACE_NAMES = ("daymade-skills", "daymade-skills-pro", "cmks-skills")
+SYNC_LOCK_NAME = ".daymade-skill-sync.lock"
+SYNC_LOCK_TIMEOUT_SECONDS = 120
+SYNC_LOCK_STALE_SECONDS = 600
+KEEP_JSON_BACKUPS = 20
+QUIET = False
+
+
+@dataclass(frozen=True)
+class MarketplaceSource:
+    name: str
+    repo: Path
+    plugins: dict[str, "PluginSource"]
+    skills: dict[str, "SkillSource"]
+
+
+@dataclass(frozen=True)
+class PluginSource:
+    marketplace: str
+    name: str
+    version: str
+    source_dir: Path
+
+    @property
+    def plugin_id(self) -> str:
+        return f"{self.name}@{self.marketplace}"
+
+
+@dataclass(frozen=True)
+class SkillSource:
+    name: str
+    source_dir: Path
+    plugin_id: str
+    repo_root: Path | None = None
+    identity: tuple[int, int] | None = None
+
+
+@dataclass(frozen=True)
+class SkillActivationPolicy:
+    active_names: tuple[str, ...]
+    legacy_codex_compat_names: tuple[str, ...]
+    active_marketplaces: tuple[str, ...] = ()
+    claude_active_marketplaces: tuple[str, ...] = ()
+    include_skills: tuple[str, ...] = ()
+    exclude_skills: tuple[str, ...] = ()
+    source_preferences: dict[str, dict] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PinnedSkillRoot:
+    """An opened real directory whose identity cannot follow a swapped pathname."""
+
+    path: Path
+    fd: int
+    identity: tuple[int, int]
+
+    def assert_visible(self) -> None:
+        """Require the configured pathname to still name this opened directory."""
+        try:
+            current = os.stat(self.path, follow_symlinks=False)
+        except OSError as exc:
+            raise RuntimeError(
+                f"skill root changed after pinning: {self.path}"
+            ) from exc
+        if not stat.S_ISDIR(current.st_mode):
+            raise RuntimeError(
+                f"skill root changed after pinning: {self.path} is no longer a real directory"
+            )
+        if (current.st_dev, current.st_ino) != self.identity:
+            raise RuntimeError(
+                f"skill root changed after pinning: {self.path} now names another directory"
+            )
+
+
+@dataclass(frozen=True)
+class PinnedEntrySnapshot:
+    signature: tuple[object, ...]
+    is_symlink: bool
+    absolute_link_target: Path | None
+
+
+@dataclass(frozen=True)
+class SkillRootExpectation:
+    """The observed existence and inode of one configured user Skill root."""
+
+    path: Path
+    identity: tuple[int, int] | None
+
+
+class EntryChangedAndRestored(RuntimeError):
+    """A classified entry changed, but the concurrent winner was put back."""
+
+
+class UnreadableMarketplaceManifest(RuntimeError):
+    """A marketplace manifest exists but could not be opened or parsed.
+
+    Not "no manifest": the repo declares a managed marketplace whose identity is
+    momentarily invisible. Returning the no-manifest answer here is how a repo
+    vanished from discovery and surfaced as a validation error naming the wrong
+    cause.
+    """
+
+
+class InvalidMarketplaceManifest(RuntimeError):
+    """A marketplace manifest parses, but declares no usable marketplace name.
+
+    Distinct from UnreadableMarketplaceManifest: the file was read whole, so it
+    is malformed in the checkout itself rather than momentarily unavailable —
+    retrying will not help, and the repair is in that checkout.
+    """
+
+
+def log(msg: str) -> None:
+    if not QUIET:
+        print(msg)
+
+
+def warn(msg: str) -> None:
+    """Findings reach stderr even under --quiet; --quiet silences progress only."""
+    print(f"WARN: {msg}", file=sys.stderr)
+
+
+def process_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+@contextmanager
+def sync_lock(claude_dir: Path):
+    # Same lock path as claude-plugins-sync.py — and it must live OUTSIDE
+    # <claude_dir>/plugins, which that script scans-and-symlinks into every
+    # profile while the lock is held.
+    lock_dir = claude_dir / SYNC_LOCK_NAME
+    start = time.time()
+    acquired = False
+    while True:
+        try:
+            lock_dir.mkdir()
+            (lock_dir / "pid").write_text(str(os.getpid()), encoding="utf-8")
+            acquired = True
+            break
+        except FileExistsError:
+            stale = False
+            try:
+                age = time.time() - lock_dir.stat().st_mtime
+                pid_text = (lock_dir / "pid").read_text(encoding="utf-8").strip()
+                stale = age > SYNC_LOCK_STALE_SECONDS or (
+                    pid_text.isdigit() and not process_alive(int(pid_text))
+                )
+            except OSError:
+                stale = time.time() - start > SYNC_LOCK_TIMEOUT_SECONDS
+            if stale:
+                shutil.rmtree(lock_dir, ignore_errors=True)
+                continue
+            if time.time() - start > SYNC_LOCK_TIMEOUT_SECONDS:
+                raise TimeoutError(f"timed out waiting for sync lock: {lock_dir}")
+            time.sleep(0.2)
+    try:
+        yield
+    finally:
+        if acquired:
+            shutil.rmtree(lock_dir, ignore_errors=True)
+
+
+def absolute_without_symlink_resolution(path: Path) -> Path:
+    """Freeze existing ancestor aliases without following the root component."""
+    absolute = Path(os.path.abspath(os.fspath(path.expanduser())))
+    if absolute == Path(absolute.anchor):
+        return absolute
+    return absolute.parent.resolve(strict=False) / absolute.name
+
+
+def directory_open_flags() -> int:
+    flags = os.O_RDONLY
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_DIRECTORY", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    return flags
+
+
+def walk_real_directory_chain(
+    path: Path,
+    label: str,
+    *,
+    create_missing: bool,
+) -> int:
+    """Open every path component with O_NOFOLLOW and retain only the final fd."""
+    configured = Path(os.path.abspath(os.fspath(path.expanduser())))
+    current_fd = os.open(Path(configured.anchor), directory_open_flags())
+    traversed = Path(configured.anchor)
+    try:
+        for component in configured.parts[1:]:
+            traversed /= component
+            try:
+                next_fd = os.open(
+                    component,
+                    directory_open_flags(),
+                    dir_fd=current_fd,
+                )
+            except FileNotFoundError:
+                if not create_missing:
+                    raise RuntimeError(
+                        f"{label} is missing: {traversed}"
+                    ) from None
+                try:
+                    os.mkdir(component, dir_fd=current_fd)
+                except FileExistsError as exc:
+                    raise RuntimeError(
+                        f"{label} path component appeared during exclusive creation: "
+                        f"{traversed}"
+                    ) from exc
+                next_fd = os.open(
+                    component,
+                    directory_open_flags(),
+                    dir_fd=current_fd,
+                )
+            except OSError as exc:
+                raise RuntimeError(
+                    f"{label} path components must be real directories, not symlinks: "
+                    f"{traversed}"
+                ) from exc
+            os.close(current_fd)
+            current_fd = next_fd
+        opened = os.fstat(current_fd)
+        if not stat.S_ISDIR(opened.st_mode):
+            raise NotADirectoryError(f"{label} is not a directory: {configured}")
+        return current_fd
+    except BaseException:
+        os.close(current_fd)
+        raise
+
+
+def open_real_directory(path: Path, label: str) -> int:
+    return walk_real_directory_chain(path, label, create_missing=False)
+
+
+@contextmanager
+def pin_skill_root(
+    path: Path,
+    *,
+    label: str,
+    apply: bool,
+    create_missing: bool,
+    expected: SkillRootExpectation | None = None,
+):
+    """Open one real root once and keep all top-level operations on its dirfd."""
+    configured = Path(os.path.abspath(os.fspath(path.expanduser())))
+    if expected is not None and expected.path != configured:
+        raise ValueError(
+            f"{label} expectation is for {expected.path}, not {configured}"
+        )
+    exists = os.path.lexists(configured)
+    if expected is not None:
+        if expected.identity is None and exists:
+            raise RuntimeError(
+                f"{label} appeared after topology capture; refusing to adopt it: "
+                f"{configured}"
+            )
+        if expected.identity is not None and not exists:
+            raise RuntimeError(
+                f"{label} disappeared after topology capture: {configured}"
+            )
+    if not exists and not apply:
+        yield None
+        return
+    if not exists and not create_missing:
+        yield None
+        return
+
+    if not exists:
+        parent_fd = walk_real_directory_chain(
+            configured.parent,
+            f"{label} parent",
+            create_missing=True,
+        )
+        try:
+            try:
+                os.mkdir(configured.name, dir_fd=parent_fd)
+            except FileExistsError as exc:
+                raise RuntimeError(
+                    f"{label} appeared during exclusive creation; refusing to follow it: "
+                    f"{configured}"
+                ) from exc
+            try:
+                fd = os.open(
+                    configured.name,
+                    directory_open_flags(),
+                    dir_fd=parent_fd,
+                )
+            except OSError as exc:
+                raise RuntimeError(
+                    f"{label} changed during exclusive creation: {configured}"
+                ) from exc
+        finally:
+            os.close(parent_fd)
+    else:
+        fd = open_real_directory(configured, label)
+
+    opened = os.fstat(fd)
+    opened_identity = (opened.st_dev, opened.st_ino)
+    if expected is not None and expected.identity is not None:
+        if opened_identity != expected.identity:
+            os.close(fd)
+            raise RuntimeError(
+                f"{label} changed after topology capture: {configured}"
+            )
+    pinned = PinnedSkillRoot(
+        path=configured,
+        fd=fd,
+        identity=opened_identity,
+    )
+    try:
+        pinned.assert_visible()
+        yield pinned
+    except BaseException:
+        raise
+    else:
+        pinned.assert_visible()
+    finally:
+        os.close(fd)
+
+
+def pinned_roots_are_same(left: PinnedSkillRoot, right: PinnedSkillRoot) -> bool:
+    return left.identity == right.identity
+
+
+def entry_lstat(root: PinnedSkillRoot, name: str) -> os.stat_result | None:
+    return entry_lstat_fd(root.fd, name)
+
+
+def entry_lstat_fd(fd: int, name: str) -> os.stat_result | None:
+    try:
+        return os.stat(name, dir_fd=fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return None
+
+
+def entry_signature(root: PinnedSkillRoot, name: str) -> tuple[object, ...] | None:
+    snapshot = capture_entry_snapshot(root, name)
+    return None if snapshot is None else snapshot.signature
+
+
+def capture_entry_snapshot(
+    root: PinnedSkillRoot,
+    name: str,
+) -> PinnedEntrySnapshot | None:
+    current = entry_lstat(root, name)
+    if current is None:
+        return None
+    link_target: str | None = None
+    is_symlink = stat.S_ISLNK(current.st_mode)
+    absolute_link_target: Path | None = None
+    if is_symlink:
+        try:
+            link_target = os.readlink(name, dir_fd=root.fd)
+        except OSError as exc:
+            raise RuntimeError(
+                f"skill path changed while snapshotting: {root.path / name}"
+            ) from exc
+        if os.path.isabs(link_target):
+            try:
+                absolute_link_target = Path(link_target).resolve(strict=False)
+            except (OSError, RuntimeError):
+                # A broken or looping foreign link is unowned. Preserve it and
+                # let selected-path validation fail only if its exact name is
+                # requested by the activation manifest.
+                absolute_link_target = None
+    signature = (
+        current.st_dev,
+        current.st_ino,
+        current.st_mode,
+        current.st_size,
+        link_target,
+    )
+    return PinnedEntrySnapshot(
+        signature=signature,
+        is_symlink=is_symlink,
+        absolute_link_target=absolute_link_target,
+    )
+
+
+def absolute_entry_link_target(root: PinnedSkillRoot, name: str) -> Path | None:
+    snapshot = capture_entry_snapshot(root, name)
+    if snapshot is None or not snapshot.is_symlink:
+        return None
+    return snapshot.absolute_link_target
+
+
+def open_or_create_child_directory(parent_fd: int, name: str, display: Path) -> int:
+    try:
+        os.mkdir(name, dir_fd=parent_fd)
+    except FileExistsError:
+        pass
+    try:
+        fd = os.open(name, directory_open_flags(), dir_fd=parent_fd)
+    except OSError as exc:
+        raise RuntimeError(
+            f"backup path must be a real directory, not a symlink: {display}"
+        ) from exc
+    opened = os.fstat(fd)
+    if not stat.S_ISDIR(opened.st_mode):
+        os.close(fd)
+        raise NotADirectoryError(f"backup path is not a directory: {display}")
+    return fd
+
+
+def exclusive_rename(
+    source_fd: int,
+    source_name: str,
+    destination_fd: int,
+    destination_name: str,
+) -> None:
+    """Atomically rename without replacing an existing destination."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    source_bytes = os.fsencode(source_name)
+    destination_bytes = os.fsencode(destination_name)
+    if sys.platform == "darwin":
+        rename_call = libc.renameatx_np
+        rename_call.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename_call.restype = ctypes.c_int
+        result = rename_call(
+            source_fd,
+            source_bytes,
+            destination_fd,
+            destination_bytes,
+            0x00000004,  # RENAME_EXCL from <sys/stdio.h>
+        )
+    elif sys.platform.startswith("linux"):
+        rename_call = libc.renameat2
+        rename_call.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename_call.restype = ctypes.c_int
+        result = rename_call(
+            source_fd,
+            source_bytes,
+            destination_fd,
+            destination_bytes,
+            0x00000001,  # RENAME_NOREPLACE from <linux/fs.h>
+        )
+    else:
+        raise RuntimeError(
+            f"exclusive rename is unsupported on {sys.platform}; refusing mutation"
+        )
+    if result != 0:
+        error_number = ctypes.get_errno()
+        raise OSError(
+            error_number,
+            os.strerror(error_number),
+            f"{source_name} -> {destination_name}",
+        )
+
+
+def move_pinned_entry_to_backup(
+    root: PinnedSkillRoot,
+    name: str,
+    stamp: str,
+    expected_signature: tuple[object, ...],
+) -> Path:
+    """Atomically remove one top-level entry without deleting a race winner."""
+    if Path(stamp).name != stamp or stamp in {"", ".", ".."}:
+        raise ValueError(f"unsafe backup stamp: {stamp!r}")
+    backups_path = root.path / ".source-sync-backups"
+    remove_empty_container = False
+    backups_fd = open_or_create_child_directory(
+        root.fd,
+        ".source-sync-backups",
+        backups_path,
+    )
+    try:
+        bucket_path = backups_path / stamp
+        bucket_fd = open_or_create_child_directory(backups_fd, stamp, bucket_path)
+        container_fd: int | None = None
+        container_name = ""
+        try:
+            container_name = f"{name}.{os.getpid()}.{time.time_ns()}"
+            container_path = bucket_path / container_name
+            try:
+                os.mkdir(container_name, mode=0o700, dir_fd=bucket_fd)
+            except FileExistsError as exc:
+                raise RuntimeError(
+                    f"exclusive backup container already exists: {container_path}"
+                ) from exc
+            container_fd = os.open(
+                container_name,
+                directory_open_flags(),
+                dir_fd=bucket_fd,
+            )
+            opened_container = os.fstat(container_fd)
+            backup_root = PinnedSkillRoot(
+                container_path,
+                container_fd,
+                (opened_container.st_dev, opened_container.st_ino),
+            )
+            backup_name = "entry"
+            backup_path = container_path / backup_name
+            exclusive_rename(root.fd, name, container_fd, backup_name)
+            actual_signature = entry_signature(backup_root, backup_name)
+            if actual_signature != expected_signature:
+                try:
+                    exclusive_rename(container_fd, backup_name, root.fd, name)
+                except FileExistsError as exc:
+                    raise RuntimeError(
+                        "skill path changed during backup; a newer winner occupies "
+                        f"{root.path / name}; concurrent entry retained at {backup_path}"
+                    ) from exc
+                restored_signature = entry_signature(root, name)
+                remove_empty_container = True
+                if restored_signature != actual_signature:
+                    raise RuntimeError(
+                        "skill path changed during backup and could not be verified "
+                        f"after restoration: {root.path / name}"
+                    )
+                raise EntryChangedAndRestored(
+                    "skill path changed during backup; concurrent entry restored "
+                    f"to its original path: {root.path / name}"
+                )
+            return backup_path
+        finally:
+            if container_fd is not None:
+                os.close(container_fd)
+            if remove_empty_container and container_name:
+                try:
+                    os.rmdir(container_name, dir_fd=bucket_fd)
+                except OSError:
+                    pass
+            os.close(bucket_fd)
+    finally:
+        if remove_empty_container:
+            try:
+                os.rmdir(stamp, dir_fd=backups_fd)
+            except OSError:
+                pass
+        os.close(backups_fd)
+        if remove_empty_container:
+            try:
+                os.rmdir(".source-sync-backups", dir_fd=root.fd)
+            except OSError:
+                pass
+
+
+def create_pinned_symlink(
+    root: PinnedSkillRoot,
+    name: str,
+    target: Path,
+) -> tuple[object, ...]:
+    """Publish a known symlink inode without ever overwriting a destination."""
+    temporary_name = f".source-sync-link.{name}.{os.getpid()}.{time.time_ns()}"
+    try:
+        os.symlink(
+            os.fspath(target),
+            temporary_name,
+            target_is_directory=True,
+            dir_fd=root.fd,
+        )
+        temporary = capture_entry_snapshot(root, temporary_name)
+        if temporary is None or not temporary.is_symlink:
+            raise RuntimeError(
+                f"temporary skill link was not created: {root.path / temporary_name}"
+            )
+        os.link(
+            temporary_name,
+            name,
+            src_dir_fd=root.fd,
+            dst_dir_fd=root.fd,
+            follow_symlinks=False,
+        )
+        published = capture_entry_snapshot(root, name)
+        if published is None or published.signature != temporary.signature:
+            raise RuntimeError(
+                f"skill link changed during atomic publication: {root.path / name}"
+            )
+        return temporary.signature
+    finally:
+        try:
+            os.unlink(temporary_name, dir_fd=root.fd)
+        except FileNotFoundError:
+            pass
+
+
+def load_json(path: Path) -> object:
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def validate_skill_name(name: str, context: str) -> str:
+    """Require the canonical kebab-case Skill name and one safe path segment."""
+    if not SKILL_NAME_PATTERN.fullmatch(name):
+        raise ValueError(
+            f"{context}: invalid skill name {name!r}; expected lowercase "
+            "letters/digits joined by single hyphens"
+        )
+    return name
+
+
+def _load_skill_name_array(
+    data: dict[str, object],
+    path: Path,
+    key: str,
+    label: str,
+    *,
+    required: bool,
+) -> tuple[str, ...]:
+    if key not in data and not required:
+        return ()
+    raw_names = data.get(key)
+    if not isinstance(raw_names, list):
+        raise ValueError(f"{path}: {key} must be an array")
+
+    names: list[str] = []
+    seen: set[str] = set()
+    for index, value in enumerate(raw_names):
+        if not isinstance(value, str) or not value or value.strip() != value:
+            raise ValueError(
+                f"{path}: {key}[{index}] must be a non-empty trimmed string"
+            )
+        validate_skill_name(value, f"{path}: {key}[{index}]")
+        if value in seen:
+            raise ValueError(f"{path}: duplicate {label} skill name: {value}")
+        seen.add(value)
+        names.append(value)
+    return tuple(names)
+
+
+def validate_source_preferences(raw: object) -> dict[str, dict]:
+    """Validate exact per-name exceptions; no implicit ordering or fallback."""
+    if not isinstance(raw, dict):
+        raise ValueError("source_preferences must be an object")
+    preferences = {}
+    for name, rule in raw.items():
+        if not isinstance(name, str):
+            raise ValueError("source_preferences keys must be skill names")
+        validate_skill_name(name, "source_preferences")
+        if not isinstance(rule, dict) or set(rule) != {"prefer", "over"}:
+            raise ValueError(f"source_preferences[{name!r}] requires exactly prefer and over")
+        over = rule["over"]
+        if not isinstance(over, list) or not over:
+            raise ValueError(f"source_preferences[{name!r}].over must be a non-empty array")
+        identities = [rule["prefer"], *over]
+        for identity in identities:
+            if not isinstance(identity, str) or identity.count("@") != 1:
+                raise ValueError(f"source_preferences[{name!r}]: invalid qualified plugin identity {identity!r}")
+            plugin, market = identity.split("@")
+            validate_skill_name(plugin, f"source_preferences[{name!r}]: plugin")
+            if market not in LOCAL_MARKETPLACE_NAMES:
+                raise ValueError(f"source_preferences[{name!r}]: unknown managed marketplace {market!r}")
+        if len(set(identities)) != len(identities):
+            raise ValueError(f"source_preferences[{name!r}]: duplicate plugin identity")
+        preferences[name] = {"prefer": rule["prefer"], "over": sorted(over)}
+    return preferences
+
+
+def _unique_policy_keys(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"activation manifest: duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
+def load_skill_activation_policy(path: Path) -> SkillActivationPolicy:
+    """Read active user Skills and the bounded legacy compatibility subset."""
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"active-skill manifest is missing: {path}. "
+            "Create it from assets/templates/codex-active-skills.json before syncing."
+        )
+    with path.open(encoding="utf-8") as fh:
+        data = json.load(fh, object_pairs_hook=_unique_policy_keys)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: root must be an object")
+    # Deploy the reader before upgrading policy: older readers reject v3 rather
+    # than silently ignoring a source choice. Existing v1/v2 policies still work.
+    version = data.get("schema_version")
+    if type(version) is not int or version not in (1, 2, ACTIVE_SKILLS_SCHEMA_VERSION):
+        raise ValueError(f"{path}: schema_version must be 1, 2 or {ACTIVE_SKILLS_SCHEMA_VERSION}")
+    if version < 3 and "source_preferences" in data:
+        raise ValueError(f"{path}: source_preferences requires schema_version 3")
+    if version == 3:
+        allowed = {"schema_version", "active_skills", "legacy_codex_compat_skills",
+                   "active_marketplaces", "claude_active_marketplaces", "include_skills",
+                   "exclude_skills", "source_preferences"}
+        unknown = sorted(set(data) - allowed)
+        if unknown:
+            raise ValueError(f"{path}: unknown activation fields: {', '.join(unknown)}")
+    preferences = validate_source_preferences(data.get("source_preferences", {}))
+    active_names = _load_skill_name_array(
+        data,
+        path,
+        "active_skills",
+        "active",
+        required=True,
+    )
+    legacy_names = _load_skill_name_array(
+        data,
+        path,
+        "legacy_codex_compat_skills",
+        "legacy Codex compatibility",
+        required=False,
+    )
+    active_marketplaces = _load_skill_name_array(
+        data,
+        path,
+        "active_marketplaces",
+        "active marketplace",
+        required=False,
+    )
+    claude_marketplaces = _load_skill_name_array(
+        data, path, "claude_active_marketplaces", "Claude active marketplace", required=False,
+    )
+    include_names = _load_skill_name_array(
+        data, path, "include_skills", "included skill", required=False,
+    )
+    exclude_names = _load_skill_name_array(
+        data, path, "exclude_skills", "excluded skill", required=False,
+    )
+    unknown_marketplaces = sorted(
+        (set(active_marketplaces) | set(claude_marketplaces)) - set(LOCAL_MARKETPLACE_NAMES)
+    )
+    if unknown_marketplaces:
+        raise ValueError(
+            f"{path}: active_marketplaces and claude_active_marketplaces must name managed marketplaces "
+            f"({', '.join(LOCAL_MARKETPLACE_NAMES)}); unknown: "
+            f"{', '.join(unknown_marketplaces)}"
+        )
+    overlapping = sorted(set(include_names) & set(exclude_names))
+    if overlapping:
+        raise ValueError(
+            f"{path}: include_skills and exclude_skills must not overlap; "
+            f"conflicts: {', '.join(overlapping)}"
+        )
+    return SkillActivationPolicy(
+        active_names=active_names,
+        legacy_codex_compat_names=legacy_names,
+        active_marketplaces=active_marketplaces,
+        claude_active_marketplaces=claude_marketplaces,
+        include_skills=include_names,
+        exclude_skills=exclude_names,
+        source_preferences=preferences,
+    )
+
+
+def load_active_skill_names(path: Path) -> tuple[str, ...]:
+    """Backward-compatible reader for callers that only need the active set."""
+    return load_skill_activation_policy(path).active_names
+
+
+def write_json(path: Path, data: object, apply: bool) -> None:
+    if not apply:
+        log(f"DRY write JSON: {path}")
+        return
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
+def marketplace_name(repo: Path) -> str | None:
+    """Name the marketplace a repo declares, or None when it has no manifest.
+
+    None means only "no .claude-plugin/marketplace.json here" — the state
+    discovery must stay silent for, because infer_repos() walks it past every
+    parent directory of its own script path. A manifest that exists but cannot
+    be read, and one that reads whole without a usable name, both raise: folding
+    either into the same None is how a repo disappeared from discovery and the
+    later hard check reported "not discovered" against the wrong cause.
+    """
+    manifest = repo / ".claude-plugin" / "marketplace.json"
+    # Not is_file(): a dangling symlink and a manifest that is itself a directory
+    # both make is_file() answer False — the "no manifest" answer — so the repo
+    # would vanish from discovery silently and the misleading "not discovered"
+    # error stays reachable. Whether the path exists at all is what separates the
+    # two states, and os.lstat is asked directly because os.path.lexists() would
+    # swallow EACCES into that same False (see below).
+    try:
+        os.lstat(manifest)
+    except (FileNotFoundError, NotADirectoryError):
+        # Genuinely not there: no .claude-plugin, or .claude-plugin is a plain
+        # file. This is the one state that stays silent.
+        return None
+    except OSError as exc:
+        # EACCES and friends: the path may well exist and could not be looked at.
+        # Path.is_file() raises here; os.path.lexists() would answer False, which
+        # is the "no manifest" answer, and the repo would silently disappear from
+        # discovery — the exact door this function stops leaving open.
+        raise UnreadableMarketplaceManifest(
+            f"{Path(os.path.abspath(manifest))}: could not be checked "
+            f"({type(exc).__name__}: {exc}). A manifest that cannot be looked at "
+            "is not the same as a manifest that is absent, so it is not skipped "
+            "silently. Check that checkout's ownership and permissions, then run "
+            "the sync again."
+        ) from exc
+    where = Path(os.path.abspath(manifest))
+    try:
+        data = load_json(manifest)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # UnicodeDecodeError is a ValueError, not an OSError or JSONDecodeError,
+        # so it escaped the first cut of this handler and propagated with no
+        # manifest path at all — the worst message shape of any case here. It is
+        # also the realistic one for a torn write of a manifest full of CJK text:
+        # truncating mid-multibyte-character fails to decode before json parses.
+        raise UnreadableMarketplaceManifest(
+            f"{where}: marketplace manifest exists but could not be read "
+            f"({type(exc).__name__}: {exc}). A manifest that exists does not make "
+            "this a repo without one, so it cannot be skipped silently. A read that "
+            "fails only because a writer is mid-flight clears on its own, so one "
+            "retry after that writer finishes is worth doing. If it stays "
+            "unreadable the file is corrupt in that checkout and has to be repaired "
+            "there. A concurrent writer rewriting the file in place is a common "
+            "cause, and in a shared checkout a git branch switch is one of those: "
+            "measured on a 160 KB CJK manifest, a concurrent reader saw torn reads "
+            "and momentary FileNotFoundError while a switch was in flight, because "
+            "git unlinks and rewrites rather than swapping atomically. That names a "
+            "class of writer, not the cause of this particular read — no writer is "
+            "established by the read having failed."
+        ) from exc
+    if not isinstance(data, dict):
+        raise InvalidMarketplaceManifest(
+            f"{where}: marketplace manifest parses as {type(data).__name__}, not a "
+            "JSON object declaring a marketplace name. The file itself is malformed "
+            "in that checkout and retrying will not help: restore it from git there "
+            "and run the sync again."
+        )
+    market = data.get("name")
+    if not isinstance(market, str) or not market:
+        # Same "usable name" judgement load_marketplace() applies: an empty name
+        # is as unusable as a missing one, and "" is not in LOCAL_MARKETPLACE_NAMES,
+        # so returning it would send add_repo() down the silent-skip path again.
+        if "name" not in data:
+            declared = "the name key is absent"
+        elif not isinstance(market, str):
+            declared = f"name is a {type(market).__name__}"
+        else:
+            declared = "name is an empty string"
+        raise InvalidMarketplaceManifest(
+            f"{where}: marketplace manifest declares no usable name ({declared}). "
+            "The file itself is malformed in that checkout and retrying will not "
+            "help: it must declare a non-empty string name; restore or repair it "
+            "there and run the sync again."
+        )
+    return market
+
+
+def add_repo(repos: list[Path], candidate: Path) -> None:
+    candidate = candidate.expanduser().resolve()
+    if not candidate.is_dir():
+        return
+    name = marketplace_name(candidate)
+    if name not in LOCAL_MARKETPLACE_NAMES:
+        return
+    for existing in repos:
+        try:
+            if existing.samefile(candidate):
+                return
+        except OSError:
+            pass
+    if candidate not in repos:
+        repos.append(candidate)
+
+
+def infer_repos(script_path: Path, claude_dir: Path) -> list[Path]:
+    repos: list[Path] = []
+
+    env_repos = os.environ.get("DAYMADE_SKILL_SOURCE_REPOS")
+    if env_repos:
+        for raw in env_repos.split(os.pathsep):
+            if raw.strip():
+                add_repo(repos, Path(raw.strip()))
+
+    resolved_script = script_path.resolve()
+    for parent in resolved_script.parents:
+        if marketplace_name(parent) in LOCAL_MARKETPLACE_NAMES:
+            add_repo(repos, parent)
+            break
+
+    for repo in list(repos):
+        if repo.name == "claude-code-skills":
+            add_repo(repos, repo.parent / "claude-code-skills-pro")
+
+    known = claude_dir / "plugins" / "known_marketplaces.json"
+    if known.is_file():
+        data = load_json(known)
+        if isinstance(data, dict):
+            for name in LOCAL_MARKETPLACE_NAMES:
+                entry = data.get(name)
+                if not isinstance(entry, dict):
+                    continue
+                source = entry.get("source")
+                path = None
+                if isinstance(source, dict) and source.get("source") == "directory":
+                    path = source.get("path")
+                if not path and isinstance(entry.get("installLocation"), str):
+                    path = entry["installLocation"]
+                if isinstance(path, str):
+                    add_repo(repos, Path(path))
+
+    for base in [
+        HOME / "workspace" / "md",
+        HOME / "Workspace" / "md",
+        HOME / "workspace",
+        HOME / "Workspace",
+    ]:
+        add_repo(repos, base / "claude-code-skills")
+        add_repo(repos, base / "claude-code-skills-pro")
+        add_repo(repos, base / "cemakanshan-skills")
+
+    if not repos:
+        raise RuntimeError(
+            "Could not locate local daymade skill source repos. "
+            "Pass --repo <path> or set DAYMADE_SKILL_SOURCE_REPOS."
+        )
+    return repos
+
+
+def checkout_head_hint(repo: Path) -> str | None:
+    """Say what a source checkout currently has checked out, without running git.
+
+    Reads the plain-text HEAD of a repository or of a linked worktree (whose
+    ``.git`` is a file naming the real git dir). Returns ``branch <name>``,
+    ``detached <sha>``, or None when the directory is not a readable checkout.
+    Diagnostic only: nothing is decided from the answer.
+    """
+    dot_git = repo / ".git"
+    try:
+        if dot_git.is_dir():
+            git_dir = dot_git
+        elif dot_git.is_file():
+            first = dot_git.read_text(encoding="utf-8").splitlines()[:1]
+            if not first or not first[0].startswith("gitdir:"):
+                return None
+            git_dir = Path(first[0].split(":", 1)[1].strip())
+            if not git_dir.is_absolute():
+                git_dir = (repo / git_dir).resolve()
+        else:
+            return None
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeDecodeError):
+        return None
+    if head.startswith("ref: refs/heads/"):
+        return f"branch {head[len('ref: refs/heads/'):]}"
+    if head.startswith("ref: "):
+        return f"ref {head[len('ref: '):]}"
+    return f"detached {head[:12]}" if head else None
+
+
+def frontmatter_name(skill_md: Path) -> str | None:
+    try:
+        lines = skill_md.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        if line.startswith("name:"):
+            return line.split(":", 1)[1].strip().strip("\"'")
+    return None
+
+
+def resolve_marketplace_source_path(candidate: Path, repo: Path, context: str) -> Path:
+    """Resolve one registered source and reject lexical or symlink escape."""
+    repo_root = repo.resolve(strict=True)
+    try:
+        resolved = candidate.resolve(strict=True)
+    except OSError as exc:
+        raise ValueError(f"{context}: source path is missing: {candidate}") from exc
+    try:
+        resolved.relative_to(repo_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"{context}: source path escapes marketplace repo {repo_root}: {resolved}"
+        ) from exc
+    return resolved
+
+
+def load_marketplace(repo: Path) -> MarketplaceSource:
+    repo = repo.resolve(strict=True)
+    manifest = repo / ".claude-plugin" / "marketplace.json"
+    try:
+        data = load_json(manifest)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # Same three-way catch marketplace_name() uses, so an explicitly
+        # requested --repo reports the manifest it could not read by path
+        # instead of letting a UnicodeDecodeError through unnamed.
+        raise ValueError(
+            f"{manifest}: could not be read ({type(exc).__name__}: {exc})"
+        ) from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"{manifest}: root must be an object")
+    market = data.get("name")
+    if not isinstance(market, str) or not market:
+        raise ValueError(f"{manifest}: missing marketplace name")
+
+    plugins: dict[str, PluginSource] = {}
+    skills: dict[str, SkillSource] = {}
+
+    def register_skill(skill: SkillSource) -> None:
+        validate_skill_name(skill.name, f"{skill.source_dir / 'SKILL.md'}: name")
+        previous = skills.get(skill.name)
+        if previous is not None:
+            raise ValueError(
+                f"{manifest}: duplicate source skill name {skill.name!r}: "
+                f"{previous.source_dir} ({previous.plugin_id}) and "
+                f"{skill.source_dir} ({skill.plugin_id})"
+            )
+        skills[skill.name] = skill
+
+    def marketplace_skill_source(
+        skill_name: str,
+        skill_dir: Path,
+        plugin_id: str,
+    ) -> SkillSource:
+        observed = os.stat(skill_dir, follow_symlinks=False)
+        if not stat.S_ISDIR(observed.st_mode):
+            raise NotADirectoryError(
+                f"registered Skill source is not a directory: {skill_dir}"
+            )
+        return SkillSource(
+            skill_name,
+            skill_dir,
+            plugin_id,
+            repo_root=repo,
+            identity=(observed.st_dev, observed.st_ino),
+        )
+
+    for item in data.get("plugins", []):
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        version = item.get("version")
+        source = item.get("source")
+        if not all(isinstance(x, str) and x for x in [name, version, source]):
+            continue
+        source_dir = resolve_marketplace_source_path(
+            repo / source,
+            repo,
+            f"{manifest}: plugin {name}",
+        )
+        plugin = PluginSource(market, name, version, source_dir)
+        if plugin.plugin_id in plugins:
+            raise ValueError(f"{manifest}: duplicate plugin name: {name}")
+        plugins[plugin.plugin_id] = plugin
+
+        skill_paths = item.get("skills")
+        if isinstance(skill_paths, list) and skill_paths:
+            for rel in skill_paths:
+                if not isinstance(rel, str):
+                    continue
+                skill_dir = resolve_marketplace_source_path(
+                    source_dir / rel,
+                    repo,
+                    f"{manifest}: plugin {name} skill {rel}",
+                )
+                skill_md = skill_dir / "SKILL.md"
+                if not skill_md.is_file():
+                    continue
+                skill_name = frontmatter_name(skill_md) or skill_dir.name
+                register_skill(
+                    marketplace_skill_source(
+                        skill_name,
+                        skill_dir,
+                        plugin.plugin_id,
+                    )
+                )
+        else:
+            skill_md = source_dir / "SKILL.md"
+            if skill_md.is_file():
+                skill_name = frontmatter_name(skill_md) or name
+                register_skill(
+                    marketplace_skill_source(
+                        skill_name,
+                        source_dir,
+                        plugin.plugin_id,
+                    )
+                )
+
+    return MarketplaceSource(market, repo, plugins, skills)
+
+
+def merge_source_skills(
+    sources: list[MarketplaceSource],
+    source_preferences: dict[str, dict] | None = None,
+) -> dict[str, SkillSource]:
+    """Resolve source identities once, allowing only exact declared collisions.
+
+    A preference must account for the complete candidate set and its preferred
+    plugin must register that Skill. Missing/extra candidates fail, even for cold
+    names. Multiple checkouts of one marketplace remain ambiguous and fail.
+    """
+    preferences = validate_source_preferences(
+        {} if source_preferences is None else source_preferences
+    )
+    candidates: dict[str, dict[str, SkillSource]] = {}
+    marketplaces: set[str] = set()
+    for source in sources:
+        if source.name in marketplaces:
+            raise ValueError(f"duplicate marketplace identity: {source.name}")
+        marketplaces.add(source.name)
+        for name, skill in source.skills.items():
+            candidates.setdefault(name, {})[skill.plugin_id] = skill
+    for name, rule in preferences.items():
+        actual = set(candidates.get(name, {}))
+        expected = {rule["prefer"], *rule["over"]}
+        if actual != expected:
+            raise ValueError(
+                f"source_preferences[{name!r}]: candidate mismatch; "
+                f"missing: {sorted(expected - actual)}; unexpected: {sorted(actual - expected)}"
+            )
+    merged = {}
+    for name, choices in candidates.items():
+        if name in preferences:
+            merged[name] = choices[preferences[name]["prefer"]]
+        elif len(choices) == 1:
+            merged[name] = next(iter(choices.values()))
+        else:
+            details = ", ".join(f"{s.source_dir} ({s.plugin_id})" for s in choices.values())
+            raise ValueError(f"duplicate source skill name {name!r}: {details}")
+    return merged
+
+
+def resolve_activation(
+    policy: SkillActivationPolicy,
+    skills: dict[str, SkillSource],
+    sources: list[MarketplaceSource],
+) -> tuple[frozenset[str], tuple[str, ...]]:
+    """Return the final active skill name set and any unresolved references.
+
+    Resolution order:
+    1. explicit ``active_skills``
+    2. whole active marketplaces
+    3. ``include_skills``
+    4. ``legacy_codex_compat_skills``
+
+    Any name in ``exclude_skills`` is removed even if it would otherwise
+    have been activated by the above rules. Unresolved names in every
+    category are returned separately and must be reported by the caller.
+    """
+    selected: dict[str, SkillSource] = {}
+    unresolved: list[str] = []
+
+    def absorb(names: tuple[str, ...], *, label: str) -> None:
+        picked, skipped = select_active_skills(skills, names)
+        if skipped:
+            unresolved.extend(skipped)
+        selected.update(picked)
+
+    absorb(policy.active_names, label="active_skills")
+    whole_marketplace_names = tuple(
+        name
+        for src in sources
+        if src.name in policy.active_marketplaces
+        for name in src.skills
+    )
+    absorb(whole_marketplace_names, label="active_marketplaces")
+    absorb(policy.include_skills, label="include_skills")
+    absorb(policy.legacy_codex_compat_names, label="legacy_codex_compat_skills")
+
+    for name in policy.exclude_skills:
+        if name in selected:
+            del selected[name]
+
+    return frozenset(selected), tuple(sorted(set(unresolved)))
+
+
+def select_active_skills(
+    skills: dict[str, SkillSource],
+    names: tuple[str, ...],
+) -> tuple[dict[str, SkillSource], tuple[str, ...]]:
+    """Split requested names into resolvable sources and names no source registers.
+
+    An unresolved name does not abort the pass. The manifest is written against
+    the marketplace as published, while the syncer reads a working tree that may
+    sit on a branch predating the skill: a merged skill then stays invisible until
+    that checkout catches up. Refusing the whole pass here froze every other link,
+    and the daemon's enabledPlugins mirror queued behind it, until a human noticed
+    (2026-09-05). Skipping the name keeps the rest converging and links the skill
+    on the first pass after it becomes resolvable. A misspelled or retired name
+    shows the same symptom and is reported the same way on every pass until the
+    manifest is corrected. Callers must surface the second element.
+    """
+    unresolved = tuple(name for name in names if name not in skills)
+    selected = {name: skills[name] for name in names if name in skills}
+    return selected, unresolved
+
+
+def report_unresolved_active_names(
+    unresolved: tuple[str, ...],
+    sources: list[MarketplaceSource],
+    manifest: Path,
+) -> None:
+    """Name what was skipped and what each checkout had checked out at the time."""
+    if not unresolved:
+        return
+    warn(
+        f"{manifest}: {len(unresolved)} active skill name(s) registered by no "
+        f"discovered source checkout; skipped this pass: {', '.join(unresolved)}"
+    )
+    for src in sources:
+        hint = checkout_head_hint(src.repo)
+        state = f" ({hint})" if hint else ""
+        warn(f"  scanned {src.name}: {src.repo}{state}")
+    warn(
+        "  a checkout on a branch that predates the skill links it on the first "
+        "pass after it catches up; a misspelled or retired name repeats this "
+        "warning until the manifest is corrected"
+    )
+
+
+def freeze_selected_skill_sources(
+    skills: dict[str, SkillSource],
+) -> dict[str, SkillSource]:
+    """Resolve each selected source once and bind it to the observed directory inode."""
+    frozen: dict[str, SkillSource] = {}
+    for name, skill in sorted(skills.items()):
+        if skill.repo_root is not None:
+            source = resolve_marketplace_source_path(
+                skill.source_dir,
+                skill.repo_root,
+                f"selected Skill {name}",
+            )
+        else:
+            source = skill.source_dir.resolve(strict=True)
+        observed = os.stat(source, follow_symlinks=False)
+        if not stat.S_ISDIR(observed.st_mode):
+            raise NotADirectoryError(f"selected Skill source is not a directory: {source}")
+        current_identity = (observed.st_dev, observed.st_ino)
+        if skill.identity is not None and current_identity != skill.identity:
+            raise RuntimeError(
+                "selected Skill source changed after marketplace validation: "
+                f"{source}"
+            )
+        frozen[name] = SkillSource(
+            name=skill.name,
+            source_dir=source,
+            plugin_id=skill.plugin_id,
+            repo_root=skill.repo_root,
+            identity=current_identity,
+        )
+    return frozen
+
+
+def expected_skill_source_path(skill: SkillSource) -> Path:
+    """Return one frozen source path, failing if its observed inode changed."""
+    if skill.identity is None:
+        return skill.source_dir.resolve(strict=True)
+    try:
+        observed = os.stat(skill.source_dir, follow_symlinks=False)
+    except OSError as exc:
+        raise RuntimeError(
+            f"selected Skill source changed after it was frozen: {skill.source_dir}"
+        ) from exc
+    if (
+        not stat.S_ISDIR(observed.st_mode)
+        or (observed.st_dev, observed.st_ino) != skill.identity
+    ):
+        raise RuntimeError(
+            f"selected Skill source changed after it was frozen: {skill.source_dir}"
+        )
+    return skill.source_dir
+
+
+def assert_selected_skill_sources(skills: dict[str, SkillSource]) -> None:
+    for skill in skills.values():
+        expected_skill_source_path(skill)
+
+
+def ensure_parent(path: Path, apply: bool) -> None:
+    if apply:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def backup_path(dest: Path, root: Path, stamp: str) -> Path:
+    return root / ".source-sync-backups" / stamp / dest.name
+
+
+def prune_json_backups(installed_path: Path, keep: int, apply: bool) -> None:
+    """Drop all but the newest `keep` installed_plugins.json backups.
+
+    Every run that changes the JSON writes one backup and nothing ever removed
+    them: one month of runs left 453 files / 21 MB behind. Names end in a
+    YYYYMMDD-HHMMSS stamp, so lexical sort is chronological.
+    """
+    if keep < 0:
+        return
+    prefix = f"{installed_path.name}.source-sync-backup-"
+    backups = sorted(p for p in installed_path.parent.glob(f"{prefix}*") if p.is_file())
+    for stale in backups[: len(backups) - keep] if keep else backups:
+        if apply:
+            stale.unlink()
+        else:
+            log(f"DRY prune JSON backup: {stale}")
+
+
+def replace_with_symlink(dest: Path, src: Path, backup_root: Path, stamp: str, apply: bool) -> str:
+    src = src.resolve()
+    if dest.is_symlink():
+        try:
+            if dest.resolve() == src:
+                return "already-linked"
+        except OSError:
+            pass
+        action = f"replace symlink {dest} -> {src}"
+        if apply:
+            dest.unlink()
+            ensure_parent(dest, apply=True)
+            try:
+                dest.symlink_to(src, target_is_directory=src.is_dir())
+            except FileExistsError:
+                if dest.is_symlink() and dest.resolve() == src:
+                    return "already-linked"
+                raise
+        return action
+
+    if dest.exists():
+        bak = backup_path(dest, backup_root, stamp)
+        action = f"backup {dest} -> {bak}; link -> {src}"
+        if apply:
+            ensure_parent(bak, apply=True)
+            if bak.exists():
+                raise FileExistsError(f"backup already exists: {bak}")
+            shutil.move(str(dest), str(bak))
+            ensure_parent(dest, apply=True)
+            try:
+                dest.symlink_to(src, target_is_directory=src.is_dir())
+            except FileExistsError:
+                if dest.is_symlink() and dest.resolve() == src:
+                    return "already-linked"
+                raise
+        return action
+
+    action = f"create link {dest} -> {src}"
+    if apply:
+        ensure_parent(dest, apply=True)
+        try:
+            dest.symlink_to(src, target_is_directory=src.is_dir())
+        except FileExistsError:
+            if dest.is_symlink() and dest.resolve() == src:
+                return "already-linked"
+            raise
+    return action
+
+
+def prune_stale_version_links(dest: Path, source_dir: Path, apply: bool) -> None:
+    """Drop sibling version links that resolve to the same local source as `dest`.
+
+    Each cache link is named after the marketplace's current version, so every
+    version bump leaves the previous link behind pointing at the very same
+    directory. Nothing ever removed them: one plugin had six version dirs, four
+    of which were aliases for a single source. They cost no disk but they do
+    pollute every grep across the cache, and reading an alias feels like reading
+    a distinct version.
+
+    Only symlinks resolving to `source_dir` are removed. Real directories are
+    installed by Claude Code itself and may still be referenced by live sessions
+    through .in_use, so they are never touched here.
+    """
+    parent = dest.parent
+    if not parent.is_dir():
+        return
+    try:
+        src = source_dir.resolve()
+    except OSError:
+        return
+    for sibling in sorted(parent.iterdir()):
+        if sibling == dest or not sibling.is_symlink():
+            continue
+        try:
+            if sibling.resolve() != src:
+                continue
+        except (OSError, RuntimeError):
+            continue
+        log(f"claude cache {parent.name}: prune stale version link {sibling.name}")
+        if apply:
+            sibling.unlink()
+
+
+def path_is_under(path: Path, roots: list[Path]) -> bool:
+    try:
+        resolved = path.resolve()
+    except OSError:
+        resolved = path.absolute()
+    for root in roots:
+        try:
+            resolved.relative_to(root.resolve())
+            return True
+        except (OSError, ValueError):
+            continue
+    return False
+
+
+def sync_known_marketplaces(claude_dir: Path, sources: list[MarketplaceSource], apply: bool) -> None:
+    path = claude_dir / "plugins" / "known_marketplaces.json"
+    data = load_json(path)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: root must be an object")
+    changed = False
+    for src in sources:
+        desired = {
+            "source": {"source": "directory", "path": str(src.repo)},
+            "installLocation": str(src.repo),
+            "autoUpdate": True,
+        }
+        current = data.get(src.name)
+        current_stable = {
+            key: current.get(key)
+            for key in desired
+        } if isinstance(current, dict) else None
+        if current_stable != desired:
+            log(f"marketplace {src.name}: set source -> {src.repo}")
+            data[src.name] = {
+                **desired,
+                "lastUpdated": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
+            }
+            changed = True
+    if changed:
+        write_json(path, data, apply)
+
+
+def sync_claude_cache(
+    claude_dir: Path,
+    sources: list[MarketplaceSource],
+    stamp: str,
+    apply: bool,
+) -> None:
+    installed_path = claude_dir / "plugins" / "installed_plugins.json"
+    installed = load_json(installed_path)
+    if not isinstance(installed, dict) or not isinstance(installed.get("plugins"), dict):
+        raise ValueError(f"{installed_path}: missing plugins object")
+
+    source_plugins = {pid: plugin for src in sources for pid, plugin in src.plugins.items()}
+    records = installed["plugins"]
+    changed_json = False
+    for plugin_id, plugin in sorted(source_plugins.items()):
+        versions = records.get(plugin_id)
+        if not isinstance(versions, list) or not versions:
+            log(f"claude cache {plugin_id}: not installed; skip")
+            continue
+        latest = versions[-1]
+        if not isinstance(latest, dict):
+            continue
+        dest = claude_dir / "plugins" / "cache" / plugin.marketplace / plugin.name / plugin.version
+        action = replace_with_symlink(
+            dest,
+            plugin.source_dir,
+            dest.parent,
+            stamp,
+            apply,
+        )
+        if action != "already-linked":
+            log(f"claude cache {plugin_id}: {action}")
+        prune_stale_version_links(dest, plugin.source_dir, apply)
+        desired_install = str(dest)
+        if latest.get("version") != plugin.version or latest.get("installPath") != desired_install:
+            log(
+                f"installed_plugins {plugin_id}: "
+                f"{latest.get('version')} -> {plugin.version}"
+            )
+            latest["version"] = plugin.version
+            latest["installPath"] = desired_install
+            changed_json = True
+    if changed_json:
+        backup = installed_path.with_name(f"installed_plugins.json.source-sync-backup-{stamp}")
+        if apply:
+            shutil.copy2(installed_path, backup)
+        else:
+            log(f"DRY backup JSON: {installed_path} -> {backup}")
+        prune_json_backups(installed_path, KEEP_JSON_BACKUPS, apply)
+        write_json(installed_path, installed, apply)
+
+
+def select_claude_direct_skills(
+    skills: dict[str, SkillSource], claude_dir: Path, root: Path,
+) -> dict[str, SkillSource]:
+    """Fill missing personal entries without bypassing disabled/plugin entries."""
+    installed_path = claude_dir / "plugins" / "installed_plugins.json"
+    installed = load_json(installed_path) if installed_path.exists() else {"plugins": {}}
+    settings_path = claude_dir / "settings.json"
+    settings = load_json(settings_path) if settings_path.exists() else {}
+    if not isinstance(installed, dict) or not isinstance(installed.get("plugins"), dict):
+        raise ValueError(f"invalid installed plugin registry: {installed_path}")
+    if not isinstance(settings, dict) or not isinstance(settings.get("enabledPlugins", {}), dict):
+        raise ValueError(f"invalid enabledPlugins settings: {settings_path}")
+    enabled = settings.get("enabledPlugins", {})
+    selected = {}
+    for name, skill in skills.items():
+        existing = root / name
+        if existing.is_symlink() and existing.resolve() == expected_skill_source_path(skill):
+            # A direct skill is an independent route. Disabling its plugin may
+            # deliberately avoid a duplicate, not disable this existing route.
+            selected[name] = skill
+            continue
+        state = enabled.get(skill.plugin_id)
+        if state is False:
+            log(f"Claude skill {name}: explicitly disabled; no direct entry")
+            continue
+        records = installed["plugins"].get(skill.plugin_id, [])
+        if not isinstance(records, list):
+            raise ValueError(f"invalid installed records for {skill.plugin_id}")
+        if records:
+            if state is not True:
+                # Do not reinterpret a missing profile setting as enable consent.
+                warn(f"Claude plugin {skill.plugin_id}: enabled state unknown; no direct entry")
+                continue
+            # Only user-scope installs cover every cwd where a personal skill loads.
+            user_records = [r for r in records if isinstance(r, dict) and r.get("scope") == "user"]
+            if user_records:
+                plugin = user_records[-1]
+                install_path = plugin.get("installPath")
+                if not isinstance(install_path, str) or not Path(install_path).is_dir():
+                    raise ValueError(f"Claude plugin install is missing: {skill.plugin_id}")
+                log(f"Claude skill {name}: provided by enabled user plugin")
+                continue
+            raise ValueError(f"Claude plugin {skill.plugin_id}: scoped install conflicts with personal activation")
+        selected[name] = skill
+    return selected
+
+
+def sync_skill_root(
+    root: Path,
+    skills: dict[str, SkillSource],
+    source_roots: list[Path],
+    stamp: str,
+    apply: bool,
+    create_missing: bool,
+    pinned_root: PinnedSkillRoot | None = None,
+) -> None:
+    configured = absolute_without_symlink_resolution(root)
+    if not apply:
+        if not os.path.lexists(configured):
+            log(f"skill root missing: {configured}; would create")
+        desired_names = set(skills)
+        for name, skill in sorted(skills.items()):
+            dest = configured / name
+            if not create_missing and not (dest.exists() or dest.is_symlink()):
+                continue
+            expected = expected_skill_source_path(skill)
+            if dest.is_symlink():
+                raw_target = os.readlink(dest)
+                target = (
+                    Path(raw_target).resolve(strict=False)
+                    if os.path.isabs(raw_target)
+                    else None
+                )
+                if target == expected:
+                    action = "already-linked"
+                elif target is not None and path_is_under(target, source_roots):
+                    action = (
+                        "would backup existing managed-source symlink; "
+                        f"link -> {expected}"
+                    )
+                else:
+                    raise RuntimeError(
+                        "selected agents Skill path is a third-party, relative, or "
+                        f"unresolved symlink; refusing to replace it: {dest}"
+                    )
+            elif dest.exists():
+                kind = "directory" if dest.is_dir() else "file"
+                raise RuntimeError(
+                    f"selected agents Skill path is a real {kind}; refusing to "
+                    f"replace it: {dest}"
+                )
+            else:
+                action = f"would create link {dest} -> {expected}"
+            if action != "already-linked":
+                log(f"{configured.name} skill {name}: {action}")
+        if configured.is_dir() and not configured.is_symlink():
+            for dest in sorted(configured.iterdir()):
+                if dest.name in desired_names or not dest.is_symlink():
+                    continue
+                try:
+                    target = dest.resolve()
+                except (OSError, RuntimeError):
+                    continue
+                if path_is_under(target, source_roots):
+                    log(
+                        f"{configured.name} skill {dest.name}: "
+                        f"would prune stale managed symlink -> {target}"
+                    )
+        return
+
+    if pinned_root is None:
+        with pin_skill_root(
+            configured,
+            label="skill root",
+            apply=True,
+            create_missing=create_missing,
+        ) as opened:
+            if opened is None:
+                raise FileNotFoundError(f"skill root is missing: {configured}")
+            _sync_pinned_skill_root(
+                opened,
+                skills,
+                source_roots,
+                stamp,
+                create_missing,
+            )
+        return
+    _sync_pinned_skill_root(
+        pinned_root,
+        skills,
+        source_roots,
+        stamp,
+        create_missing,
+    )
+
+
+def _sync_pinned_skill_root(
+    root: PinnedSkillRoot,
+    skills: dict[str, SkillSource],
+    source_roots: list[Path],
+    stamp: str,
+    create_missing: bool,
+) -> None:
+    root.assert_visible()
+    desired_names = set(skills)
+    for name, skill in sorted(skills.items()):
+        expected = expected_skill_source_path(skill)
+        snapshot = capture_entry_snapshot(root, name)
+        if snapshot is None:
+            if not create_missing:
+                continue
+            log(f"{root.path.name} skill {name}: create link {root.path / name} -> {expected}")
+            try:
+                create_pinned_symlink(root, name, expected)
+            except FileExistsError as exc:
+                raise RuntimeError(
+                    f"skill path appeared during sync; refusing to replace it: {root.path / name}"
+                ) from exc
+            continue
+
+        if not snapshot.is_symlink:
+            current_mode = snapshot.signature[2]
+            kind = "directory" if stat.S_ISDIR(int(current_mode)) else "file"
+            raise RuntimeError(
+                f"selected agents Skill path is a real {kind}; refusing to "
+                f"replace it: {root.path / name}"
+            )
+        if snapshot.absolute_link_target == expected:
+            continue
+        if (
+            snapshot.absolute_link_target is None
+            or not path_is_under(snapshot.absolute_link_target, source_roots)
+        ):
+            raise RuntimeError(
+                "selected agents Skill path is a third-party, relative, or "
+                f"unresolved symlink; refusing to replace it: {root.path / name}"
+            )
+        action = "backup existing managed-source symlink"
+        log(f"{root.path.name} skill {name}: {action}; link -> {expected}")
+        backup = move_pinned_entry_to_backup(
+            root,
+            name,
+            stamp,
+            snapshot.signature,
+        )
+        try:
+            create_pinned_symlink(root, name, expected)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                "skill path appeared after backup; refusing to replace it; "
+                f"previous entry retained at {backup}: {root.path / name}"
+            ) from exc
+
+    _verify_selected_skill_links_pinned(root, skills)
+
+    for entry in sorted(os.scandir(root.fd), key=lambda item: item.name):
+        name = entry.name
+        if name in desired_names:
+            continue
+        snapshot = capture_entry_snapshot(root, name)
+        if snapshot is None or not snapshot.is_symlink:
+            continue
+        target = snapshot.absolute_link_target
+        if target is None or not path_is_under(target, source_roots):
+            continue
+        log(
+            f"{root.path.name} skill {name}: prune stale managed symlink -> {target}"
+        )
+        try:
+            backup = move_pinned_entry_to_backup(
+                root,
+                name,
+                stamp,
+                snapshot.signature,
+            )
+        except EntryChangedAndRestored:
+            log(
+                f"{root.path.name} skill {name}: changed during stale pruning; "
+                "concurrent entry restored and preserved"
+            )
+            continue
+        log(f"{root.path.name} skill {name}: pruned link retained at {backup}")
+
+    _verify_selected_skill_links_pinned(root, skills)
+    root.assert_visible()
+
+
+def _verify_selected_skill_links_pinned(
+    root: PinnedSkillRoot,
+    skills: dict[str, SkillSource],
+) -> None:
+    """Fail unless every selected link in the pinned directory is live and exact."""
+    for name, skill in sorted(skills.items()):
+        dest = root.path / name
+        snapshot = capture_entry_snapshot(root, name)
+        if snapshot is None or not snapshot.is_symlink:
+            raise RuntimeError(f"selected skill is not a symlink: {dest}")
+        actual = snapshot.absolute_link_target
+        if actual is None or not actual.is_dir():
+            raise RuntimeError(f"selected skill link is broken or relative: {dest}")
+        expected = expected_skill_source_path(skill)
+        if actual != expected:
+            raise RuntimeError(
+                f"selected skill link points to {actual}, expected {expected}: {dest}"
+            )
+
+
+def verify_selected_skill_links(
+    root: Path,
+    skills: dict[str, SkillSource],
+    pinned_root: PinnedSkillRoot | None = None,
+) -> None:
+    """Fail before legacy work unless every selected user link is live."""
+    if pinned_root is not None:
+        _verify_selected_skill_links_pinned(pinned_root, skills)
+        return
+    configured = absolute_without_symlink_resolution(root)
+    with pin_skill_root(
+        configured,
+        label="skill root",
+        apply=False,
+        create_missing=False,
+    ) as opened:
+        if opened is None:
+            raise FileNotFoundError(f"skill root is missing: {configured}")
+        _verify_selected_skill_links_pinned(opened, skills)
+
+
+def verify_legacy_links_match_agents(
+    agents_root: PinnedSkillRoot,
+    legacy_root: PinnedSkillRoot,
+    skills: dict[str, SkillSource],
+) -> None:
+    """Require every compatibility name to resolve identically in both roots."""
+    for name, skill in sorted(skills.items()):
+        expected = expected_skill_source_path(skill)
+        agents_entry = capture_entry_snapshot(agents_root, name)
+        legacy_entry = capture_entry_snapshot(legacy_root, name)
+        if (
+            agents_entry is None
+            or legacy_entry is None
+            or not agents_entry.is_symlink
+            or not legacy_entry.is_symlink
+            or agents_entry.absolute_link_target != expected
+            or legacy_entry.absolute_link_target != expected
+            or agents_entry.absolute_link_target != legacy_entry.absolute_link_target
+        ):
+            raise RuntimeError(
+                "agents and legacy Codex Skill links do not share the frozen "
+                f"source for {name}: {agents_root.path / name} vs "
+                f"{legacy_root.path / name}"
+            )
+        # Close the source-swap window between the pre-check above and the two
+        # link snapshots. Equal lexical link targets are not proof that the
+        # directory still has the inode frozen at the start of the pass.
+        expected_skill_source_path(skill)
+
+
+def report_stale_legacy_managed_links(
+    root: Path,
+    source_roots: list[Path],
+    preserve_names: set[str] | None = None,
+    pinned_root: PinnedSkillRoot | None = None,
+) -> tuple[Path, ...]:
+    """Report stale managed legacy links without racing a background deletion."""
+    if pinned_root is not None:
+        return _report_stale_legacy_managed_links_pinned(
+            pinned_root,
+            source_roots,
+            preserve_names,
+        )
+    configured = absolute_without_symlink_resolution(root)
+    with pin_skill_root(
+        configured,
+        label="legacy Codex skill root",
+        apply=False,
+        create_missing=False,
+    ) as opened:
+        if opened is None:
+            log(f"legacy Codex skill root missing: {configured}; skip")
+            return ()
+        return _report_stale_legacy_managed_links_pinned(
+            opened,
+            source_roots,
+            preserve_names,
+        )
+
+
+def _report_stale_legacy_managed_links_pinned(
+    root: PinnedSkillRoot,
+    source_roots: list[Path],
+    preserve_names: set[str] | None,
+) -> tuple[Path, ...]:
+    stale: list[Path] = []
+    for entry in sorted(os.scandir(root.fd), key=lambda item: item.name):
+        name = entry.name
+        if not entry.is_symlink():
+            continue
+        if preserve_names is not None and name in preserve_names:
+            continue
+        target = absolute_entry_link_target(root, name)
+        if target is None or not path_is_under(target, source_roots):
+            continue
+        dest = root.path / name
+        stale.append(dest)
+        log(
+            f"legacy Codex skill {name}: stale managed symlink retained "
+            f"for reviewed cleanup -> {target}"
+        )
+    return tuple(stale)
+
+
+def sync_legacy_codex_compat_links(
+    root: Path,
+    skills: dict[str, SkillSource],
+    source_roots: list[Path],
+    stamp: str,
+    apply: bool,
+    pinned_root: PinnedSkillRoot | None = None,
+) -> None:
+    """Keep a bounded legacy link set without replacing user-owned real paths."""
+    del stamp
+    configured = absolute_without_symlink_resolution(root)
+    if not apply:
+        with pin_skill_root(
+            configured,
+            label="legacy Codex skill root",
+            apply=False,
+            create_missing=False,
+        ) as opened:
+            if opened is None:
+                if skills:
+                    log(f"legacy Codex skill root missing: {configured}; would create")
+                    for name, skill in sorted(skills.items()):
+                        log(
+                            f"legacy Codex compatibility {name}: create link "
+                            f"{configured / name} -> {expected_skill_source_path(skill)}"
+                        )
+                else:
+                    log(f"legacy Codex skill root missing: {configured}; skip")
+                return
+            _preflight_pinned_legacy_compatibility(opened, skills)
+            _report_stale_legacy_managed_links_pinned(
+                opened,
+                source_roots,
+                preserve_names=set(skills),
+            )
+        return
+
+    if pinned_root is None:
+        if skills and not os.path.lexists(configured):
+            log(f"legacy Codex skill root missing: {configured}; create")
+        with pin_skill_root(
+            configured,
+            label="legacy Codex skill root",
+            apply=True,
+            create_missing=bool(skills),
+        ) as opened:
+            if opened is None:
+                log(f"legacy Codex skill root missing: {configured}; skip")
+                return
+            _sync_pinned_legacy_compatibility(opened, skills, source_roots)
+        return
+    _sync_pinned_legacy_compatibility(pinned_root, skills, source_roots)
+
+
+def _preflight_pinned_legacy_compatibility(
+    root: PinnedSkillRoot,
+    skills: dict[str, SkillSource],
+) -> dict[str, PinnedEntrySnapshot | None]:
+    observed: dict[str, PinnedEntrySnapshot | None] = {}
+    for name, skill in sorted(skills.items()):
+        dest = root.path / name
+        snapshot = capture_entry_snapshot(root, name)
+        observed[name] = snapshot
+        if snapshot is None:
+            continue
+        expected = expected_skill_source_path(skill)
+        if snapshot.is_symlink:
+            if snapshot.absolute_link_target == expected:
+                continue
+            raise RuntimeError(
+                "legacy Codex compatibility path points to an unexpected target; "
+                f"refusing to replace it: {dest} -> "
+                f"{snapshot.absolute_link_target}; expected {expected}"
+            )
+        current_mode = snapshot.signature[2]
+        kind = "directory" if stat.S_ISDIR(int(current_mode)) else "file"
+        raise RuntimeError(
+            f"legacy Codex compatibility path is a real {kind}; "
+            f"refusing to replace it: {dest}"
+        )
+    return observed
+
+
+def _sync_pinned_legacy_compatibility(
+    root: PinnedSkillRoot,
+    skills: dict[str, SkillSource],
+    source_roots: list[Path],
+) -> None:
+    root.assert_visible()
+    observed = _preflight_pinned_legacy_compatibility(root, skills)
+    accepted_signatures: dict[str, tuple[object, ...]] = {}
+    for name, skill in sorted(skills.items()):
+        expected = expected_skill_source_path(skill)
+        previous = observed[name]
+        if previous is not None:
+            current = capture_entry_snapshot(root, name)
+            if current is None or current.signature != previous.signature:
+                raise RuntimeError(
+                    "legacy Codex compatibility path changed after preflight; "
+                    f"refusing to accept it: {root.path / name}"
+                )
+            accepted_signatures[name] = previous.signature
+            continue
+        dest = root.path / name
+        log(f"legacy Codex compatibility {name}: create link {dest} -> {expected}")
+        try:
+            published_signature = create_pinned_symlink(root, name, expected)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                "legacy Codex compatibility path appeared during sync; "
+                f"refusing to replace or accept it: {dest}"
+            ) from exc
+        created = capture_entry_snapshot(root, name)
+        if (
+            created is None
+            or not created.is_symlink
+            or created.absolute_link_target != expected
+            or created.signature != published_signature
+        ):
+            raise RuntimeError(
+                f"legacy Codex compatibility path changed after creation: {dest}"
+            )
+        accepted_signatures[name] = published_signature
+
+    _report_stale_legacy_managed_links_pinned(
+        root,
+        source_roots,
+        preserve_names=set(skills),
+    )
+    _verify_selected_skill_links_pinned(root, skills)
+    for name, signature in accepted_signatures.items():
+        current = capture_entry_snapshot(root, name)
+        if current is None or current.signature != signature:
+            raise RuntimeError(
+                "legacy Codex compatibility path changed before final verification: "
+                f"{root.path / name}"
+            )
+    root.assert_visible()
+
+
+def capture_skill_root_expectation(path: Path, label: str) -> SkillRootExpectation:
+    """Capture a no-follow root identity before any mutable phase begins."""
+    configured = absolute_without_symlink_resolution(path)
+    try:
+        observed = os.stat(configured, follow_symlinks=False)
+    except FileNotFoundError:
+        return SkillRootExpectation(configured, None)
+    except OSError as exc:
+        raise RuntimeError(f"cannot inspect {label}: {configured}") from exc
+    if not stat.S_ISDIR(observed.st_mode):
+        raise RuntimeError(
+            f"{label} must be a real directory, not a symlink or file: {configured}"
+        )
+    return SkillRootExpectation(
+        configured,
+        (observed.st_dev, observed.st_ino),
+    )
+
+
+def validate_skill_root_topology(agents_root: Path, codex_root: Path) -> tuple[Path, Path]:
+    """Reject roots whose physical overlap could make cleanup remove replacements."""
+    agents_resolved = agents_root.expanduser().resolve(strict=False)
+    codex_resolved = codex_root.expanduser().resolve(strict=False)
+    same_physical_root = False
+    try:
+        same_physical_root = agents_resolved.samefile(codex_resolved)
+    except OSError:
+        pass
+    agents_folded = tuple(part.casefold() for part in agents_resolved.parts)
+    codex_folded = tuple(part.casefold() for part in codex_resolved.parts)
+    case_insensitive_overlap = (
+        agents_folded == codex_folded
+        or agents_folded == codex_folded[: len(agents_folded)]
+        or codex_folded == agents_folded[: len(codex_folded)]
+    )
+    if (
+        same_physical_root
+        or case_insensitive_overlap
+        or agents_resolved in codex_resolved.parents
+        or codex_resolved in agents_resolved.parents
+    ):
+        raise ValueError(
+            "agents and legacy Codex skill roots must be physically separate: "
+            f"{agents_resolved} vs {codex_resolved}"
+        )
+    return agents_resolved, codex_resolved
+
+
+def main(argv: list[str]) -> int:
+    global QUIET
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo", action="append", type=Path, help="Skill marketplace repo root")
+    parser.add_argument("--claude-dir", type=Path, default=DEFAULT_CLAUDE_DIR)
+    parser.add_argument("--codex-skills", type=Path, default=DEFAULT_CODEX_SKILLS)
+    parser.add_argument("--agents-skills", type=Path, default=DEFAULT_AGENTS_SKILLS)
+    parser.add_argument("--claude-skills", type=Path, help="Personal root; defaults to <claude-dir>/skills")
+    parser.add_argument("--skip-claude-skills", action="store_true", help="Leave the Claude personal Skill root unchanged; plugin cache sync is independent")
+    parser.add_argument("--print-source-inventory", action="store_true", help="Print registered source identities as JSON, without syncing")
+    parser.add_argument(
+        "--active-skills-manifest",
+        type=Path,
+        default=DEFAULT_ACTIVE_SKILLS_MANIFEST,
+        help="Host activation manifest: Codex individual/marketplace selection, Claude marketplace selection, and explicit legacy compatibility",
+    )
+    parser.add_argument("--apply", action="store_true", help="Apply changes; default is dry-run")
+    parser.add_argument("--quiet", action="store_true", help="Suppress normal progress output")
+    parser.add_argument(
+        "--print-watch-paths",
+        action="store_true",
+        help="Print the activation and marketplace manifests to watch and exit",
+    )
+    parser.add_argument("--skip-claude-cache", action="store_true")
+    parser.add_argument(
+        "--skip-codex",
+        action="store_true",
+        help=(
+            "Do not sync compatibility links or audit managed links in the "
+            "legacy ~/.codex/skills root"
+        ),
+    )
+    parser.add_argument(
+        "--skip-agents",
+        action="store_true",
+        help="Do not synchronize the explicit ~/.agents/skills activation set",
+    )
+    parser.add_argument("--skip-marketplace-source", action="store_true")
+    args = parser.parse_args(argv)
+    QUIET = args.quiet
+
+    repos = [repo.expanduser().resolve() for repo in args.repo] if args.repo else infer_repos(Path(__file__), args.claude_dir)
+    sources = [load_marketplace(repo) for repo in repos]
+    if args.print_watch_paths:
+        print(args.active_skills_manifest.expanduser())
+        for src in sources:
+            print(src.repo / ".claude-plugin" / "marketplace.json")
+        return 0
+    manifest = args.active_skills_manifest.expanduser().resolve()
+    policy = load_skill_activation_policy(manifest)
+    skills = merge_source_skills(sources, policy.source_preferences)
+    if args.print_source_inventory:
+        print(json.dumps({
+            "schema_version": 2,
+            "marketplaces": {
+                src.name: {name: {"source_dir": str(skill.source_dir), "plugin_id": skill.plugin_id}
+                           for name, skill in src.skills.items()} for src in sources
+            },
+            "selected_skills": {
+                name: {"source_dir": str(skill.source_dir), "plugin_id": skill.plugin_id}
+                for name, skill in skills.items()
+            },
+            "source_preferences": policy.source_preferences,
+        }, sort_keys=True))
+        return 0
+    if args.skip_agents and not args.skip_codex:
+        raise ValueError(
+            "--skip-agents requires --skip-codex; refusing to touch the legacy "
+            "Codex root without first verifying the replacement user root"
+        )
+    agents_root = absolute_without_symlink_resolution(args.agents_skills)
+    codex_root = absolute_without_symlink_resolution(args.codex_skills)
+    if not args.skip_agents and not args.skip_codex:
+        validate_skill_root_topology(
+            agents_root,
+            codex_root,
+        )
+    discovered_marketplaces = {src.name for src in sources}
+    undiscovered = sorted(
+        (set(policy.active_marketplaces) | set(policy.claude_active_marketplaces)) - discovered_marketplaces
+    )
+    if undiscovered:
+        raise ValueError(
+            f"{manifest}: marketplace activation fields name repos not discovered: "
+            f"{', '.join(undiscovered)}"
+        )
+    active_names, unresolved_names = resolve_activation(policy, skills, sources)
+    report_unresolved_active_names(unresolved_names, sources, manifest)
+    selected_skills = {name: skills[name] for name in active_names if name in skills}
+    active_skills = freeze_selected_skill_sources(selected_skills)
+    # Legacy compatibility names are resolved from the full discovered inventory,
+    # not only active skills, because they document historical aliases that may
+    # point to sources the author did not activate. An unresolved legacy name is
+    # reported and skipped; a resolved one is added to the explicit override map
+    # so the symlink targets the current canonical source even if that skill is
+    # not otherwise selected.
+    legacy_compat_skills, legacy_unresolved = select_active_skills(
+        skills, policy.legacy_codex_compat_names
+    )
+    if legacy_unresolved:
+        report_unresolved_active_names(legacy_unresolved, sources, manifest)
+    source_roots = [src.repo for src in sources]
+    claude_sources = [src for src in sources if src.name in policy.claude_active_marketplaces]
+    claude_names = {name for src in claude_sources for name in src.skills}
+    claude_candidates = freeze_selected_skill_sources({name: skills[name] for name in claude_names})
+    claude_source_roots = list(dict.fromkeys(
+        [src.repo for src in claude_sources]
+        + [skill.repo_root for skill in claude_candidates.values() if skill.repo_root is not None]
+    ))
+    claude_root = absolute_without_symlink_resolution(args.claude_skills or args.claude_dir / "skills")
+    manage_claude = bool(claude_sources) and not args.skip_claude_skills
+    claude_expectation = None
+    if manage_claude:
+        validate_skill_root_topology(claude_root, agents_root)
+        validate_skill_root_topology(claude_root, codex_root)
+        if args.apply:
+            claude_expectation = capture_skill_root_expectation(claude_root, "Claude personal skill root")
+    agents_expectation: SkillRootExpectation | None = None
+    codex_expectation: SkillRootExpectation | None = None
+    if args.apply and not args.skip_agents:
+        agents_expectation = capture_skill_root_expectation(
+            agents_root,
+            "agents skill root",
+        )
+    if args.apply and not args.skip_codex:
+        codex_expectation = capture_skill_root_expectation(
+            codex_root,
+            "legacy Codex skill root",
+        )
+    if (
+        agents_expectation is not None
+        and codex_expectation is not None
+        and agents_expectation.identity is not None
+        and agents_expectation.identity == codex_expectation.identity
+    ):
+        raise ValueError(
+            "agents and legacy Codex skill roots were the same directory at "
+            f"topology capture: {agents_root} vs {codex_root}"
+        )
+
+    log(f"mode: {'APPLY' if args.apply else 'DRY-RUN'}")
+    for src in sources:
+        log(f"source {src.name}: {src.repo} ({len(src.plugins)} plugins, {len(src.skills)} skills)")
+    for name, rule in sorted(policy.source_preferences.items()):
+        log(f"source preference {name}: {rule['prefer']} over {', '.join(rule['over'])}")
+    skipped = (
+        f"; {len(unresolved_names)} unresolved name(s) skipped" if unresolved_names else ""
+    )
+    log(
+        f"Codex user activation: {len(active_skills)}/{len(skills)} source skills "
+        f"selected by {manifest}{skipped}"
+    )
+    log(
+        "Legacy Codex compatibility: "
+        f"{len(legacy_compat_skills)} explicitly retained source link(s)"
+    )
+
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    lock_context = sync_lock(args.claude_dir) if args.apply else nullcontext()
+    with lock_context:
+        with ExitStack() as root_stack:
+            agents_pinned: PinnedSkillRoot | None = None
+            codex_pinned: PinnedSkillRoot | None = None
+            if (
+                args.apply
+                and not args.skip_agents
+                and agents_expectation is not None
+                and (
+                    agents_expectation.identity is not None
+                    or bool(active_skills)
+                )
+            ):
+                agents_pinned = root_stack.enter_context(
+                    pin_skill_root(
+                        agents_root,
+                        label="agents skill root",
+                        apply=True,
+                        create_missing=bool(active_skills),
+                        expected=agents_expectation,
+                    )
+                )
+                if agents_pinned is None:
+                    raise FileNotFoundError(f"agents skill root is missing: {agents_root}")
+            if (
+                args.apply
+                and not args.skip_codex
+                and codex_expectation is not None
+                and codex_expectation.identity is not None
+            ):
+                codex_pinned = root_stack.enter_context(
+                    pin_skill_root(
+                        codex_root,
+                        label="legacy Codex skill root",
+                        apply=True,
+                        create_missing=False,
+                        expected=codex_expectation,
+                    )
+                )
+            if (
+                agents_pinned is not None
+                and codex_pinned is not None
+                and pinned_roots_are_same(agents_pinned, codex_pinned)
+            ):
+                raise ValueError(
+                    "agents and legacy Codex skill roots became the same directory: "
+                    f"{agents_root} vs {codex_root}"
+                )
+
+            if not args.skip_marketplace_source:
+                sync_known_marketplaces(args.claude_dir, sources, args.apply)
+            if not args.skip_claude_cache:
+                sync_claude_cache(args.claude_dir, sources, stamp, args.apply)
+            if manage_claude:
+                claude_skills = select_claude_direct_skills(claude_candidates, args.claude_dir, claude_root)
+                if args.apply:
+                    claude_pinned = root_stack.enter_context(pin_skill_root(
+                        claude_root, label="Claude personal skill root", apply=True,
+                        create_missing=True, expected=claude_expectation,
+                    ))
+                    if claude_pinned is None:
+                        raise RuntimeError(f"Claude personal skill root unavailable: {claude_root}")
+                else:
+                    claude_pinned = None
+                sync_skill_root(claude_root, claude_skills, claude_source_roots,
+                                stamp, args.apply, create_missing=True, pinned_root=claude_pinned)
+                if args.apply:
+                    verify_selected_skill_links(claude_root, claude_skills, pinned_root=claude_pinned)
+                    assert_selected_skill_sources(claude_candidates)
+            if not args.skip_agents and (not args.apply or agents_pinned is not None):
+                assert_selected_skill_sources(active_skills)
+                sync_skill_root(
+                    agents_root,
+                    active_skills,
+                    source_roots,
+                    stamp,
+                    args.apply,
+                    create_missing=True,
+                    pinned_root=agents_pinned,
+                )
+                if args.apply:
+                    verify_selected_skill_links(
+                        agents_root,
+                        active_skills,
+                        pinned_root=agents_pinned,
+                    )
+                    assert_selected_skill_sources(active_skills)
+            elif args.apply and not args.skip_agents:
+                log(f"agents skill root missing with an empty active set: {agents_root}; skip")
+
+            if (
+                args.apply
+                and not args.skip_codex
+                and codex_pinned is None
+                and legacy_compat_skills
+            ):
+                codex_pinned = root_stack.enter_context(
+                    pin_skill_root(
+                        codex_root,
+                        label="legacy Codex skill root",
+                        apply=True,
+                        create_missing=True,
+                        expected=codex_expectation,
+                    )
+                )
+                if (
+                    agents_pinned is not None
+                    and codex_pinned is not None
+                    and pinned_roots_are_same(agents_pinned, codex_pinned)
+                ):
+                    raise ValueError(
+                        "agents and legacy Codex skill roots became the same directory: "
+                        f"{agents_root} vs {codex_root}"
+                    )
+            if not args.skip_codex and (not args.apply or codex_pinned is not None):
+                assert_selected_skill_sources(legacy_compat_skills)
+                sync_legacy_codex_compat_links(
+                    codex_root,
+                    legacy_compat_skills,
+                    source_roots,
+                    stamp,
+                    args.apply,
+                    pinned_root=codex_pinned,
+                )
+                assert_selected_skill_sources(legacy_compat_skills)
+            elif args.apply and not args.skip_codex:
+                log(f"legacy Codex skill root missing: {codex_root}; skip")
+
+            if args.apply and not args.skip_agents and agents_pinned is not None:
+                verify_selected_skill_links(
+                    agents_root,
+                    active_skills,
+                    pinned_root=agents_pinned,
+                )
+                assert_selected_skill_sources(active_skills)
+            if (
+                args.apply
+                and legacy_compat_skills
+                and agents_pinned is not None
+                and codex_pinned is not None
+            ):
+                verify_legacy_links_match_agents(
+                    agents_pinned,
+                    codex_pinned,
+                    legacy_compat_skills,
+                )
+
+    if not args.apply:
+        log("Dry-run only. Re-run with --apply to make these changes.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
