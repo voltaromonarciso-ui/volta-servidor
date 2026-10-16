@@ -1,7 +1,11 @@
 import { G } from '../game.js';
 
-// Efectos de sonido sintetizados con WebAudio (sin archivos externos).
+// Sonido: grabaciones reales CC0 (Kenney y OpenGameArt) para pasos, puertas,
+// dinero, móvil, sirena y ambiente; los efectos sin grabación se sintetizan.
 let ctx = null, master = null, siren = null;
+const files = import.meta.glob('../assets/sounds/*.mp3', { query: '?url', import: 'default', eager: true });
+const BUF = {};
+let loading = null;
 
 export function initAudio() {
   if (ctx) { ctx.resume?.(); return; }
@@ -11,6 +15,91 @@ export function initAudio() {
     master.gain.value = 0.5;
     master.connect(ctx.destination);
   } catch (e) { ctx = null; }
+  if (ctx) loadSounds();
+}
+
+// Descarga y decodifica las grabaciones (en segundo plano: el juego no espera).
+function loadSounds() {
+  if (loading) return loading;
+  loading = Promise.all(Object.entries(files).map(async ([path, url]) => {
+    const name = path.slice(path.lastIndexOf('/') + 1, -4);
+    try {
+      const data = await (await fetch(url)).arrayBuffer();
+      BUF[name] = await new Promise((res, rej) => ctx.decodeAudioData(data, res, rej));
+    } catch (e) { /* sin esta grabación se usa el sintetizador */ }
+  })).then(() => { BUF.day = BUF.day && seamless(BUF.day, 2); BUF.night = BUF.night && seamless(BUF.night, 1); startAmbience(); });
+  return loading;
+}
+
+// Bucle sin cortes: el final se funde sobre el principio.
+function seamless(buf, fade) {
+  const sr = buf.sampleRate, F = Math.floor(fade * sr), N = buf.length - F;
+  if (N <= F) return buf;
+  const out = ctx.createBuffer(1, N, sr), src = buf.getChannelData(0), dst = out.getChannelData(0);
+  for (let i = 0; i < N; i++) dst[i] = src[i];
+  for (let i = 0; i < F; i++) { const k = i / F; dst[i] = src[i] * k + src[N + i] * (1 - k); }
+  return out;
+}
+
+const soundOn = () => ctx && G.state?.settings.sound !== false;
+function play(name, { vol = 0.5, rate = 1, delay = 0 } = {}) {
+  const b = BUF[name];
+  if (!b || !soundOn()) return false;
+  const src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = b;
+  src.playbackRate.value = rate;
+  g.gain.value = vol;
+  src.connect(g); g.connect(master);
+  src.start(ctx.currentTime + delay);
+  return true;
+}
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// Grabaciones para cada efecto; si no están cargadas se usa el sintetizador.
+const REC = {
+  step: () => play('step' + Math.floor(Math.random() * 5), { vol: 0.32, rate: rnd(0.9, 1.08) }),
+  door: () => play('door_open', { vol: 0.55 }),
+  cash: () => play('cash1', { vol: 0.6 }) && play('coins', { vol: 0.25, delay: 0.12 }),
+  pack: () => play('pack', { vol: 0.6 }),
+  harvest: () => play('harvest', { vol: 0.6 }),
+  click: () => play('click', { vol: 0.45 }),
+  open: () => play('open', { vol: 0.45 }),
+  close: () => play('close', { vol: 0.45 }),
+  msg: () => play('msg1', { vol: 0.6 }) && play('msg2', { vol: 0.6, delay: 0.12 }),
+  error: () => play('error', { vol: 0.45 }),
+  pop: () => play('pop', { vol: 0.5 }),
+  level: () => play('level', { vol: 0.55 }),
+};
+
+// ---- ambiente: pájaros de día, grillos de noche, tráfico cercano ----
+const amb = {};
+function loopSrc(name, vol = 0) {
+  const b = BUF[name];
+  if (!b) return null;
+  const src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = b; src.loop = true;
+  g.gain.value = vol;
+  src.connect(g); g.connect(master);
+  src.start();
+  return { src, g };
+}
+function startAmbience() {
+  if (!ctx || amb.day) return;
+  amb.day = loopSrc('day');
+  amb.night = loopSrc('night');
+  amb.engine = loopSrc('engine');
+}
+// day: 0..1 (1 = pleno día); indoor reduce el exterior; car: {dist, speed} del coche más cercano
+export function updateAmbience(day, indoor, car) {
+  if (!ctx || !amb.day) return;
+  const on = soundOn() ? 1 : 0, out = indoor ? 0.35 : 1, t = ctx.currentTime;
+  amb.day?.g.gain.setTargetAtTime(on * out * 0.16 * day, t, 0.5);
+  amb.night?.g.gain.setTargetAtTime(on * out * 0.12 * (1 - day), t, 0.5);
+  if (amb.engine) {
+    const k = car ? Math.max(0, 1 - car.dist / 28) : 0;
+    amb.engine.g.gain.setTargetAtTime(on * out * 0.22 * k * k, t, 0.15);
+    amb.engine.src.playbackRate.setTargetAtTime(0.7 + Math.min(1, (car?.speed || 0) / 12) * 0.6, t, 0.3);
+  }
 }
 
 function tone(freq, dur, { type = 'sine', vol = 0.3, slide = 0, delay = 0 } = {}) {
@@ -59,10 +148,22 @@ const SFX = {
   jump: () => tone(300, 0.08, { vol: 0.06, slide: 120 }),
 };
 
-export function sfx(name) { try { SFX[name]?.(); } catch (e) { /* audio no disponible */ } }
+export function sfx(name) { try { if (!REC[name]?.()) SFX[name]?.(); } catch (e) { /* audio no disponible */ } }
 
 export function setSiren(on) {
   if (!ctx) return;
+  if (on && !siren && soundOn() && BUF.siren) {
+    const l = loopSrc('siren', 0);
+    l.g.gain.setTargetAtTime(0.22, ctx.currentTime, 0.3);
+    siren = { o: l.src, lfo: null, g: l.g };
+    return;
+  }
+  if (!on && siren && !siren.lfo) {
+    const sv = siren; siren = null;
+    sv.g.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+    setTimeout(() => { try { sv.o.stop(); } catch (e) { /* ya parado */ } }, 2000);
+    return;
+  }
   if (on && !siren && G.state.settings.sound) {
     const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
     o.type = 'sawtooth'; o.frequency.value = 720;
@@ -76,3 +177,6 @@ export function setSiren(on) {
     siren.o.stop(); siren.lfo.stop(); siren = null;
   }
 }
+
+// Para depurar: qué grabaciones se han cargado y si suena el ambiente.
+export const audioStatus = () => ({ loaded: Object.keys(BUF).sort(), ambience: !!amb.day, state: ctx?.state });

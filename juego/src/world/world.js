@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { G } from '../game.js';
 import { StaticBatch, GEO, MAT } from './batch.js';
+import { makeCar, vehiclesReady, CAR_MODELS } from '../entities/vehicles.js';
+import { propsReady, propSize, addProp, buildProps } from './props.js';
 import * as TX from './textures.js';
 import { Nav } from './nav.js';
 
@@ -40,7 +42,7 @@ export function createWorld(sc) {
     props: {}, winMats: [], doors: [], shutters: [], bulbPositions: [], water: null, boxes: [], lights: [],
     resolve, los, addBox, inProperty, update, groundAt: () => 0,
   };
-  B = new StaticBatch(60);
+  B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
   TM = makeTexMats();
 
   buildGround();
@@ -63,6 +65,7 @@ export function createWorld(sc) {
   buildMountains();
 
   W.static = B.build(scene);
+  buildProps(scene);
   buildBulbs();
   buildBoxes();
   return W;
@@ -303,14 +306,14 @@ function frondGeo() {
 
 function palm(x, z, h = rnd(7, 11)) {
   const lean = rnd(0, Math.PI * 2), amt = rnd(0.25, 0.9);
-  const segs = 9;
+  const segs = 6; // menos tramos: mismo aspecto a distancia, la mitad de triángulos
   let px = x, pz = z, py = 0;
   for (let i = 0; i < segs; i++) {
     const t = i / segs, sh = h / segs;
     const r = 0.36 - t * 0.14;
     const dx = Math.cos(lean) * amt * (t * t) * 0.25, dz = Math.sin(lean) * amt * (t * t) * 0.25;
-    B.add(GEO.cyl8, i % 2 ? '#7d6447' : '#8f7556', px + dx, py + sh / 2, pz + dz, r * 2, sh * 1.02, r * 2, i, { ao: 0.25, aoH: 2 });
-    B.add(GEO.cyl8, '#6b543a', px + dx, py + sh * 0.95, pz + dz, r * 2.15, sh * 0.12, r * 2.15, 0, { ao: 0 });
+    B.add(GEO.cyl6, i % 2 ? '#7d6447' : '#8f7556', px + dx, py + sh / 2, pz + dz, r * 2, sh * 1.02, r * 2, i, { ao: 0.25, aoH: 2 });
+    B.add(GEO.cyl6, '#6b543a', px + dx, py + sh * 0.95, pz + dz, r * 2.15, sh * 0.12, r * 2.15, 0, { ao: 0 });
     px += dx; pz += dz; py += sh;
   }
   // corona
@@ -324,7 +327,7 @@ function palm(x, z, h = rnd(7, 11)) {
     const a = rnd(0, 6.28);
     B.add(frondGeo(), '#8a7a45', px, py - 0.1, pz, 0.8, 1.4, 0.7, a, { mat: 'foliage', ao: 0, rx: 0.6 });
   }
-  for (let i = 0; i < 4; i++) B.add(GEO.sphere, '#5b4426', px + Math.cos(i * 1.6) * 0.3, py - 0.15, pz + Math.sin(i * 1.6) * 0.3, 0.22, 0.24, 0.22, 0, { ao: 0 });
+  for (let i = 0; i < 4; i++) B.add(GEO.ico, '#5b4426', px + Math.cos(i * 1.6) * 0.3, py - 0.15, pz + Math.sin(i * 1.6) * 0.3, 0.24, 0.26, 0.24, 0, { ao: 0, shadow: false });
   addBox(x - 0.35, x + 0.35, z - 0.35, z + 0.35, 6);
 }
 
@@ -386,8 +389,16 @@ function carAdd(kind, col, px, py, pz, sx, sy, sz, ry) {
   else B.add(GEO.box, col, px, py, pz, sx, sy, sz, ry - Math.PI / 2, { mat: kind === 'glass' ? 'glass' : kind === 'light' ? 'glow' : 'metal', ao: 0.15, aoH: 0.8 });
 }
 
-function parkedCar(x, z, ry, color = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)]) {
-  carParts((k, c, a, b, d, e, f, g) => carAdd(k, c, a, b, d, e, f, g, ry), color, x, z, ry);
+let parkedN = 0;
+function parkedCar(x, z, ry, color = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)], model) {
+  if (vehiclesReady()) {
+    const car = makeCar(model || CAR_MODELS[parkedN++ % CAR_MODELS.length], color);
+    car.position.set(x, 0, z);
+    car.rotation.y = ry;
+    car.updateMatrixWorld(true);
+    car.matrixAutoUpdate = false;
+    scene.add(car);
+  } else carParts((k, c, a, b, d, e, f, g) => carAdd(k, c, a, b, d, e, f, g, ry), color, x, z, ry);
   const alongX = Math.abs(Math.sin(ry)) > 0.5;
   if (alongX) addBox(x - 2.2, x + 2.2, z - 1, z + 1, 1.6); else addBox(x - 1, x + 1, z - 2.2, z + 2.2, 1.6);
 }
@@ -1078,8 +1089,8 @@ function buildPolice() {
   B.box('#f1c40f', 1.8, 6.6, -42, 1.6, 0.5, 0.05, 0, { ao: 0 });
   B.box('#c0392b', 1.8, 7.1, -42, 1.6, 0.5, 0.05, 0, { ao: 0 });
   addBox(0.8, 1.2, -42.2, -41.8, 8);
-  parkedCar(-16, -40, Math.PI / 2, '#1f3a6b');
-  parkedCar(-9, -40, Math.PI / 2, '#e8e8e4');
+  parkedCar(-16, -40, Math.PI / 2, '#1f3a6b', 'CopCar');
+  parkedCar(-9, -40, Math.PI / 2, '#e8e8e4', 'CopCar');
   asphalt(-23.5, 23.5, -83.5, -66);
   for (let x = -18; x <= 18; x += 9) palm(x, -78);
   W.wander.push({ x: 10, z: -42 }, { x: -11, z: -44 });
@@ -1193,7 +1204,21 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     B.box('#fffaf0', lx, hgt - 0.1, (z0 + z1) / 2, 1.2, 0.04, 0.3, 0, { mat: 'glow' });
   }
   const clerk = (x, z) => { (W.clerks = W.clerks || []).push({ x, z, yaw: 0, kind }); };
-  const shelfUnit = (x, z, len, levels, depthS, ry, color = '#e8e8e8', items = true) => {
+  // balda llena de productos reales: grupos de 1-4 iguales, de cara al pasillo
+  const stockShelf = (P, len, y, ry, pool) => {
+    let u = -len / 2 + 0.05;
+    while (u < len / 2 - 0.08) {
+      const name = pool[Math.floor(rand() * pool.length)], sz = propSize(name);
+      const w = sz.x + 0.012, n = 1 + Math.floor(rand() * 4);
+      for (let k = 0; k < n && u + w < len / 2 - 0.03; k++) {
+        const [px, pz] = P(u + w / 2, (rand() - 0.5) * 0.04);
+        addProp(name, px, y, pz, ry + (rand() - 0.5) * 0.15);
+        u += w;
+      }
+      u += 0.03 + rand() * 0.04;
+    }
+  };
+  const shelfUnit = (x, z, len, levels, depthS, ry, color = '#e8e8e8', items = true, pool = null) => {
     // estantería con baldas y productos
     const c = Math.cos(ry), sn = Math.sin(ry);
     const P = (u, v) => [x + u * c + v * sn, z - u * sn + v * c];
@@ -1202,6 +1227,7 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
       const y = 0.12 + l * 0.42;
       B.box(color, x, y, z, len, 0.04, depthS, ry, LM);
       if (!items) continue;
+      if (pool && propsReady()) { stockShelf(P, len, y + 0.02, ry, pool); continue; }
       let u = -len / 2 + 0.06;
       while (u < len / 2 - 0.08) {
         const bw = 0.07 + rand() * 0.1, bh = 0.12 + rand() * 0.2, col = PRODUCT_COLS[Math.floor(rand() * PRODUCT_COLS.length)];
@@ -1229,7 +1255,8 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     B.add(GEO.cyl8, '#8a8f96', x, h / 2, z, 0.06, h, 0.06, 0, LM);
     B.add(GEO.cyl12, seat, x, h, z, 0.36, 0.07, 0.36, 0, L);
   };
-  const table = (x, z, top = '#e0d6c4') => {
+  const table = (x, z, top = '#e0d6c4', item = null) => {
+    if (item && propsReady()) addProp(item, x + 0.1, 0.77, z - 0.05, rand() * 6);
     B.add(GEO.cyl8, '#3a3d42', x, 0.37, z, 0.07, 0.74, 0.07, 0, LM);
     B.add(GEO.cyl16, top, x, 0.75, z, 0.75, 0.04, 0.75, 0, L);
     for (const a of [0.6, 0.6 + Math.PI]) {
@@ -1247,18 +1274,23 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
       const fx = x0 + 0.5 + i * 0.9 + 0.45;
       B.box('#d9dde1', fx, 0, z0 + 0.45, 0.88, 2.1, 0.7, 0, LM);
       B.box('#bfe6ff', fx, 0.15, z0 + 0.81, 0.78, 1.8, 0.02, 0, { mat: 'glow' });
-      for (let l = 0; l < 5; l++) for (let k = 0; k < 5; k++) B.add(GEO.cyl8, PRODUCT_COLS[Math.floor(rand() * 12)], fx - 0.3 + k * 0.15, 0.3 + l * 0.36, z0 + 0.62, 0.08, 0.24, 0.08, 0, L);
+      if (propsReady()) {
+        for (let l = 0; l < 5; l++) { const kind = ['soda-can', 'soda-bottle', 'carton-small', 'soda-can', 'carton'][l]; const sw = propSize(kind).x + 0.01; for (let k = 0; k * sw < 0.7; k++) addProp(kind, fx - 0.33 + sw / 2 + k * sw, 0.2 + l * 0.36, z0 + 0.6, 0); }
+        for (let l = 0; l < 5; l++) B.box('#cfd6dc', fx, 0.18 + l * 0.36, z0 + 0.5, 0.8, 0.02, 0.5, 0, LM); // baldas de la nevera
+      } else for (let l = 0; l < 5; l++) for (let k = 0; k < 5; k++) B.add(GEO.cyl8, PRODUCT_COLS[Math.floor(rand() * 12)], fx - 0.3 + k * 0.15, 0.3 + l * 0.36, z0 + 0.62, 0.08, 0.24, 0.08, 0, L);
     }
     // góndolas
     // góndola de doble cara paralela al escaparate
     const gl = w - 3.6, gx = x0 + 0.4 + gl / 2;
-    shelfUnit(gx, z0 + 2.05, gl, 4, 0.36, 0, '#f0f0f0');
-    shelfUnit(gx, z0 + 1.66, gl, 4, 0.36, Math.PI, '#f0f0f0');
+    const SUPER = ['soda-can', 'soda-bottle', 'bottle-ketchup', 'bottle-musterd', 'bottle-oil', 'carton', 'carton-small', 'can', 'can-small', 'peanut-butter', 'honey', 'bag', 'chocolate', 'candy-bar', 'loaf'];
+    shelfUnit(gx, z0 + 2.05, gl, 4, 0.36, 0, '#f0f0f0', true, SUPER);
+    shelfUnit(gx, z0 + 1.66, gl, 4, 0.36, Math.PI, '#f0f0f0', true, SUPER);
     B.box('#d8402f', gx, 1.75, z0 + 1.86, gl, 0.22, 0.04, 0, L); // cartel de pasillo
     counter(x1 - 1.2, z1 - 1.0, 1.6, '#2e7d4f', '#e8e8e8');
     register(x1 - 0.9, z1 - 1.0);
     clerk(x1 - 1.2, z1 - 1.75);
-    B.box('#f2c230', x1 - 1.6, 1.0, z1 - 1.0, 0.5, 0.25, 0.35, 0, L); // chicles
+    if (propsReady()) for (let i = 0; i < 4; i++) addProp(i % 2 ? 'candy-bar' : 'chocolate', x1 - 1.75 + (i % 2) * 0.12, 0.98 + Math.floor(i / 2) * 0.03, z1 - 1.05 + Math.floor(i / 2) * 0.1, 0.1); // chocolatinas junto a la caja
+    else B.box('#f2c230', x1 - 1.6, 1.0, z1 - 1.0, 0.5, 0.25, 0.35, 0, L); // chicles
     B.box('#ffd84d', cx, hgt - 0.6, z0 + 0.12, Math.min(3, w * 0.4), 0.35, 0.02, 0, { mat: 'glow' }); // cartel ofertas
   } else if (kind === 'bar') {
     counter(cx + 0.6, z0 + 1.4, w - 2.4, '#4a2c1a', '#2b1a10');
@@ -1268,13 +1300,15 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     B.box('#2b1a10', cx + 0.6, 1.0, z0 + 0.2, w - 2.4, 1.6, 0.3, 0, L);
     B.box('#ffb347', cx + 0.6, 1.02, z0 + 0.36, w - 2.5, 0.02, 0.02, 0, { mat: 'glow' });
     for (let l = 0; l < 3; l++) for (let x = x0 + 1.5; x < x1 - 0.5; x += 0.13) {
+      if (propsReady()) { addProp(['wine-red', 'wine-white', 'soda-bottle', 'bottle-oil'][Math.floor(rand() * 4)], x, 1.04 + l * 0.5, z0 + 0.25, rand() * 6); continue; }
       const col = ['#2e6b30', '#7a3b12', '#c9c9c9', '#3d2a14', '#9b1b30', '#e3c46a'][Math.floor(rand() * 6)];
       B.add(GEO.cyl8, col, x, 1.17 + l * 0.5, z0 + 0.25, 0.07, 0.28, 0.07, 0, L);
       B.add(GEO.cyl8, col, x, 1.36 + l * 0.5, z0 + 0.25, 0.025, 0.1, 0.025, 0, L);
     }
+    if (propsReady()) for (let i = 0; i < 5; i++) addProp('glass', x0 + 1.4 + i * ((w - 3) / 4), 0.98, z0 + 1.45, rand() * 6); // vasos en la barra
     B.box('#16191c', x0 + 0.6, 1.4, z0 + 0.1, 1.0, 0.6, 0.06, 0, LM); // tele
     B.box('#3a7bd5', x0 + 0.6, 1.43, z0 + 0.14, 0.92, 0.52, 0.01, 0, { mat: 'glow' });
-    table(x0 + 1.0, z1 - 0.9, '#3d2a14');
+    table(x0 + 1.0, z1 - 0.9, '#3d2a14', 'glass');
   } else if (kind === 'pawn') {
     // vitrinas con objetos y guitarras colgadas
     for (const vx of [x0 + 1.4, cx + 0.9]) {
@@ -1288,7 +1322,7 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
       B.add(GEO.cyl16, col, gx, 1.6, z0 + 0.18, 0.3, 0.08, 0.34, 0, { ...L, rx: Math.PI / 2 });
       B.box('#3a2a1e', gx, 1.7, z0 + 0.18, 0.06, 0.75, 0.04, 0, L);
     }
-    shelfUnit(x1 - 1.4, z0 + 0.35, 2.2, 4, 0.4, 0, '#5a4636');
+    shelfUnit(x1 - 1.4, z0 + 0.35, 2.2, 4, 0.4, 0, '#5a4636', true, ['glass', 'wine-red', 'wine-white', 'cup-coffee', 'honey']);
     B.box('#16191c', x1 - 1.4, 1.75, z0 + 0.4, 0.8, 0.5, 0.25, 0, LM);
   } else if (kind === 'cafe') {
     counter(x1 - 1.8, z0 + 1.2, 2.6, '#6b4226', '#e8e0d4');
@@ -1296,11 +1330,12 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     clerk(x1 - 1.6, z0 + 0.6);
     B.box('#2b2e33', x1 - 2.4, 1.15, z0 + 1.41, 0.4, 0.06, 0.02, 0, LM);
     B.box('#cfe6f0', x1 - 1.2, 0.95, z0 + 1.2, 1.0, 0.35, 0.5, 0, { mat: 'glass', shadow: false, ao: 0 }); // vitrina
-    for (let i = 0; i < 5; i++) B.add(GEO.cyl12, ['#c68642', '#f5deb3', '#8b4513', '#e8b4b8'][i % 4], x1 - 1.6 + i * 0.2, 1.02, z0 + 1.2, 0.14, 0.06, 0.14, 0, L);
+    if (propsReady()) { const P2 = ['croissant', 'donut-chocolate', 'donut-sprinkles', 'muffin', 'cupcake', 'croissant']; for (let i = 0; i < 6; i++) addProp(P2[i], x1 - 1.62 + i * 0.16, 0.99, z0 + 1.2 + (i % 2 ? 0.08 : -0.08), rand() * 6); }
+    else for (let i = 0; i < 5; i++) B.add(GEO.cyl12, ['#c68642', '#f5deb3', '#8b4513', '#e8b4b8'][i % 4], x1 - 1.6 + i * 0.2, 1.02, z0 + 1.2, 0.14, 0.06, 0.14, 0, L);
     B.box('#1d2a22', x1 - 1.8, 1.7, z0 + 0.12, 1.8, 0.8, 0.04, 0, L); // pizarra menú
     for (let i = 0; i < 4; i++) B.box('#f0ede6', x1 - 2.4 + (i % 2) * 0.9, 1.8 + Math.floor(i / 2) * 0.3, z0 + 0.15, 0.6, 0.04, 0.01, 0, { mat: 'glow' });
-    table(x0 + 1.0, z1 - 0.9, '#f0ede6');
-    table(x0 + 2.6, z0 + 1.1, '#f0ede6');
+    table(x0 + 1.0, z1 - 0.9, '#f0ede6', 'cup-coffee');
+    table(x0 + 2.6, z0 + 1.1, '#f0ede6', 'cup-coffee');
     for (let i = 0; i < 3; i++) { B.add(GEO.cyl8, '#2b2b2b', x0 + 1 + i * 1.3, hgt - 0.5, z1 - 1.0, 0.02, 0.8, 0.02, 0, LM); B.add(GEO.sphere, '#ffcf7a', x0 + 1 + i * 1.3, hgt - 0.95, z1 - 1.0, 0.22, 0.2, 0.22, 0, { mat: 'glow' }); }
   } else if (kind === 'laundry') {
     for (let i = 0; i < Math.floor((w - 0.6) / 0.72); i++) {
@@ -1329,8 +1364,8 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     clerk(cx, z0 + 0.5);
     B.box('#ffd84d', cx, hgt - 0.85, z0 + 0.12, w - 1.6, 0.55, 0.03, 0, { mat: 'glow' }); // menú
     for (let i = 0; i < 4; i++) B.box(['#c0392b', '#2f8f4f', '#f39c12', '#ffffff'][i], cx - 1.8 + i * 1.2, hgt - 0.78, z0 + 0.15, 0.9, 0.08, 0.01, 0, L);
-    table(x0 + 1.0, z1 - 0.8, '#2f8f4f');
-    table(x1 - 1.0, z1 - 0.8, '#2f8f4f');
+    table(x0 + 1.0, z1 - 0.8, '#2f8f4f', 'taco');
+    table(x1 - 1.0, z1 - 0.8, '#2f8f4f', 'taco');
   }
 }
 
@@ -1424,9 +1459,9 @@ function buildTrafficLights() {
   const head = (x, y, z, set, ry) => {
     B.add(GEO.box, '#1a1c1f', x, y, z, 0.32, 0.95, 0.28, ry, { mat: 'metal', ao: 0 });
     const fx = Math.sin(ry) * 0.15, fz = Math.cos(ry) * 0.15;
-    B.add(GEO.sphere, '#ffffff', x + fx, y + 0.28, z + fz, 0.18, 0.18, 0.08, ry, { mat: set.r, ao: 0, shadow: false });
-    B.add(GEO.sphere, '#ffffff', x + fx, y, z + fz, 0.18, 0.18, 0.08, ry, { mat: set.y, ao: 0, shadow: false });
-    B.add(GEO.sphere, '#ffffff', x + fx, y - 0.28, z + fz, 0.18, 0.18, 0.08, ry, { mat: set.g, ao: 0, shadow: false });
+    B.add(GEO.cyl8, '#ffffff', x + fx, y + 0.28, z + fz, 0.18, 0.06, 0.18, ry - Math.PI / 2, { rz: Math.PI / 2, mat: set.r, ao: 0, shadow: false, global: true });
+    B.add(GEO.cyl8, '#ffffff', x + fx, y, z + fz, 0.18, 0.06, 0.18, ry - Math.PI / 2, { rz: Math.PI / 2, mat: set.y, ao: 0, shadow: false, global: true });
+    B.add(GEO.cyl8, '#ffffff', x + fx, y - 0.28, z + fz, 0.18, 0.06, 0.18, ry - Math.PI / 2, { rz: Math.PI / 2, mat: set.g, ao: 0, shadow: false, global: true });
   };
   for (const rx of ROADS) for (const rz of ROADS) {
     if (Math.abs(rx) === 90 && Math.abs(rz) === 90) continue;

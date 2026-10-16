@@ -74,3 +74,12 @@ con el móvil y dar/recibir objetos. Se convirtieron de FBX a GLB, con texturas 
 `src/assets/people/`. El creador de personaje permite elegir nombre, sexo y
 aspecto (piel, pelo y ropa) entre estos modelos; en primera persona las manos y
 mangas toman su tono de piel y color de ropa.
+
+## Coches, productos y sonidos
+
+- **Coches**: "LowPoly Cars" de Quaternius (CC0, OpenGameArt). Una malla por
+  coche con textura-paleta recoloreable; faros que se encienden de noche.
+- **Productos de las tiendas**: Kenney Food Kit (CC0), dibujados con mallas
+  instanciadas (una llamada de dibujo por tipo de producto).
+- **Sonidos**: Kenney Impact/Interface/RPG/Casino Audio (CC0) y, de OpenGameArt
+  (CC0), grillos, ambiente de parque, sirena y motor de coche.

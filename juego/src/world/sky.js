@@ -1,3 +1,6 @@
+import { setPropsLight } from './props.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { setCarLights } from '../entities/vehicles.js';
 import { LIT } from './batch.js';
 import * as THREE from 'three';
 import { G, clamp } from '../game.js';
@@ -52,6 +55,7 @@ export function createSky(scene) {
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.035;
   sun.shadow.radius = 3;
+  sun.shadow.autoUpdate = false;
   scene.add(sun, sun.target);
   G.sun = sun;
   G.hemi = hemi;
@@ -85,12 +89,15 @@ export function createSky(scene) {
   for (let i = 0; i < 14; i++) {
     const c = new THREE.Group();
     const n = 4 + Math.floor(Math.random() * 4);
+    // cada nube es una sola malla (antes 4-7 esferas sueltas)
+    const parts = [];
     for (let k = 0; k < n; k++) {
-      const m = new THREE.Mesh(GEO.sphere, cm);
-      m.scale.set(40 + Math.random() * 40, 3 + Math.random() * 2, 20 + Math.random() * 14);
-      m.position.set(k * 16 - n * 8, Math.random() * 2, Math.random() * 10 - 5);
-      c.add(m);
+      const g = GEO.sphere.clone();
+      g.scale(40 + Math.random() * 40, 3 + Math.random() * 2, 20 + Math.random() * 14);
+      g.translate(k * 16 - n * 8, Math.random() * 2, Math.random() * 10 - 5);
+      parts.push(g);
     }
+    c.add(new THREE.Mesh(mergeGeometries(parts), cm));
     const ca = Math.random() * Math.PI * 2, cr = 220 + Math.random() * 200;
     c.position.set(Math.cos(ca) * cr, 140 + Math.random() * 60, Math.sin(ca) * cr);
     clouds.add(c);
@@ -126,6 +133,7 @@ function sample(hour) {
 }
 
 export let nightFactor = 0;
+let shadowN = 0;
 let envHour = -99;
 const _dir = new THREE.Vector3();
 
@@ -154,8 +162,14 @@ function updateSky(dt) {
   if (lightDir.y < 0.12) lightDir.y = 0.12;
   const p = G.player ? G.player.pos : new THREE.Vector3();
   const snap = (v) => Math.round(v / 2) * 2;
-  sun.target.position.set(snap(p.x), 0, snap(p.z));
-  sun.position.copy(sun.target.position).addScaledVector(lightDir.normalize(), 140);
+  // la sombra se recalcula cada pocos fotogramas (G.shadowEvery) y la luz sólo
+  // se mueve en esos mismos fotogramas, así no "bailan" entre medias
+  shadowN = (shadowN + 1) % (G.shadowEvery || 1);
+  if (shadowN === 0) {
+    sun.target.position.set(snap(p.x), 0, snap(p.z));
+    sun.position.copy(sun.target.position).addScaledVector(lightDir.normalize(), 140);
+    sun.shadow.needsUpdate = true;
+  }
   sunDisc.position.copy(G.camera.position).addScaledVector(dir, 420);
   sunHalo.position.copy(G.camera.position).addScaledVector(dir, 410);
   moonDisc.position.copy(G.camera.position).addScaledVector(dir.clone().negate(), 400);
@@ -170,6 +184,8 @@ function updateSky(dt) {
   stars.material.opacity = nightFactor;
   const dusk = clamp(hour < 12 ? 0 : (hour - 17.5) / 1.5, 0, 1);
   LIT.value = 0.16 + dusk * 0.12 + nightFactor * 0.16;
+  setPropsLight(0.18 + dusk * 0.15 + nightFactor * 0.2);
+  setCarLights(Math.max(nightFactor, (dusk - 0.5) * 2));
   for (const m of G.world.winMats) m.emissiveIntensity = m.userData.shop ? 0.45 + dusk * 0.4 + nightFactor * 0.3 : 0.06 + dusk * 0.25 + nightFactor * 0.5;
   for (const m of G.world.signMats || []) m.emissiveIntensity = 0.5 + dusk * 0.5 + nightFactor * 0.4;
   G.world.bulbMat.color.setHex(dusk > 0.6 || nightFactor > 0.2 ? 0xffd88a : 0xd8d8d8).multiplyScalar(dusk > 0.6 || nightFactor > 0.2 ? 2.2 : 1);

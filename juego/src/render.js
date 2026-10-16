@@ -87,6 +87,7 @@ export function setQuality(q) {
 function applyQuality() {
   const q = R.quality;
   bloom.enabled = q !== 'baja';
+  G.shadowEvery = q === 'alta' ? 2 : 3; // las sombras no necesitan 60 actualizaciones por segundo
   const sun = G.sun;
   if (sun) {
     const sz = q === 'alta' ? 2048 : 1024;

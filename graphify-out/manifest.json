@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "juego/src/core/audio.js": {
-    "mtime": 1792160245.2440217,
-    "seen": 1792184737.2630796,
-    "ast_hash": "2af5161d9e2ccf70070aba5919ab0987",
+    "mtime": 1792187903.836878,
+    "seen": 1792188643.73342,
+    "ast_hash": "3cf69d0553b9b28a11f7b3e35a1582e5",
     "semantic_hash": ""
   },
   "juego/src/core/input.js": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/cars.js": {
-    "mtime": 1792165870.6371205,
-    "seen": 1792184737.2630875,
-    "ast_hash": "fc123eb8918e92f15e1dd10434796962",
+    "mtime": 1792186815.4736707,
+    "seen": 1792188643.7336168,
+    "ast_hash": "ac7af733108a4be9965b1b63f23a1fa5",
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
@@ -168,9 +168,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/models.js": {
-    "mtime": 1792179817.708367,
-    "seen": 1792184737.2630908,
-    "ast_hash": "90ff7836d8dce10aa8d441bb852b35a0",
+    "mtime": 1792186690.5480118,
+    "seen": 1792188643.733664,
+    "ast_hash": "5e1964aa95a6e61b22418e625380b4e6",
     "semantic_hash": ""
   },
   "juego/src/entities/npc.js": {
@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792178978.077388,
-    "seen": 1792184737.2630951,
-    "ast_hash": "feff8d9da09ff22d4c7ba5610b07a1e1",
+    "mtime": 1792188081.4586728,
+    "seen": 1792188643.7337348,
+    "ast_hash": "f7bb088fd53d01f20b64284e8855f05c",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
-    "mtime": 1792170457.4583554,
-    "seen": 1792184737.263096,
-    "ast_hash": "129b70ead0afeae1c90de289457ab84a",
+    "mtime": 1792187612.4791923,
+    "seen": 1792188643.733737,
+    "ast_hash": "ae9e23dade3b858cdf0eeb9256ec1ed0",
     "semantic_hash": ""
   },
   "juego/src/systems/economy.js": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
-    "mtime": 1792177889.271929,
-    "seen": 1792184737.2631097,
-    "ast_hash": "99abc48a091304c5c93fa1f8c7583996",
+    "mtime": 1792187740.2603214,
+    "seen": 1792188643.733962,
+    "ast_hash": "46d701b0d13d9726b38ebb110f69e387",
     "semantic_hash": ""
   },
   "juego/src/world/nav.js": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/sky.js": {
-    "mtime": 1792178168.600753,
-    "seen": 1792184737.2631116,
-    "ast_hash": "9c817b566cc47c5dcb260edca57ba1fc",
+    "mtime": 1792188081.459049,
+    "seen": 1792188643.7339897,
+    "ast_hash": "638da75ca01294ff3987440a05e3e279",
     "semantic_hash": ""
   },
   "juego/src/world/textures.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792178978.076778,
-    "seen": 1792184737.2631135,
-    "ast_hash": "f49f262e5aa0556e9e9a13649cc72c08",
+    "mtime": 1792188081.4580681,
+    "seen": 1792188643.734014,
+    "ast_hash": "018a8ad19a53a192e5c71c5cc7f5033f",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -504,9 +504,9 @@
     "semantic_hash": ""
   },
   "juego/README.md": {
-    "mtime": 1792180075.4832206,
-    "seen": 1792184737.2631512,
-    "ast_hash": "074e30b488e1a17129430b1df3706d07",
+    "mtime": 1792188640.576922,
+    "seen": 1792188643.734832,
+    "ast_hash": "7e0e5800ac3b911409fc6949504c1e44",
     "semantic_hash": ""
   },
   "juego/index.html": {
@@ -675,6 +675,480 @@
     "mtime": 1792161430.588092,
     "seen": 1792184737.2631805,
     "ast_hash": "d7d5e627cd4eb178b36dcc92aa459555",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1792185835.2687552,
+    "seen": 1792188643.7328346,
+    "ast_hash": "03786dc390703f77da284e70ae1197e3",
+    "semantic_hash": ""
+  },
+  ".claude/skills/algorithmic-art/templates/generator_template.js": {
+    "mtime": 1792184937.8056283,
+    "seen": 1792188643.7328413,
+    "ast_hash": "b0fd5cb4d4bb7cafee5e336b50f62c27",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/condition-based-waiting-example.ts": {
+    "mtime": 1792184937.7974346,
+    "seen": 1792188643.7328439,
+    "ast_hash": "8e502a8c1e9c7de15967202615d241d5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/find-polluter.sh": {
+    "mtime": 1792184937.7974956,
+    "seen": 1792188643.732846,
+    "ast_hash": "6bc3c264a76bd77f191f9a6226805b98",
+    "semantic_hash": ""
+  },
+  ".specify/init-options.json": {
+    "mtime": 1792184814.4436576,
+    "seen": 1792188643.7330053,
+    "ast_hash": "9a9c4a6253a501958820ce33fbd59cf1",
+    "semantic_hash": ""
+  },
+  ".specify/integration.json": {
+    "mtime": 1792184814.3976755,
+    "seen": 1792188643.733007,
+    "ast_hash": "519eaabce4133d7514ddfad3ef267a51",
+    "semantic_hash": ""
+  },
+  ".specify/integrations/claude.manifest.json": {
+    "mtime": 1792184814.3954585,
+    "seen": 1792188643.7330081,
+    "ast_hash": "b2062915eb163147613ca14ce07b0e6e",
+    "semantic_hash": ""
+  },
+  ".specify/integrations/speckit.manifest.json": {
+    "mtime": 1792184814.4189658,
+    "seen": 1792188643.7330093,
+    "ast_hash": "f21b40af47a5adc3c81bb61b78b64da2",
+    "semantic_hash": ""
+  },
+  ".specify/memory/.constitution-template.json": {
+    "mtime": 1792184814.4457788,
+    "seen": 1792188643.7330105,
+    "ast_hash": "7e3332a78cec1722b4351c6bf52dfc51",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/check-prerequisites.sh": {
+    "mtime": 1792184814.4128566,
+    "seen": 1792188643.7330117,
+    "ast_hash": "1e3da665a8cb076af9d7c862dbd84fd5",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/common.sh": {
+    "mtime": 1792184814.411507,
+    "seen": 1792188643.733013,
+    "ast_hash": "da4d4e4c1b6c52769be18f528c22f362",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/create-new-feature.sh": {
+    "mtime": 1792184814.4139671,
+    "seen": 1792188643.733014,
+    "ast_hash": "10712c1574d33ad2172e1cfa5011a4aa",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/resolve-template.sh": {
+    "mtime": 1792184814.4101229,
+    "seen": 1792188643.7330148,
+    "ast_hash": "8e3dfe574895c76bb9cd555fea0ce54d",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/setup-plan.sh": {
+    "mtime": 1792184814.4090004,
+    "seen": 1792188643.7330158,
+    "ast_hash": "0a509dca68e823ab579ad941bb15691b",
+    "semantic_hash": ""
+  },
+  ".specify/scripts/bash/setup-tasks.sh": {
+    "mtime": 1792184814.4078116,
+    "seen": 1792188643.7330167,
+    "ast_hash": "30ec558a29cb7cee770f6a1238a6e68b",
+    "semantic_hash": ""
+  },
+  ".specify/workflows/workflow-registry.json": {
+    "mtime": 1792184814.4425473,
+    "seen": 1792188643.7330182,
+    "ast_hash": "af5434c5825112388dacc71d49fbfce1",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/vehicles.js": {
+    "mtime": 1792187140.7665737,
+    "seen": 1792188643.7337103,
+    "ast_hash": "daf98fb12e9f8f1a945d31108341044f",
+    "semantic_hash": ""
+  },
+  "juego/src/world/props.js": {
+    "mtime": 1792188200.380857,
+    "seen": 1792188643.7339878,
+    "ast_hash": "a42615abdaf70dff00076e86f689b236",
+    "semantic_hash": ""
+  },
+  ".claude/skills/algorithmic-art/LICENSE.txt": {
+    "mtime": 1792184937.8055046,
+    "seen": 1792188643.7343528,
+    "ast_hash": "0ee6429f4c66920b6744d818225fb58f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/algorithmic-art/SKILL.md": {
+    "mtime": 1792184937.8055604,
+    "seen": 1792188643.7343547,
+    "ast_hash": "edfa3e23147ec7f049ef483146c89f16",
+    "semantic_hash": ""
+  },
+  ".claude/skills/algorithmic-art/templates/viewer.html": {
+    "mtime": 1792184937.8056812,
+    "seen": 1792188643.7343562,
+    "ast_hash": "6fec68ff8079873799cf106892353adb",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-analyze/SKILL.md": {
+    "mtime": 1792184814.352454,
+    "seen": 1792188643.734447,
+    "ast_hash": "30d0f5fecd6045de4ba9d662f198b899",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-checklist/SKILL.md": {
+    "mtime": 1792184814.3796751,
+    "seen": 1792188643.7344487,
+    "ast_hash": "e5b258cdba43b58b4e8de62544b53bed",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-clarify/SKILL.md": {
+    "mtime": 1792184814.3583212,
+    "seen": 1792188643.73445,
+    "ast_hash": "4d30622d5a8d672178225c23b88ed210",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-constitution/SKILL.md": {
+    "mtime": 1792184814.3621478,
+    "seen": 1792188643.7344515,
+    "ast_hash": "0cadc4d21de0c37700311e30d937c8f7",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-converge/SKILL.md": {
+    "mtime": 1792184814.3702822,
+    "seen": 1792188643.7344525,
+    "ast_hash": "2df36953a5d137702318605f99a9f4f3",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-implement/SKILL.md": {
+    "mtime": 1792184814.3664186,
+    "seen": 1792188643.7344534,
+    "ast_hash": "86a6833728df75303a72cf5de048a281",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-plan/SKILL.md": {
+    "mtime": 1792184814.3737235,
+    "seen": 1792188643.7344549,
+    "ast_hash": "5816d3428b6db3a579c01eef0d02a74f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-specify/SKILL.md": {
+    "mtime": 1792184814.3849258,
+    "seen": 1792188643.7344558,
+    "ast_hash": "94a0a851520c5db65343f7619407418f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-tasks/SKILL.md": {
+    "mtime": 1792184814.389429,
+    "seen": 1792188643.7344568,
+    "ast_hash": "3fea9c8a678fdd7344b30e1cc71fbb67",
+    "semantic_hash": ""
+  },
+  ".claude/skills/speckit-taskstoissues/SKILL.md": {
+    "mtime": 1792184814.392862,
+    "seen": 1792188643.734458,
+    "ast_hash": "08b983757611230f35f1eb6b3b485507",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/CREATION-LOG.md": {
+    "mtime": 1792184937.7973711,
+    "seen": 1792188643.7344594,
+    "ast_hash": "b7ba553678c10cc2234dc9ae193d5347",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/SKILL.md": {
+    "mtime": 1792184937.7974133,
+    "seen": 1792188643.7344604,
+    "ast_hash": "9a63d23c6672e8ecafe1ae4faabd6bda",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/condition-based-waiting.md": {
+    "mtime": 1792184937.7974505,
+    "seen": 1792188643.7344615,
+    "ast_hash": "c64d669f2490aa489c514304c9ad46d3",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/defense-in-depth.md": {
+    "mtime": 1792184937.797478,
+    "seen": 1792188643.7344627,
+    "ast_hash": "002a0c9e8bee8fc29f85d7a434916977",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/root-cause-tracing.md": {
+    "mtime": 1792184937.7975106,
+    "seen": 1792188643.734464,
+    "ast_hash": "3788fcc4131d42565daabc2d29d64bdd",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/test-academic.md": {
+    "mtime": 1792184937.7975261,
+    "seen": 1792188643.7344651,
+    "ast_hash": "272ab1d95e755a7ff9479d547168eef9",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/test-pressure-1.md": {
+    "mtime": 1792184937.7975798,
+    "seen": 1792188643.7344663,
+    "ast_hash": "3d8805e8946e3889d4de0e906af66c47",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/test-pressure-2.md": {
+    "mtime": 1792184937.7975938,
+    "seen": 1792188643.7344673,
+    "ast_hash": "237f40dfd0b48af48d239ab3af499f7b",
+    "semantic_hash": ""
+  },
+  ".claude/skills/systematic-debugging/test-pressure-3.md": {
+    "mtime": 1792184937.7976074,
+    "seen": 1792188643.7344685,
+    "ast_hash": "42ea1bd281ca8d837f5dd45143762b95",
+    "semantic_hash": ""
+  },
+  ".claude/skills/verification-before-completion/SKILL.md": {
+    "mtime": 1792184937.8017294,
+    "seen": 1792188643.7347243,
+    "ast_hash": "11932f7afbf9f7b629d22ba438f1deba",
+    "semantic_hash": ""
+  },
+  ".specify/memory/constitution.md": {
+    "mtime": 1792184814.4448678,
+    "seen": 1792188643.7347705,
+    "ast_hash": "dcefb6b60e7cb3db2e966977b6f02f18",
+    "semantic_hash": ""
+  },
+  ".specify/templates/checklist-template.md": {
+    "mtime": 1792184814.4170349,
+    "seen": 1792188643.734772,
+    "ast_hash": "5af23404f7e1314e93fab2bcfcfa5c23",
+    "semantic_hash": ""
+  },
+  ".specify/templates/constitution-template.md": {
+    "mtime": 1792184814.4158704,
+    "seen": 1792188643.7347739,
+    "ast_hash": "dcefb6b60e7cb3db2e966977b6f02f18",
+    "semantic_hash": ""
+  },
+  ".specify/templates/plan-template.md": {
+    "mtime": 1792184814.417586,
+    "seen": 1792188643.734775,
+    "ast_hash": "311db0670c3d19d2f5b781de97529b79",
+    "semantic_hash": ""
+  },
+  ".specify/templates/spec-template.md": {
+    "mtime": 1792184814.4164386,
+    "seen": 1792188643.734776,
+    "ast_hash": "45ac8538bc1220324c9f0d610145b53f",
+    "semantic_hash": ""
+  },
+  ".specify/templates/tasks-template.md": {
+    "mtime": 1792184814.4151044,
+    "seen": 1792188643.7347777,
+    "ast_hash": "f8b4f62d384defa0a559bdbbaacb0540",
+    "semantic_hash": ""
+  },
+  ".specify/workflows/speckit/workflow.yml": {
+    "mtime": 1792184791.8805428,
+    "seen": 1792188643.7347786,
+    "ast_hash": "e85bd795c8a1bad1168a223eec732604",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/cars/CarTexture.png": {
+    "mtime": 1792186771.9338777,
+    "seen": 1792188643.7357016,
+    "ast_hash": "8cec0d4a676b80cf946c08ad8a3f3159",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/cars/CopTexture.png": {
+    "mtime": 1792186771.933949,
+    "seen": 1792188643.7357032,
+    "ast_hash": "8a3bb89d13f6606d697db17e89fe8177",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/cars/TaxiTexture.png": {
+    "mtime": 1792186771.9339044,
+    "seen": 1792188643.7357047,
+    "ast_hash": "2afa021de9f7176839ebd3c5fa97d25a",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/colormap.png": {
+    "mtime": 1792188200.3651407,
+    "seen": 1792188643.7357059,
+    "ast_hash": "5d05c98adbb1a749dab658e0c3d838a9",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/bag.mp3": {
+    "mtime": 1792187839.8408742,
+    "seen": 1792188643.7357068,
+    "ast_hash": "e5ff6d0e0b81f119792bcc4a4bfcd6a7",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/cash1.mp3": {
+    "mtime": 1792187839.5728743,
+    "seen": 1792188643.7357082,
+    "ast_hash": "6a79a360186423a0c0fcd614001eb4dd",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/cash2.mp3": {
+    "mtime": 1792187839.6288743,
+    "seen": 1792188643.7357094,
+    "ast_hash": "8ed55f56be871a7d0dc59decc1003651",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/click.mp3": {
+    "mtime": 1792187839.9608743,
+    "seen": 1792188643.7357104,
+    "ast_hash": "663826753403165c5bb2bbcfe068e54c",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/close.mp3": {
+    "mtime": 1792187840.0648742,
+    "seen": 1792188643.7357116,
+    "ast_hash": "e90a4eb670e24db92e4890859949304a",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/coins.mp3": {
+    "mtime": 1792187839.7088742,
+    "seen": 1792188643.7357128,
+    "ast_hash": "2eeeb6dfec06a149b0e61e3cd457a977",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/day.mp3": {
+    "mtime": 1792187841.2208743,
+    "seen": 1792188643.7357407,
+    "ast_hash": "698ad2b1ef1c09081bc12f07667937cb",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/door_close.mp3": {
+    "mtime": 1792187839.5168743,
+    "seen": 1792188643.735742,
+    "ast_hash": "64ae523e93c206a80b9bacffe6dd3417",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/door_open.mp3": {
+    "mtime": 1792187839.4688742,
+    "seen": 1792188643.7357438,
+    "ast_hash": "ae15ea85b99a7c1a8a0490955f424a2e",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/engine.mp3": {
+    "mtime": 1792187841.3048744,
+    "seen": 1792188643.7357447,
+    "ast_hash": "e51c8799738e4cef114ccf6959b9a406",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/error.mp3": {
+    "mtime": 1792187840.2088742,
+    "seen": 1792188643.735746,
+    "ast_hash": "cdb2945010ff2d09ad8aa2e886db4298",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/harvest.mp3": {
+    "mtime": 1792187839.9128742,
+    "seen": 1792188643.735747,
+    "ast_hash": "61670f6479f4424f56d50370cd312d78",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/latch.mp3": {
+    "mtime": 1792187840.3888743,
+    "seen": 1792188643.7357483,
+    "ast_hash": "e860df4944336d369e35d8217ba8020d",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/level.mp3": {
+    "mtime": 1792187840.2968743,
+    "seen": 1792188643.7357495,
+    "ast_hash": "e93c50a86fc231cef4312b2930b5e72e",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/msg1.mp3": {
+    "mtime": 1792187840.1088743,
+    "seen": 1792188643.7357504,
+    "ast_hash": "0b3f54a35ac4650fc6e7d2d21cb29192",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/msg2.mp3": {
+    "mtime": 1792187840.1608744,
+    "seen": 1792188643.7357512,
+    "ast_hash": "79fa3e717b2a2a343a347f89463b7d76",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/night.mp3": {
+    "mtime": 1792187840.8048744,
+    "seen": 1792188643.735752,
+    "ast_hash": "452921007fa9396ba9ba8da216b1cb34",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/open.mp3": {
+    "mtime": 1792187840.0128744,
+    "seen": 1792188643.7357533,
+    "ast_hash": "374543466ea53d08a1f7339d371df2a4",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/pack.mp3": {
+    "mtime": 1792187839.7688742,
+    "seen": 1792188643.7357543,
+    "ast_hash": "65fff379383a2b57356800ed2f668117",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/phone.mp3": {
+    "mtime": 1792187840.3448744,
+    "seen": 1792188643.7357554,
+    "ast_hash": "81cffeb1791c864ced34c9dcfeb774e8",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/pop.mp3": {
+    "mtime": 1792187840.2528744,
+    "seen": 1792188643.7357566,
+    "ast_hash": "2f5699f1ba3d84685dbde0ceb2d55215",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/siren.mp3": {
+    "mtime": 1792187840.4768744,
+    "seen": 1792188643.7357576,
+    "ast_hash": "4cac166c69a873615cfd13c43cc1f18d",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/step0.mp3": {
+    "mtime": 1792187839.2048743,
+    "seen": 1792188643.7357585,
+    "ast_hash": "64777bb4943ea70acc619e571d280a7f",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/step1.mp3": {
+    "mtime": 1792187839.2608743,
+    "seen": 1792188643.7357597,
+    "ast_hash": "9e7ade69efd627b7e622b949157965d8",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/step2.mp3": {
+    "mtime": 1792187839.3168743,
+    "seen": 1792188643.7357607,
+    "ast_hash": "27e4a9fd47f76affd25cdfc71709a8e2",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/step3.mp3": {
+    "mtime": 1792187839.3688743,
+    "seen": 1792188643.7357616,
+    "ast_hash": "00f456c9fc6f434f1ba76057f9793947",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/sounds/step4.mp3": {
+    "mtime": 1792187839.4128742,
+    "seen": 1792188643.7357626,
+    "ast_hash": "55f0b87f97856390362dcca00197a51f",
     "semantic_hash": ""
   }
 }

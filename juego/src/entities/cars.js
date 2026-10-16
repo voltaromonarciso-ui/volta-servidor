@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { G } from '../game.js';
 import { carParts, CAR_COLORS } from '../world/world.js';
+import { makeCar, vehiclesReady, CAR_MODELS } from './vehicles.js';
 const carMats = {}, glowMats = {};
 const carMat = (c) => (carMats[c] ||= new THREE.MeshStandardMaterial({ color: c, roughness: 0.35, metalness: 0.5 }));
 const glowMat = (c) => (glowMats[c] ||= new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
@@ -30,12 +31,12 @@ function laneLoop(pts) {
 function norm(x, z) { const l = Math.hypot(x, z); return [x / l, z / l]; }
 
 class Car {
-  constructor(loop, start, color) {
+  constructor(loop, start, color, model) {
     this.pts = laneLoop(loop);
     this.i = start % this.pts.length;
     this.g = new THREE.Group();
-    const inner = new THREE.Group();
-    carParts((kind, col, x, y, z, sx, sy, sz) => {
+    const inner = vehiclesReady() ? makeCar(model, color) : new THREE.Group();
+    if (!vehiclesReady()) carParts((kind, col, x, y, z, sx, sy, sz) => {
       const isWheel = kind === 'wheel';
       const m = new THREE.Mesh(isWheel ? wheel : box, kind === 'light' ? glowMat(col) : kind === 'glass' ? glassMat : carMat(col));
       if (isWheel) { m.scale.set(sx, sy, sz); m.rotation.z = Math.PI / 2; } else m.scale.set(sz, sy, sx);
@@ -93,6 +94,10 @@ class Car {
 export function spawnCars() {
   let k = 0;
   LOOPS.forEach((loop, li) => {
-    for (let j = 0; j < 2; j++) G.cars.push(new Car(loop, j * 2 + li, CAR_COLORS[k++ % CAR_COLORS.length]));
+    for (let j = 0; j < 2; j++) {
+      // de vez en cuando pasa un taxi
+      const model = k === 3 ? 'Taxi' : CAR_MODELS[k % CAR_MODELS.length];
+      G.cars.push(new Car(loop, j * 2 + li, CAR_COLORS[k++ % CAR_COLORS.length], model));
+    }
   });
 }

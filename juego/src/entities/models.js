@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import animData from '../assets/people/anims.json';
 
 // Personas realistas con ropa de calle (Microsoft Rocketbox, licencia MIT).
@@ -66,6 +67,58 @@ function prepClip(json, merge = true) {
   return clip;
 }
 
+// Une las piezas de cada persona (hasta 26 mallas) en una por material: muchas
+// menos llamadas de dibujo. Los índices de hueso se pasan a un esqueleto común.
+function mergeSkinned(root) {
+  const skins = [];
+  root.traverse((o) => { if (o.isSkinnedMesh) skins.push(o); });
+  if (skins.length < 2) return;
+  const base = skins.reduce((a, b) => (b.skeleton.bones.length > a.skeleton.bones.length ? b : a));
+  const bones = [...base.skeleton.bones], inverses = base.skeleton.boneInverses.map((m) => m.clone());
+  const indexOf = new Map(bones.map((b, i) => [b, i]));
+  const groups = new Map();
+  for (const m of skins) {
+    if (!m.bindMatrix.equals(base.bindMatrix)) return; // no es seguro unirlas
+    const map = m.skeleton.bones.map((b, i) => {
+      if (!indexOf.has(b)) { indexOf.set(b, bones.length); bones.push(b); inverses.push(m.skeleton.boneInverses[i].clone()); }
+      return indexOf.get(b);
+    });
+    const geo = m.geometry.clone();
+    for (const k of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv', 'skinIndex', 'skinWeight'].includes(k)) geo.deleteAttribute(k);
+    const si = geo.attributes.skinIndex;
+    const arr = new Uint16Array(si.count * 4);
+    for (let i = 0; i < si.count; i++) for (let j = 0; j < 4; j++) arr[i * 4 + j] = map[si.getComponent(i, j)] ?? 0;
+    geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(arr, 4));
+    for (const k of ['position', 'normal', 'uv', 'skinWeight']) {
+      const a = geo.attributes[k];
+      if (a && (a.isInterleavedBufferAttribute || a.normalized || !(a.array instanceof Float32Array))) {
+        const f = new Float32Array(a.count * a.itemSize);
+        for (let i = 0; i < a.count; i++) for (let j = 0; j < a.itemSize; j++) f[i * a.itemSize + j] = a.getComponent(i, j);
+        geo.setAttribute(k, new THREE.BufferAttribute(f, a.itemSize));
+      }
+    }
+    // la geometría se pasa al espacio del nodo base (mismo padre en estos modelos)
+    if (m.parent !== base.parent || !m.matrix.equals(base.matrix)) { m.updateMatrix(); base.updateMatrix(); geo.applyMatrix4(new THREE.Matrix4().copy(base.matrix).invert().multiply(m.matrix)); }
+    const key = m.material.uuid;
+    if (!groups.has(key)) groups.set(key, { mat: m.material, geos: [] });
+    groups.get(key).geos.push(geo);
+  }
+  const skeleton = new THREE.Skeleton(bones, inverses);
+  const parent = base.parent;
+  for (const m of skins) m.removeFromParent();
+  for (const { mat, geos } of groups.values()) {
+    const allIdx = geos.every((g) => g.index);
+    const merged = mergeGeometries(allIdx ? geos : geos.map((g) => (g.index ? g.toNonIndexed() : g)), false);
+    if (!merged) continue;
+    mat.vertexColors = false; // los colores por vértice del FBX no aportan y se descartan al unir
+    const sm = new THREE.SkinnedMesh(merged, mat);
+    sm.name = 'body_' + mat.name;
+    sm.position.copy(base.position); sm.quaternion.copy(base.quaternion); sm.scale.copy(base.scale);
+    sm.bind(skeleton, base.bindMatrix);
+    parent.add(sm);
+  }
+}
+
 const findSkin = (o) => { let r = null; o.traverse((c) => { if (c.isSkinnedMesh && (!r || c.skeleton.bones.length > r.skeleton.bones.length)) r = c; }); return r; };
 
 export async function loadModels(onProgress = () => {}) {
@@ -94,9 +147,10 @@ export async function loadModels(onProgress = () => {}) {
       } catch (e) { console.warn('No se pudo cargar', n, e.message); }
     }
     if (!g) return;
+    mergeSkinned(g.scene);
     g.scene.traverse((o) => {
       if (o.isMesh) {
-        o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false;
+        o.castShadow = true; o.receiveShadow = false;
         const m = o.material;
         if (m.alphaTest > 0) m.alphaTest = 0.5;
         m.envMapIntensity = 0.6;

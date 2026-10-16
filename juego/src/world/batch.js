@@ -72,7 +72,8 @@ export class StaticBatch {
     }
     g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     const shadow = opts.shadow !== false && mat !== MAT.glow;
-    const key = mat.uuid + '|' + Math.floor(x / this.chunk) + ',' + Math.floor(z / this.chunk) + (shadow ? 's' : 'n');
+    // opts.global: un único lote para toda la ciudad (piezas pequeñas repartidas, p. ej. luces de semáforo)
+    const key = mat.uuid + '|' + (opts.global ? 'all' : Math.floor(x / this.chunk) + ',' + Math.floor(z / this.chunk)) + (shadow ? 's' : 'n');
     if (!this.buckets.has(key)) this.buckets.set(key, { mat, shadow, list: [] });
     this.buckets.get(key).list.push(g);
   }

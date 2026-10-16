@@ -3,12 +3,14 @@ import './style.css';
 import { G, on } from './game.js';
 import { newState, load, save, hasSave, inv } from './core/state.js';
 import { initInput, pollInput, input } from './core/input.js';
-import { initAudio, sfx } from './core/audio.js';
+import { initAudio, sfx, updateAmbience, audioStatus, setSiren } from './core/audio.js';
 import { createWorld } from './world/world.js';
-import { createSky, setShadows } from './world/sky.js';
+import { createSky, setShadows, nightFactor } from './world/sky.js';
 import { initRender, buildComposer, resizeRender, renderFrame, syncHandLights, setQuality, R } from './render.js';
 import { makeHuman } from './entities/human.js';
 import { loadModels, makeRealHuman, MODELS, modelNames } from './entities/models.js';
+import { loadVehicles } from './entities/vehicles.js';
+import { loadProps } from './world/props.js';
 import { LEO_MODEL } from './entities/npc.js';
 import { buildItem } from './entities/hands.js';
 import { ITEMS } from './data/items.js';
@@ -300,6 +302,7 @@ async function warmup(withHands) {
 async function boot() {
   setLoad(0.05, 'Construyendo Puerto Lomas…');
   await nextFrame(); await nextFrame();
+  try { await Promise.all([loadVehicles(), loadProps()]); } catch (e) { console.warn('Modelos de coches/productos no disponibles', e); }
   buildWorld();
   setLoad(0.35, 'Cargando personajes…');
   await nextFrame();
@@ -342,7 +345,7 @@ function autoQuality(fps) {
 const clock = new THREE.Clock();
 let fpsT = 0, frames = 0, phoneT = 0;
 const fpsEl = document.getElementById('fps');
-let menuAng = 0;
+let menuAng = 0, ambT = 0;
 
 function frame() {
   requestAnimationFrame(frame);
@@ -375,6 +378,13 @@ function frame() {
   leo.armR.rotation.x = -0.9 + Math.sin(G.time * 3) * 0.25;
   leo.armL.rotation.x = -0.7 + Math.sin(G.time * 2.3 + 1) * 0.15;
   syncHandLights(sky.hemi, sky.sun, camera, !!G.world.inProperty(G.player.pos.x, G.player.pos.z));
+  ambT -= dt;
+  if (ambT <= 0) {
+    ambT = 0.25;
+    let near = null;
+    for (const c of G.cars) { const d = c.g.position.distanceTo(G.player.pos); if (!near || d < near.dist) near = { dist: d, speed: c.speed }; }
+    updateAmbience(1 - nightFactor, !!G.world.inProperty(G.player.pos.x, G.player.pos.z), near);
+  }
   updateHUD(target, dt);
   phoneT -= dt;
   if (phoneT <= 0) { phoneT = 0.5; tickPhone(); }
@@ -394,7 +404,7 @@ window.addEventListener('beforeunload', () => { if (!G.paused) save(); });
 
 // exponer para depuración
 window.__G = G;
-window.__debug = { layout: openLayoutEditor, 
+window.__debug = { layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
   arrest, advanceTime, econ: ECON, panels: P, R, spawn: (e) => { if (!G.objects.has(e.uid)) spawnObject(e); },
   // ejecuta la acción del centro de la pantalla al instante (para pruebas automáticas)
   act: (secondary = false) => { G.player.update(0, false); camera.updateMatrixWorld(); updateInteract(1); runAction(secondary); },
