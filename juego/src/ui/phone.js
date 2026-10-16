@@ -1,14 +1,16 @@
 import { openLayoutEditor } from './layout.js';
 import { G, on, money } from '../game.js';
 import { STRAINS, RANKS } from '../data/items.js';
+const nego = {}; // precio propuesto en cada negociación abierta
 import { PEOPLE } from '../data/people.js';
 import { QUESTS } from '../data/quests.js';
-import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, counterDeal, orderSeeds } from '../systems/economy.js';
+import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotiateDeal, orderSeeds, acceptChance, marketChance, priceLabel, trustLabel, addictionLabel, REP_TIERS, repTier } from '../systems/economy.js';
 import { clock, dayName } from '../systems/time.js';
 import { save, wipe } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch } from '../core/input.js';
-import { chips, confirmDialog, closePanel } from './panels.js';
+import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './panels.js';
+import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
 
@@ -143,13 +145,25 @@ function chat() {
         if (d.status === 'offer') {
           const row = h('div', 'row');
           const ok = h('button', 'btn sm', 'Aceptar');
-          ok.onclick = () => { acceptDeal(d); render(); };
-          const ct = h('button', 'btn sm ghost', '+20%');
-          ct.onclick = () => { counterDeal(d); render(); };
+          ok.onclick = () => { delete nego[d.id]; acceptDeal(d); render(); };
+          const ct = h('button', 'btn sm ghost', nego[d.id] ? 'Cerrar' : 'Negociar');
+          ct.onclick = () => { if (nego[d.id]) delete nego[d.id]; else nego[d.id] = Math.round(d.price * 1.15); render(); };
           const no = h('button', 'btn sm danger', 'Rechazar');
-          no.onclick = () => { rejectDeal(d); render(); };
+          no.onclick = () => { delete nego[d.id]; rejectDeal(d); render(); };
           row.append(ok, ct, no);
           info.appendChild(row);
+          if (nego[d.id] && prod) {
+            // propuesta de precio con la probabilidad de que acepte
+            const box = h('div', 'nego');
+            const bar = chanceBar();
+            const upd = (v) => { nego[d.id] = v; bar.update(acceptChance(d.npc, prod, v / d.qty), priceLabel(prod, v / d.qty)); send.textContent = `Proponer ${money(v)}`; };
+            const st = stepper(nego[d.id], { min: 1, max: d.price * 4, step: () => Math.max(1, Math.round(d.price * 0.05)), fmt: money, onChange: upd });
+            const send = h('button', 'btn sm', '');
+            send.onclick = () => { const v = nego[d.id]; delete nego[d.id]; negotiateDeal(d, v); render(); };
+            box.append(h('div', 'small muted', `Su oferta: ${money(d.price)} (${money(Math.round(d.price / d.qty))}/ud.)${d.counters ? ' · ya habéis negociado' : ''}`), st, bar, send);
+            info.appendChild(box);
+            upd(nego[d.id]);
+          }
         } else {
           const lab = { accepted: '🟢 Aceptado · ve al punto de encuentro', done: '✅ Completado', failed: '❌ Fallido', rejected: '🚫 Rechazado', expired: '⌛ Caducado' }[d.status];
           info.appendChild(h('div', 'muted small', lab));
@@ -171,18 +185,21 @@ function chat() {
 
 function clients() {
   const list = h('div', 'ph-list');
-  const known = PEOPLE.filter((p) => customer(p.id).unlocked);
+  const known = PEOPLE.filter((p) => customer(p.id).unlocked).sort((a, b) => customer(b.id).affinity - customer(a.id).affinity);
   for (const p of known) {
     const c = customer(p.id);
-    const row = h('div', 'ph-card', `<div class="rowsp"><b>${p.name}</b><small>${c.deals} tratos</small></div>
-      <div class="meter"><span>Confianza</span><i style="width:${c.affinity}%"></i></div>
-      <div class="meter add"><span>Enganche</span><i style="width:${Math.round(c.addiction * 100)}%"></i></div>
+    const pend = G.state.deals.find((d) => d.npc === p.id && (d.status === 'offer' || d.status === 'accepted'));
+    const last = c.lastBuy ? (G.state.day - c.lastBuy === 0 ? 'hoy' : `hace ${G.state.day - c.lastBuy} día(s)`) : 'nunca';
+    const row = h('div', 'ph-card', `<div class="rowsp"><b>${p.name}</b><small>${c.deals} compras · última ${last}</small></div>
+      ${meter('Confianza', c.affinity / 100, trustLabel(c.affinity))}
+      ${meter('Adicción', c.addiction, addictionLabel(c.addiction), '#e67e22')}
       <div class="small muted">Le gusta:</div><div class="chips">${chips(p.prefs)}</div>
-      <div class="small muted">Presupuesto: ${money(p.budget[0])}–${money(p.budget[1])} · Exigencia: ${'★'.repeat(p.std + 1)}</div>`);
+      <div class="small muted">Prefiere ${ITEMS[p.form].icon} ${ITEMS[p.form].form} · Gasta ${money(p.budget[0])}–${money(p.budget[1])} · Exigencia ${'★'.repeat(p.std + 1)}</div>
+      ${pend ? `<div class="small" style="color:var(--gold)">● ${pend.status === 'offer' ? 'Te ha pedido algo (mira Mensajes)' : 'Pedido aceptado pendiente de entregar'}</div>` : ''}`);
     list.appendChild(row);
   }
   const locked = PEOPLE.length - known.length;
-  list.appendChild(h('div', 'muted center small', locked ? `Hay ${locked} vecinos más en Puerto Lomas. Regálales una muestra para hacerlos clientes.` : '¡Todo el pueblo es cliente tuyo!'));
+  list.appendChild(h('div', 'muted center small', locked ? `Hay ${locked} vecinos más en Puerto Lomas. Háblales y regálales una muestra para hacerlos clientes.` : '¡Todo el pueblo es cliente tuyo!'));
   screen.appendChild(list);
 }
 
@@ -196,17 +213,16 @@ function products() {
     card.innerHTML = `<div class="rowsp"><b class="pname">${p.name}</b><small>${STRAINS[p.strain].name}</small></div><div class="chips">${chips(p.effects)}</div>
       <div class="small muted">Valor de mercado: <b>${money(v)}</b> por unidad</div>`;
     const row = h('div', 'rowsp');
-    const price = h('div', 'qty');
-    const minus = h('button', 'qb', '−'), plus = h('button', 'qb', '+'), val = h('span', 'qv', money(p.price));
-    const ratio = () => { const r = p.price / v; val.className = 'qv ' + (r > 1.25 ? 'bad' : r < 0.9 ? 'cheap' : ''); };
-    minus.onclick = () => { p.price = Math.max(1, p.price - Math.max(1, Math.round(v * 0.05))); val.textContent = money(p.price); ratio(); sfx('click'); };
-    plus.onclick = () => { p.price += Math.max(1, Math.round(v * 0.05)); val.textContent = money(p.price); ratio(); sfx('click'); };
-    ratio();
-    price.append(minus, val, plus);
+    const bar = chanceBar();
+    const upd = (n) => { p.price = n; bar.update(marketChance(p, n), priceLabel(p, n)); };
+    const price = stepper(p.price, { min: 1, max: v * 4, step: () => Math.max(1, Math.round(v * 0.05)), fmt: money, onChange: upd });
+    const fair = h('button', 'btn sm ghost', 'Precio justo');
+    fair.onclick = () => { price.set(v); sfx('click'); };
     const tog = h('button', 'toggle' + (p.listed ? ' on' : ''), p.listed ? 'A la venta' : 'Oculto');
     tog.onclick = () => { p.listed = !p.listed; render(); };
-    row.append(price, tog);
-    card.appendChild(row);
+    row.append(price, fair, tog);
+    card.append(row, bar);
+    bar.update(marketChance(p, p.price), priceLabel(p, p.price));
     card.querySelector('.pname').onclick = () => {
       const row2 = h('div', 'row');
       const inp = h('input', 'name-in');
@@ -219,7 +235,7 @@ function products() {
     };
     list.appendChild(card);
   }
-  list.appendChild(h('div', 'muted small center', 'Los clientes rechazan precios muy por encima del valor de mercado (sube su tolerancia con la confianza).'));
+  list.appendChild(h('div', 'muted small center', 'Este es tu precio base por unidad. La probabilidad es la media de tus clientes: los que más confían en ti y los más enganchados aceptan precios más altos. En cada pedido puedes negociar.'));
   screen.appendChild(list);
 }
 
@@ -342,7 +358,11 @@ function quests() {
 function stats() {
   const s = G.state;
   const r = RANKS[s.rank];
-  screen.appendChild(h('div', 'ph-list', `<div class="ph-card"><div class="rowsp"><b>Rango</b><span>${r.name}</span></div><div class="rowsp"><b>Experiencia</b><span>${s.xp} XP</span></div>
+  const rt = repTier(s.rep || 0), next = REP_TIERS[rt + 1];
+  const repTxt = next ? `${Math.round(s.rep || 0)}/${next.min} para «${next.name}»` : 'Máxima';
+  screen.appendChild(h('div', 'ph-list', `<div class="ph-card"><div class="rowsp"><b>Reputación</b><span>${REP_TIERS[rt].name}</span></div>${meter('En Puerto Lomas', (s.rep || 0) / 100, repTxt, '#9b59b6')}
+    <div class="small muted">Sube cerrando tratos, cumpliendo y regalando muestras. Baja si fallas un pedido o te detienen. Con más reputación, más vecinos aceptan tus muestras y te llegan más pedidos.</div></div>
+    <div class="ph-card"><div class="rowsp"><b>Rango</b><span>${r.name}</span></div><div class="rowsp"><b>Experiencia</b><span>${s.xp} XP</span></div>
     <div class="rowsp"><b>Efectivo</b><span class="money">${money(s.money)}</span></div><div class="rowsp"><b>Ganado en total</b><span>${money(s.stats.earned)}</span></div>
     <div class="rowsp"><b>Tratos cerrados</b><span>${s.stats.deals}</span></div><div class="rowsp"><b>Mejor trato</b><span>${money(s.stats.best)}</span></div>
     <div class="rowsp"><b>Clientes</b><span>${PEOPLE.filter((p) => customer(p.id).unlocked).length}/${PEOPLE.length}</span></div>

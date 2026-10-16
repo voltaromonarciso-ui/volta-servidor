@@ -12,6 +12,7 @@ export function newState() {
     minute: 17.5 * 60,
     rank: 0,
     xp: 0,
+    rep: 0,             // reputación en la ciudad (0-100)
     inv: Array(INV_SIZE).fill(null),
     sel: 0,
     water: 4,           // usos de agua en la regadera

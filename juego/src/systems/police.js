@@ -5,7 +5,7 @@ import { ITEMS } from '../data/items.js';
 import { illegalCount, save } from '../core/state.js';
 import { sfx, setSiren } from '../core/audio.js';
 import { ROADS } from '../world/world.js';
-import { addMoney } from './economy.js';
+import { addMoney, addRep } from './economy.js';
 
 // Patrullas, toque de queda (21:00–05:00), cacheos y persecuciones.
 export const wanted = { level: 0, unseen: 0, escape: 14, reason: '' };
@@ -121,6 +121,7 @@ export function arrest(cop) {
   s.inv.forEach((slot, i) => { if (slot && ITEMS[slot.id].illegal) { lost += slot.q; s.inv[i] = null; } });
   const fine = Math.min(Math.max(0, s.money), 150 + s.rank * 75 + lost * 5);
   addMoney(-fine);
+  addRep(-4); // que te detengan se sabe en el barrio
   wanted.level = 0; wanted.unseen = 0;
   setSiren(false);
   for (const c of G.police) { c.mode = 'return'; c.path = []; }

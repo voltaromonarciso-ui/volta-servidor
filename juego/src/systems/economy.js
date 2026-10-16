@@ -90,6 +90,43 @@ export function myMsg(to, text) {
 }
 
 // ------------------------------------------------------------------
+//  Reputación en la ciudad
+// ------------------------------------------------------------------
+// Sube al cerrar tratos, cumplir y regalar; baja al fallar y si te detienen.
+// Cuanta más reputación, más vecinos aceptan muestras y más pedidos llegan.
+export const REP_TIERS = [
+  { min: 0, name: 'Desconocido' },
+  { min: 15, name: 'Conocido en el barrio' },
+  { min: 35, name: 'Respetado' },
+  { min: 60, name: 'Famoso en Puerto Lomas' },
+  { min: 85, name: 'Leyenda' },
+];
+export function repTier(r = G.state.rep || 0) {
+  let t = 0;
+  REP_TIERS.forEach((x, i) => { if (r >= x.min) t = i; });
+  return t;
+}
+export function addRep(n) {
+  const s = G.state;
+  const before = repTier(s.rep || 0);
+  s.rep = clamp((s.rep || 0) + n, 0, 100);
+  const after = repTier(s.rep);
+  if (after > before) {
+    sfx('level');
+    G.act.bigToast?.(`Reputación: ${REP_TIERS[after].name}`, 'Más vecinos querrán probar tu producto y te llegarán más pedidos.');
+  } else if (after < before) G.act.toast?.(`Tu reputación baja: ${REP_TIERS[after].name}`, '📉');
+  emit('rep');
+}
+
+// Etiquetas para la confianza (0-100) y la adicción (0-1) de cada cliente.
+export function trustLabel(v) {
+  return v < 20 ? 'Desconfía' : v < 40 ? 'Neutral' : v < 60 ? 'Le caes bien' : v < 80 ? 'Confía en ti' : 'Fiel';
+}
+export function addictionLabel(v) {
+  return v < 0.1 ? 'Ninguna' : v < 0.3 ? 'Leve' : v < 0.55 ? 'Moderada' : v < 0.8 ? 'Alta' : 'Muy alta';
+}
+
+// ------------------------------------------------------------------
 //  Clientes
 // ------------------------------------------------------------------
 export function customer(id) {
@@ -105,8 +142,38 @@ export function unlockStartingCustomers() {
   }
 }
 
-function prefMatches(person, prod) {
+export function prefMatches(person, prod) {
   return prod.effects.filter((e) => person.prefs.includes(e)).length;
+}
+
+// Hasta qué múltiplo del valor de mercado está dispuesto a pagar un cliente.
+export function priceTolerance(id) {
+  const c = customer(id);
+  return 1.05 + c.affinity / 220 + c.addiction * 0.55 + (G.state.rep || 0) / 450;
+}
+// Probabilidad (0-1) de que un cliente acepte pagar `unit` por unidad de un producto.
+// Curva suave: barato casi siempre sí; muy por encima de su tolerancia casi nunca.
+export function acceptChance(id, prod, unit) {
+  const person = personOf(id);
+  const v = prodValue(prod);
+  const tol = priceTolerance(id) + (person ? prefMatches(person, prod) * 0.08 : 0);
+  return clamp(1 / (1 + Math.exp((unit / v - tol) * 7)), 0.02, 0.98);
+}
+// Probabilidad media de aceptación de un precio entre los clientes que ya tienes.
+export function marketChance(prod, unit) {
+  const known = PEOPLE.filter((p) => customer(p.id).unlocked);
+  if (!known.length) return acceptChance('chema', prod, unit);
+  return known.reduce((a, p) => a + acceptChance(p.id, prod, unit), 0) / known.length;
+}
+export function priceLabel(prod, unit) {
+  const r = unit / prodValue(prod);
+  return r < 0.85 ? 'Barato' : r < 1.15 ? 'Precio justo' : r < 1.5 ? 'Caro' : 'Abusivo';
+}
+
+// La adicción crece con lo que consume (más con productos con más efectos) y
+// cada vez más despacio al acercarse al máximo.
+export function addAddiction(c, units, prod) {
+  c.addiction = clamp(c.addiction + units * (0.01 + prod.effects.length * 0.004) * (1 - c.addiction * 0.6), 0, 1);
 }
 
 function chooseProduct(person, c) {
@@ -114,9 +181,9 @@ function chooseProduct(person, c) {
   let best = null, bestScore = -Infinity;
   for (const p of list) {
     const value = prodValue(p);
-    const tolerance = 1.2 + c.affinity / 250 + c.addiction * 0.25;
-    if (p.price > value * tolerance) continue;
-    const score = prefMatches(person, p) * 2 + Math.random() * 1.5 - (p.price / value) + (value / 200);
+    const chance = acceptChance(person.id, p, p.price);
+    if (chance < 0.3) continue; // demasiado caro para este cliente
+    const score = prefMatches(person, p) * 2 + Math.random() * 1.5 + chance * 2 + (value / 200);
     if (score > bestScore) { bestScore = score; best = p; }
   }
   return best;
@@ -130,14 +197,14 @@ function spotFor(person) {
 }
 
 let dealSeq = 0;
-function makeDeal(person, c) {
+function makeDeal(person, c, urgent = false) {
   const p = chooseProduct(person, c);
   if (!p) {
     if (Math.random() < 0.25 && Object.keys(G.state.products).length) sendMsg(person.id, 'Tus precios están por las nubes, tío. Avísame si los bajas.');
     return;
   }
-  const budget = rand(person.budget[0], person.budget[1]) * (1 + c.addiction * 0.6 + c.affinity / 300);
-  const maxQ = 3 + G.state.rank * 3 + Math.floor(c.affinity / 20);
+  const budget = rand(person.budget[0], person.budget[1]) * (1 + c.addiction * 0.8 + c.affinity / 300);
+  const maxQ = 3 + G.state.rank * 3 + Math.floor(c.affinity / 20) + Math.floor(c.addiction * 6);
   const qty = clamp(Math.floor(budget / p.price), 1, maxQ);
   const spot = spotFor(person);
   const deal = {
@@ -146,7 +213,10 @@ function makeDeal(person, c) {
   };
   G.state.deals.push(deal);
   const fm = ITEMS[person.form].form;
-  const lines = [
+  const lines = urgent ? [
+    `Tío, lo necesito ya. ${qty}× ${p.name}, te doy ${money(deal.price)}. En ${fm} si puede ser. ¿${spot.name}?`,
+    `Llevo días sin nada y estoy fatal... ¿${qty} de ${p.name} por ${money(deal.price)}? Quedamos en ${spot.name}.`,
+  ] : [
     `¿Me pasas ${qty} de ${p.name} por ${money(deal.price)}? Si puede ser en ${fm}, mejor. Podemos vernos en ${spot.name}.`,
     `Ey, necesito ${qty}× ${p.name} (me gusta en ${fm}). Te doy ${money(deal.price)}. ¿${spot.name}?`,
     `¿Tienes ${p.name}? Me llevo ${qty} por ${money(deal.price)}, en ${fm} si puedes. Quedamos en ${spot.name}.`,
@@ -154,12 +224,12 @@ function makeDeal(person, c) {
   sendMsg(person.id, pick(lines), { deal: deal.id });
 }
 
-export function acceptDeal(deal) {
+export function acceptDeal(deal, quiet = false) {
   if (deal.status !== 'offer') return;
   deal.status = 'accepted';
   deal.expires = absNow() + 240;
   const spot = G.world.spots.find((s) => s.id === deal.spot);
-  myMsg(deal.npc, 'Hecho. Voy para allá.');
+  if (!quiet) myMsg(deal.npc, 'Hecho. Voy para allá.');
   setTimeout(() => sendMsg(deal.npc, `Genial, te espero en ${spot.name}. No tardes más de 4 horas.`), 900);
   G.act.setWaypoint?.(spot.x, spot.z, CONTACTS[deal.npc].name);
   sfx('click');
@@ -172,20 +242,35 @@ export function rejectDeal(deal) {
   customer(deal.npc).affinity = Math.max(0, customer(deal.npc).affinity - 1);
 }
 
-export function counterDeal(deal) {
-  if (deal.status !== 'offer') return;
+// Contraoferta desde el móvil: el cliente acepta según su probabilidad para ese
+// precio. Si dice que no, a veces mantiene su oferta y otras se va (como mucho 2 intentos).
+export function negotiateDeal(deal, total) {
+  if (deal.status !== 'offer') return null;
   const c = customer(deal.npc);
-  const newPrice = Math.round(deal.price * 1.2);
-  myMsg(deal.npc, `Te lo dejo en ${money(newPrice)}.`);
-  const chance = 0.35 + c.affinity / 200 + c.addiction * 0.3;
-  if (Math.random() < chance) {
-    deal.price = newPrice;
-    setTimeout(() => { sendMsg(deal.npc, 'Vale, trato hecho.'); acceptDeal(deal); }, 700);
-  } else {
-    deal.status = 'rejected';
-    c.affinity = Math.max(0, c.affinity - 3);
-    setTimeout(() => sendMsg(deal.npc, 'Paso, es demasiado caro.'), 700);
+  const p = product(deal.product);
+  total = Math.max(1, Math.round(total));
+  deal.counters = (deal.counters || 0) + 1;
+  myMsg(deal.npc, `¿Qué te parece ${money(total)}?`);
+  if (total <= deal.price) {
+    // rebajar siempre se acepta y gusta
+    deal.price = total;
+    c.affinity = clamp(c.affinity + 2, 0, 100);
+    setTimeout(() => { sendMsg(deal.npc, '¡Anda, gracias! Trato hecho.'); acceptDeal(deal, true); }, 700);
+    return true;
   }
+  if (Math.random() < acceptChance(deal.npc, p, total / deal.qty)) {
+    deal.price = total;
+    setTimeout(() => { sendMsg(deal.npc, pick(['Vale, trato hecho.', 'Bueno... venga, acepto.', 'Está bien, pero que sea bueno.'])); acceptDeal(deal, true); }, 700);
+    return true;
+  }
+  c.affinity = Math.max(0, c.affinity - 2);
+  if (deal.counters >= 2 || Math.random() < 0.4) {
+    deal.status = 'rejected';
+    setTimeout(() => sendMsg(deal.npc, pick(['Paso, es demasiado caro.', 'Con esos precios me busco a otro.', 'Ni de broma. Otra vez será.'])), 700);
+  } else {
+    setTimeout(() => sendMsg(deal.npc, `Eso es mucho. Mi oferta sigue en pie: ${money(deal.price)}.`), 700);
+  }
+  return false;
 }
 
 // Entrega del pedido: `given` = [{id, p, q}] que salen del inventario.
@@ -207,11 +292,14 @@ export function completeDeal(deal, given) {
   const tip = formOk ? Math.max(2, Math.round(pay * 0.1)) : 0;
   pay += tip;
   const p = product(deal.product);
-  const satisfaction = (rightUnits >= deal.qty ? 1 : 0.6) + prefMatches(person, p) * 0.15 + (prodValue(p) / p.price - 1) * 0.5;
+  const unit = deal.price / deal.qty;
+  const satisfaction = clamp((rightUnits >= deal.qty ? 1 : 0.6) + prefMatches(person, p) * 0.15 + (prodValue(p) / unit - 1) * 0.5, 0, 2);
   deal.status = 'done';
   addMoney(pay);
-  c.affinity = clamp(c.affinity + Math.round(4 + satisfaction * 6 + (formOk ? 3 : 0)), 0, 100);
-  c.addiction = clamp(c.addiction + 0.06 + p.effects.length * 0.01, 0, 1);
+  c.affinity = clamp(c.affinity + Math.round(3 + satisfaction * 5 + (formOk ? 3 : 0)), 0, 100);
+  addAddiction(c, units, p);
+  c.lastBuy = G.state.day;
+  addRep(1 + satisfaction * 0.8);
   c.deals++;
   G.state.stats.deals++;
   G.state.today.deals++;
@@ -232,32 +320,93 @@ export function completeDeal(deal, given) {
   return { ok: true, pay, tip };
 }
 
-export function giveSample(npc) {
-  const held = inv.held();
-  if (!held || !['cogollo', 'bolsa', 'gomi'].includes(held.id)) return G.act.toast('Coge en la mano pétalos, un sobre o gominolas para regalar una muestra.');
+// Regalar producto (una unidad del montón elegido) a cualquier vecino.
+// - Si aún no es cliente: puede engancharse y darte su número.
+// - Si ya lo es: gana confianza y algo de adicción.
+// En ambos casos sube un poco tu reputación. Una vez al día por persona.
+export const GIFTABLE = ['cogollo', 'bolsa', 'tarro', 'gomi'];
+export function canGift(npc) { return customer(npc.id).sampleDay !== G.state.day; }
+export function giveSample(npc, slot = inv.held()) {
+  if (!slot || !GIFTABLE.includes(slot.id)) return G.act.toast('Elige producto para regalar.');
   const c = customer(npc.id);
-  if (c.sampleDay === G.state.day) return G.act.toast(`${npc.person.name} ya ha probado algo hoy.`);
-  const p = product(held.p);
-  const spec = { id: held.id, p: held.p };
-  inv.remove(held.id, 1, held.p);
+  if (!canGift(npc)) return G.act.toast(`${npc.person.name} ya ha probado algo hoy.`);
+  const p = product(slot.p);
+  const units = ITEMS[slot.id].units || 1;
+  const spec = { id: slot.id, p: slot.p };
+  inv.remove(slot.id, 1, slot.p);
   c.sampleDay = G.state.day;
   npc.playExchange(spec, false);
   G.player.vm.give();
   const m = prefMatches(npc.person, p);
+  addAddiction(c, units, p);
+  const first = npc.person.name.split(' ')[0];
+  if (c.unlocked) {
+    const gain = 5 + m * 3 + Math.min(4, units - 1);
+    c.affinity = clamp(c.affinity + gain, 0, 100);
+    addRep(1);
+    G.act.toast(`${first}: «${pick(['¡Qué detalle! Esto no se olvida.', 'Invita la casa, ¿eh? Me caes bien.', 'Gracias, tío. Te debo una.'])}» (+${gain} confianza)`, '🎁');
+    sfx('cash');
+    return true;
+  }
   const ref = G.state.flags['ref_' + npc.id] ? 0.2 : 0;
-  const chance = clamp(0.28 + m * 0.2 + G.state.rank * 0.04 + prodValue(p) / 400 + ref - npc.person.std * 0.08, 0.1, 0.95);
+  const chance = clamp(0.28 + m * 0.2 + G.state.rank * 0.04 + prodValue(p) / 400 + ref + (G.state.rep || 0) / 250 - npc.person.std * 0.08, 0.1, 0.95);
   if (Math.random() < chance) {
     c.unlocked = true;
     c.affinity = 30 + m * 10;
+    if (!G.state.contacts.includes(npc.id)) G.state.contacts.push(npc.id);
     G.act.toast(`${npc.person.name}: «¡Uf, esto está buenísimo! Guárdame tu número.»`, '🤝');
     setTimeout(() => sendMsg(npc.id, 'Soy yo, el de la muestra. Escríbeme cuando tengas más.'), 1200);
     addXP(25);
+    addRep(2);
     sfx('cash');
     G.act.flag('sampleWon');
-  } else {
-    G.act.toast(`${npc.person.name}: «Mmm... no es para mí.»`, '😕');
-    sfx('error');
+    return true;
   }
+  addRep(0.5);
+  G.act.toast(`${npc.person.name}: «Mmm... no es para mí.»`, '😕');
+  sfx('error');
+  return false;
+}
+
+// Venta en mano a un cliente que ya conoces (sin pedido previo). Una vez al día.
+// `slot` = montón del inventario, `qty` = paquetes, `unit` = precio por unidad.
+export function saleChance(npc, slot, unit) {
+  const c = customer(npc.id);
+  const base = acceptChance(npc.id, product(slot.p), unit);
+  return clamp(base * (0.45 + c.addiction * 0.5 + c.affinity / 250), 0.02, 0.95);
+}
+export function saleBudget(npc) {
+  const c = customer(npc.id);
+  return Math.round(npc.person.budget[1] * (1 + c.addiction * 0.8 + c.affinity / 300));
+}
+export function directSale(npc, slot, qty, unit) {
+  const c = customer(npc.id);
+  const first = npc.person.name.split(' ')[0];
+  if (!c.unlocked) return { ok: false, msg: 'Aún no te conoce: regálale una muestra primero.' };
+  if (c.walkDay === G.state.day) return { ok: false, msg: `${first} ya te ha comprado hoy.` };
+  if (inv.count(slot.id, slot.p) < qty) return { ok: false, msg: 'No llevas tanto.' };
+  const p = product(slot.p);
+  const units = qty * (ITEMS[slot.id].units || 1);
+  const total = Math.round(units * unit);
+  if (total > saleBudget(npc)) return { ok: false, msg: `${first}: «No llevo tanto dinero encima. Como mucho ${money(saleBudget(npc))}.»` };
+  c.walkDay = G.state.day;
+  if (Math.random() >= saleChance(npc, slot, unit)) {
+    c.affinity = Math.max(0, c.affinity - 1);
+    return { ok: true, accepted: false, msg: `${first}: «${pick(['Uf, a ese precio no.', 'Hoy paso, gracias.', 'Demasiado caro para mí.'])}»` };
+  }
+  inv.remove(slot.id, qty, slot.p);
+  addMoney(total);
+  c.affinity = clamp(c.affinity + 2 + prefMatches(npc.person, p), 0, 100);
+  addAddiction(c, units, p);
+  c.lastBuy = G.state.day;
+  c.deals++;
+  G.state.stats.deals++;
+  G.state.today.deals++;
+  G.state.stats.best = Math.max(G.state.stats.best, total);
+  addXP(total / 3 + 4);
+  addRep(0.6);
+  sfx('cash');
+  return { ok: true, accepted: true, total, msg: `${first}: «${pick(['Trato hecho.', 'Perfecto, justo lo que necesitaba.', 'Venga, me lo quedo.'])}»` };
 }
 
 // ------------------------------------------------------------------
@@ -270,8 +419,19 @@ export function onHour(hour) {
       const c = customer(person.id);
       if (!c.unlocked) continue;
       if (s.deals.some((d) => d.npc === person.id && (d.status === 'offer' || d.status === 'accepted'))) continue;
-      const p = 0.05 + c.addiction * 0.12 + c.affinity / 1200;
+      const p = 0.05 + c.addiction * 0.14 + c.affinity / 1200 + (s.rep || 0) / 1500;
       if (Math.random() < p) makeDeal(person, c);
+    }
+  }
+  // cada mañana: la adicción baja si no compran y los muy enganchados te escriben con mono
+  if (hour === 7) {
+    for (const person of PEOPLE) {
+      const c = customer(person.id);
+      if (!c.unlocked || c.addiction <= 0) continue;
+      const days = s.day - (c.lastBuy || 0);
+      if (days >= 1) c.addiction = Math.max(0, c.addiction - 0.035);
+      const busy = s.deals.some((d) => d.npc === person.id && (d.status === 'offer' || d.status === 'accepted'));
+      if (!busy && days >= 2 && c.addiction > 0.5 && Math.random() < c.addiction && Object.keys(s.products).length) makeDeal(person, c, true);
     }
   }
   if (hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day) {
@@ -289,6 +449,7 @@ export function onMinute() {
       d.status = 'failed';
       const c = customer(d.npc);
       c.affinity = Math.max(0, c.affinity - 12);
+      addRep(-3);
       sendMsg(d.npc, pick(['Te he esperado una eternidad. Paso de ti.', 'Me has dejado tirado... no me hace gracia.', 'Ya no hace falta, gracias por nada.']));
       G.act.clearWaypoint?.();
     }

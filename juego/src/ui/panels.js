@@ -4,7 +4,7 @@ import { EFFECTS, INGREDIENTS } from '../data/effects.js';
 import { inv, slotsAdd, slotsRemove, illegalCount, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch } from '../core/input.js';
-import { product, prodValue, previewMix, registerMix, completeDeal, addMoney, addXP, customer, giveSample } from '../systems/economy.js';
+import { product, prodValue, previewMix, registerMix, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
@@ -30,11 +30,12 @@ export function openPanel({ title, wide = false, cls = '', onClose }) {
   x.onclick = () => closePanel();
   head.appendChild(x);
   const body = h('div', 'body');
-  p.append(head, body);
+  const foot = h('div', 'foot'); // botones principales siempre visibles (no se cortan en pantallas bajas)
+  p.append(head, body, foot);
   wrap.appendChild(p);
   wrap.addEventListener('pointerdown', (e) => { if (e.target === wrap) closePanel(); });
   document.getElementById('ui-layer').appendChild(wrap);
-  current = { wrap, body, onClose, title: head.querySelector('h2') };
+  current = { wrap, body, foot, onClose, title: head.querySelector('h2') };
   sfx('open');
   return current;
 }
@@ -79,6 +80,35 @@ function chip(effect) {
 }
 export const chips = (effects) => effects.map(chip).join('');
 
+// ---- piezas de interfaz reutilizables ----
+// Selector − valor + (cantidades y precios).
+export function stepper(val, { min = 1, max = 99, step = 1, fmt = (v) => v, onChange = () => {} } = {}) {
+  const box = h('div', 'qty');
+  const m = h('button', 'qb', '−'), pl = h('button', 'qb', '+'), v = h('span', 'qv', fmt(val));
+  const set = (n) => { val = clamp(Math.round(n), min, max); v.textContent = fmt(val); onChange(val); };
+  m.onclick = () => { set(val - (typeof step === 'function' ? step(val) : step)); sfx('click'); };
+  pl.onclick = () => { set(val + (typeof step === 'function' ? step(val) : step)); sfx('click'); };
+  box.append(m, v, pl);
+  box.set = set;
+  box.value = () => val;
+  return box;
+}
+// Barra de probabilidad de que el cliente acepte.
+export function chanceBar() {
+  const e = h('div', 'chance', '<div class="cb-bar"><i></i></div><span></span>');
+  e.update = (p, extra = '') => {
+    const pc = Math.round(p * 100);
+    const col = p >= 0.7 ? 'var(--acc)' : p >= 0.4 ? 'var(--gold)' : 'var(--red)';
+    e.querySelector('i').style.cssText = `width:${pc}%;background:${col}`;
+    e.querySelector('span').innerHTML = `Probabilidad de que acepte: <b style="color:${col}">${pc}%</b>${extra ? ' · ' + extra : ''}`;
+  };
+  return e;
+}
+// Medidor con etiqueta (confianza, adicción, reputación…).
+export function meter(label, v01, text, color = 'var(--acc)') {
+  return `<div class="meter2"><div class="m-top"><span>${label}</span><b>${text}</b></div><div class="m-bar"><i style="width:${Math.round(clamp(v01, 0, 1) * 100)}%;background:${color}"></i></div></div>`;
+}
+
 // ------------------------------------------------------------------
 //  Tienda
 // ------------------------------------------------------------------
@@ -100,8 +130,7 @@ export function openShop(id) {
     const locked = (it.rank || 0) > G.state.rank;
     const card = h('div', 'card' + (locked ? ' locked' : ''));
     let qty = 1;
-    card.innerHTML = `<div class="c-ic">${it.icon}</div><div class="c-n">${it.name}</div><div class="c-d">${it.desc || ''}</div>
-      <div class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</div>`;
+    card.innerHTML = `<div class="c-ic">${it.icon}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${it.desc || ''}</div></div>`;
     if (!locked) {
       const row = h('div', 'qty');
       const minus = h('button', 'qb', '−'), plus = h('button', 'qb', '+'), q = h('span', 'qv', '1');
@@ -120,8 +149,8 @@ export function openShop(id) {
         G.act.toast(`Comprado: ${qty}× ${it.name}`, it.icon);
         save();
       };
-      row.append(minus, q, plus);
-      card.append(row, buy);
+      row.append(minus, q, plus, buy);
+      card.append(row);
       upd();
     }
     grid.appendChild(card);
@@ -140,6 +169,7 @@ export function openPacker() {
     p.body.innerHTML = '';
     const buds = productStacks('cogollo');
     if (!buds.length) {
+      p.foot.innerHTML = '';
       p.body.appendChild(h('p', 'txt', 'No llevas pétalos de Lumaflor. Cosecha tus plantas y vuelve.'));
       return;
     }
@@ -166,8 +196,9 @@ export function openPacker() {
     const per = F.per, pack = F.pack;
     const max = Math.min(Math.floor(inv.count('cogollo', sel) / per), inv.count(pack));
     const bar = h('div', 'progress', '<i></i>');
-    const row = h('div', 'row end');
-    const one = h('button', 'btn', 'Empaquetar 1');
+    const row = p.foot;
+    row.innerHTML = '';
+    const one = h('button', 'btn ghost', 'Empaquetar 1');
     const all = h('button', 'btn', `Empaquetar todo (${max})`);
     const go = (n) => {
       if (busy) return;
@@ -197,7 +228,7 @@ export function openPacker() {
     one.onclick = () => go(Math.min(1, max));
     all.onclick = () => go(max);
     row.append(one, all);
-    p.body.append(bar, row);
+    p.body.append(bar);
   };
   render();
 }
@@ -342,7 +373,8 @@ export function openBag() {
   let picked = -1;
   const render = () => {
     p.body.innerHTML = '';
-    p.body.appendChild(h('div', 'muted', 'Toca dos huecos para intercambiarlos. Toca un objeto para ver detalles.'));
+    p.body.appendChild(h('div', 'muted small', 'Toca dos huecos para intercambiarlos.'));
+    const cols = h('div', 'bag-cols');
     const grid = h('div', 'inv-grid big');
     G.state.inv.forEach((s, i) => {
       const cell = h('button', 'inv-cell' + (s ? '' : ' empty') + (i === picked ? ' on' : '') + (i === G.state.sel ? ' held' : ''), s ? `<span>${ITEMS[s.id].icon}</span><small>${s.q}</small>` : `<em>${(i + 1) % 10}</em>`);
@@ -358,7 +390,8 @@ export function openBag() {
       };
       grid.appendChild(cell);
     });
-    p.body.appendChild(grid);
+    cols.appendChild(grid);
+    p.body.appendChild(cols);
     const s = G.state.inv[picked];
     if (s) {
       const it = ITEMS[s.id];
@@ -376,8 +409,8 @@ export function openBag() {
       drop.onclick = () => { G.state.inv[picked] = null; picked = -1; sfx('pop'); render(); };
       row.append(hold, drop);
       d.appendChild(row);
-      p.body.appendChild(d);
-    }
+      cols.appendChild(d);
+    } else cols.appendChild(h('div', 'detail muted', 'Toca un objeto para ver qué es, llevarlo en la mano o tirarlo.'));
     const st = h('div', 'muted small', `💧 Agua en la regadera: ${G.state.water}/6 · Producto ilegal encima: ${illegalCount()}`);
     p.body.appendChild(st);
   };
@@ -385,82 +418,226 @@ export function openBag() {
 }
 
 // ------------------------------------------------------------------
-//  Vecinos y entregas
+//  Vecinos: ficha con entregar, vender, regalar y hablar
 // ------------------------------------------------------------------
+const firstName = (npc) => npc.person.name.split(' ')[0];
+const stacksOf = (ids) => {
+  const map = new Map();
+  for (const s of G.state.inv) if (s && ids.includes(s.id) && s.p) map.set(s.id + '|' + s.p, { id: s.id, p: s.p, q: (map.get(s.id + '|' + s.p)?.q || 0) + s.q });
+  return [...map.values()];
+};
+const PACKED = ['bolsa', 'tarro', 'gomi'];
+
 export function npcActions(npc) {
   const deal = npc.deal;
   const c = customer(npc.id);
-  const held = inv.held();
-  const acts = [];
-  if (deal) acts.push({ label: `Entregar pedido a ${npc.person.name.split(' ')[0]}`, fn: () => openHandover(npc, deal) });
-  if (!c.unlocked && held && ['cogollo', 'bolsa', 'gomi'].includes(held.id)) acts.push({ label: `Ofrecer muestra a ${npc.person.name.split(' ')[0]}`, fn: () => giveSample(npc) });
-  acts.push({
-    label: `Hablar con ${c.unlocked ? npc.person.name.split(' ')[0] : 'el vecino'}`,
-    fn: () => { npc.talk(3); G.act.toast(`${c.unlocked ? npc.person.name : 'Vecino'}: «${c.unlocked ? pick(CUSTOMER_LINES) : pick(GREETINGS)}»`, '💬'); },
-    secondary: acts.length > 0,
-  });
-  return acts;
+  const who = c.unlocked ? firstName(npc) : 'el vecino';
+  if (deal) {
+    return [
+      { label: `Entregar pedido a ${firstName(npc)}`, fn: () => openHandover(npc, deal) },
+      { label: 'Más opciones', fn: () => openNpc(npc), secondary: true },
+    ];
+  }
+  return [{ label: `Hablar con ${who}`, fn: () => openNpc(npc) }];
 }
 
-export function openHandover(npc, deal) {
-  const prod = product(deal.product);
-  const p = openPanel({ title: `Trato con ${npc.person.name}`, wide: true });
+export function openNpc(npc, view = 'main') {
+  const c = customer(npc.id);
+  const name = c.unlocked ? npc.person.name : 'Vecino';
+  const p = openPanel({ title: name, cls: 'npc', onClose: () => { npc.talkT = 1; } });
   npc.talk(999);
-  const offer = new Map(); // key -> {id,p,q}
-  const key = (s) => s.id + '|' + s.p;
-  const units = () => [...offer.values()].reduce((a, o) => a + o.q * ITEMS[o.id].units, 0);
+  npc.lookAt(G.player.pos.x, G.player.pos.z);
+  let sel = null, qty = 1, unit = 0, note = '';
+  const show = (v) => { view = v; sel = null; note = ''; render(); };
   const render = () => {
     p.body.innerHTML = '';
-    const fav = deal.form ? `<div class="small">Lo prefiere en <b>${ITEMS[deal.form].icon} ${ITEMS[deal.form].form}</b> (+10% de propina)</div>` : '';
-    p.body.appendChild(h('div', 'deal-req', `Pide <b>${deal.qty}×</b> <b>${prod.name}</b> por <b class="money">${money(deal.price)}</b><div class="chips">${chips(prod.effects)}</div>${fav}`));
-    const cols = h('div', 'mix-cols two');
-    const a = h('div', 'mix-col'), b = h('div', 'mix-col');
-    a.appendChild(h('div', 'label', 'Tu producto empaquetado'));
-    const packed = G.state.inv.filter((s) => s && ITEMS[s.id].packed);
-    if (!packed.length) a.appendChild(h('div', 'muted', 'No llevas nada preparado. Solo aceptan sobres, viales o gominolas.'));
-    const seen = new Set();
-    for (const s of packed) {
-      const k = key(s);
-      if (seen.has(k)) continue;
-      seen.add(k);
-      const have = inv.count(s.id, s.p) - (offer.get(k)?.q || 0);
-      const e = h('button', 'pick block' + (s.p === deal.product ? ' match' : ''), `${ITEMS[s.id].icon} <b>${product(s.p).name}</b> <small>${ITEMS[s.id].name} · quedan ${have}</small>`);
-      e.onclick = () => {
-        if (have <= 0) return;
-        const o = offer.get(k) || { id: s.id, p: s.p, q: 0 };
-        o.q++;
-        offer.set(k, o);
-        sfx('click');
-        render();
-      };
-      a.appendChild(e);
+    p.foot.innerHTML = '';
+    p.title.textContent = view === 'sell' ? `Vender a ${firstName(npc)}` : view === 'gift' ? `Regalar a ${c.unlocked ? firstName(npc) : 'este vecino'}` : name;
+    ({ main, sell, gift }[view])();
+  };
+
+  // ---- vista principal ----
+  const main = () => {
+    if (c.unlocked) {
+      p.body.appendChild(h('div', 'npc-stats', meter('Confianza', c.affinity / 100, trustLabel(c.affinity)) + meter('Adicción', c.addiction, addictionLabel(c.addiction), '#e67e22')));
+      p.body.appendChild(h('div', 'small', `<span class="muted">Le gusta:</span><div class="chips">${chips(npc.person.prefs)}</div><span class="muted">Lo prefiere en ${ITEMS[npc.person.form].icon} ${ITEMS[npc.person.form].form}</span>`));
+    } else {
+      p.body.appendChild(h('div', 'txt', 'Aún no es cliente tuyo. <b>Regálale una muestra</b>: si le gusta, te dará su número y empezará a hacerte pedidos.'));
     }
-    b.appendChild(h('div', 'label', `Le das: ${units()} / ${deal.qty} uds.`));
-    for (const [k, o] of offer) {
-      const e = h('button', 'pick block on', `${ITEMS[o.id].icon} ${o.q}× ${product(o.p).name} <small>(tocar para quitar)</small>`);
-      e.onclick = () => { o.q--; if (o.q <= 0) offer.delete(k); render(); };
-      b.appendChild(e);
-    }
-    const row = h('div', 'row end');
-    const auto = h('button', 'btn ghost', 'Rellenar');
-    auto.onclick = () => {
-      offer.clear();
-      let need = deal.qty;
-      for (const id of [...new Set([deal.form, 'tarro', 'gomi', 'bolsa'])].filter(Boolean)) {
-        const u = ITEMS[id].units;
-        const n = Math.min(inv.count(id, deal.product), id === deal.form ? Math.ceil(need / u) : Math.floor(need / u));
-        if (n > 0) { offer.set(id + '|' + deal.product, { id, p: deal.product, q: n }); need -= n * u; }
-      }
-      if (need > 0) {
-        const n = Math.min(inv.count('bolsa', deal.product) - (offer.get('bolsa|' + deal.product)?.q || 0), need);
-        if (n > 0) { const o = offer.get('bolsa|' + deal.product) || { id: 'bolsa', p: deal.product, q: 0 }; o.q += n; offer.set('bolsa|' + deal.product, o); }
-      }
-      render();
+    const grid = h('div', 'act-grid');
+    const act = (icon, title, sub, fn, off) => {
+      const b = h('button', 'act' + (off ? ' off' : ''), `<span class="a-ic">${icon}</span><span class="a-t"><b>${title}</b><small>${sub}</small></span>`);
+      b.onclick = () => { if (off) { sfx('error'); G.act.toast(sub, 'ℹ️'); return; } sfx('click'); fn(); };
+      grid.appendChild(b);
     };
+    const deal = npc.deal;
+    if (deal) act('📦', 'Entregar pedido', `${deal.qty}× ${product(deal.product).name} · ${money(deal.price)}`, () => { closePanel(true); openHandover(npc, deal); });
+    if (c.unlocked) {
+      const packed = stacksOf(PACKED);
+      const why = deal ? 'Primero entrégale su pedido.' : c.walkDay === G.state.day ? 'Ya te ha comprado hoy. Vuelve mañana.' : !packed.length ? 'No llevas producto empaquetado.' : '';
+      act('💵', 'Vender', why || 'Ofrécele producto a tu precio', () => show('sell'), !!why);
+    }
+    const gifts = stacksOf(GIFTABLE);
+    const gwhy = !canGift(npc) ? 'Ya le has regalado algo hoy.' : !gifts.length ? 'No llevas producto para regalar.' : '';
+    act('🎁', 'Regalar', gwhy || (c.unlocked ? '+ confianza y reputación' : 'Puede hacerse cliente'), () => show('gift'), !!gwhy);
+    act('💬', 'Hablar', c.unlocked ? 'Charlar un rato' : 'Saludar', () => {
+      G.act.toast(`${c.unlocked ? firstName(npc) : 'Vecino'}: «${c.unlocked ? pick(CUSTOMER_LINES) : pick(GREETINGS)}»`, '💬');
+      closePanel();
+    });
+    p.body.appendChild(grid);
+  };
+
+  // ---- vender en mano ----
+  const sell = () => {
+    const packed = stacksOf(PACKED);
+    if (!sel || !packed.find((x) => x.id === sel.id && x.p === sel.p)) {
+      sel = packed.find((x) => x.p && prefMatches(npc.person, product(x.p))) || packed[0];
+      qty = 1;
+      unit = product(sel.p).price;
+    }
+    p.body.appendChild(h('div', 'label', 'Producto'));
+    const row = h('div', 'pick-row');
+    for (const x of packed) {
+      const pr = product(x.p);
+      const b = h('button', 'pick' + (x === sel || (x.id === sel.id && x.p === sel.p) ? ' on' : ''), `<b>${ITEMS[x.id].icon} ${pr.name}</b><small>${ITEMS[x.id].name} · tienes ${x.q}</small>`);
+      b.onclick = () => { sel = x; qty = 1; unit = pr.price; render(); sfx('click'); };
+      row.appendChild(b);
+    }
+    p.body.appendChild(row);
+    const pr = product(sel.p), per = ITEMS[sel.id].units || 1, v = prodValue(pr);
+    const total = () => Math.round(qty * per * unit);
+    const line = h('div', 'sale-grid');
+    const qBox = stepper(qty, { min: 1, max: sel.q, onChange: (n) => { qty = n; upd(); } });
+    const pBox = stepper(unit, { min: 1, max: Math.round(v * 4), step: () => Math.max(1, Math.round(v * 0.05)), fmt: money, onChange: (n) => { unit = n; upd(); } });
+    line.append(h('div', 'label', `Cantidad (${ITEMS[sel.id].form})`), qBox, h('div', 'label', 'Precio por unidad'), pBox);
+    p.body.appendChild(line);
+    const info = h('div', 'small muted');
+    const bar = chanceBar();
+    p.body.append(info, bar);
+    if (note) p.body.appendChild(h('div', 'txt', note));
+    const back = h('button', 'btn ghost', '‹ Atrás');
+    back.onclick = () => show('main');
+    const go = h('button', 'btn', '');
+    const upd = () => {
+      info.innerHTML = `Valor de mercado ${money(v)} · <b>${priceLabel(pr, unit)}</b> · Lleva unos ${money(saleBudget(npc))} encima`;
+      bar.update(saleChance(npc, sel, unit));
+      go.textContent = `Ofrecer por ${money(total())}`;
+    };
+    go.onclick = () => {
+      const r = directSale(npc, sel, qty, unit);
+      if (!r.ok) { sfx('error'); note = r.msg; return render(); }
+      if (!r.accepted) { sfx('error'); G.act.toast(r.msg, '😕'); return show('main'); }
+      closePanel(true);
+      npc.talkT = 0;
+      npc.playExchange({ id: sel.id, p: sel.p }, true);
+      G.player.vm.give();
+      setTimeout(() => G.player.vm.flash('cash', 1.6), 550);
+      G.act.toast(`${r.msg} +${money(r.total)}`, '💵');
+      save();
+    };
+    upd();
+    p.foot.append(back, go);
+  };
+
+  // ---- regalar ----
+  const gift = () => {
+    const list = stacksOf(GIFTABLE);
+    if (!sel || !list.find((x) => x.id === sel.id && x.p === sel.p)) sel = list[0];
+    p.body.appendChild(h('div', 'small muted', c.unlocked
+      ? 'Regalar sube su confianza (mejores precios y más pedidos) y tu reputación en la ciudad.'
+      : 'Si le gusta, te dará su número. Acertarás más si tiene efectos de los que le gustan a la gente y si tienes buena reputación.'));
+    const row = h('div', 'pick-row');
+    for (const x of list) {
+      const pr = product(x.p);
+      const likes = c.unlocked && prefMatches(npc.person, pr) ? ' ★' : '';
+      const b = h('button', 'pick' + (x.id === sel.id && x.p === sel.p ? ' on' : ''), `<b>${ITEMS[x.id].icon} ${pr.name}${likes}</b><small>1 ${ITEMS[x.id].name.toLowerCase()} · tienes ${x.q}</small>`);
+      b.onclick = () => { sel = x; render(); sfx('click'); };
+      row.appendChild(b);
+    }
+    p.body.appendChild(row);
+    const back = h('button', 'btn ghost', '‹ Atrás');
+    back.onclick = () => show('main');
+    const go = h('button', 'btn', `Regalar 1 ${ITEMS[sel.id].name.toLowerCase()}`);
+    go.onclick = () => {
+      const spec = sel;
+      closePanel(true);
+      npc.talkT = 1.5;
+      giveSample(npc, spec);
+      save();
+    };
+    p.foot.append(back, go);
+  };
+  render();
+}
+
+// Entrega de un pedido: se prepara sola con lo que llevas (en el envase que
+// prefiere si lo tienes). Un toque para entregar; "Cambiar" para elegir a mano.
+export function openHandover(npc, deal) {
+  const prod = product(deal.product);
+  const p = openPanel({ title: `Pedido de ${firstName(npc)}`, onClose: () => { npc.talkT = 1; } });
+  npc.talk(999);
+  npc.lookAt(G.player.pos.x, G.player.pos.z);
+  const offer = new Map(); // key -> {id,p,q}
+  const units = () => [...offer.values()].reduce((a, o) => a + o.q * ITEMS[o.id].units, 0);
+  let manual = false;
+  const autoFill = () => {
+    offer.clear();
+    let need = deal.qty;
+    const order = [...new Set([deal.form, 'tarro', 'gomi', 'bolsa'])].filter(Boolean);
+    for (const id of order) {
+      if (need <= 0) break;
+      const u = ITEMS[id].units;
+      const have = inv.count(id, deal.product);
+      const n = Math.min(have, id === deal.form || u === 1 ? Math.ceil(need / u) : Math.floor(need / u));
+      if (n > 0) { offer.set(id + '|' + deal.product, { id, p: deal.product, q: n }); need -= n * u; }
+    }
+  };
+  autoFill();
+  const render = () => {
+    p.body.innerHTML = '';
+    p.foot.innerHTML = '';
+    const fav = deal.form ? ` · lo prefiere en <b>${ITEMS[deal.form].icon} ${ITEMS[deal.form].form}</b> (+10% propina)` : '';
+    p.body.appendChild(h('div', 'deal-req', `Pide <b>${deal.qty}×</b> <b>${prod.name}</b> por <b class="money">${money(deal.price)}</b><div class="small muted">${chips(prod.effects)}${fav}</div>`));
+    const got = units();
+    const ok = got >= deal.qty;
+    const lines = [...offer.values()].map((o) => `${ITEMS[o.id].icon} ${o.q} ${ITEMS[o.id].name.toLowerCase()}${o.q > 1 ? 's' : ''} de ${product(o.p).name}`).join('<br>') || 'Nada';
+    p.body.appendChild(h('div', 'give-box ' + (ok ? 'ok' : 'bad'), `<div class="label">Le das (${got}/${deal.qty} uds.)</div><div>${lines}</div>${ok ? '' : `<div class="warn">Te faltan ${deal.qty - got} unidades empaquetadas de ${prod.name}.</div>`}`));
+    if (manual) {
+      const packed = G.state.inv.filter((s) => s && ITEMS[s.id].packed);
+      const seen = new Set();
+      const row = h('div', 'pick-row');
+      for (const s of packed) {
+        const k = s.id + '|' + s.p;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const inOffer = offer.get(k)?.q || 0;
+        const have = inv.count(s.id, s.p) - inOffer;
+        const b = h('button', 'pick' + (s.p === deal.product ? ' match' : ''), `<b>${ITEMS[s.id].icon} ${product(s.p).name}</b><small>${ITEMS[s.id].name} · +1 (quedan ${have})${inOffer ? ` · −1 manteniendo` : ''}</small>`);
+        b.onclick = () => {
+          if (have <= 0) return fail('No te quedan más.');
+          const o = offer.get(k) || { id: s.id, p: s.p, q: 0 };
+          o.q++;
+          offer.set(k, o);
+          sfx('click');
+          render();
+        };
+        row.appendChild(b);
+      }
+      p.body.appendChild(h('div', 'small muted', 'Toca para añadir. Usa "Vaciar" para empezar de nuevo.'));
+      p.body.appendChild(row);
+      const clr = h('button', 'btn ghost', 'Vaciar');
+      clr.onclick = () => { offer.clear(); render(); };
+      p.foot.appendChild(clr);
+    } else {
+      const chg = h('button', 'btn ghost', 'Cambiar');
+      chg.onclick = () => { manual = true; render(); };
+      p.foot.appendChild(chg);
+    }
     const give = h('button', 'btn', `Entregar y cobrar ${money(deal.price)}`);
+    if (!ok) give.classList.add('dim');
     give.onclick = () => {
       const r = completeDeal(deal, [...offer.values()]);
-      if (!r.ok) return fail(`${npc.person.name.split(' ')[0]}: «${r.msg}»`);
+      if (!r.ok) return fail(`${firstName(npc)}: «${r.msg}»`);
       const first = [...offer.values()][0];
       closePanel(true);
       npc.talkT = 0;
@@ -470,12 +647,8 @@ export function openHandover(npc, deal) {
       G.act.toast(`Trato cerrado: +${money(r.pay)}${r.tip ? ` (propina ${money(r.tip)})` : ''}`, '💵');
       save();
     };
-    row.append(auto, give);
-    b.appendChild(row);
-    cols.append(a, b);
-    p.body.appendChild(cols);
+    p.foot.appendChild(give);
   };
-  current.onClose = () => { npc.talkT = 1; };
   render();
 }
 
