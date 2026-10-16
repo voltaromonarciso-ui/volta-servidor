@@ -1,6 +1,6 @@
 # BLOQUE 9 · Puerto Lomas
 
-Juego 3D low-poly en primera persona para móvil (y escritorio): montas un negocio de cultivo y venta callejera en un pueblo costero, esquivando a la policía. Género "simulador de camello" inspirado en las mecánicas del género, con **nombre, pueblo, personajes, textos, efectos, ingredientes, modelos y estética propios** (nada copiado de otros juegos).
+Juego 3D en primera persona para móvil (y escritorio), con estética estilizada de "golden hour": montas un negocio de cultivo y venta callejera en un pueblo costero, esquivando a la policía. Género "simulador de camello" inspirado en las mecánicas del género, con **nombre, pueblo, personajes, textos, efectos, ingredientes, modelos y estética propios** (nada copiado de otros juegos).
 
 Hecho con **Three.js + Vite** (todo procedural: no hay modelos ni texturas externas) y empaquetado para Android con **Capacitor**.
 
@@ -15,8 +15,8 @@ npm run dev        # abre la URL "Network" desde el móvil (misma wifi)
 En el móvil se juega en horizontal. También se puede "Añadir a pantalla de inicio" (PWA a pantalla completa).
 
 Controles:
-- **Móvil:** joystick en la mitad izquierda, arrastra en la derecha para mirar, botón grande = usar, botón pequeño = acción secundaria (recoger / girar), ⤒ saltar, 🏃 correr, 📱 móvil, 🎒 mochila.
-- **Escritorio:** WASD · ratón · E usar · R secundaria · Shift correr · Espacio saltar · Tab móvil · I mochila · 1-0 / rueda inventario · Esc pausa.
+- **Móvil:** joystick abajo a la izquierda, arrastra en la derecha para mirar, ✋ usar, agacharse, correr, botón pequeño = acción secundaria (recoger / girar), saltar. Minimapa (tócalo para abrir el mapa), móvil y mochila arriba.
+- **Escritorio:** WASD · ratón · E usar · R secundaria · Shift correr · C agacharse · Espacio saltar · Tab móvil · I mochila · 1-0 / rueda inventario · Esc pausa.
 
 ## Android (Play Store)
 
@@ -34,8 +34,9 @@ El proyecto nativo ya está generado en `android/` (id `com.volta.bloque9`, orie
 
 | Sistema | Detalle |
 |---|---|
-| Mundo | 9 manzanas con calles, aceras, pasos de cebra, farolas, plaza con fuente, motel, ferretería, gasolinera, comisaría, ayuntamiento, bar, café, lavandería, polígono, 3 barrios residenciales, playa, muelle y faro. Tráfico, nubes, ciclo día/noche con ventanas iluminadas y estrellas. |
-| Propiedades | Habitación 3 del motel (alquiler semanal $100) y bungalow en venta ($2.500). Puertas que se abren. |
+| Gráficos | Materiales PBR, sombras suaves, reflejos del cielo, resplandor (bloom), corrección de color y viñeta; manos en primera persona (cajas con las dos manos, objetos pequeños en la palma); calidad Alta/Media/Baja. |
+| Mundo | Ciudad costera de palmeras: calle comercial con escaparates iluminados, neones, rótulos y valla publicitaria, semáforos, postes con cables, marquesina, papeleras, hidrantes, plaza, ferretería, gasolinera, comisaría, polígono, barrios, playa, muelle, faro, montañas y el skyline de la gran ciudad al otro lado de la bahía. Tráfico y ciclo día/noche. |
+| Propiedades | Tu nave del polígono (estanterías, banco de trabajo, carretilla, persiana enrollable; alquiler semanal $100) y bungalow en venta ($2.500). |
 | Cultivo | Macetas, tierra normal/abonada, 4 variedades de semilla, riego (la regadera se rellena en el lavabo), fertilizante, lámpara de cultivo, crecimiento visible y cosecha. |
 | Producción | Mesa de empaquetado (bolsitas de 1 ud. y tarros de 5) y mezcladora: 12 ingredientes, 22 efectos, transformaciones entre efectos y productos nuevos con nombre personalizable. |
 | Ventas | 17 vecinos con gustos, presupuesto y nivel de exigencia. Te escriben pedidos al móvil: aceptar, contraofertar (+20%) o rechazar; quedas en un punto de encuentro y entregas en persona. Confianza, enganche, recomendaciones y muestras gratis para captar clientes. |

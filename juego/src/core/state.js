@@ -1,15 +1,15 @@
 import { G } from '../game.js';
 import { ITEMS } from '../data/items.js';
 
-const KEY = 'bloque9_save_v1';
+const KEY = 'bloque9_save_v2';
 export const INV_SIZE = 10;
 
 export function newState() {
   return {
-    version: 1,
+    version: 2,
     money: 350,
     day: 1,
-    minute: 7 * 60,
+    minute: 17.5 * 60,
     rank: 0,
     xp: 0,
     inv: Array(INV_SIZE).fill(null),
@@ -26,12 +26,12 @@ export function newState() {
     today: { earned: 0, deals: 0 },
     orders: [],
     quest: 0,
-    props: { motel: true, bungalow: false },
-    home: 'motel',
+    props: { nave: true, bungalow: false },
+    home: 'nave',
     rentPaidWeek: 1,
     stats: { earned: 0, deals: 0, best: 0 },
     flags: {},
-    settings: { sens: 1, shadows: true, res: G.touch ? 0.85 : 1, sound: true },
+    settings: { sens: 1, shadows: true, res: 1, sound: true, quality: 'alta' },
   };
 }
 
@@ -46,7 +46,7 @@ export function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.version !== 1) return null;
+    if (!s || s.version !== 2) return null;
     return Object.assign(newState(), s);
   } catch (e) {
     return null;

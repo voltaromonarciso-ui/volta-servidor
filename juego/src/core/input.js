@@ -29,6 +29,7 @@ export function initInput() {
     if (e.code === 'KeyR') emit('btn', 'secondary');
     if (e.code === 'Tab' || e.code === 'KeyP') { emit('btn', 'phone'); e.preventDefault(); }
     if (e.code === 'KeyI') emit('btn', 'bag');
+    if (e.code === 'KeyC' || e.code === 'ControlLeft') input.crouch = !input.crouch;
     if (e.code === 'Escape') emit('btn', 'escape');
     if (e.code.startsWith('Digit')) {
       const n = (parseInt(e.code.slice(5), 10) + 9) % 10;
@@ -59,11 +60,18 @@ export function initInput() {
     G.touch = true;
     document.body.classList.add('touch');
     if (e.clientX < window.innerWidth * 0.42 && !joy) {
-      joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 };
-      joyEl.style.left = e.clientX + 'px';
-      joyEl.style.top = e.clientY + 'px';
+      // joystick fijo: si tocas lejos de la base, la base se acerca al dedo
+      const r = joyEl.getBoundingClientRect();
+      let ox = r.left + r.width / 2, oy = r.top + r.height / 2;
+      if (Math.hypot(e.clientX - ox, e.clientY - oy) > r.width * 0.9) {
+        joyEl.style.left = e.clientX + 'px';
+        joyEl.style.top = e.clientY + 'px';
+        joyEl.style.bottom = 'auto';
+        ox = e.clientX; oy = e.clientY;
+      }
+      joy = { id: e.pointerId, ox, oy, x: 0, y: 0 };
       joyEl.classList.add('on');
-      knobEl.style.transform = 'translate(-50%,-50%)';
+      moveJoy(e.clientX, e.clientY);
     } else if (!look) {
       look = { id: e.pointerId, x: e.clientX, y: e.clientY };
     }
@@ -71,11 +79,7 @@ export function initInput() {
   });
   layer.addEventListener('pointermove', (e) => {
     if (joy && e.pointerId === joy.id) {
-      let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
-      const R = 55, d = Math.hypot(dx, dy);
-      if (d > R) { dx *= R / d; dy *= R / d; }
-      joy.x = dx / R; joy.y = -dy / R;
-      knobEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      moveJoy(e.clientX, e.clientY);
     } else if (look && e.pointerId === look.id) {
       input.lookX += (e.clientX - look.x) * 1.6;
       input.lookY += (e.clientY - look.y) * 1.6;
@@ -83,16 +87,29 @@ export function initInput() {
     }
   });
   const end = (e) => {
-    if (joy && e.pointerId === joy.id) { joy = null; joyEl.classList.remove('on'); }
+    if (joy && e.pointerId === joy.id) { joy = null; joyEl.classList.remove('on'); resetJoyEl(); }
     if (look && e.pointerId === look.id) look = null;
   };
   layer.addEventListener('pointerup', end);
   layer.addEventListener('pointercancel', end);
 }
 
+function moveJoy(x, y) {
+  let dx = x - joy.ox, dy = y - joy.oy;
+  const R = joyEl.clientWidth * 0.36, d = Math.hypot(dx, dy);
+  if (d > R) { dx *= R / d; dy *= R / d; }
+  joy.x = dx / R; joy.y = -dy / R;
+  knobEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+}
+
+function resetJoyEl() {
+  joyEl.style.left = ''; joyEl.style.top = ''; joyEl.style.bottom = '';
+  knobEl.style.transform = 'translate(-50%,-50%)';
+}
+
 export function resetTouch() {
   joy = null; look = null;
-  if (joyEl) joyEl.classList.remove('on');
+  if (joyEl) { joyEl.classList.remove('on'); resetJoyEl(); }
 }
 
 export function pollInput() {

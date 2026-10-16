@@ -352,6 +352,17 @@ export function settingsPanel(container, onExit) {
     r.appendChild(i);
     return r;
   };
+  const choice = (label, opts, val, fn) => {
+    const r = h('div', 'ph-card', `<b>${label}</b>`);
+    const row = h('div', 'row');
+    for (const [k, t] of opts) {
+      const b = h('button', 'toggle' + (k === val ? ' on' : ''), t);
+      b.onclick = () => { val = k; [...row.children].forEach((x) => x.classList.remove('on')); b.classList.add('on'); fn(k); };
+      row.appendChild(b);
+    }
+    r.appendChild(row);
+    return r;
+  };
   const toggle = (label, val, fn) => {
     const r = h('div', 'ph-card rowsp', `<b>${label}</b>`);
     const t = h('button', 'toggle' + (val ? ' on' : ''), val ? 'Sí' : 'No');
@@ -362,7 +373,8 @@ export function settingsPanel(container, onExit) {
   box.append(
     slider('Sensibilidad de cámara', 0.3, 3, 0.1, s.sens, (v) => { s.sens = v; }),
     slider('Resolución', 0.5, 1, 0.05, s.res, (v) => { s.res = v; G.act.resize(); }),
-    toggle('Sombras', s.shadows, (v) => { s.shadows = v; setShadows(v); }),
+    choice('Calidad gráfica', [['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']], s.quality || 'alta', (v) => G.act.quality(v)),
+    toggle('Sombras', s.shadows, (v) => { s.shadows = v; setShadows(v && s.quality !== 'baja'); }),
     toggle('Sonido', s.sound, (v) => { s.sound = v; }),
   );
   const sv = h('button', 'btn', '💾 Guardar partida');

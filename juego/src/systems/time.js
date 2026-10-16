@@ -72,7 +72,7 @@ export function sleep(propId, forced = false) {
   G.act.fade(() => {
     advanceTime(mins);
     s.minute = 7 * 60;
-    const prop = G.world.props[propId || s.home] || G.world.props.motel;
+    const prop = G.world.props[propId || s.home] || G.world.props.nave;
     G.player.teleport(prop.spawn.x, prop.spawn.z, prop.spawn.yaw);
     for (const n of G.npcs) n.resetHome();
     resetPolice();
@@ -87,7 +87,7 @@ function passOut() {
   const outside = !G.world.inProperty(G.player.pos.x, G.player.pos.z);
   let lost = 0;
   if (outside && s.money > 0) { lost = Math.round(s.money * 0.1); addMoney(-lost); }
-  sleep(s.props.bungalow ? 'bungalow' : 'motel', true);
+  sleep(s.home || 'nave', true);
   if (lost) setTimeout(() => sendMsg('leo', `Primo, te encontraron dormido en la calle. Te faltan ${lost}$... Vete a casa antes de las 4:00.`), 2500);
 }
 

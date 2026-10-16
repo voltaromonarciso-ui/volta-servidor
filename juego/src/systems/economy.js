@@ -69,7 +69,7 @@ export function addXP(n) {
 export const CONTACTS = {
   leo: { name: 'Primo Leo', icon: '🧔', color: '#e67e22' },
   rubio: { name: 'Rubio (semillas)', icon: '🕶️', color: '#16a085' },
-  motel: { name: 'Motel Sol Poniente', icon: '🏨', color: '#c0392b' },
+  motel: { name: 'Don Tomás (casero)', icon: '🏭', color: '#7f8c8d' },
 };
 for (const p of PEOPLE) CONTACTS[p.id] = { name: p.name, icon: '🙂', color: '#3498db', person: p };
 
@@ -269,10 +269,10 @@ export function onHour(hour) {
       if (Math.random() < p) makeDeal(person, c);
     }
   }
-  if (hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day && !s.props.bungalow) {
+  if (hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day) {
     s.rentPaidWeek = s.day;
     addMoney(-100);
-    sendMsg('motel', 'Se ha cobrado el alquiler semanal de la habitación 3: $100. Gracias por su estancia.');
+    sendMsg('motel', 'Te he cobrado el alquiler semanal de la nave: $100. Que vaya bien el negocio.');
   }
 }
 

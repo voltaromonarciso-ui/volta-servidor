@@ -36,6 +36,10 @@ export function updateInteract(dt) {
   }
   const place = updatePlacement();
   if (place) target.actions = place.actions;
+  else {
+    const held = G.state.inv[G.state.sel];
+    if (held && held.id === 'caja') target.actions = [{ label: 'Abrir la caja', fn: () => G.act.openStarterBox() }];
+  }
   return target;
 }
 

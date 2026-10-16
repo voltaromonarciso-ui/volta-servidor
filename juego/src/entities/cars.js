@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { G } from '../game.js';
 import { carParts, CAR_COLORS } from '../world/world.js';
-import { mat } from './human.js';
+const carMats = {}, glowMats = {};
+const carMat = (c) => (carMats[c] ||= new THREE.MeshStandardMaterial({ color: c, roughness: 0.35, metalness: 0.5 }));
+const glowMat = (c) => (glowMats[c] ||= new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
+const glassMat = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.08, metalness: 0.6 });
 
 const box = new THREE.BoxGeometry(1, 1, 1);
 const wheel = new THREE.CylinderGeometry(0.5, 0.5, 1, 10);
@@ -33,9 +36,9 @@ class Car {
     this.g = new THREE.Group();
     const inner = new THREE.Group();
     carParts((kind, col, x, y, z, sx, sy, sz) => {
-      const m = new THREE.Mesh(kind === 'box' ? box : wheel, mat(col));
-      if (kind === 'box') m.scale.set(sz, sy, sx);
-      else { m.scale.set(sx, sy, sz); m.rotation.z = Math.PI / 2; }
+      const isWheel = kind === 'wheel';
+      const m = new THREE.Mesh(isWheel ? wheel : box, kind === 'light' ? glowMat(col) : kind === 'glass' ? glassMat : carMat(col));
+      if (isWheel) { m.scale.set(sx, sy, sz); m.rotation.z = Math.PI / 2; } else m.scale.set(sz, sy, sx);
       m.position.set(x, y, z);
       m.castShadow = kind === 'box';
       inner.add(m);

@@ -1,15 +1,16 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
-// Personaje low-poly de proporciones caricaturescas (cabeza grande, cuerpo achaparrado).
+// Personaje estilizado (proporciones de dibujo animado, formas redondeadas).
 const matCache = new Map();
 export function mat(color) {
-  if (!matCache.has(color)) matCache.set(color, new THREE.MeshLambertMaterial({ color, flatShading: true }));
+  if (!matCache.has(color)) matCache.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.8 }));
   return matCache.get(color);
 }
 
-const box = new THREE.BoxGeometry(1, 1, 1);
-const headGeo = new THREE.IcosahedronGeometry(0.5, 1);
-const hairGeo = new THREE.IcosahedronGeometry(0.5, 1);
+const box = new RoundedBoxGeometry(1, 1, 1, 3, 0.22);
+const headGeo = new THREE.SphereGeometry(0.5, 20, 16);
+const hairGeo = new THREE.SphereGeometry(0.5, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.55);
 
 export const SKINS = ['#f1c7a5', '#e0ac85', '#c68a62', '#9b6a45', '#7a4f32', '#f5d6bd'];
 export const HAIRS = ['#2b1d14', '#4a3020', '#7a5230', '#c9a15a', '#1a1a1a', '#8a8a8a', '#a0412d'];
@@ -45,30 +46,35 @@ export function makeHuman(look, { police = false } = {}) {
   body.scale.set(look.wide, look.height, look.wide);
   g.add(body);
   const shoes = police ? '#111111' : '#3a2a1f';
-  const legL = limb(look.pants, 0.24, 0.78, 0.26, -0.15, 0.82, 0, body, shoes);
-  const legR = limb(look.pants, 0.24, 0.78, 0.26, 0.15, 0.82, 0, body, shoes);
-  const torso = part(look.shirt, 0.62, 0.68, 0.36, 0, 1.16, 0, body);
-  part(look.pants, 0.64, 0.12, 0.38, 0, 0.84, 0, body); // cinturón
-  const armL = limb(look.shirt, 0.18, 0.36, 0.2, -0.41, 1.46, 0, body);
-  const armR = limb(look.shirt, 0.18, 0.36, 0.2, 0.41, 1.46, 0, body);
-  part(look.skin, 0.15, 0.3, 0.17, 0, -0.5, 0, armL);
-  part(look.skin, 0.15, 0.3, 0.17, 0, -0.5, 0, armR);
+  const legL = limb(look.pants, 0.22, 0.8, 0.24, -0.13, 0.84, 0, body, shoes);
+  const legR = limb(look.pants, 0.22, 0.8, 0.24, 0.13, 0.84, 0, body, shoes);
+  const torso = part(look.shirt, 0.58, 0.66, 0.34, 0, 1.17, 0, body);
+  part(look.shirt, 0.6, 0.18, 0.36, 0, 0.86, 0, body); // cintura de la sudadera
+  part(look.shirt, 0.36, 0.08, 0.06, 0, 1.0, 0.17, body); // bolsillo canguro
+  const armL = limb(look.shirt, 0.17, 0.62, 0.18, -0.38, 1.46, 0, body);
+  const armR = limb(look.shirt, 0.17, 0.62, 0.18, 0.38, 1.46, 0, body);
+  const handGeo = new THREE.SphereGeometry(0.075, 12, 8);
+  for (const a of [armL, armR]) { const hm = new THREE.Mesh(handGeo, mat(look.skin)); hm.position.y = -0.68; hm.castShadow = true; a.add(hm); }
+  if (!police) { const hood = part(look.shirt, 0.46, 0.2, 0.16, 0, 1.52, -0.17, body); hood.rotation.x = 0.4; }
 
   const head = new THREE.Group();
   head.position.set(0, 1.78, 0);
   body.add(head);
   const hm = new THREE.Mesh(headGeo, mat(look.skin));
-  hm.scale.set(0.56, 0.6, 0.54);
+  hm.scale.set(0.5, 0.56, 0.5);
+  const neck = part(look.skin, 0.16, 0.14, 0.16, 0, -0.3, 0, head);
   hm.castShadow = true;
   head.add(hm);
   // ojos grandes y cejas
-  part('#ffffff', 0.12, 0.12, 0.02, -0.11, 0.03, 0.265, head);
-  part('#ffffff', 0.12, 0.12, 0.02, 0.11, 0.03, 0.265, head);
-  part('#1b1b1b', 0.06, 0.08, 0.02, -0.1, 0.02, 0.275, head);
-  part('#1b1b1b', 0.06, 0.08, 0.02, 0.1, 0.02, 0.275, head);
-  part(look.hair, 0.13, 0.03, 0.02, -0.11, 0.12, 0.27, head);
-  part(look.hair, 0.13, 0.03, 0.02, 0.11, 0.12, 0.27, head);
-  part('#9c5b4a', 0.12, 0.025, 0.02, 0, -0.13, 0.265, head);
+  const eyeW = new THREE.SphereGeometry(0.045, 10, 8), eyeP = new THREE.SphereGeometry(0.024, 8, 6);
+  for (const sx of [-1, 1]) {
+    const ew = new THREE.Mesh(eyeW, mat('#f4f4f2')); ew.position.set(sx * 0.09, 0.03, 0.225); ew.scale.z = 0.5; head.add(ew);
+    const ep = new THREE.Mesh(eyeP, mat('#1b1b1b')); ep.position.set(sx * 0.09, 0.03, 0.247); head.add(ep);
+    part(look.hair, 0.1, 0.024, 0.03, sx * 0.09, 0.105, 0.23, head);
+  }
+  part(look.skin, 0.06, 0.07, 0.06, 0, -0.03, 0.25, head); // nariz
+  part('#9c5b4a', 0.1, 0.02, 0.02, 0, -0.12, 0.235, head);
+  for (const sx of [-1, 1]) part(look.skin, 0.05, 0.1, 0.06, sx * 0.25, 0, 0, head); // orejas
   if (police) {
     part('#1f3a6b', 0.6, 0.14, 0.58, 0, 0.24, 0, head);
     part('#1f3a6b', 0.5, 0.05, 0.25, 0, 0.18, 0.3, head);
@@ -76,13 +82,16 @@ export function makeHuman(look, { police = false } = {}) {
     part('#f1c40f', 0.1, 0.12, 0.02, -0.16, 1.28 - 1.16, 0.19, torso.parent).position.y = 1.32;
   } else if (look.hairStyle !== 3) {
     const hair = new THREE.Mesh(hairGeo, mat(look.hair));
-    hair.scale.set(0.6, look.hairStyle === 2 ? 0.5 : 0.36, 0.58);
-    hair.position.set(0, 0.17, -0.03);
+    hair.scale.set(0.54, look.hairStyle === 2 ? 0.66 : 0.6, 0.54);
+    hair.position.set(0, 0.03, -0.015);
+    hair.rotation.x = -0.2;
     head.add(hair);
-    if (look.hairStyle === 1) part(look.hair, 0.5, 0.42, 0.14, 0, -0.08, -0.24, head);
+    if (look.hairStyle === 1) part(look.hair, 0.46, 0.4, 0.12, 0, -0.1, -0.2, head);
   } else {
-    part(look.hair, 0.58, 0.16, 0.56, 0, 0.22, 0, head); // gorra
-    part(look.hair, 0.46, 0.05, 0.26, 0, 0.16, 0.3, head);
+    const cap = new THREE.Mesh(hairGeo, mat(look.hair));
+    cap.scale.set(0.55, 0.5, 0.55); cap.position.set(0, 0.06, 0); head.add(cap);
+    const brim = part(look.hair, 0.36, 0.035, 0.24, 0, 0.1, 0.25, head);
+    brim.rotation.x = 0.12;
   }
 
   const h = { group: g, body, legL, legR, armL, armR, head, phase: Math.random() * 6 };

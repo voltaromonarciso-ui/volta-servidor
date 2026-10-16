@@ -7,6 +7,8 @@ export const ITEMS = {
   bolsa:     { name: 'Bolsita', icon: '🍃', stack: 30, illegal: true, product: true, units: 1, packed: true, color: '#7ad06a' },
   tarro:     { name: 'Tarro', icon: '🫙', stack: 10, illegal: true, product: true, units: 5, packed: true, color: '#9bd0e6' },
 
+  caja:      { name: 'Caja de Leo', icon: '📦', stack: 1, desc: 'Ábrela dentro de tu nave.' },
+
   // Ferretería
   maceta:    { name: 'Maceta', icon: '🪴', stack: 5, price: 30, place: 'pot', desc: 'Para cultivar una planta.' },
   tierra:    { name: 'Saco de tierra', icon: '🟫', stack: 10, price: 10, desc: 'Llena una maceta. Calidad normal.' },
