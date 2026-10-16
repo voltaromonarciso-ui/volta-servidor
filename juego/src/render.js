@@ -58,7 +58,7 @@ export function initRender(container) {
 export function buildComposer(scene, camera) {
   const r = R.renderer;
   const size = r.getDrawingBufferSize(new THREE.Vector2());
-  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: R.quality === 'alta' ? 4 : 2 });
+  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: R.quality === 'alta' ? 4 : 0 });
   composer = new EffectComposer(r, rt);
   mainPass = new RenderPass(scene, camera);
   handPass = new RenderPass(R.handScene, R.handCam);

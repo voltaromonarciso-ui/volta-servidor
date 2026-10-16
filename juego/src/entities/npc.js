@@ -3,6 +3,7 @@ import { G, rand, pick } from '../game.js';
 import { makeHuman, randomLook, markerSprite } from './human.js';
 import { rng } from '../world/textures.js';
 import { buildItem } from './hands.js';
+import { makeRealHuman, MODELS, modelNames } from './models.js';
 
 function prop(id, scale = 1.3) {
   const g = buildItem({ id }).group;
@@ -11,12 +12,15 @@ function prop(id, scale = 1.3) {
   return g;
 }
 
+export const LEO_MODEL = 'Male_Adult_04';
+
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 const hitGeo = new THREE.BoxGeometry(0.9, 1.9, 0.9);
 
 class Walker {
-  constructor(look, opts) {
-    this.h = makeHuman(look, opts);
+  constructor(look, opts = {}) {
+    this.h = opts.real && MODELS[opts.real] ? makeRealHuman(opts.real, opts) : makeHuman(look, opts);
+    this.real = !!this.h.real;
     this.g = this.h.group;
     this.pos = this.g.position;
     G.scene.add(this.g);
@@ -61,7 +65,14 @@ class Walker {
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
     this.g.rotation.y += diff * Math.min(1, dt * 8);
-    this.h.animate(dt, this.moving);
+    // los lejanos se animan a menos fotogramas y los ocultos no se animan
+    if (!this.g.visible) return;
+    this._acc = (this._acc || 0) + dt;
+    const d2 = this.pos.distanceToSquared(G.player.pos);
+    const step = d2 > 3600 ? 0.12 : d2 > 900 ? 0.05 : 0;
+    if (this._acc < step) return;
+    this.h.animate(this._acc, this.moving);
+    this._acc = 0;
   }
 
   setMarker(text, color) {
@@ -87,6 +98,7 @@ class Walker {
     a.t += dt;
     this.lookAt(G.player.pos.x, G.player.pos.z);
     this.moving = 0;
+    h.pose = 'give';
     if (a.withCash && a.t < 0.9) {
       if (!a.cash) { a.cash = true; h.hold('L', prop('cash', 1.4)); }
       h.over.armL = -1.25; h.over.armLz = -0.15;
@@ -98,6 +110,7 @@ class Walker {
       if (a.t > 1.45) h.hold('R', null); // se lo guarda en el bolsillo
     }
     if (a.t > 1.9) {
+      h.pose = null;
       delete h.over.armR; delete h.over.armRz;
       h.hold('R', null); h.hold('L', null);
       this.anim = null;
@@ -111,7 +124,13 @@ class Walker {
 // ------------------------------------------------------------------
 export class NPC extends Walker {
   constructor(person, home, seed) {
-    super(randomLook(rng(seed * 97 + 13)));
+    const lk = randomLook(rng(seed * 97 + 13));
+    lk.female = !!person.female;
+    if (!lk.female && lk.hairStyle > 3) lk.hairStyle = 0;
+    // cada vecino es una persona realista distinta (se reparten los modelos)
+    const pool = modelNames(!!person.female).filter((n) => n !== LEO_MODEL && n !== G.state?.look?.model);
+    const real = pool.length ? pool[seed % pool.length] : null;
+    super(lk, real ? { real, scale: (person.female ? 0.96 : 0.97) + (seed % 4) * 0.012 } : {});
     this.person = person;
     this.id = person.id;
     this.home = home;
@@ -138,9 +157,11 @@ export class NPC extends Walker {
     const h = this.h;
     if (on) {
       h.hold('R', prop('phone', 1.2));
-      h.over.armR = -1.35; h.over.armRz = 0.35; h.over.head = 0.35;
+      h.pose = 'phone';
+      if (!h.real) { h.over.armR = -1.35; h.over.armRz = 0.35; h.over.head = 0.35; }
     } else {
       h.hold('R', this.carry === 'cup' ? prop('cup', 1.2) : null);
+      h.pose = null;
       delete h.over.armR; delete h.over.armRz; delete h.over.head;
     }
   }
@@ -190,7 +211,7 @@ export class NPC extends Walker {
     this.setMarker(deal && (this.mode === 'wait' || this.mode === 'walk') ? '$' : null, '#27ae60');
     if (this.anim) { this.phonePose(false); this.updateAnim(dt); this.animate(dt); return; }
     this.phonePose(this.mode === 'wait' && this.distToPlayer() > 3.5 && this.talkT <= 0);
-    if (this.carry === 'cup' && !this._phone) this.h.over.armR = this.moving ? -0.6 : -0.9;
+    if (this.carry === 'cup' && !this._phone && !this.real) this.h.over.armR = this.moving ? -0.6 : -0.9;
     if (this.talkT > 0) {
       this.talkT -= dt;
       this.lookAt(G.player.pos.x, G.player.pos.z);
@@ -232,7 +253,7 @@ export class Cop extends Walker {
   constructor(name, route, seed) {
     const look = randomLook(rng(seed * 31 + 7));
     look.shirt = '#2c4a7a'; look.pants = '#1b2838';
-    super(look, { police: true });
+    super(look, { police: true, real: 'Police_Male_01', scale: 0.98 + (seed % 3) * 0.02 });
     this.name = name;
     this.route = route;
     this.ri = 0;

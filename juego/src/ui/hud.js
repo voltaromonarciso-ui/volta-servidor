@@ -234,11 +234,12 @@ export function bigToast(title, sub) {
 let notifyT;
 export function notify(from, text) {
   const c = CONTACTS[from] || { name: from, icon: '💬' };
-  els.notify.innerHTML = `<div class="n-ic">${c.icon}</div><div><b>${c.name}</b><div class="n-t">${text}</div></div>`;
+  const first = c.name.split(' (')[0];
+  els.notify.innerHTML = `<div class="n-ic">${c.icon}</div><div class="n-l">Mensaje de <b>${first}</b></div>`;
   els.notify.classList.add('show');
   els.notify.onclick = () => { els.notify.classList.remove('show'); G.act.openPhone('chat', from); };
   clearTimeout(notifyT);
-  notifyT = setTimeout(() => els.notify.classList.remove('show'), 5000);
+  notifyT = setTimeout(() => els.notify.classList.remove('show'), 2600);
 }
 
 function floatMoney(n) {

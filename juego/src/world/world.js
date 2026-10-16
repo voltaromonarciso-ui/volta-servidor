@@ -1101,22 +1101,24 @@ function glowPlane(text, w, h, opts) {
 // Tienda con fachada; el frente mira a +z (z = zf). Los locales se colocan en fila.
 function storefront({ x0, x1, zf, depth = 12, h = 5, wall = '#3a3d42', name, sign, signStyle = 'box', signColor = '#1f9d55', signFg = '#ffffff', neon, awning, tint, seed = 1, upper = false }) {
   const w = x1 - x0, cx = (x0 + x1) / 2;
-  building({ x0, x1, z0: zf - depth, z1: zf, h, wall, trim: '#5a5e64', roof: '#3b3e42', style: upper ? 'office' : 'plain', sideStyle: 'plain', front: '+z', noDoor: true, seed, mapColor: '#5a4f45', label: name });
   const gh = 3.4; // altura del escaparate
-  // panel oscuro de la planta baja
-  B.box('#1d2024', cx, 0, zf + 0.06, w, gh + 0.5, 0.12, 0, { ao: 0 });
-  // interior iluminado
-  const it = TX.shopInteriorTex(seed, tint);
-  const im = new THREE.MeshStandardMaterial({ map: it, emissiveMap: it, emissive: 0xffffff, emissiveIntensity: 0.4, roughness: 0.9, color: 0x777777 });
-  W.winMats.push(im);
-  im.userData.shop = true;
+  const R = Math.min(3.4, depth - 0.8); // fondo del local visible tras el cristal
+  const zi = zf - R;
+  // el edificio empieza detrás del local; encima del local, la fachada continúa
+  building({ x0, x1, z0: zf - depth, z1: zi, h, wall, trim: '#5a5e64', roof: '#3b3e42', style: upper ? 'office' : 'plain', sideStyle: 'plain', front: '+z', noDoor: true, seed, mapColor: '#5a4f45', label: name });
+  W.mapRects.push({ x0, x1, z0: zi, z1: zf, c: '#5a4f45' });
+  addBox(x0, x1, zi, zf, gh + 1);
+  B.box(wall, cx, gh, zf - R / 2, w, h - gh, R, 0, { ao: 0 });
+  B.box(wall, x0 + 0.15, 0, zf - R / 2, 0.3, gh, R, 0, { ao: 0.2 });
+  B.box(wall, x1 - 0.15, 0, zf - R / 2, 0.3, gh, R, 0, { ao: 0.2 });
+  B.box('#1d2024', cx, gh - 0.1, zf + 0.04, w, 0.6, 0.12, 0, { ao: 0 }); // dintel
+  shopInterior({ x0: x0 + 0.3, x1: x1 - 0.3, z0: zi, z1: zf - 0.1, hgt: gh - 0.1, name, tint: tint || '#f2efe8', seed });
   const glassW = w - 0.6;
-  const inner = new THREE.Mesh(new THREE.PlaneGeometry(glassW, gh - 0.5), im);
-  inner.position.set(cx, 0.35 + (gh - 0.5) / 2, zf + 0.13);
-  scene.add(inner);
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(glassW, gh - 0.5), new THREE.MeshStandardMaterial({ color: 0x9fb8c8, transparent: true, opacity: 0.22, roughness: 0.04, metalness: 0.9 }));
-  glass.position.set(cx, inner.position.y, zf + 0.2);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(glassW, gh - 0.5), new THREE.MeshStandardMaterial({ color: 0xbfd2de, transparent: true, opacity: 0.16, roughness: 0.03, metalness: 0.9, depthWrite: false }));
+  glass.position.set(cx, 0.35 + (gh - 0.5) / 2, zf + 0.2);
   scene.add(glass);
+  W.shopGlass = W.shopGlass || [];
+  W.shopGlass.push(glass);
   // carpintería metálica
   const n = Math.max(2, Math.round(glassW / 2.2));
   for (let i = 0; i <= n; i++) B.box('#121417', x0 + 0.3 + (i * glassW) / n, 0.3, zf + 0.22, 0.09, gh - 0.4, 0.08, 0, { mat: 'metal', ao: 0 });
@@ -1160,6 +1162,176 @@ function storefront({ x0, x1, zf, depth = 12, h = 5, wall = '#3a3d42', name, sig
     nm.position.set(x0 + 1.4, 1.9, zf + 0.15);
   }
   return { x: cx, z: zf + 1.3 };
+}
+
+// ------------------------------------------------------------------
+//  Interiores de las tiendas (visibles a través del escaparate)
+// ------------------------------------------------------------------
+const PRODUCT_COLS = ['#d8402f', '#f2c230', '#2f7fd8', '#3fae5a', '#f28c28', '#ffffff', '#8e44ad', '#1abc9c', '#e84393', '#c0392b', '#f5e6c8', '#2c3e50'];
+function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
+  const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2;
+  let r = seed * 9301 + 49297;
+  const rand = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+  const L = { mat: 'lit', shadow: false, ao: 0.15 };
+  const LM = { mat: 'litMetal', shadow: false, ao: 0 };
+  const kind = /Súper|24/.test(name) ? 'super' : /Bar/.test(name) ? 'bar' : /Empeñ/.test(name) ? 'pawn' : /Café/.test(name) ? 'cafe' : /Lava/.test(name) ? 'laundry' : /Farmac/.test(name) ? 'pharma' : /Taquer/.test(name) ? 'taco' : 'super';
+  const floor = { super: '#d9d4c8', bar: '#5a3a24', pawn: '#6b5a48', cafe: '#a87a50', laundry: '#e6e9ec', pharma: '#eef1f0', taco: '#c9b28c' }[kind];
+  // suelo (baldosas a cuadros), paredes y techo
+  for (let i = 0; i < Math.ceil(w / 0.6); i++) for (let j = 0; j < Math.ceil(d / 0.6); j++) {
+    const c = (i + j) % 2 ? floor : new THREE.Color(floor).multiplyScalar(0.86).getStyle();
+    B.box(c, x0 + 0.3 + i * 0.6, 0.0, z0 + 0.3 + j * 0.6, 0.6, 0.03, 0.6, 0, L);
+  }
+  const wallC = new THREE.Color(tint).multiplyScalar(0.92).getStyle();
+  B.box(wallC, cx, 0, z0 + 0.05, w, hgt, 0.1, 0, L); // fondo
+  B.box(wallC, x0 + 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
+  B.box(wallC, x1 - 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
+  B.box('#e9e6df', cx, hgt - 0.06, (z0 + z1) / 2, w, 0.06, d, 0, L); // techo
+  B.box('#3a3d42', cx, 0.03, z0 + 0.12, w, 0.14, 0.04, 0, L); // rodapié
+  // paneles de luz en el techo
+  for (let i = 0; i < Math.max(1, Math.floor(w / 2.6)); i++) {
+    const lx = x0 + (i + 0.5) * (w / Math.max(1, Math.floor(w / 2.6)));
+    B.box('#fffaf0', lx, hgt - 0.1, (z0 + z1) / 2, 1.2, 0.04, 0.3, 0, { mat: 'glow' });
+  }
+  const clerk = (x, z) => { (W.clerks = W.clerks || []).push({ x, z, yaw: 0, kind }); };
+  const shelfUnit = (x, z, len, levels, depthS, ry, color = '#e8e8e8', items = true) => {
+    // estantería con baldas y productos
+    const c = Math.cos(ry), sn = Math.sin(ry);
+    const P = (u, v) => [x + u * c + v * sn, z - u * sn + v * c];
+    for (const u of [-len / 2, len / 2]) { const [px, pz] = P(u, 0); B.box('#9aa0a6', px, 0, pz, 0.05, levels * 0.42 + 0.2, depthS, ry, LM); }
+    for (let l = 0; l < levels; l++) {
+      const y = 0.12 + l * 0.42;
+      B.box(color, x, y, z, len, 0.04, depthS, ry, LM);
+      if (!items) continue;
+      let u = -len / 2 + 0.06;
+      while (u < len / 2 - 0.08) {
+        const bw = 0.07 + rand() * 0.1, bh = 0.12 + rand() * 0.2, col = PRODUCT_COLS[Math.floor(rand() * PRODUCT_COLS.length)];
+        const n = 1 + Math.floor(rand() * 3);
+        for (let k = 0; k < n && u < len / 2 - 0.08; k++) {
+          const [px, pz] = P(u + bw / 2, (rand() - 0.5) * 0.05);
+          if (rand() < 0.3) B.add(GEO.cyl8, col, px, y + 0.02 + bh / 2, pz, bw, bh, bw, 0, L);
+          else B.box(col, px, y + 0.02, pz, bw, bh, depthS * 0.7, ry, L);
+          u += bw + 0.012;
+        }
+        u += 0.02;
+      }
+    }
+  };
+  const counter = (x, z, len, color = '#6b4f3a', top = '#d9d4cc', ry = 0) => {
+    B.box(color, x, 0, z, len, 0.95, 0.6, ry, L);
+    B.box(top, x, 0.95, z, len + 0.06, 0.05, 0.66, ry, LM);
+  };
+  const register = (x, z) => {
+    B.box('#2b2e33', x, 1.0, z, 0.38, 0.12, 0.32, 0, LM);
+    B.box('#1d2024', x, 1.12, z - 0.05, 0.3, 0.2, 0.04, -0.3, LM);
+    B.box('#5fd0ff', x, 1.14, z - 0.03, 0.26, 0.15, 0.01, -0.3, { mat: 'glow' });
+  };
+  const stool = (x, z, h = 0.75, seat = '#b03a2e') => {
+    B.add(GEO.cyl8, '#8a8f96', x, h / 2, z, 0.06, h, 0.06, 0, LM);
+    B.add(GEO.cyl12, seat, x, h, z, 0.36, 0.07, 0.36, 0, L);
+  };
+  const table = (x, z, top = '#e0d6c4') => {
+    B.add(GEO.cyl8, '#3a3d42', x, 0.37, z, 0.07, 0.74, 0.07, 0, LM);
+    B.add(GEO.cyl16, top, x, 0.75, z, 0.75, 0.04, 0.75, 0, L);
+    for (const a of [0.6, 0.6 + Math.PI]) {
+      const sx = x + Math.cos(a) * 0.55, sz = z + Math.sin(a) * 0.55;
+      B.box('#4a3628', sx, 0.44, sz, 0.38, 0.04, 0.38, a, L);
+      B.box('#4a3628', sx + Math.cos(a) * 0.17, 0.44, sz + Math.sin(a) * 0.17, 0.04, 0.42, 0.38, a, L);
+      for (const o of [-0.15, 0.15]) B.box('#2a2d31', sx + o, 0, sz, 0.03, 0.44, 0.03, 0, LM);
+    }
+  };
+
+  if (kind === 'super') {
+    // neveras al fondo con puertas de cristal iluminadas
+    const nf = Math.floor((w - 2.2) / 0.9);
+    for (let i = 0; i < nf; i++) {
+      const fx = x0 + 0.5 + i * 0.9 + 0.45;
+      B.box('#d9dde1', fx, 0, z0 + 0.45, 0.88, 2.1, 0.7, 0, LM);
+      B.box('#bfe6ff', fx, 0.15, z0 + 0.81, 0.78, 1.8, 0.02, 0, { mat: 'glow' });
+      for (let l = 0; l < 5; l++) for (let k = 0; k < 5; k++) B.add(GEO.cyl8, PRODUCT_COLS[Math.floor(rand() * 12)], fx - 0.3 + k * 0.15, 0.3 + l * 0.36, z0 + 0.62, 0.08, 0.24, 0.08, 0, L);
+    }
+    // góndolas
+    // góndola de doble cara paralela al escaparate
+    const gl = w - 3.6, gx = x0 + 0.4 + gl / 2;
+    shelfUnit(gx, z0 + 2.05, gl, 4, 0.36, 0, '#f0f0f0');
+    shelfUnit(gx, z0 + 1.66, gl, 4, 0.36, Math.PI, '#f0f0f0');
+    B.box('#d8402f', gx, 1.75, z0 + 1.86, gl, 0.22, 0.04, 0, L); // cartel de pasillo
+    counter(x1 - 1.2, z1 - 1.0, 1.6, '#2e7d4f', '#e8e8e8');
+    register(x1 - 0.9, z1 - 1.0);
+    clerk(x1 - 1.2, z1 - 1.75);
+    B.box('#f2c230', x1 - 1.6, 1.0, z1 - 1.0, 0.5, 0.25, 0.35, 0, L); // chicles
+    B.box('#ffd84d', cx, hgt - 0.6, z0 + 0.12, Math.min(3, w * 0.4), 0.35, 0.02, 0, { mat: 'glow' }); // cartel ofertas
+  } else if (kind === 'bar') {
+    counter(cx + 0.6, z0 + 1.4, w - 2.4, '#4a2c1a', '#2b1a10');
+    clerk(cx + 0.2, z0 + 0.75);
+    for (let i = 0; i < 4; i++) stool(x0 + 1.6 + i * ((w - 3) / 3), z0 + 2.05);
+    // botellero iluminado
+    B.box('#2b1a10', cx + 0.6, 1.0, z0 + 0.2, w - 2.4, 1.6, 0.3, 0, L);
+    B.box('#ffb347', cx + 0.6, 1.02, z0 + 0.36, w - 2.5, 0.02, 0.02, 0, { mat: 'glow' });
+    for (let l = 0; l < 3; l++) for (let x = x0 + 1.5; x < x1 - 0.5; x += 0.13) {
+      const col = ['#2e6b30', '#7a3b12', '#c9c9c9', '#3d2a14', '#9b1b30', '#e3c46a'][Math.floor(rand() * 6)];
+      B.add(GEO.cyl8, col, x, 1.17 + l * 0.5, z0 + 0.25, 0.07, 0.28, 0.07, 0, L);
+      B.add(GEO.cyl8, col, x, 1.36 + l * 0.5, z0 + 0.25, 0.025, 0.1, 0.025, 0, L);
+    }
+    B.box('#16191c', x0 + 0.6, 1.4, z0 + 0.1, 1.0, 0.6, 0.06, 0, LM); // tele
+    B.box('#3a7bd5', x0 + 0.6, 1.43, z0 + 0.14, 0.92, 0.52, 0.01, 0, { mat: 'glow' });
+    table(x0 + 1.0, z1 - 0.9, '#3d2a14');
+  } else if (kind === 'pawn') {
+    // vitrinas con objetos y guitarras colgadas
+    for (const vx of [x0 + 1.4, cx + 0.9]) {
+      B.box('#3a2a1e', vx, 0, z1 - 1.2, 2.2, 0.55, 0.6, 0, L);
+      B.box('#cfe6f0', vx, 0.55, z1 - 1.2, 2.2, 0.4, 0.6, 0, { mat: 'glass', shadow: false, ao: 0 });
+      for (let i = 0; i < 6; i++) B.box(['#d4af37', '#c0c0c0', '#1d1d1d', '#8e44ad'][i % 4], vx - 0.9 + i * 0.36, 0.6, z1 - 1.2 + (rand() - 0.5) * 0.3, 0.14, 0.05, 0.1, rand(), LM);
+    }
+    for (let i = 0; i < 4; i++) {
+      const gx = x0 + 0.8 + i * 0.75, col = ['#a0522d', '#c0392b', '#1d1d1d', '#e3c46a'][i];
+      B.add(GEO.cyl16, col, gx, 1.25, z0 + 0.18, 0.38, 0.08, 0.46, 0, { ...L, rx: Math.PI / 2 });
+      B.add(GEO.cyl16, col, gx, 1.6, z0 + 0.18, 0.3, 0.08, 0.34, 0, { ...L, rx: Math.PI / 2 });
+      B.box('#3a2a1e', gx, 1.7, z0 + 0.18, 0.06, 0.75, 0.04, 0, L);
+    }
+    shelfUnit(x1 - 1.4, z0 + 0.35, 2.2, 4, 0.4, 0, '#5a4636');
+    B.box('#16191c', x1 - 1.4, 1.75, z0 + 0.4, 0.8, 0.5, 0.25, 0, LM);
+  } else if (kind === 'cafe') {
+    counter(x1 - 1.8, z0 + 1.2, 2.6, '#6b4226', '#e8e0d4');
+    B.box('#b0b5ba', x1 - 2.4, 1.0, z0 + 1.2, 0.5, 0.45, 0.4, 0, LM); // cafetera
+    clerk(x1 - 1.6, z0 + 0.6);
+    B.box('#2b2e33', x1 - 2.4, 1.15, z0 + 1.41, 0.4, 0.06, 0.02, 0, LM);
+    B.box('#cfe6f0', x1 - 1.2, 0.95, z0 + 1.2, 1.0, 0.35, 0.5, 0, { mat: 'glass', shadow: false, ao: 0 }); // vitrina
+    for (let i = 0; i < 5; i++) B.add(GEO.cyl12, ['#c68642', '#f5deb3', '#8b4513', '#e8b4b8'][i % 4], x1 - 1.6 + i * 0.2, 1.02, z0 + 1.2, 0.14, 0.06, 0.14, 0, L);
+    B.box('#1d2a22', x1 - 1.8, 1.7, z0 + 0.12, 1.8, 0.8, 0.04, 0, L); // pizarra menú
+    for (let i = 0; i < 4; i++) B.box('#f0ede6', x1 - 2.4 + (i % 2) * 0.9, 1.8 + Math.floor(i / 2) * 0.3, z0 + 0.15, 0.6, 0.04, 0.01, 0, { mat: 'glow' });
+    table(x0 + 1.0, z1 - 0.9, '#f0ede6');
+    table(x0 + 2.6, z0 + 1.1, '#f0ede6');
+    for (let i = 0; i < 3; i++) { B.add(GEO.cyl8, '#2b2b2b', x0 + 1 + i * 1.3, hgt - 0.5, z1 - 1.0, 0.02, 0.8, 0.02, 0, LM); B.add(GEO.sphere, '#ffcf7a', x0 + 1 + i * 1.3, hgt - 0.95, z1 - 1.0, 0.22, 0.2, 0.22, 0, { mat: 'glow' }); }
+  } else if (kind === 'laundry') {
+    for (let i = 0; i < Math.floor((w - 0.6) / 0.72); i++) {
+      const mx = x0 + 0.45 + i * 0.72;
+      for (const yy of [0, 0.86]) {
+        B.box('#f4f6f8', mx, yy, z0 + 0.45, 0.68, 0.84, 0.66, 0, LM);
+        B.add(GEO.cyl16, '#3b4a57', mx, yy + 0.44, z0 + 0.79, 0.44, 0.03, 0.44, 0, { ...LM, rx: Math.PI / 2 });
+        B.add(GEO.cyl16, '#8fc7e8', mx, yy + 0.44, z0 + 0.8, 0.34, 0.02, 0.34, 0, { mat: 'glow', rx: Math.PI / 2 });
+        B.box('#2b2e33', mx, yy + 0.74, z0 + 0.79, 0.5, 0.06, 0.01, 0, LM);
+      }
+    }
+    B.box('#2b7bd1', cx, 0, z1 - 0.9, w - 2, 0.45, 0.45, 0, L); // banco
+    B.box('#d6e6ef', cx, 0.9, z1 - 0.5, 1.4, 0.04, 0.5, 0, L); // mesa plegar
+    for (let i = 0; i < 3; i++) B.box(['#e74c3c', '#f1c40f', '#ecf0f1'][i], cx - 0.4 + i * 0.35, 0.94, z1 - 0.5, 0.3, 0.1 + i * 0.03, 0.3, rand(), L);
+  } else if (kind === 'pharma') {
+    shelfUnit(cx, z0 + 0.35, w - 0.8, 5, 0.38, 0, '#ffffff');
+    counter(cx, z1 - 1.2, w - 2.4, '#ffffff', '#1e8e4f');
+    register(cx + 0.8, z1 - 1.2);
+    clerk(cx + 0.4, z1 - 1.9);
+    B.box('#2ecc71', cx - 0.8, 1.9, z0 + 0.12, 0.5, 0.15, 0.02, 0, { mat: 'glow' });
+    B.box('#2ecc71', cx - 0.8, 1.725, z0 + 0.12, 0.15, 0.5, 0.02, 0, { mat: 'glow' });
+  } else if (kind === 'taco') {
+    counter(cx, z0 + 1.1, w - 1.6, '#c0392b', '#e0e0e0');
+    B.box('#7f8c8d', cx - 1.2, 0.98, z0 + 0.4, 1.4, 0.06, 0.5, 0, LM); // plancha
+    B.add(GEO.cyl8, '#8b4513', cx + 1.2, 1.4, z0 + 0.5, 0.35, 0.7, 0.35, 0, L); // trompo
+    clerk(cx, z0 + 0.5);
+    B.box('#ffd84d', cx, hgt - 0.85, z0 + 0.12, w - 1.6, 0.55, 0.03, 0, { mat: 'glow' }); // menú
+    for (let i = 0; i < 4; i++) B.box(['#c0392b', '#2f8f4f', '#f39c12', '#ffffff'][i], cx - 1.8 + i * 1.2, hgt - 0.78, z0 + 0.15, 0.9, 0.08, 0.01, 0, L);
+    table(x0 + 1.0, z1 - 0.8, '#2f8f4f');
+    table(x1 - 1.0, z1 - 0.8, '#2f8f4f');
+  }
 }
 
 function trashCan(x, z) {

@@ -1,3 +1,4 @@
+import { openLayoutEditor } from './layout.js';
 import { G, on, money } from '../game.js';
 import { STRAINS, RANKS } from '../data/items.js';
 import { PEOPLE } from '../data/people.js';
@@ -7,7 +8,7 @@ import { clock, dayName } from '../systems/time.js';
 import { save, wipe } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch } from '../core/input.js';
-import { chips, confirmDialog } from './panels.js';
+import { chips, confirmDialog, closePanel } from './panels.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
 
@@ -379,10 +380,17 @@ export function settingsPanel(container, onExit) {
   box.append(
     slider('Sensibilidad de cámara', 0.3, 3, 0.1, s.sens, (v) => { s.sens = v; }),
     slider('Resolución', 0.5, 1, 0.05, s.res, (v) => { s.res = v; G.act.resize(); }),
-    choice('Calidad gráfica', [['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']], s.quality || 'alta', (v) => G.act.quality(v)),
+    choice('Calidad gráfica', [['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']], s.quality || 'alta', (v) => { s.autoQ = false; G.act.quality(v); }),
     toggle('Sombras', s.shadows, (v) => { s.shadows = v; setShadows(v && s.quality !== 'baja'); }),
     toggle('Sonido', s.sound, (v) => { s.sound = v; }),
   );
+  const lay = h('button', 'btn ghost', '🎮 Editar controles');
+  lay.onclick = () => {
+    closePanel(true);
+    if (phoneOpen()) closePhone();
+    openLayoutEditor();
+  };
+  box.appendChild(lay);
   const sv = h('button', 'btn', '💾 Guardar partida');
   sv.onclick = () => { save(); G.act.toast('Partida guardada.', '💾'); };
   const del = h('button', 'btn danger', '🗑️ Borrar partida');

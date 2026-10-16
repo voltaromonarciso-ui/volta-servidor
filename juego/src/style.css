@@ -84,11 +84,11 @@ kbd { background: #fff; color: #111; border-radius: 4px; padding: 0 6px; font-we
 #info.show { opacity: 0.95; }
 
 #hotbar { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; background: rgba(14, 18, 24, 0.35); border-radius: 14px; }
-.slot { position: relative; width: 48px; height: 48px; background: rgba(14, 18, 24, 0.5); border: 1.5px solid rgba(255,255,255,0.14); border-radius: 10px; display: grid; place-items: center; cursor: pointer; transition: transform 0.1s; }
+.slot { position: relative; width: var(--slot, 48px); height: var(--slot, 48px); background: rgba(14, 18, 24, 0.5); border: 1.5px solid rgba(255,255,255,0.14); border-radius: 10px; display: grid; place-items: center; cursor: pointer; transition: transform 0.1s; }
 .slot.empty { opacity: 0.4; }
 #hotbar { opacity: 0.85; }
 .slot.sel { border-color: #fff; background: rgba(255,255,255,0.18); transform: translateY(-3px); opacity: 1; }
-.slot .ic { font-size: 22px; }
+.slot .ic { font-size: calc(var(--slot, 48px) * 0.46); }
 .slot .q { position: absolute; right: 4px; bottom: 1px; font-size: 10px; font-weight: 800; text-shadow: 0 1px 2px #000; }
 .slot .k { position: absolute; left: 4px; top: 1px; font-size: 9px; color: var(--mut); }
 body.touch .slot .k { display: none; }
@@ -136,9 +136,10 @@ body.touch #joy { display: block; }
 .bt-t { font-size: 20px; font-weight: 900; color: var(--gold); }
 .bt-s { font-size: 13px; color: var(--txt); margin-top: 4px; }
 @keyframes bin { from { opacity: 0; transform: translateX(-50%) scale(0.85); } }
-#notify { position: absolute; left: 50%; top: 10px; transform: translate(-50%, -150%); background: rgba(245, 247, 250, 0.96); color: #111; border-radius: 18px; padding: 10px 14px; width: 360px; max-width: 60vw; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); transition: transform 0.35s; pointer-events: auto !important; cursor: pointer; z-index: 5; }
-#notify.show { transform: translate(-50%, 0); }
-.n-ic { font-size: 26px; }
+#notify { position: absolute; left: 50%; top: 10px; transform: translate(-50%, -150%); background: rgba(245, 247, 250, 0.96); color: #111; border-radius: 22px; padding: 6px 16px 6px 8px; width: auto; max-width: 60vw; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); transition: transform 0.35s, opacity 0.3s; opacity: 0; pointer-events: auto !important; cursor: pointer; z-index: 5; }
+#notify.show { transform: translate(-50%, 0); opacity: 1; }
+.n-ic { font-size: 20px; width: 32px; height: 32px; border-radius: 50%; background: #e8ecf1; display: grid; place-items: center; }
+.n-l { font-size: 14px; white-space: nowrap; }
 .n-t { font-size: 13px; color: #333; max-height: 3em; overflow: hidden; }
 #fps { position: absolute; right: 8px; bottom: 2px; font-size: 10px; color: rgba(255,255,255,0.3); }
 
@@ -285,8 +286,6 @@ input[type=range] { width: 100%; accent-color: var(--acc); }
   #cash { min-width: 120px; padding: 6px 14px 6px 10px; }
   .rb { width: 46px; height: 46px; }
   .rb svg { width: 22px; height: 22px; }
-  .slot { width: 40px; height: 40px; }
-  .slot .ic { font-size: 18px; }
   .cb { width: 60px; height: 60px; }
   .cb.big { width: 74px; height: 74px; }
   .cb.sm { width: 46px; height: 46px; }
@@ -325,3 +324,52 @@ body.touch .card { padding: 12px; }
   .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .ph-frame { height: 96vh; width: min(380px, 60vh + 120px, 94vw); border-radius: 22px; }
 }
+
+#loading { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #2a2142, #0d1117 70%); }
+.ld-box { width: min(360px, 80vw); text-align: center; }
+.ld-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 22px 0 10px; }
+#ld-bar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--acc), #c6ff9e); transition: width 0.25s; }
+#ld-text { font-size: 13px; color: var(--mut); }
+
+/* ---- creador de personaje ---- */
+#creator { position: fixed; inset: 0; z-index: 30; display: flex; background: radial-gradient(ellipse at 30% 50%, #2b3442, #0d1117 75%); color: var(--txt); }
+#creator .cr-view { flex: 1.1; position: relative; min-width: 0; }
+#creator canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+#creator .cr-hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 12px; opacity: 0.55; pointer-events: none; }
+#creator .cr-side { flex: 1; max-width: 430px; display: flex; flex-direction: column; background: rgba(12,15,20,0.78); backdrop-filter: blur(8px); border-left: 1px solid rgba(255,255,255,0.07); padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) 14px; }
+#creator .cr-title { font-weight: 800; font-size: 20px; margin-bottom: 6px; }
+#creator .cr-scroll { flex: 1; overflow-y: auto; padding-right: 4px; -webkit-overflow-scrolling: touch; }
+#creator .cr-sec { margin: 8px 0 12px; }
+#creator .cr-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.6; margin-bottom: 6px; }
+#creator .cr-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 7px; }
+#creator .cr-chip { background: rgba(255,255,255,0.08); color: var(--txt); border-radius: 10px; padding: 8px 13px; font-size: 13px; font-weight: 600; min-height: 38px; border: 1px solid transparent; }
+#creator .cr-chip.on { background: rgba(140,214,90,0.18); border-color: var(--acc); color: #dff5cf; }
+#creator .cr-sw { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25); }
+#creator .cr-sw.on { border-color: #fff; box-shadow: 0 0 0 3px var(--acc), inset 0 -3px 6px rgba(0,0,0,0.25); }
+#creator .cr-name { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: var(--txt); border-radius: 10px; padding: 10px 12px; font-size: 16px; }
+#creator .cr-actions { display: flex; gap: 8px; padding-top: 10px; }
+#creator .cr-actions .cr-go { flex: 1; }
+@media (max-height: 420px) { #creator .cr-title { font-size: 16px; } #creator .cr-sec { margin: 4px 0 8px; } #creator .cr-sw { width: 30px; height: 30px; } #creator .cr-chip { min-height: 34px; padding: 6px 11px; } }
+
+/* ---- disposición de controles ---- */
+#actions, #joy { opacity: var(--ctl-op, 1); }
+body.touch #notify { top: calc(var(--slot, 48px) + 22px); }
+body.lay-edit #actions, body.lay-edit #joy { display: block; }
+body.lay-edit #btn-alt { display: grid !important; }
+body.lay-edit #hud > * { pointer-events: none !important; }
+#lay-editor { position: fixed; inset: 0; z-index: 40; background: rgba(8, 10, 14, 0.35); }
+#lay-editor .le-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(330px, 46vw); background: rgba(14, 18, 24, 0.92); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 12px 14px; color: var(--txt); box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 2; }
+#lay-editor .le-t { font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+#lay-editor .le-row { display: flex; flex-direction: column; gap: 4px; font-size: 12px; margin-bottom: 8px; }
+#lay-editor .le-row b { color: var(--acc); }
+#lay-editor input[type=range] { width: 100%; }
+#lay-editor .le-btns { display: flex; gap: 8px; justify-content: flex-end; }
+#lay-editor .le-h { position: fixed; border: 2px dashed rgba(255,255,255,0.7); border-radius: 14px; touch-action: none; cursor: grab; display: grid; place-items: end center; background: rgba(255,255,255,0.04); }
+#lay-editor .le-h span { transform: translateY(16px); font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.65); color: #fff; padding: 1px 6px; border-radius: 6px; white-space: nowrap; pointer-events: none; }
+#lay-editor .le-h.on { border-color: var(--acc); border-style: solid; background: rgba(140,214,90,0.12); }
+#creator .cr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+#creator .cr-look { display: flex; align-items: center; gap: 8px; text-align: left; background: rgba(255,255,255,0.08); color: var(--txt); border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600; min-height: 42px; border: 1px solid transparent; }
+#creator .cr-look.on { background: rgba(140,214,90,0.18); border-color: var(--acc); color: #dff5cf; }
+#creator .cr-dots { display: flex; flex-shrink: 0; }
+#creator .cr-dots i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.6); }
+#creator .cr-dots i + i { margin-left: -5px; }

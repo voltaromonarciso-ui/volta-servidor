@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { G, clamp } from '../game.js';
 import { input } from '../core/input.js';
 import { sfx } from '../core/audio.js';
-import { ViewModel } from './hands.js';
+import { ViewModel, applyHandLook } from './hands.js';
 
 const EYE = 1.64, EYE_CROUCH = 1.05, R = 0.32, WALK = 4.0, RUN = 6.8, CROUCH = 1.9, GRAV = 18, JUMP = 5.4;
 
@@ -79,6 +79,14 @@ export class Player {
   }
 
   use() { this.swing = 1; }
+
+  applyLook(look) {
+    applyHandLook(look);
+    // manos algo más finas en personajes femeninos
+    const k = look && look.female ? 1.05 : 1.15;
+    this.vm.L.scale.set(k * (look && look.female ? 0.92 : 1), k, k);
+    this.vm.Rh.scale.copy(this.vm.L.scale);
+  }
 
   forward() { return new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)); }
 }

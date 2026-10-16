@@ -13,53 +13,121 @@ const M = (c, o) => (mats[c + JSON.stringify(o || {})] ||= std(c, o));
 
 const UP = new THREE.Vector3(0, 1, 0);
 
+// Materiales compartidos de la piel y la manga (se recolorean con la personalización).
+export const handMats = {
+  skin: new THREE.MeshPhysicalMaterial({ color: SKIN, roughness: 0.58, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color('#ff9f7a') }),
+  nail: new THREE.MeshPhysicalMaterial({ color: '#f1c9b8', roughness: 0.25, clearcoat: 0.6 }),
+  crease: new THREE.MeshStandardMaterial({ color: '#c98f6d', roughness: 0.7 }),
+  cuff: new THREE.MeshStandardMaterial({ color: CUFF, roughness: 0.95 }),
+  sleeve: new THREE.MeshStandardMaterial({ color: SLEEVE, roughness: 0.95, side: THREE.DoubleSide }),
+};
+const capG = new THREE.CapsuleGeometry(0.5, 1, 6, 12);
+const sphG = new THREE.SphereGeometry(0.5, 16, 12);
+const palmG = new RoundedBoxGeometry(1, 1, 1, 4, 0.32);
+
+function seg(parent, r0, len, y) {
+  const m = new THREE.Mesh(capG, handMats.skin);
+  m.scale.set(r0 * 2, len, r0 * 2.1);
+  m.position.y = y;
+  parent.add(m);
+  return m;
+}
+
+// Mano anatómica: palma con relieve, 4 dedos de 3 falanges, pulgar y uñas.
+// Ejes locales: los dedos crecen hacia +Y, la palma mira a ±X, el ancho va en Z.
 function makeHand(side) {
   const g = new THREE.Group();
   g.side = side;
-  const skin = M(SKIN, { roughness: 0.6 });
-  const palm = new THREE.Mesh(new RoundedBoxGeometry(0.036, 0.095, 0.085, 3, 0.014), skin);
-  palm.position.y = 0.045;
+  const sk = handMats.skin;
+  // palma (más ancha en los nudillos que en la muñeca)
+  const palm = new THREE.Mesh(palmG, sk);
+  palm.scale.set(0.03, 0.088, 0.08);
+  palm.position.y = 0.046;
   g.add(palm);
-  const fingerGeo = new THREE.CapsuleGeometry(0.0105, 0.042, 4, 8);
+  const heel = new THREE.Mesh(sphG, sk); heel.scale.set(0.03, 0.04, 0.065); heel.position.set(side * 0.004, 0.012, 0.002); g.add(heel);
+  const thenar = new THREE.Mesh(sphG, sk); thenar.scale.set(0.03, 0.05, 0.032); thenar.position.set(side * 0.008, 0.03, 0.03); g.add(thenar);
+  // dedos: índice, corazón, anular, meñique (desde el lado del pulgar)
+  const lens = [[0.04, 0.026, 0.021], [0.044, 0.029, 0.022], [0.041, 0.027, 0.021], [0.032, 0.02, 0.018]];
+  const rad = [0.0098, 0.0102, 0.0096, 0.0084];
   g.fingers = [];
   for (let i = 0; i < 4; i++) {
-    const f = new THREE.Group();
-    f.position.set(0, 0.095, -0.03 + i * 0.02);
-    const seg = new THREE.Mesh(fingerGeo, skin);
-    seg.position.y = 0.025;
-    f.add(seg);
-    const tip = new THREE.Mesh(fingerGeo, skin);
-    tip.scale.set(0.95, 0.75, 0.95);
-    tip.position.y = 0.032;
-    const k = new THREE.Group();
-    k.position.y = 0.05;
-    k.add(tip);
-    f.add(k);
-    f.knuckle = k;
-    g.add(f);
-    g.fingers.push(f);
+    const z = 0.029 - i * 0.0195;
+    const base = new THREE.Group();
+    base.position.set(0, 0.088 + (i === 1 ? 0.004 : i === 3 ? -0.008 : 0), z);
+    base.rotation.x = (i - 1.5) * 0.04;
+    g.add(base);
+    const kn = new THREE.Mesh(sphG, sk); kn.scale.setScalar(rad[i] * 2.3); base.add(kn);
+    let parent = base;
+    const joints = [];
+    lens[i].forEach((L, j) => {
+      const r = rad[i] * (1 - j * 0.1);
+      const jt = new THREE.Group();
+      jt.position.y = j === 0 ? 0 : lens[i][j - 1];
+      parent.add(jt);
+      seg(jt, r, L * 0.62, L / 2);
+      if (j === 2) {
+        const nail = new THREE.Mesh(palmG, handMats.nail);
+        nail.scale.set(0.003, L * 0.55, r * 1.6);
+        nail.position.set(-side * r * 0.95, L * 0.6, 0);
+        jt.add(nail);
+      }
+      joints.push(jt);
+      parent = jt;
+    });
+    base.joints = joints;
+    g.fingers.push(base);
   }
+  // pulgar (sale de la base de la palma, en diagonal)
   const thumb = new THREE.Group();
-  thumb.position.set(side * 0.012, 0.03, 0.045);
-  const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.04, 4, 8), skin);
-  t.position.y = 0.028;
-  thumb.add(t);
-  thumb.rotation.set(0.9, 0, side * 0.5);
+  thumb.position.set(side * 0.012, 0.028, 0.038);
+  thumb.rotation.set(0.75, 0, side * 0.55);
   g.add(thumb);
+  let tp = thumb;
+  thumb.joints = [];
+  [[0.034, 0.0125], [0.026, 0.0115], [0.022, 0.0105]].forEach(([L, r], j) => {
+    const jt = new THREE.Group();
+    jt.position.y = j === 0 ? 0 : [0.034, 0.026][j - 1];
+    tp.add(jt);
+    seg(jt, r, L * 0.6, L / 2);
+    if (j === 2) {
+      const nail = new THREE.Mesh(palmG, handMats.nail);
+      nail.scale.set(0.003, L * 0.55, r * 1.6);
+      nail.position.set(-side * r * 0.95, L * 0.6, 0);
+      jt.add(nail);
+    }
+    thumb.joints.push(jt);
+    tp = jt;
+  });
   g.thumb = thumb;
-  // puño de la sudadera
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.05, 0.05, 14), M(CUFF, { roughness: 0.95 }));
-  cuff.position.y = -0.02;
-  cuff.scale.set(0.85, 1, 1.15);
+  // puño de la manga
+  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.044, 0.05, 18), handMats.cuff);
+  cuff.position.y = -0.024;
+  cuff.scale.set(0.85, 1, 1.25);
   g.add(cuff);
   return g;
 }
 
+// Cierra los dedos (0 = abierta, 1 = puño). Cada falange se dobla hacia la palma.
 function curl(hand, amt) {
-  for (const f of hand.fingers) {
-    f.rotation.z = -hand.side * amt * 0.7;
-    f.knuckle.rotation.z = -hand.side * amt * 1.3;
-  }
+  hand.fingers.forEach((f, i) => {
+    const a = amt * (1 + i * 0.05);
+    f.joints[0].rotation.z = -hand.side * a * 0.8;
+    f.joints[1].rotation.z = -hand.side * a * 1.1;
+    f.joints[2].rotation.z = -hand.side * a * 0.7;
+  });
+  hand.thumb.joints[1].rotation.z = -hand.side * amt * 0.5;
+  hand.thumb.joints[2].rotation.z = -hand.side * amt * 0.4;
+}
+
+// Colores de piel y ropa del jugador.
+export function applyHandLook(look) {
+  if (!look) return;
+  handMats.skin.color.set(look.skin);
+  handMats.nail.color.set(look.skin).lerp(new THREE.Color('#ffd9d0'), 0.55);
+  // con camiseta se ve el antebrazo; con sudadera o chaqueta, la manga
+  const bare = look.top === 'tee';
+  handMats.sleeve.color.set(bare ? look.skin : look.shirt);
+  handMats.cuff.color.set(bare ? look.skin : look.shirt).multiplyScalar(bare ? 1 : 0.8);
 }
 
 // ------------------------------------------------------------------
@@ -249,8 +317,8 @@ export class ViewModel {
     this.Rh = makeHand(-1);
     this.L.scale.setScalar(1.15);
     this.Rh.scale.setScalar(1.15);
-    const sleeveGeo = new THREE.CylinderGeometry(0.058, 0.07, 1, 16, 1, true);
-    const sm = M(SLEEVE, { roughness: 0.95, side: THREE.DoubleSide });
+    const sleeveGeo = new THREE.CylinderGeometry(0.05, 0.068, 1, 18, 1, true);
+    const sm = handMats.sleeve;
     this.sleeveL = new THREE.Mesh(sleeveGeo, sm);
     this.sleeveR = new THREE.Mesh(sleeveGeo, sm);
     this.root.add(this.L, this.Rh, this.sleeveL, this.sleeveR);

@@ -26,7 +26,18 @@ export const MAT = {
   glass: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.08, metalness: 0.3 }),
   foliage: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }),
   glow: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
+  // interiores iluminados: el color del vértice también emite luz (tiendas)
+  lit: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 }),
+  litMetal: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.5 }),
 };
+export const LIT = { value: 0.4 };
+for (const m of [MAT.lit, MAT.litMetal]) {
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uLit = LIT;
+    sh.fragmentShader = 'uniform float uLit;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vColor.rgb * uLit;');
+  };
+  m.customProgramCacheKey = () => 'lit';
+}
 
 export class StaticBatch {
   constructor(chunk = 60) {

@@ -63,3 +63,14 @@ src/
 ## Habilidades de Claude Code instaladas
 
 En `../.claude/skills/` hay habilidades que ayudan a desarrollar este proyecto con Claude Code: 10 de Three.js (MIT, de CloudAI-X/threejs-skills), `webapp-testing` y `frontend-design` (Apache 2.0, de anthropics/skills).
+
+## Personajes
+
+Los vecinos, Leo, los dependientes y la policía son personas realistas del
+[Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox)
+(licencia MIT, © 2020 Microsoft), con sus animaciones de andar, correr, esperar
+con el móvil y dar/recibir objetos. Se convirtieron de FBX a GLB, con texturas a
+512 px (WebP) y geometría simplificada y comprimida con meshopt, en
+`src/assets/people/`. El creador de personaje permite elegir nombre, sexo y
+aspecto (piel, pelo y ropa) entre estos modelos; en primera persona las manos y
+mangas toman su tono de piel y color de ropa.

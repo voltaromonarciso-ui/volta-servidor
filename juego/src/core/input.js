@@ -59,7 +59,10 @@ export function initInput() {
     if (e.pointerType === 'mouse') return;
     G.touch = true;
     document.body.classList.add('touch');
-    if (e.clientX < window.innerWidth * 0.42 && !joy) {
+    // zona del joystick: el lado de la pantalla donde esté colocado
+    const jr = joyEl.getBoundingClientRect(), jLeft = jr.left + jr.width / 2 < window.innerWidth / 2;
+    const inJoyZone = jLeft ? e.clientX < window.innerWidth * 0.42 : e.clientX > window.innerWidth * 0.58;
+    if (inJoyZone && !joy) {
       // joystick fijo: si tocas lejos de la base, la base se acerca al dedo
       const r = joyEl.getBoundingClientRect();
       let ox = r.left + r.width / 2, oy = r.top + r.height / 2;
@@ -104,6 +107,7 @@ function moveJoy(x, y) {
 
 function resetJoyEl() {
   joyEl.style.left = ''; joyEl.style.top = ''; joyEl.style.bottom = '';
+  input.onJoyReset?.();
   knobEl.style.transform = 'translate(-50%,-50%)';
 }
 

@@ -1,3 +1,4 @@
+import { LIT } from './batch.js';
 import * as THREE from 'three';
 import { G, clamp } from '../game.js';
 import { GEO } from './batch.js';
@@ -168,6 +169,7 @@ function updateSky(dt) {
   nightFactor = clamp(hour < 12 ? (6 - hour) / 1.5 : (hour - 19) / 1.5, 0, 1);
   stars.material.opacity = nightFactor;
   const dusk = clamp(hour < 12 ? 0 : (hour - 17.5) / 1.5, 0, 1);
+  LIT.value = 0.16 + dusk * 0.12 + nightFactor * 0.16;
   for (const m of G.world.winMats) m.emissiveIntensity = m.userData.shop ? 0.45 + dusk * 0.4 + nightFactor * 0.3 : 0.06 + dusk * 0.25 + nightFactor * 0.5;
   for (const m of G.world.signMats || []) m.emissiveIntensity = 0.5 + dusk * 0.5 + nightFactor * 0.4;
   G.world.bulbMat.color.setHex(dusk > 0.6 || nightFactor > 0.2 ? 0xffd88a : 0xd8d8d8).multiplyScalar(dusk > 0.6 || nightFactor > 0.2 ? 2.2 : 1);
