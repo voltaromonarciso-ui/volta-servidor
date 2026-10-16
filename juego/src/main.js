@@ -78,7 +78,7 @@ function leoTip() {
     'Primero la tierra, luego la semilla. No tiene más misterio.',
     'El fregadero está junto al banco. Llena la regadera ahí.',
     'Si estás cansado, el catre del fondo es todo tuyo.',
-    'Bolsitas y mesa de empaquetado, en la ferretería.',
+    'Sobres vacíos y mesa de empaquetado, en la ferretería. Los viales y los moldes de gominola también.',
   ];
   return tips[q] || 'Tú a lo tuyo, que yo vigilo la nave.';
 }
@@ -105,7 +105,7 @@ Object.assign(G.act, {
     addXP(q.xp);
     sfx('level');
     bigToast(`✔ ${q.title}`, next ? `Siguiente: ${next.title}` : '¡Has completado la historia!');
-    if (q.title === 'Paciencia') setTimeout(() => sendMsg('leo', 'Primo, ¡ya tienes cosecha! Empaquétala en bolsitas, que nadie compra cogollos sueltos. Chema y Nuria ya saben de ti.'), 3000);
+    if (q.title === 'Paciencia') setTimeout(() => sendMsg('leo', 'Primo, ¡ya tienes cosecha! Prepárala en sobres, viales o gominolas: nadie compra pétalos sueltos. Chema y Nuria ya saben de ti.'), 3000);
   },
   fade: (mid) => {
     const f = document.getElementById('fade');
@@ -123,7 +123,7 @@ Object.assign(G.act, {
     G.state.water = 4;
     G.player.use();
     sfx('pop');
-    bigToast('Caja abierta', 'Maceta, regadera y bolsitas. Coloca la maceta en el suelo de la nave.');
+    bigToast('Caja abierta', 'Maceta, regadera y sobres vacíos. Coloca la maceta en el suelo de la nave.');
     G.act.flag('boxOpened');
     G.state.sel = G.state.inv.findIndex((x) => x && x.id === 'maceta');
   },
@@ -276,7 +276,7 @@ window.addEventListener('beforeunload', () => { if (!G.paused) save(); });
 // exponer para depuración
 window.__G = G;
 window.__debug = {
-  arrest, advanceTime, econ: ECON, panels: P, R,
+  arrest, advanceTime, econ: ECON, panels: P, R, spawn: (e) => { if (!G.objects.has(e.uid)) spawnObject(e); },
   // ejecuta la acción del centro de la pantalla al instante (para pruebas automáticas)
   act: (secondary = false) => { G.player.update(0, false); camera.updateMatrixWorld(); updateInteract(1); runAction(secondary); },
 };

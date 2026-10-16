@@ -31,7 +31,7 @@ export const INGREDIENTS = {
   energetica: { name: 'Bebida energética', icon: '🥤', price: 6, adds: 'energia',  tr: { relajado: 'veloz', sueno: 'paranoia', hambre: 'chispa', zen: 'electrico' } },
   cafe:       { name: 'Café molido',       icon: '☕', price: 4, adds: 'enfoque',  tr: { somno: 'energia', risa: 'chispa', tropical: 'brillo' } },
   platano:    { name: 'Plátano',           icon: '🍌', price: 2, adds: 'risa',     tr: { paranoia: 'relajado', energia: 'tropical', frio: 'gigante' } },
-  chicle:     { name: 'Chicle',            icon: '🍬', price: 3, adds: 'chispa',   tr: { enfoque: 'euforia', sed: 'tropical', calor: 'frio' } },
+  chicle:     { name: 'Chicle',            icon: '🫧', price: 3, adds: 'chispa',   tr: { enfoque: 'euforia', sed: 'tropical', calor: 'frio' } },
   ibuprofeno: { name: 'Ibuprofeno',        icon: '💊', price: 5, adds: 'somno',    tr: { paranoia: 'zen', euforia: 'sueno', veloz: 'relajado' } },
   leche:      { name: 'Leche',             icon: '🥛', price: 3, adds: 'frio',     tr: { calor: 'relajado', energia: 'sueno', chispa: 'brillo' } },
   guindilla:  { name: 'Guindilla',         icon: '🌶️', price: 4, adds: 'calor',    tr: { relajado: 'euforia', risa: 'veloz', frio: 'electrico' } },

@@ -1,12 +1,12 @@
 import { G } from '../game.js';
 import { ITEMS } from '../data/items.js';
 
-const KEY = 'bloque9_save_v2';
+const KEY = 'bloque9_save_v3';
 export const INV_SIZE = 10;
 
 export function newState() {
   return {
-    version: 2,
+    version: 3,
     money: 350,
     day: 1,
     minute: 17.5 * 60,
@@ -46,7 +46,7 @@ export function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.version !== 2) return null;
+    if (!s || s.version !== 3) return null;
     return Object.assign(newState(), s);
   } catch (e) {
     return null;

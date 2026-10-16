@@ -142,13 +142,14 @@ function makeDeal(person, c) {
   const spot = spotFor(person);
   const deal = {
     id: `d${Date.now().toString(36)}${dealSeq++}`, npc: person.id, product: p.id, qty, price: qty * p.price,
-    spot: spot.id, status: 'offer', created: absNow(), expires: absNow() + 75,
+    spot: spot.id, status: 'offer', created: absNow(), expires: absNow() + 75, form: person.form,
   };
   G.state.deals.push(deal);
+  const fm = ITEMS[person.form].form;
   const lines = [
-    `¿Me pasas ${qty} de ${p.name} por ${money(deal.price)}? Podemos vernos en ${spot.name}.`,
-    `Ey, necesito ${qty}× ${p.name}. Te doy ${money(deal.price)}. ¿${spot.name}?`,
-    `¿Tienes ${p.name}? Me llevo ${qty} por ${money(deal.price)}. Quedamos en ${spot.name}.`,
+    `¿Me pasas ${qty} de ${p.name} por ${money(deal.price)}? Si puede ser en ${fm}, mejor. Podemos vernos en ${spot.name}.`,
+    `Ey, necesito ${qty}× ${p.name} (me gusta en ${fm}). Te doy ${money(deal.price)}. ¿${spot.name}?`,
+    `¿Tienes ${p.name}? Me llevo ${qty} por ${money(deal.price)}, en ${fm} si puedes. Quedamos en ${spot.name}.`,
   ];
   sendMsg(person.id, pick(lines), { deal: deal.id });
 }
@@ -201,12 +202,15 @@ export function completeDeal(deal, given) {
   if (units < deal.qty) return { ok: false, msg: `Faltan ${deal.qty - units} unidades.` };
   if (rightUnits < deal.qty && likes === 0) return { ok: false, msg: 'Esto no es lo que pedí.' };
   for (const g of given) inv.remove(g.id, g.q, g.p);
-  const pay = rightUnits >= deal.qty ? deal.price : Math.round(deal.price * 0.85);
+  const formOk = deal.form && given.every((g) => g.id === deal.form);
+  let pay = rightUnits >= deal.qty ? deal.price : Math.round(deal.price * 0.85);
+  const tip = formOk ? Math.max(2, Math.round(pay * 0.1)) : 0;
+  pay += tip;
   const p = product(deal.product);
   const satisfaction = (rightUnits >= deal.qty ? 1 : 0.6) + prefMatches(person, p) * 0.15 + (prodValue(p) / p.price - 1) * 0.5;
   deal.status = 'done';
   addMoney(pay);
-  c.affinity = clamp(c.affinity + Math.round(4 + satisfaction * 6), 0, 100);
+  c.affinity = clamp(c.affinity + Math.round(4 + satisfaction * 6 + (formOk ? 3 : 0)), 0, 100);
   c.addiction = clamp(c.addiction + 0.06 + p.effects.length * 0.01, 0, 1);
   c.deals++;
   G.state.stats.deals++;
@@ -215,7 +219,7 @@ export function completeDeal(deal, given) {
   addXP(pay / 3 + 6);
   sfx('cash');
   G.act.clearWaypoint?.();
-  setTimeout(() => sendMsg(deal.npc, pick(['Gracias, un placer.', 'Perfecto, como siempre.', 'Buen material. Hasta la próxima.', '¡Eres un crack!'])), 1500);
+  setTimeout(() => sendMsg(deal.npc, formOk ? `¡Y en ${ITEMS[deal.form].form}, como me gusta! Te he dejado ${money(tip)} de propina.` : pick(['Gracias, un placer.', 'Perfecto, como siempre.', 'Buen material. Hasta la próxima.', '¡Eres un crack!'])), 1500);
   // recomendaciones: a veces te pasa un contacto nuevo
   if (c.deals % 3 === 0) {
     const locked = PEOPLE.filter((x) => !customer(x.id).unlocked && !G.state.flags['ref_' + x.id]);
@@ -225,22 +229,23 @@ export function completeDeal(deal, given) {
       setTimeout(() => sendMsg(deal.npc, `Por cierto, ${ref.name} anda buscando algo. Ofrécele una muestra si le ves.`), 4000);
     }
   }
-  return { ok: true, pay };
+  return { ok: true, pay, tip };
 }
 
 export function giveSample(npc) {
   const held = inv.held();
-  if (!held || !['cogollo', 'bolsa'].includes(held.id)) return G.act.toast('Coge en la mano un cogollo o una bolsita para regalar una muestra.');
+  if (!held || !['cogollo', 'bolsa', 'gomi'].includes(held.id)) return G.act.toast('Coge en la mano pétalos, un sobre o gominolas para regalar una muestra.');
   const c = customer(npc.id);
   if (c.sampleDay === G.state.day) return G.act.toast(`${npc.person.name} ya ha probado algo hoy.`);
   const p = product(held.p);
+  const spec = { id: held.id, p: held.p };
   inv.remove(held.id, 1, held.p);
   c.sampleDay = G.state.day;
+  npc.playExchange(spec, false);
+  G.player.vm.give();
   const m = prefMatches(npc.person, p);
   const ref = G.state.flags['ref_' + npc.id] ? 0.2 : 0;
   const chance = clamp(0.28 + m * 0.2 + G.state.rank * 0.04 + prodValue(p) / 400 + ref - npc.person.std * 0.08, 0.1, 0.95);
-  npc.talk(4);
-  G.player.use();
   if (Math.random() < chance) {
     c.unlocked = true;
     c.affinity = 30 + m * 10;

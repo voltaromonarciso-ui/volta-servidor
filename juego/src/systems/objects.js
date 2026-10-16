@@ -94,47 +94,90 @@ export function placeObject(type, x, z, r) {
 const BUILD = {
   pot(o) {
     const g = o.group;
-    mesh(cylTaper, '#b5651d', 0.62, 0.5, 0.62, 0, 0.25, 0, g);
-    mesh(cyl, '#9a531a', 0.66, 0.06, 0.66, 0, 0.5, 0, g);
-    o.soil = mesh(cyl, new THREE.MeshLambertMaterial({ color: 0x5a3c22 }), 0.56, 0.04, 0.56, 0, 0.49, 0, g);
+    const potM = new THREE.MeshStandardMaterial({ color: 0xb5602a, roughness: 0.85 });
+    mesh(cylTaper, potM, 0.62, 0.5, 0.62, 0, 0.25, 0, g);
+    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xa2541f, roughness: 0.8 }), 0.67, 0.07, 0.67, 0, 0.5, 0, g);
+    o.soil = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x5a3c22, roughness: 1 }), 0.57, 0.04, 0.57, 0, 0.495, 0, g);
     o.plant = new THREE.Group();
     o.plant.position.y = 0.5;
     g.add(o.plant);
-    o.leafMat = new THREE.MeshLambertMaterial({ color: 0x3e9b3a, flatShading: true });
-    o.budMat = new THREE.MeshLambertMaterial({ color: 0x8fd16a, flatShading: true });
-    mesh(cyl, '#4c7a2a', 0.05, 1, 0.05, 0, 0.5, 0, o.plant);
-    // hojas en espiral
-    for (let i = 0; i < 9; i++) {
-      const a = i * 2.4, y = 0.15 + i * 0.09;
-      const lf = mesh(leafGeo, o.leafMat, 0.12, 0.42 - i * 0.025, 0.04, Math.cos(a) * 0.16, y, Math.sin(a) * 0.16, o.plant);
-      lf.rotation.order = 'YXZ';
-      lf.rotation.set(0, -a, -1.0);
+    o.leafMat = new THREE.MeshStandardMaterial({ color: 0x2f8f7a, roughness: 0.6 });
+    o.petalMat = new THREE.MeshStandardMaterial({ color: 0x8fe0b0, roughness: 0.4, emissive: 0x2fbf6a, emissiveIntensity: 0.4, side: THREE.DoubleSide });
+    o.coreMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x7dffb0, emissiveIntensity: 1.5, roughness: 0.3 });
+    const stemM = new THREE.MeshStandardMaterial({ color: 0x3f7f5a, roughness: 0.7 });
+    // tallo principal ligeramente curvado
+    for (let i = 0; i < 5; i++) mesh(cyl, stemM, 0.06 - i * 0.006, 0.22, 0.06 - i * 0.006, Math.sin(i * 0.6) * 0.03, 0.11 + i * 0.2, 0, o.plant);
+    // hojas anchas y redondeadas (nada parecido a plantas reales)
+    const leafG = new THREE.SphereGeometry(0.5, 12, 8);
+    for (let i = 0; i < 8; i++) {
+      const a = i * 2.3, y = 0.12 + i * 0.1;
+      const lf = mesh(leafG, o.leafMat, 0.26 - i * 0.012, 0.035, 0.15, Math.cos(a) * 0.14, y, Math.sin(a) * 0.14, o.plant);
+      lf.rotation.set(0, -a, 0.35);
     }
+    // flores luminosas: núcleo brillante + corona de pétalos
     o.buds = [];
-    for (let i = 0; i < 7; i++) {
-      const a = i * 1.9, y = 0.35 + i * 0.1;
-      o.buds.push(mesh(ico, o.budMat, 0.11, 0.15, 0.11, Math.cos(a) * 0.1, y, Math.sin(a) * 0.1, o.plant));
+    const petalG = new THREE.SphereGeometry(0.5, 10, 6);
+    const coreG = new THREE.SphereGeometry(0.5, 12, 10);
+    const spots = [[0, 1.05, 0, 1.25], [0.14, 0.86, 0.05, 0.95], [-0.12, 0.74, 0.1, 0.9], [0.06, 0.62, -0.14, 0.85], [-0.1, 0.92, -0.1, 0.9]];
+    for (const [x, y, z, k] of spots) {
+      const fl = new THREE.Group();
+      fl.position.set(x, y, z);
+      fl.rotation.set(x * 2, 0, -x * 2);
+      mesh(coreG, o.coreMat, 0.07 * k, 0.07 * k, 0.07 * k, 0, 0.02, 0, fl);
+      for (let p = 0; p < 6; p++) {
+        const pa = (p / 6) * Math.PI * 2;
+        const pt = mesh(petalG, o.petalMat, 0.13 * k, 0.025, 0.07 * k, Math.cos(pa) * 0.07 * k, 0.01, Math.sin(pa) * 0.07 * k, fl);
+        pt.rotation.set(0, -pa, 0.45);
+      }
+      o.plant.add(fl);
+      o.buds.push(fl);
     }
-    o.buds.push(mesh(ico, o.budMat, 0.14, 0.22, 0.14, 0, 1.05, 0, o.plant));
   },
   packer(o) {
     const g = o.group;
-    mesh(bx, '#8a6340', 1.6, 0.08, 0.9, 0, 0.9, 0, g);
-    for (const [x, z] of [[-0.72, -0.38], [0.72, -0.38], [-0.72, 0.38], [0.72, 0.38]]) mesh(bx, '#5c4033', 0.08, 0.9, 0.08, x, 0.45, z, g);
-    mesh(bx, '#dfeee0', 0.3, 0.12, 0.2, -0.45, 1.0, 0.1, g);
-    mesh(bx, '#c8d6dd', 0.35, 0.03, 0.3, 0.1, 0.955, 0, g);
-    mesh(cyl, '#bfe3ee', 0.14, 0.18, 0.14, 0.55, 1.03, -0.15, g);
-    mesh(bx, '#2c3e50', 0.22, 0.04, 0.22, 0.5, 0.96, 0.2, g);
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9ced3, roughness: 0.35, metalness: 0.7 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2f3a45, roughness: 0.5, metalness: 0.4 });
+    mesh(bx, steel, 1.6, 0.06, 0.9, 0, 0.9, 0, g);
+    mesh(bx, dark, 1.5, 0.04, 0.8, 0, 0.28, 0, g);
+    for (const [x, z] of [[-0.74, -0.4], [0.74, -0.4], [-0.74, 0.4], [0.74, 0.4]]) mesh(bx, dark, 0.06, 0.9, 0.06, x, 0.45, z, g);
+    // báscula digital
+    mesh(bx, '#e6e8ea', 0.34, 0.06, 0.28, -0.5, 0.96, 0.12, g);
+    mesh(bx, new THREE.MeshBasicMaterial({ color: 0x6dff9a, toneMapped: false }), 0.14, 0.035, 0.012, -0.5, 0.97, 0.265, g);
+    // pila de sobres y caja de sobres
+    for (let i = 0; i < 4; i++) mesh(bx, '#f2efe6', 0.2, 0.012, 0.13, -0.05 + i * 0.01, 0.94 + i * 0.013, 0.2, g).rotation.y = i * 0.1;
+    mesh(bx, '#7d5a3a', 0.3, 0.16, 0.22, 0.12, 1.01, -0.22, g);
+    // gradilla con viales
+    mesh(bx, dark, 0.34, 0.05, 0.12, 0.5, 0.95, -0.15, g);
+    for (let i = 0; i < 4; i++) {
+      mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xdff2f7, roughness: 0.05, transparent: true, opacity: 0.5 }), 0.05, 0.16, 0.05, 0.38 + i * 0.08, 1.04, -0.15, g);
+      mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x7dffb0, emissive: 0x3dff8a, emissiveIntensity: 0.8 }), 0.04, 0.08, 0.04, 0.38 + i * 0.08, 1.0, -0.15, g);
+    }
+    // bandeja de moldes de gominola
+    mesh(bx, '#d94a8c', 0.3, 0.03, 0.2, 0.45, 0.945, 0.2, g);
+    for (let i = 0; i < 6; i++) mesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshStandardMaterial({ color: 0xff7ab8, emissive: 0xff3d8a, emissiveIntensity: 0.3 }), 0.05, 0.035, 0.05, 0.36 + (i % 3) * 0.09, 0.97, 0.15 + Math.floor(i / 3) * 0.1, g);
+    // lámpara de mesa
+    mesh(cyl, dark, 0.03, 0.5, 0.03, -0.7, 1.15, -0.32, g);
+    mesh(new THREE.ConeGeometry(0.5, 1, 12, 1, true), dark, 0.18, 0.12, 0.18, -0.62, 1.38, -0.28, g).rotation.z = -0.5;
   },
   mixer(o) {
     const g = o.group;
-    mesh(bx, '#7f8c8d', 1.1, 0.9, 0.9, 0, 0.45, 0, g);
-    mesh(bx, '#95a5a6', 1.12, 0.06, 0.92, 0, 0.92, 0, g);
-    mesh(cyl, '#bdc3c7', 0.45, 0.5, 0.45, -0.2, 1.2, 0, g);
-    o.spin = mesh(cyl, '#9b59b6', 0.36, 0.3, 0.36, -0.2, 1.2, 0, g);
-    mesh(bx, '#2c3e50', 0.3, 0.2, 0.05, 0.3, 0.6, 0.46, g);
-    mesh(bx, '#2ecc71', 0.06, 0.06, 0.02, 0.22, 0.65, 0.49, g);
-    mesh(bx, '#e74c3c', 0.06, 0.06, 0.02, 0.36, 0.65, 0.49, g);
+    const steel = new THREE.MeshStandardMaterial({ color: 0xb8bec4, roughness: 0.3, metalness: 0.8 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2b3138, roughness: 0.5, metalness: 0.5 });
+    mesh(bx, dark, 1.1, 0.8, 0.9, 0, 0.4, 0, g);
+    mesh(bx, steel, 1.12, 0.05, 0.92, 0, 0.82, 0, g);
+    // depósito de cristal con líquido luminoso que gira
+    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xdff2f7, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35 }), 0.5, 0.6, 0.5, -0.2, 1.15, 0, g);
+    o.spin = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xb98cff, emissive: 0x8a4dff, emissiveIntensity: 1.2, roughness: 0.2 }), 0.44, 0.32, 0.44, -0.2, 1.0, 0, g);
+    mesh(cyl, steel, 0.54, 0.06, 0.54, -0.2, 1.47, 0, g);
+    mesh(cyl, steel, 0.06, 0.25, 0.06, -0.2, 1.6, 0, g);
+    // panel de control
+    mesh(bx, '#1d2329', 0.34, 0.24, 0.05, 0.3, 0.55, 0.46, g);
+    mesh(bx, new THREE.MeshBasicMaterial({ color: 0x55d6ff, toneMapped: false }), 0.24, 0.08, 0.01, 0.3, 0.6, 0.49, g);
+    mesh(bx, new THREE.MeshBasicMaterial({ color: 0x2ecc71, toneMapped: false }), 0.05, 0.05, 0.01, 0.22, 0.49, 0.49, g);
+    mesh(bx, new THREE.MeshBasicMaterial({ color: 0xe74c3c, toneMapped: false }), 0.05, 0.05, 0.01, 0.38, 0.49, 0.49, g);
+    // tubos
+    mesh(cyl, steel, 0.04, 0.5, 0.04, 0.35, 1.05, -0.25, g);
+    mesh(cyl, steel, 0.04, 0.4, 0.04, 0.15, 1.3, -0.25, g).rotation.z = Math.PI / 2;
   },
   lamp(o) {
     const g = o.group;
@@ -167,11 +210,17 @@ export function refreshPot(o) {
   const g = clamp(d.growth, 0, 1);
   const sc = 0.15 + g * 0.95;
   o.plant.scale.set(0.5 + g * 0.6, sc, 0.5 + g * 0.6);
-  const leaf = new THREE.Color(0x3e9b3a);
-  if (d.water <= 0.001) leaf.lerp(new THREE.Color(0x9a8a3a), 0.6);
+  const leaf = new THREE.Color(0x2f8f7a);
+  if (d.water <= 0.001) leaf.lerp(new THREE.Color(0x8a7a4a), 0.6);
   o.leafMat.color.copy(leaf);
-  o.budMat.color.setHex(s.color).lerp(new THREE.Color(0xffffff), 0.15);
-  o.buds.forEach((b, i) => { b.visible = g > 0.45 + i * 0.05; });
+  const col = new THREE.Color(s.color);
+  o.petalMat.color.copy(col).lerp(new THREE.Color(0xffffff), 0.35);
+  o.petalMat.emissive.copy(col);
+  o.coreMat.emissive.copy(col).lerp(new THREE.Color(0xffffff), 0.3);
+  const bloom = clamp((g - 0.45) / 0.55, 0, 1);
+  o.coreMat.emissiveIntensity = 0.6 + bloom * 2.2;
+  o.petalMat.emissiveIntensity = 0.15 + bloom * 0.6;
+  o.buds.forEach((b, i) => { b.visible = g > 0.42 + i * 0.06; b.scale.setScalar(0.5 + bloom * 0.5); });
 }
 
 function lampBoost(o) {
@@ -276,13 +325,13 @@ function harvest(o) {
   if (d.soil === 2) n = Math.round(n * 1.4);
   if (d.fert) n += 3;
   const pid = ensureBaseProduct(d.strain);
-  if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} cogollos.`);
+  if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} pétalos.`);
   inv.add('cogollo', n, pid);
   Object.assign(d, { soil: 0, strain: null, growth: 0, water: 0, fert: 0 });
   refreshPot(o);
   G.player.use();
   sfx('harvest');
-  G.act.toast(`Has cosechado ${n} cogollos de ${s.name}.`, '🌿');
+  G.act.toast(`Has cosechado ${n} pétalos de ${s.name}.`, '🌸');
   G.act.addXP(8);
   G.act.flag('harvested');
 }

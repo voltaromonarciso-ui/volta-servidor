@@ -59,6 +59,7 @@ export function createWorld(sc) {
   buildOutskirts();
   buildStreetFurniture();
   buildTrafficLights();
+  buildRoadDetails();
   buildMountains();
 
   W.static = B.build(scene);
@@ -1059,7 +1060,10 @@ function buildShops() {
   building({ x0: 66, x1: 82, z0: 4, z1: 21, h: 9.6, wall: '#c98a6b', trim: '#f1e3d3', roof: '#5a5a5a', style: 'house', front: '-x', seed: 204, mapColor: '#9e5e48' });
   asphalt(36.5, 37.9, -22, -2);
   parkedCar(46, -1.5, 0, '#2e6b4a');
-  palm(64, -22); palm(64, 23); palm(58, -3);
+  palm(64, -22); palm(58, -3);
+  storefront({ x0: 48.5, x1: 56.5, zf: 23.2, depth: 4, h: 4.6, wall: '#f1efe9', name: 'Farmacia', sign: 'FARMACIA', signColor: '#1e8e4f', neon: { text: '+', color: '#6dff8a', glow: '#00ff55', border: '#00ff55' }, seed: 21, tint: '#f4f8f6' });
+  storefront({ x0: 57, x1: 65, zf: 23.2, depth: 4, h: 5.2, wall: '#b8452f', name: 'Taquería', sign: 'TAQUERÍA EL GÜERO', signStyle: 'letters', awning: '#2f8f4f', neon: { text: 'TACOS', color: '#ffe066', glow: '#ff9900', border: '#ff3d3d' }, seed: 22, tint: '#ffd9a6' });
+  trashCan(52, 24.6); hydrant(60.5, 24.4);
   W.spots.push({ id: 'gasolinera', name: 'Detrás de la gasolinera', x: 64, z: 12 });
   W.wander.push({ x: 35.5, z: -12 }, { x: 47.5, z: 12 });
 }
@@ -1229,6 +1233,19 @@ function buildCommercial() {
 }
 
 // Semáforos en todos los cruces (fase A = calles en X, fase B = calles en Z).
+function buildRoadDetails() {
+  for (const r of ROADS) {
+    for (let t = -100; t <= 100; t += 20) {
+      if (ROADS.some((q) => Math.abs(t - q) < 8)) continue;
+      B.add(GEO.cyl16, '#2a2c2f', r + 1.6, 0.03, t + 4, 0.8, 0.02, 0.8, 0, { mat: 'metal', ao: 0, shadow: false });
+      B.add(GEO.cyl16, '#2a2c2f', t - 4, 0.03, r - 1.6, 0.8, 0.02, 0.8, 0, { mat: 'metal', ao: 0, shadow: false });
+    }
+  }
+  for (const [x, z] of [[-42.4, -39.8], [-42.6, -41.4], [54.2, -55.6], [72.1, -55.3], [57.9, -56.4]]) {
+    for (let i = 0; i < 2; i++) B.add(GEO.sphere, '#151719', x + i * 0.45, 0.28, z + (i % 2) * 0.3, 0.6, 0.55, 0.55, i, { ao: 0.2, aoH: 0.4 });
+  }
+}
+
 function buildTrafficLights() {
   const mk = (c) => new THREE.MeshBasicMaterial({ color: c, toneMapped: false });
   W.tl = { A: { r: mk(0x330000), y: mk(0x332200), g: mk(0x003310) }, B: { r: mk(0x330000), y: mk(0x332200), g: mk(0x003310) } };
@@ -1247,6 +1264,8 @@ function buildTrafficLights() {
     B.box('#2b2e32', px - 2.6, 5.6, pz, 5.2, 0.12, 0.12, 0, { mat: 'metal', ao: 0 });
     head(px - 4.2, 5.1, pz, W.tl.B, 0);
     head(px, 3.6, pz - 0.2, W.tl.A, Math.PI / 2);
+    streetSign(STREETS_Z[rz] || 'Calle', px, 6.05, pz, 0);
+    streetSign(STREETS_X[rx] || 'Calle', px, 6.5, pz, Math.PI / 2);
     addBox(px - 0.15, px + 0.15, pz - 0.15, pz + 0.15, 6);
     // y su gemelo en la esquina opuesta
     const qx = rx - 5.6, qz = rz - 5.6;
@@ -1256,6 +1275,17 @@ function buildTrafficLights() {
     head(qx, 3.6, qz + 0.2, W.tl.A, -Math.PI / 2);
     addBox(qx - 0.15, qx + 0.15, qz - 0.15, qz + 0.15, 6);
   }
+}
+
+const STREETS_X = { '-90': 'C/ Coral', '-30': 'Av. del Polígono', '30': 'C/ Marina', '90': 'Av. del Faro' };
+const STREETS_Z = { '-90': 'C/ Arena', '-30': 'Av. Palmeras', '30': 'C/ Lonja', '90': 'Av. Bahía' };
+const streetMats = new Map();
+function streetSign(text, x, y, z, ry) {
+  if (!streetMats.has(text)) streetMats.set(text, new THREE.MeshStandardMaterial({ map: TX.signTex(text, { bg: '#1d6b3a', fg: '#ffffff', border: '#ffffff', w: 512, h: 112, font: 'bold 64px sans-serif' }), side: THREE.DoubleSide, roughness: 0.5 }));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.42), streetMats.get(text));
+  m.position.set(x, y, z);
+  m.rotation.y = ry;
+  scene.add(m);
 }
 
 function updateTrafficLights() {

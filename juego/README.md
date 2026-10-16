@@ -37,9 +37,10 @@ El proyecto nativo ya está generado en `android/` (id `com.volta.bloque9`, orie
 | Gráficos | Materiales PBR, sombras suaves, reflejos del cielo, resplandor (bloom), corrección de color y viñeta; manos en primera persona (cajas con las dos manos, objetos pequeños en la palma); calidad Alta/Media/Baja. |
 | Mundo | Ciudad costera de palmeras: calle comercial con escaparates iluminados, neones, rótulos y valla publicitaria, semáforos, postes con cables, marquesina, papeleras, hidrantes, plaza, ferretería, gasolinera, comisaría, polígono, barrios, playa, muelle, faro, montañas y el skyline de la gran ciudad al otro lado de la bahía. Tráfico y ciclo día/noche. |
 | Propiedades | Tu nave del polígono (estanterías, banco de trabajo, carretilla, persiana enrollable; alquiler semanal $100) y bungalow en venta ($2.500). |
-| Cultivo | Macetas, tierra normal/abonada, 4 variedades de semilla, riego (la regadera se rellena en el lavabo), fertilizante, lámpara de cultivo, crecimiento visible y cosecha. |
-| Producción | Mesa de empaquetado (bolsitas de 1 ud. y tarros de 5) y mezcladora: 12 ingredientes, 22 efectos, transformaciones entre efectos y productos nuevos con nombre personalizable. |
-| Ventas | 17 vecinos con gustos, presupuesto y nivel de exigencia. Te escriben pedidos al móvil: aceptar, contraofertar (+20%) o rechazar; quedas en un punto de encuentro y entregas en persona. Confianza, enganche, recomendaciones y muestras gratis para captar clientes. |
+| Producto (ficticio) | **Lumaflor**, una flor luminosa inventada que está prohibida en Puerto Lomas. No representa ninguna sustancia real. 4 variedades (Verde, Violeta, Dorada, Azul). |
+| Cultivo | Macetas, tierra normal/abonada, semillas de Lumaflor, riego (la regadera se rellena en el fregadero), fertilizante, lámpara de cultivo, flores que crecen y brillan, cosecha de pétalos. |
+| Producción | Mesa de empaquetado con tres formas: **sobres** (1 ud.), **viales** de líquido luminoso (5 uds.) y **gominolas** (3 uds.). Mezcladora: 12 ingredientes, 22 efectos, transformaciones y productos nuevos con nombre propio. |
+| Ventas | 17 vecinos con gustos, presupuesto y nivel de exigencia. Cada uno prefiere una forma (sobres, viales o gominolas) y deja propina si se la das así. Te escriben pedidos al móvil: aceptar, contraofertar (+20%) o rechazar; quedas en un punto de encuentro y entregas en mano (el cliente coge el producto y te da el dinero). Confianza, enganche, recomendaciones y muestras gratis para captar clientes. |
 | Móvil del juego | Mensajes, Clientes, Productos (precios y venta), Mapa con destinos, Proveedor de semillas (entrega en contenedor), Objetivos, Perfil y Ajustes. |
 | Policía | Patrullas a pie, toque de queda 21:00–05:00, cacheos aleatorios (cooperar o huir), persecuciones con nivel de búsqueda, escondite y arresto con multa y requisa. |
 | Progreso | 7 rangos que desbloquean objetos y semillas, 12 objetivos de historia que hacen de tutorial, resumen diario, guardado automático. |
@@ -58,3 +59,7 @@ src/
   systems/           objetos colocables, economía/clientes, policía, tiempo, interacción
   ui/                HUD, paneles (tiendas, mesas, entregas), teléfono
 ```
+
+## Habilidades de Claude Code instaladas
+
+En `../.claude/skills/` hay habilidades que ayudan a desarrollar este proyecto con Claude Code: 10 de Three.js (MIT, de CloudAI-X/threejs-skills), `webapp-testing` y `frontend-design` (Apache 2.0, de anthropics/skills).

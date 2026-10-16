@@ -207,8 +207,14 @@ function products() {
     row.append(price, tog);
     card.appendChild(row);
     card.querySelector('.pname').onclick = () => {
-      const n = prompt('Nuevo nombre del producto:', p.name);
-      if (n && n.trim()) { p.name = n.trim().slice(0, 22); render(); }
+      const row2 = h('div', 'row');
+      const inp = h('input', 'name-in');
+      inp.value = p.name; inp.maxLength = 22;
+      const ok = h('button', 'btn sm', 'Guardar');
+      ok.onclick = () => { if (inp.value.trim()) p.name = inp.value.trim().slice(0, 22); render(); };
+      row2.append(inp, ok);
+      card.appendChild(row2);
+      inp.focus();
     };
     list.appendChild(card);
   }
@@ -295,7 +301,7 @@ function supplier() {
     const locked = st.rank > G.state.rank;
     const card = h('div', 'ph-card' + (locked ? ' locked' : ''));
     card.innerHTML = `<div class="rowsp"><b>🌰 ${st.name}</b><span class="money">${money(st.seed)}</span></div><div class="chips">${chips([st.effect])}</div>
-      <div class="small muted">Precio base del producto: ${money(st.base)} · Cosecha ${st.yield[0]}–${st.yield[1]} cogollos</div>`;
+      <div class="small muted">Precio base del producto: ${money(st.base)} · Cosecha ${st.yield[0]}–${st.yield[1]} pétalos</div>`;
     if (locked) card.appendChild(h('div', 'small', `🔒 Requiere rango ${RANKS[st.rank].name}`));
     else {
       let q = 3;

@@ -303,3 +303,25 @@ input[type=range] { width: 100%; accent-color: var(--acc); }
   .panel { max-height: 94vh; }
   .logo { font-size: 46px; }
 }
+
+/* ---------------- Ajustes táctiles ---------------- */
+#hud #prompt { pointer-events: auto !important; }
+body.touch .pp { padding: 9px 16px; font-size: 14px; }
+body.touch .btn { min-height: 46px; padding: 12px 18px; font-size: 15px; }
+body.touch .btn.sm { min-height: 40px; padding: 9px 14px; font-size: 13px; }
+body.touch .qb { width: 42px; height: 42px; font-size: 20px; }
+body.touch .pick { padding: 12px 14px; min-height: 48px; }
+body.touch .panel .x { width: 44px; height: 44px; font-size: 18px; }
+body.touch .inv-cell { min-height: 54px; }
+body.touch .toggle { padding: 10px 16px; font-size: 13px; }
+body.touch .ph-nav button { width: 64px; height: 40px; }
+body.touch .ph-row { padding: 12px 10px; }
+body.touch .name-in { font-size: 16px; padding: 10px 12px; }
+body.touch .card { padding: 12px; }
+@media (max-height: 520px) {
+  .panel { width: min(96vw, 860px); }
+  .panel.wide { width: 96vw; }
+  .panel .body { padding: 10px 12px; }
+  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .ph-frame { height: 96vh; width: min(380px, 60vh + 120px, 94vw); border-radius: 22px; }
+}

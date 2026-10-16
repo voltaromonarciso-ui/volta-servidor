@@ -27,7 +27,11 @@ export function initHUD() {
     const d = document.createElement('div');
     d.className = 'slot';
     d.innerHTML = `<span class="k">${(i + 1) % 10}</span><span class="ic"></span><span class="q"></span>`;
-    d.addEventListener('pointerdown', (e) => { e.stopPropagation(); emit('select', i); });
+    d.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (G.state.sel === i && G.touch) emit('btn', 'bag'); // tocar el objeto activo abre la mochila
+      else emit('select', i);
+    });
     els.hotbar.appendChild(d);
   }
   const btn = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(e); });
@@ -40,6 +44,11 @@ export function initHUD() {
   btn('btn-pause', () => emit('btn', 'escape'));
   btn('btn-bag', () => emit('btn', 'bag'));
   btn('minimap', () => G.act.openPhone('map'));
+  // en móvil, tocar la etiqueta de acción también la ejecuta
+  els.prompt.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    emit('btn', e.target.closest('.pp.sec') ? 'secondary' : 'primary');
+  });
   els.quest.addEventListener('pointerdown', (e) => { e.stopPropagation(); els.quest.classList.toggle('open'); });
   on('select', (i) => { G.state.sel = i; sfx('click'); });
   on('money', (n) => floatMoney(n));
@@ -82,7 +91,7 @@ export function updateHUD(target, dt = 0.016) {
   const sec = target.actions.find((a) => a.secondary);
   let html = '';
   if (prim) html += `<div class="pp">${G.touch ? '' : '<kbd>E</kbd>'}${prim.label}</div>`;
-  if (sec && !G.touch) html += `<div class="pp sec"><kbd>R</kbd>${sec.label}</div>`;
+  if (sec) html += `<div class="pp sec">${G.touch ? '' : '<kbd>R</kbd>'}${sec.label}</div>`;
   if (html !== els.prompt._h) { els.prompt.innerHTML = html; els.prompt._h = html; }
   const info = target.info || (held ? itemLabel(held) : '');
   if (els.info.textContent !== info) els.info.textContent = info;

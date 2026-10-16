@@ -86,11 +86,33 @@ function budCluster(color, n, spread, parent, y = 0) {
 
 const cardMat = () => (mats.card ||= new THREE.MeshStandardMaterial({ map: cardboardTex(), roughness: 0.9 }));
 
-function buildItem(s) {
+export function buildItem(s) {
   const g = new THREE.Group();
-  const it = ITEMS[s.id];
+  const it = ITEMS[s.id] || {};
   let pose = 'one';
   switch (s.id) {
+    case 'cash': {
+      // fajo de billetes con goma
+      for (let i = 0; i < 3; i++) mesh(bx(0.075, 0.006, 0.15, 0.002), M(i % 2 ? '#7ccf6a' : '#5fb653', { roughness: 0.8 }), i * 0.003, i * 0.006, i * 0.004, g);
+      mesh(new THREE.BoxGeometry(0.078, 0.022, 0.02), M('#c0392b'), 0.003, 0.008, 0, g);
+      break;
+    }
+    case 'phone': {
+      mesh(bx(0.07, 0.14, 0.01, 0.008), M('#1b1d22', { roughness: 0.3, metalness: 0.5 }), 0, 0, 0, g);
+      mesh(new THREE.PlaneGeometry(0.06, 0.12), new THREE.MeshBasicMaterial({ color: 0x8fd3ff, toneMapped: false }), 0, 0, 0.0055, g);
+      break;
+    }
+    case 'cup': {
+      mesh(new THREE.CylinderGeometry(0.04, 0.032, 0.12, 14), M('#f2ede4'), 0, 0, 0, g);
+      mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.015, 14), M('#3a2a20'), 0, 0.065, 0, g);
+      mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.04, 14), M('#7b4a2a'), 0, 0, 0, g);
+      break;
+    }
+    case 'shopbag': {
+      mesh(bx(0.3, 0.32, 0.14, 0.01), M(['#e8dcc0', '#d94a3a', '#2e86de'][Math.floor(Math.random() * 3)], { roughness: 0.9 }), 0, -0.2, 0, g);
+      mesh(new THREE.TorusGeometry(0.06, 0.01, 6, 12, Math.PI), M('#3a3a3a'), 0, -0.04, 0, g);
+      break;
+    }
     case 'caja': case 'mesa_emp': case 'estante': case 'mezcladora': case 'lampara': {
       pose = 'box';
       const b = mesh(bx(0.46, 0.28, 0.32, 0.008), cardMat(), 0, 0, 0, g);
@@ -122,26 +144,61 @@ function buildItem(s) {
       break;
     }
     case 'semilla': {
-      mesh(bx(0.07, 0.1, 0.012, 0.003), M('#f3ead2'), 0, 0, 0, g);
-      mesh(new THREE.BoxGeometry(0.05, 0.04, 0.014), M(productColor(s)), 0, 0.01, 0, g);
+      mesh(bx(0.075, 0.105, 0.012, 0.003), M('#f3ead2'), 0, 0, 0, g);
+      mesh(new THREE.BoxGeometry(0.055, 0.045, 0.014), M(productColor(s), { emissive: productColor(s), emissiveIntensity: 0.3 }), 0, 0.012, 0, g);
+      mesh(new THREE.BoxGeometry(0.06, 0.008, 0.015), M('#3f7f5a'), 0, -0.03, 0, g);
       break;
     }
-    case 'cogollo':
-      budCluster(productColor(s), 7, 0.06, g);
+    case 'cogollo': {
+      // puñado de pétalos luminosos
+      const c = productColor(s);
+      const pm = M(c, { emissive: c, emissiveIntensity: 0.9, roughness: 0.35 });
+      const pg = new THREE.SphereGeometry(0.5, 10, 6);
+      for (let i = 0; i < 9; i++) {
+        const pt = mesh(pg, pm, 0.05, 0.012, 0.03, (Math.random() - 0.5) * 0.06, i * 0.006, (Math.random() - 0.5) * 0.05, g);
+        pt.rotation.set(Math.random() * 0.6, Math.random() * 6, Math.random() * 0.6);
+      }
       break;
+    }
     case 'bolsa': {
-      mesh(bx(0.07, 0.09, 0.02, 0.006), new THREE.MeshStandardMaterial({ color: 0xe8f1ee, roughness: 0.15, transparent: true, opacity: 0.55 }), 0, 0, 0, g);
-      mesh(new THREE.BoxGeometry(0.075, 0.008, 0.024), M('#3b7dd8'), 0, 0.04, 0, g);
-      budCluster(productColor(s), 4, 0.03, g, -0.025);
+      // sobre de papel con sello de lacre luminoso
+      mesh(bx(0.11, 0.075, 0.006, 0.002), M('#efe7d6', { roughness: 0.9 }), 0, 0, 0, g);
+      const flap = mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.004, 3), M('#e2d8c2'), 0, 0.012, 0.004, g);
+      flap.rotation.set(Math.PI / 2, 0, Math.PI);
+      flap.scale.set(1, 1, 0.55);
+      const c = productColor(s);
+      mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.006, 14), M(c, { emissive: c, emissiveIntensity: 1.2 }), 0, -0.004, 0.007, g).rotation.x = Math.PI / 2;
       break;
     }
     case 'bolsita':
-      for (let i = 0; i < 3; i++) mesh(bx(0.07, 0.09, 0.006, 0.003), new THREE.MeshStandardMaterial({ color: 0xe8f1ee, roughness: 0.2, transparent: true, opacity: 0.6 }), i * 0.004, i * 0.004, i * 0.008, g);
+      for (let i = 0; i < 4; i++) mesh(bx(0.11, 0.075, 0.005, 0.002), M('#efe7d6'), i * 0.004, i * 0.004, i * 0.007, g);
       break;
     case 'tarro': case 'tarro_v': {
-      mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.1, 18), new THREE.MeshStandardMaterial({ color: 0xdff2f7, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.45 }), 0, 0, 0, g);
-      mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.022, 18), M('#2b2b2b', { roughness: 0.4, metalness: 0.5 }), 0, 0.06, 0, g);
-      if (s.id === 'tarro') budCluster(productColor(s), 8, 0.05, g, -0.035);
+      // vial de cristal con líquido luminoso y tapón de corcho
+      mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0xe6f6fb, roughness: 0.03, metalness: 0.1, transparent: true, opacity: 0.4 }), 0, 0, 0, g);
+      mesh(new THREE.SphereGeometry(0.02, 14, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xe6f6fb, transparent: true, opacity: 0.4 }), 0, -0.06, 0, g);
+      mesh(new THREE.CylinderGeometry(0.016, 0.014, 0.025, 12), M('#9b6b3d', { roughness: 1 }), 0, 0.07, 0, g);
+      if (s.id === 'tarro') {
+        const c = productColor(s);
+        mesh(new THREE.CylinderGeometry(0.017, 0.017, 0.085, 16), M(c, { emissive: c, emissiveIntensity: 1.6, roughness: 0.15 }), 0, -0.015, 0, g);
+      }
+      break;
+    }
+    case 'gomi': {
+      // bolsita transparente con gominolas de colores
+      mesh(bx(0.09, 0.11, 0.035, 0.01), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, transparent: true, opacity: 0.3 }), 0, 0, 0, g);
+      mesh(new THREE.BoxGeometry(0.092, 0.015, 0.037), M('#ff4f9a'), 0, 0.05, 0, g);
+      const c = productColor(s);
+      const cols = [c, '#ff7ab8', '#ffd84d', c];
+      for (let i = 0; i < 8; i++) {
+        const cc = cols[i % 4];
+        mesh(new THREE.SphereGeometry(0.012, 8, 6), M(cc, { emissive: cc, emissiveIntensity: 0.35, roughness: 0.2 }), (i % 3 - 1) * 0.024, -0.035 + Math.floor(i / 3) * 0.022, (i % 2 - 0.5) * 0.012, g).scale.set(1, 1.3, 0.8);
+      }
+      break;
+    }
+    case 'molde': {
+      mesh(bx(0.12, 0.018, 0.08, 0.006), M('#d94a8c', { roughness: 0.6 }), 0, 0, 0, g);
+      for (let i = 0; i < 6; i++) mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.004, 10), M('#a8306a'), -0.035 + (i % 3) * 0.035, 0.01, -0.018 + Math.floor(i / 3) * 0.036, g);
       break;
     }
     case 'fertil':
@@ -207,7 +264,21 @@ export class ViewModel {
     this.t = 0;
   }
 
+  // Animación de entregar lo que llevas en la mano.
+  give() { this.giveT = 1; }
+
+  // Muestra un objeto temporal en la palma (p. ej. el dinero que te dan).
+  flash(id, sec = 1.5) {
+    this.flashT = sec;
+    this.itemHolder.clear();
+    this.itemHolder.visible = true;
+    this.itemHolder.add(buildItem({ id }).group);
+    this.pose = 'one';
+    this.drop = 0.6;
+  }
+
   setHeld(s) {
+    if (this.flashT > 0) return;
     const key = s ? s.id + '|' + (s.p || '') : '';
     if (key === this.key) return;
     this.key = key;
@@ -225,6 +296,18 @@ export class ViewModel {
 
   update(dt, { bob = 0, speed = 0, lookX = 0, lookY = 0, swing = 0, crouch = 0 }) {
     this.t += dt;
+    if (this.flashT > 0) {
+      this.flashT -= dt;
+      if (this.flashT <= 0) { this.key = null; this.itemHolder.clear(); this.pose = 'none'; }
+    }
+    let giveK = 0;
+    if (this.giveT > 0) {
+      this.giveT = Math.max(0, this.giveT - dt * 1.8);
+      giveK = Math.sin((1 - this.giveT) * Math.PI);
+      if (this.giveT < 0.45 && !this.flashT) this.itemHolder.visible = false;
+      if (this.giveT === 0) this.itemHolder.visible = true;
+    }
+    this.giveK = giveK;
     // animación de cambio de objeto
     if (this.swapping) {
       this.drop = Math.min(1, this.drop + dt * 6);
@@ -239,10 +322,11 @@ export class ViewModel {
     const k = Math.min(1, speed / 5);
     const bx_ = Math.cos(bob) * 0.012 * k + this.swayX;
     const by = -Math.abs(Math.sin(bob)) * 0.014 * k + Math.sin(this.t * 1.6) * 0.003 + this.swayY - this.drop * 0.55 - crouch * 0.02;
-    const push = Math.sin(swing * Math.PI);
+    const push = Math.sin(Math.min(1, swing) * Math.PI);
+    const gk = this.giveK || 0;
 
     if (this.pose === 'box') {
-      const base = new THREE.Vector3(bx_, -0.235 + by - push * 0.03, -0.72 + push * 0.06);
+      const base = new THREE.Vector3(bx_, -0.235 + by - push * 0.03 + gk * 0.08, -0.72 + push * 0.06 - gk * 0.3);
       this.itemHolder.position.copy(base);
       this.itemHolder.rotation.set(-0.12, -0.03, 0);
       const s = this.itemHolder.children[0];
@@ -253,7 +337,7 @@ export class ViewModel {
       this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = true;
     } else {
       // una mano: derecha, objeto en la palma
-      const hx = 0.2 + bx_, hy = -0.26 + by - push * 0.04, hz = -0.46 + push * 0.08;
+      const hx = 0.2 + bx_ - gk * 0.12, hy = -0.26 + by - push * 0.04 + gk * 0.1, hz = -0.46 + push * 0.08 - gk * 0.3;
       this.placeHand(this.Rh, hx, hy, hz, 1.6, 2.1, -1.5708, 0.75);
       this.Rh.updateMatrix();
       this.itemHolder.position.copy(new THREE.Vector3(-0.07, 0.065, 0).applyMatrix4(this.Rh.matrix));

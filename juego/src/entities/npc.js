@@ -2,6 +2,14 @@ import * as THREE from 'three';
 import { G, rand, pick } from '../game.js';
 import { makeHuman, randomLook, markerSprite } from './human.js';
 import { rng } from '../world/textures.js';
+import { buildItem } from './hands.js';
+
+function prop(id, scale = 1.3) {
+  const g = buildItem({ id }).group;
+  g.scale.multiplyScalar(scale);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
 
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 const hitGeo = new THREE.BoxGeometry(0.9, 1.9, 0.9);
@@ -66,6 +74,36 @@ class Walker {
   }
 
   distToPlayer() { return Math.hypot(G.player.pos.x - this.pos.x, G.player.pos.z - this.pos.z); }
+
+  // Intercambio en mano: te da el dinero (izquierda) y coge tu producto (derecha).
+  playExchange(spec, withCash = true) {
+    this.anim = { t: 0, spec, withCash, gotItem: false };
+    this.lookAt(G.player.pos.x, G.player.pos.z);
+  }
+
+  updateAnim(dt) {
+    const a = this.anim, h = this.h;
+    if (!a) return false;
+    a.t += dt;
+    this.lookAt(G.player.pos.x, G.player.pos.z);
+    this.moving = 0;
+    if (a.withCash && a.t < 0.9) {
+      if (!a.cash) { a.cash = true; h.hold('L', prop('cash', 1.4)); }
+      h.over.armL = -1.25; h.over.armLz = -0.15;
+    } else { h.hold('L', null); delete h.over.armL; delete h.over.armLz; }
+    if (a.t > 0.45 && a.t < 1.9) {
+      h.over.armR = a.t < 1.3 ? -1.3 : -0.5;
+      h.over.armRz = 0.12;
+      if (!a.gotItem && a.t > 0.75) { a.gotItem = true; h.hold('R', prop(a.spec.id, 1.4)); }
+      if (a.t > 1.45) h.hold('R', null); // se lo guarda en el bolsillo
+    }
+    if (a.t > 1.9) {
+      delete h.over.armR; delete h.over.armRz;
+      h.hold('R', null); h.hold('L', null);
+      this.anim = null;
+    }
+    return true;
+  }
 }
 
 // ------------------------------------------------------------------
@@ -86,6 +124,25 @@ export class NPC extends Walker {
     this.talkT = 0;
     this.g.visible = false;
     this.hit.userData.ia = { enabled: () => this.g.visible, actions: () => G.act.npcActions(this), npc: this };
+    // algunos vecinos llevan algo en la mano
+    const r = (seed * 7919) % 10;
+    this.carry = r < 3 ? 'shopbag' : r < 5 ? 'cup' : null;
+    if (this.carry === 'shopbag') this.h.hold('L', prop('shopbag', 1));
+    if (this.carry === 'cup') { this.h.hold('R', prop('cup', 1.2)); }
+  }
+
+  // Mientras espera al jugador mira el móvil.
+  phonePose(on) {
+    if (on === this._phone) return;
+    this._phone = on;
+    const h = this.h;
+    if (on) {
+      h.hold('R', prop('phone', 1.2));
+      h.over.armR = -1.35; h.over.armRz = 0.35; h.over.head = 0.35;
+    } else {
+      h.hold('R', this.carry === 'cup' ? prop('cup', 1.2) : null);
+      delete h.over.armR; delete h.over.armRz; delete h.over.head;
+    }
   }
 
   get deal() { return G.state.deals.find((d) => d.npc === this.id && d.status === 'accepted'); }
@@ -131,6 +188,9 @@ export class NPC extends Walker {
   update(dt, gameDt) {
     const deal = this.deal;
     this.setMarker(deal && (this.mode === 'wait' || this.mode === 'walk') ? '$' : null, '#27ae60');
+    if (this.anim) { this.phonePose(false); this.updateAnim(dt); this.animate(dt); return; }
+    this.phonePose(this.mode === 'wait' && this.distToPlayer() > 3.5 && this.talkT <= 0);
+    if (this.carry === 'cup' && !this._phone) this.h.over.armR = this.moving ? -0.6 : -0.9;
     if (this.talkT > 0) {
       this.talkT -= dt;
       this.lookAt(G.player.pos.x, G.player.pos.z);

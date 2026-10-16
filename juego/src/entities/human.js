@@ -37,7 +37,12 @@ function limb(color, w, h, d, x, y, z, parent, footColor) {
 
 export function randomLook(r = Math.random) {
   const p = (a) => a[Math.floor(r() * a.length)];
-  return { skin: p(SKINS), hair: p(HAIRS), shirt: p(SHIRTS), pants: p(PANTS), hairStyle: Math.floor(r() * 4), height: 0.92 + r() * 0.16, wide: 0.9 + r() * 0.25 };
+  return {
+    skin: p(SKINS), hair: p(HAIRS), shirt: p(SHIRTS), pants: p(PANTS), hairStyle: Math.floor(r() * 4),
+    height: 0.92 + r() * 0.16, wide: 0.9 + r() * 0.25,
+    top: p(['hoodie', 'hoodie', 'tee', 'tee', 'jacket']), inner: p(['#f2f2f2', '#1c1c1c', '#c0392b', '#2e86de']),
+    backpack: r() < 0.22, glasses: r() < 0.2, shoes: p(['#3a2a1f', '#f2f2f2', '#1c1c1c', '#c0392b']),
+  };
 }
 
 export function makeHuman(look, { police = false } = {}) {
@@ -45,17 +50,26 @@ export function makeHuman(look, { police = false } = {}) {
   const body = new THREE.Group();
   body.scale.set(look.wide, look.height, look.wide);
   g.add(body);
-  const shoes = police ? '#111111' : '#3a2a1f';
+  const shoes = police ? '#111111' : look.shoes || '#3a2a1f';
   const legL = limb(look.pants, 0.22, 0.8, 0.24, -0.13, 0.84, 0, body, shoes);
   const legR = limb(look.pants, 0.22, 0.8, 0.24, 0.13, 0.84, 0, body, shoes);
   const torso = part(look.shirt, 0.58, 0.66, 0.34, 0, 1.17, 0, body);
   part(look.shirt, 0.6, 0.18, 0.36, 0, 0.86, 0, body); // cintura de la sudadera
   part(look.shirt, 0.36, 0.08, 0.06, 0, 1.0, 0.17, body); // bolsillo canguro
-  const armL = limb(look.shirt, 0.17, 0.62, 0.18, -0.38, 1.46, 0, body);
-  const armR = limb(look.shirt, 0.17, 0.62, 0.18, 0.38, 1.46, 0, body);
+  const tee = look.top === 'tee';
+  const armL = limb(look.shirt, 0.17, tee ? 0.3 : 0.62, 0.18, -0.38, 1.46, 0, body);
+  const armR = limb(look.shirt, 0.17, tee ? 0.3 : 0.62, 0.18, 0.38, 1.46, 0, body);
+  if (tee) for (const a of [armL, armR]) part(look.skin, 0.13, 0.36, 0.14, 0, -0.48, 0, a);
+  if (look.top === 'jacket') {
+    part(look.inner || '#f2f2f2', 0.16, 0.6, 0.02, 0, 1.17, 0.172, body);
+    part(look.shirt, 0.62, 0.08, 0.38, 0, 1.47, 0, body); // cuello
+  }
+  if (look.backpack) {
+    part(['#2c3e50', '#8e44ad', '#16a085', '#7f8c8d'][Math.floor(look.height * 100) % 4], 0.46, 0.52, 0.2, 0, 1.15, -0.27, body);
+  }
   const handGeo = new THREE.SphereGeometry(0.075, 12, 8);
   for (const a of [armL, armR]) { const hm = new THREE.Mesh(handGeo, mat(look.skin)); hm.position.y = -0.68; hm.castShadow = true; a.add(hm); }
-  if (!police) { const hood = part(look.shirt, 0.46, 0.2, 0.16, 0, 1.52, -0.17, body); hood.rotation.x = 0.4; }
+  if (!police && (look.top || 'hoodie') === 'hoodie') { const hood = part(look.shirt, 0.46, 0.2, 0.16, 0, 1.52, -0.17, body); hood.rotation.x = 0.4; }
 
   const head = new THREE.Group();
   head.position.set(0, 1.78, 0);
@@ -73,6 +87,7 @@ export function makeHuman(look, { police = false } = {}) {
     part(look.hair, 0.1, 0.024, 0.03, sx * 0.09, 0.105, 0.23, head);
   }
   part(look.skin, 0.06, 0.07, 0.06, 0, -0.03, 0.25, head); // nariz
+  if (look.glasses) { part('#141414', 0.3, 0.06, 0.02, 0, 0.035, 0.262, head); }
   part('#9c5b4a', 0.1, 0.02, 0.02, 0, -0.12, 0.235, head);
   for (const sx of [-1, 1]) part(look.skin, 0.05, 0.1, 0.06, sx * 0.25, 0, 0, head); // orejas
   if (police) {
@@ -94,8 +109,32 @@ export function makeHuman(look, { police = false } = {}) {
     brim.rotation.x = 0.12;
   }
 
-  const h = { group: g, body, legL, legR, armL, armR, head, phase: Math.random() * 6 };
+  const anchorL = new THREE.Group(), anchorR = new THREE.Group();
+  anchorL.position.set(0, -0.74, 0.03); anchorR.position.set(0, -0.74, 0.03);
+  armL.add(anchorL); armR.add(anchorR);
+  const h = { group: g, body, legL, legR, armL, armR, head, anchorL, anchorR, phase: Math.random() * 6, over: {}, cur: {} };
+  // Poses forzadas (coger objetos, mirar el móvil...) que se mezclan suavemente con el paseo.
+  const applyOver = (dt) => {
+    const k = Math.min(1, dt * 9);
+    for (const key of ['armL', 'armR', 'head', 'armLz', 'armRz']) {
+      const part = h[key.replace('z', '')];
+      const axis = key.endsWith('z') ? 'z' : 'x';
+      const tgt = h.over[key];
+      if (tgt === undefined) { h.cur[key] = part.rotation[axis]; continue; }
+      h.cur[key] = (h.cur[key] ?? part.rotation[axis]) + (tgt - (h.cur[key] ?? part.rotation[axis])) * k;
+      part.rotation[axis] = h.cur[key];
+    }
+  };
+  h.hold = (side, obj) => {
+    const a = side === 'L' ? anchorL : anchorR;
+    a.clear();
+    if (obj) a.add(obj);
+  };
   h.animate = (dt, speed) => {
+    h._animate(dt, speed);
+    applyOver(dt);
+  };
+  h._animate = (dt, speed) => {
     if (speed > 0.05) {
       h.phase += dt * speed * 3.2;
       const s = Math.sin(h.phase) * Math.min(0.75, speed * 0.32);
