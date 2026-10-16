@@ -1,0 +1,265 @@
+import * as THREE from 'three';
+import { G, rand, pick } from '../game.js';
+import { makeHuman, randomLook, markerSprite } from './human.js';
+import { rng } from '../world/textures.js';
+
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const hitGeo = new THREE.BoxGeometry(0.9, 1.9, 0.9);
+
+class Walker {
+  constructor(look, opts) {
+    this.h = makeHuman(look, opts);
+    this.g = this.h.group;
+    this.pos = this.g.position;
+    G.scene.add(this.g);
+    this.path = [];
+    this.speed = 1.5;
+    this.moving = 0;
+    this.face = 0;
+    this.hit = new THREE.Mesh(hitGeo, hitMat);
+    this.hit.position.y = 0.95;
+    this.g.add(this.hit);
+    G.interactables.push(this.hit);
+  }
+
+  goTo(x, z, onArrive) {
+    this.path = G.world.nav.path(this.pos.x, this.pos.z, x, z, G.world.los);
+    this.onArrive = onArrive;
+  }
+
+  // Avanza por la ruta. Devuelve true al llegar.
+  stepPath(dt, speed = this.speed) {
+    if (!this.path.length) { this.moving = 0; return true; }
+    const t = this.path[0];
+    const dx = t.x - this.pos.x, dz = t.z - this.pos.z, d = Math.hypot(dx, dz);
+    const step = speed * dt;
+    if (d <= step + 0.05) {
+      this.pos.x = t.x; this.pos.z = t.z;
+      this.path.shift();
+      if (!this.path.length) { this.moving = 0; return true; }
+    } else {
+      this.pos.x += (dx / d) * step;
+      this.pos.z += (dz / d) * step;
+      this.face = Math.atan2(dx, dz);
+    }
+    this.moving = speed;
+    return false;
+  }
+
+  lookAt(x, z) { this.face = Math.atan2(x - this.pos.x, z - this.pos.z); }
+
+  animate(dt) {
+    let diff = this.face - this.g.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    this.g.rotation.y += diff * Math.min(1, dt * 8);
+    this.h.animate(dt, this.moving);
+  }
+
+  setMarker(text, color) {
+    if (this.marker) { this.g.remove(this.marker); this.marker = null; }
+    if (text) {
+      this.marker = markerSprite(text, color);
+      this.marker.position.y = 2.45;
+      this.g.add(this.marker);
+    }
+  }
+
+  distToPlayer() { return Math.hypot(G.player.pos.x - this.pos.x, G.player.pos.z - this.pos.z); }
+}
+
+// ------------------------------------------------------------------
+//  Vecinos (clientes potenciales)
+// ------------------------------------------------------------------
+export class NPC extends Walker {
+  constructor(person, home, seed) {
+    super(randomLook(rng(seed * 97 + 13)));
+    this.person = person;
+    this.id = person.id;
+    this.home = home;
+    this.pos.set(home.x, 0, home.z);
+    this.mode = 'inside';
+    this.timer = rand(0, 60);
+    this.wake = 6.5 + rand(0, 2.5);
+    this.sleep = 19 + rand(0, 3.5);
+    this.speed = 1.35 + rand(0, 0.35);
+    this.talkT = 0;
+    this.g.visible = false;
+    this.hit.userData.ia = { enabled: () => this.g.visible, actions: () => G.act.npcActions(this), npc: this };
+  }
+
+  get deal() { return G.state.deals.find((d) => d.npc === this.id && d.status === 'accepted'); }
+
+  awake() {
+    const h = G.state.minute / 60;
+    return h >= this.wake && h < this.sleep;
+  }
+
+  setVisible(v) { this.g.visible = v; }
+
+  next() {
+    const deal = this.deal;
+    if (deal) {
+      const spot = G.world.spots.find((s) => s.id === deal.spot);
+      this.mode = 'walk';
+      this.setVisible(true);
+      this.goTo(spot.x + rand(-0.6, 0.6), spot.z + rand(-0.6, 0.6), () => { this.mode = 'wait'; });
+      return;
+    }
+    if (!this.awake()) {
+      this.mode = 'walk';
+      this.goTo(this.home.x, this.home.z, () => { this.mode = 'inside'; this.setVisible(false); this.timer = 30; });
+      return;
+    }
+    const W = G.world;
+    const options = [...W.wander, ...Object.values(W.pois).filter((p) => p.x !== undefined), pick(W.homes)];
+    const t = pick(options);
+    this.mode = 'walk';
+    this.setVisible(true);
+    this.goTo(t.x + rand(-1, 1), t.z + rand(-1, 1), () => { this.mode = 'idle'; this.timer = rand(15, 70); });
+  }
+
+  // tras dormir o cargar: vuelve a casa al instante
+  resetHome() {
+    this.pos.set(this.home.x, 0, this.home.z);
+    this.path = [];
+    this.mode = 'inside';
+    this.setVisible(false);
+    this.timer = rand(0, 90);
+  }
+
+  update(dt, gameDt) {
+    const deal = this.deal;
+    this.setMarker(deal && (this.mode === 'wait' || this.mode === 'walk') ? '$' : null, '#27ae60');
+    if (this.talkT > 0) {
+      this.talkT -= dt;
+      this.lookAt(G.player.pos.x, G.player.pos.z);
+      this.moving = 0;
+      this.animate(dt);
+      return;
+    }
+    switch (this.mode) {
+      case 'inside':
+        this.timer -= gameDt;
+        if ((this.awake() && this.timer <= 0) || deal) this.next();
+        break;
+      case 'walk':
+        if (this.stepPath(dt)) { const f = this.onArrive; this.onArrive = null; f && f(); }
+        if (deal && this.path.length && this.lastDeal !== deal.id) { this.lastDeal = deal.id; this.next(); }
+        break;
+      case 'idle':
+        this.timer -= gameDt;
+        if (this.timer <= 0 || deal) this.next();
+        break;
+      case 'wait':
+        if (!deal) { this.next(); break; }
+        if (this.distToPlayer() < 6) this.lookAt(G.player.pos.x, G.player.pos.z);
+        break;
+    }
+    // separación sencilla del jugador
+    const dx = this.pos.x - G.player.pos.x, dz = this.pos.z - G.player.pos.z, d = Math.hypot(dx, dz);
+    if (this.g.visible && d < 0.7 && d > 0.001) { this.pos.x += (dx / d) * (0.7 - d); this.pos.z += (dz / d) * (0.7 - d); }
+    this.animate(dt);
+  }
+
+  talk(sec = 3) { this.talkT = sec; }
+}
+
+// ------------------------------------------------------------------
+//  Policía
+// ------------------------------------------------------------------
+export class Cop extends Walker {
+  constructor(name, route, seed) {
+    const look = randomLook(rng(seed * 31 + 7));
+    look.shirt = '#2c4a7a'; look.pants = '#1b2838';
+    super(look, { police: true });
+    this.name = name;
+    this.route = route;
+    this.ri = 0;
+    this.pos.set(route[0].x, 0, route[0].z);
+    this.mode = 'patrol';
+    this.speed = 1.6;
+    this.lastSeen = null;
+    this.repath = 0;
+    this.friskCooldown = 0;
+    this.hit.userData.ia = { enabled: () => true, actions: () => [{ label: `Hablar con ${this.name}`, fn: () => { this.talk = 2; G.act.toast?.(`${this.name}: «Circule, por favor.»`); } }] };
+  }
+
+  update(dt) {
+    this.friskCooldown -= dt;
+    const p = G.player.pos;
+    switch (this.mode) {
+      case 'patrol': {
+        const t = this.route[this.ri];
+        if (!this.path.length) this.path = [{ x: t.x, z: t.z }];
+        if (this.stepPath(dt, 1.6)) this.ri = (this.ri + 1) % this.route.length;
+        break;
+      }
+      case 'approach': { // se acerca para cachear
+        this.lookAt(p.x, p.z);
+        const d = this.distToPlayer();
+        if (d > 1.8) {
+          const dx = p.x - this.pos.x, dz = p.z - this.pos.z;
+          this.pos.x += (dx / d) * 3.2 * dt; this.pos.z += (dz / d) * 3.2 * dt;
+          this.moving = 3.2;
+          G.world.resolve(this.pos, 0.35);
+        } else { this.moving = 0; }
+        break;
+      }
+      case 'chase': {
+        const seeing = this.canSee(60);
+        if (seeing) this.lastSeen = { x: p.x, z: p.z };
+        const target = this.lastSeen || p;
+        const dx = target.x - this.pos.x, dz = target.z - this.pos.z, d = Math.hypot(dx, dz);
+        const sp = 6.0 + (G.wanted?.level || 1) * 0.25;
+        if (seeing || d < 2) {
+          if (d > 0.1) {
+            this.pos.x += (dx / d) * sp * dt; this.pos.z += (dz / d) * sp * dt;
+            this.face = Math.atan2(dx, dz);
+          }
+          this.path = [];
+          G.world.resolve(this.pos, 0.35);
+          this.moving = sp;
+        } else {
+          this.repath -= dt;
+          if (this.repath <= 0 || !this.path.length) { this.repath = 1.2; this.path = G.world.nav.path(this.pos.x, this.pos.z, target.x, target.z, G.world.los); }
+          this.stepPath(dt, sp);
+        }
+        break;
+      }
+      case 'return': {
+        if (!this.path.length) {
+          let best = 0, bd = Infinity;
+          this.route.forEach((r, i) => { const d = Math.hypot(r.x - this.pos.x, r.z - this.pos.z); if (d < bd) { bd = d; best = i; } });
+          this.ri = best;
+          this.path = G.world.nav.path(this.pos.x, this.pos.z, this.route[best].x, this.route[best].z, G.world.los);
+        }
+        if (this.stepPath(dt, 2.2)) { this.mode = 'patrol'; }
+        break;
+      }
+    }
+    this.animate(dt);
+  }
+
+  canSee(range) {
+    const p = G.player.pos;
+    const d = this.distToPlayer();
+    if (d > range) return false;
+    if (G.world.inProperty(p.x, p.z) && d > 3) {
+      const prop = G.world.props[G.world.inProperty(p.x, p.z)];
+      if (!prop.door.open) return false;
+    }
+    return G.world.los(this.pos.x, this.pos.z, p.x, p.z);
+  }
+
+  // ¿Te ve dentro de su cono de visión?
+  notices(range) {
+    if (!this.canSee(range)) return false;
+    const p = G.player.pos;
+    const ang = Math.atan2(p.x - this.pos.x, p.z - this.pos.z);
+    let diff = ang - this.g.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    return Math.abs(diff) < 1.1 || this.distToPlayer() < 4;
+  }
+}

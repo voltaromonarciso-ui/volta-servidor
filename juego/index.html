@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#14181f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <title>Bloque 9</title>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="touch-layer"></div>
+  <div id="joy"><div id="joy-knob"></div></div>
+
+  <div id="hud" class="hide">
+    <div id="stats">
+      <div class="money" id="h-money">$0</div>
+      <div class="clockrow"><span id="h-clock">07:00</span> <span id="h-day">Lunes</span></div>
+      <div id="h-curfew" class="curfew">🚨 Toque de queda</div>
+      <div id="h-water" class="water"></div>
+    </div>
+    <div id="quest"><div class="q-h">OBJETIVO</div><div id="q-title"></div><div id="q-desc"></div></div>
+
+    <div id="rank"><div id="rank-name"></div><div class="bar"><i id="rank-bar"></i></div><div id="rank-xp"></div></div>
+    <div id="topbtns">
+      <button id="btn-bag" class="rb">🎒</button>
+      <button id="btn-phone" class="rb">📱<i id="phone-badge" class="badge"></i></button>
+      <button id="btn-pause" class="rb">⏸</button>
+    </div>
+
+    <div id="waypoint"><div id="wp-arrow">▲</div><div id="wp-text"></div></div>
+    <div id="wanted"><div>🚨 TE BUSCA LA POLICÍA · ¡Escóndete!</div><div class="bar"><i id="wanted-bar"></i></div></div>
+
+    <div id="crosshair"></div>
+    <div id="prompt"></div>
+    <div id="info"></div>
+
+    <div id="actions">
+      <button id="btn-alt"></button>
+      <button id="btn-use">Usar</button>
+      <button id="btn-jump">⤒</button>
+      <button id="btn-run">🏃</button>
+    </div>
+
+    <div id="hotbar"></div>
+    <div id="toasts"></div>
+    <div id="notify"></div>
+    <div id="fps"></div>
+  </div>
+
+  <div id="phone"></div>
+  <div id="ui-layer"></div>
+  <div id="fade"></div>
+
+  <div id="menu">
+    <div class="m-box">
+      <div class="logo"><span>BLOQUE</span><b>9</b></div>
+      <div class="tag">Puerto Lomas · Simulador de negocio callejero</div>
+      <button id="m-continue" class="btn big">Continuar</button>
+      <button id="m-new" class="btn big ghost">Nueva partida</button>
+      <div class="m-foot">Ficción. Todos los productos, personajes y lugares son inventados.</div>
+    </div>
+  </div>
+  <div id="rotate"><div>📱↻</div><p>Gira el móvil en horizontal para jugar</p></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
