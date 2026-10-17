@@ -176,6 +176,8 @@ test.describe.serial('Ciclo completo', () => {
       return { money: s.money, day: s.day, rank: s.rank, xp: s.xp, rep: s.rep, quest: s.quest, inv: JSON.stringify(s.inv), objects: s.objects.map((o) => o.type + JSON.stringify(o.data)).join('|'), products: Object.keys(s.products).sort().join(','), stats: JSON.stringify(s.stats), flags: JSON.stringify(s.flags), customers: Object.keys(s.customers).length };
     });
     await ev(page, () => __G.state.minute = 11 * 60);
+    // los objetivos se comprueban de vez en cuando: que estén al día antes de comparar
+    for (let i = 0; i < 12; i++) await mod(page, '/src/systems/time.js', (m) => m.checkQuests());
     const before = await snap();
     await mod(page, '/src/core/state.js', (m) => m.save());
     await page.reload();
