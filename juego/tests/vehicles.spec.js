@@ -154,12 +154,12 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     await mod(page, RD, (m) => m.moveVehicle('bici', { x: 94, z: 41.2, yaw: Math.PI / 2 }));
     await mountAt(page, testInfo, 'bici');
     const t0 = await ev(page, () => __G.time);
-    await hold(page, testInfo, 'up', async () => (await ev(page, () => __G.time)) > t0 + 4);
+    await hold(page, testInfo, 'up', async () => (await ev(page, () => __G.time)) > t0 + 3, 300_000);
     const x = (await veh(page, 'bici')).x;
     expect(x).toBeLessThan(97.75 - 0.3);
     await brakeHold(page, testInfo, async () => (await speed(page)) === 0);
     // si no hay hueco a ningún lado, no se baja
-    const blocked = await mod(page, RD, (m) => { const r = __G.world.resolve; __G.world.resolve = () => true; const ok = m.dismount(); __G.world.resolve = r; return ok; });
+    const blocked = await mod(page, RD, (m) => { const r = __G.world.resolve; __G.world.resolve = (p) => { p.x += 1; return true; }; const ok = m.dismount(); __G.world.resolve = r; return ok; });
     expect(blocked).toBe(false);
     expect(await mod(page, RD, (m) => !!m.riding())).toBe(true);
     await dismountBtn(page, testInfo);

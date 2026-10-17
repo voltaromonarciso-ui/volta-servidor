@@ -81,10 +81,12 @@ function place(v) {
 }
 
 // ¿Se puede estar aquí? (dentro del mapa y sin atravesar paredes)
+// (rozar una pared vale: aparcar pegado a ella es normal; estar dentro, no)
 function freeSpot(x, z, r = 0.45) {
+  if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) >= 110 || Math.abs(z) >= 110) return false;
   tmp.set(x, 0, z);
-  const moved = G.world.resolve(tmp, r, 0);
-  return !moved && Math.abs(x) < 110 && Math.abs(z) < 110;
+  if (!G.world.resolve(tmp, r, 0)) return true;
+  return Math.hypot(tmp.x - x, tmp.z - z) < 0.05;
 }
 
 export function spawnVehicle(entry) {
@@ -118,7 +120,7 @@ export function spawnVehicles() {
   const seen = new Set();
   G.state.vehicles = (G.state.vehicles || []).filter((e) => VEHICLES[e.type] && !seen.has(e.type) && seen.add(e.type));
   for (const e of G.state.vehicles) {
-    if (!isFinite(e.x) || !isFinite(e.z) || !freeSpot(e.x, e.z, VEHICLES[e.type].radius)) {
+    if (!freeSpot(e.x, e.z, VEHICLES[e.type].radius)) {
       Object.assign(e, PARKING[e.type]);
       G.act.toast?.(`La grúa ha llevado tu ${VEHICLES[e.type].name.toLowerCase()} a la tienda de la avenida del Este.`, '🚚');
     }
