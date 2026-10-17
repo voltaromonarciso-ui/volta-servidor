@@ -415,7 +415,7 @@ export function settingsPanel(container, onExit) {
   const sv = h('button', 'btn', '💾 Guardar partida');
   sv.onclick = () => { save(); G.act.toast('Partida guardada.', '💾'); };
   const del = h('button', 'btn danger', '🗑️ Borrar partida');
-  del.onclick = () => confirmDialog('Borrar partida', 'Se perderá todo tu progreso. ¿Seguro?', 'Borrar', () => { wipe(); location.reload(); });
+  del.onclick = () => confirmDialog('Borrar partida', 'Se perderá todo tu progreso. ¿Seguro?', 'Borrar', () => { wipe().then(() => location.reload()); });
   box.append(sv, del);
   if (onExit) { const ex = h('button', 'btn ghost', '🏠 Salir al menú'); ex.onclick = onExit; box.appendChild(ex); }
   container.appendChild(box);

@@ -37,9 +37,34 @@ export function newState() {
 }
 
 export function save() {
+  let raw;
   try {
-    localStorage.setItem(KEY, JSON.stringify(G.state));
+    raw = JSON.stringify(G.state);
+    localStorage.setItem(KEY, raw);
   } catch (e) { /* almacenamiento no disponible */ }
+  if (raw) backup(raw);
+}
+
+// En la app nativa (Android/iOS) la partida se copia también en el almacén del
+// sistema: el WebView puede borrar su localStorage si el móvil anda justo de espacio.
+let prefs = null;
+const native = () => !!globalThis.Capacitor?.isNativePlatform?.();
+function backup(raw) {
+  if (!native()) return;
+  (prefs ||= import('@capacitor/preferences').then((m) => m.Preferences))
+    .then((P) => P.set({ key: KEY, value: raw }))
+    .catch(() => {});
+}
+
+// Al arrancar: si el WebView ha perdido la partida, se recupera de la copia nativa.
+export async function restoreBackup() {
+  if (!native()) return;
+  try {
+    if (localStorage.getItem(KEY)) return;
+    const P = await (prefs ||= import('@capacitor/preferences').then((m) => m.Preferences));
+    const { value } = await P.get({ key: KEY });
+    if (value) localStorage.setItem(KEY, value);
+  } catch (e) { /* sin copia */ }
 }
 
 export function load() {
@@ -78,6 +103,8 @@ export function hasSave() {
 
 export function wipe() {
   try { localStorage.removeItem(KEY); } catch (e) { /* nada */ }
+  if (!native()) return Promise.resolve();
+  return (prefs ||= import('@capacitor/preferences').then((m) => m.Preferences)).then((P) => P.remove({ key: KEY })).catch(() => {});
 }
 
 // ---------- Inventario genérico (sirve para jugador y estanterías) ----------

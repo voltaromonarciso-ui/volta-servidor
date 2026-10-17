@@ -2,7 +2,7 @@ import { startStation, updateStation, exitStation, stationAuto } from './systems
 import * as THREE from 'three';
 import './style.css';
 import { G, on } from './game.js';
-import { newState, load, save, hasSave, inv } from './core/state.js';
+import { newState, load, save, hasSave, inv, restoreBackup } from './core/state.js';
 import { initInput, pollInput, input } from './core/input.js';
 import { initAudio, sfx, updateAmbience, audioStatus, setSiren } from './core/audio.js';
 import { createWorld } from './world/world.js';
@@ -318,6 +318,8 @@ async function boot() {
   camera.position.set(-50, 2.2, -33);
   camera.lookAt(-140, 6, 40);
   await warmup(true);
+  await restoreBackup();
+  cont.style.display = hasSave() ? '' : 'none';
   setLoad(1, 'Listo');
   document.getElementById('loading').classList.add('hide');
   clock.getDelta();

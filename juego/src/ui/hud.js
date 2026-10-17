@@ -13,6 +13,9 @@ let els = {};
 let waypoint = null;
 let mm, mctx, mmT = 0;
 
+// Cambia un texto solo si es distinto (el HUD se refresca en cada fotograma).
+const txt = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
+
 export function initHUD() {
   document.querySelector('#cash .cash-ic').innerHTML = svgIcon('cash');
   els = {
@@ -60,20 +63,20 @@ export function initHUD() {
 
 export function updateHUD(target, dt = 0.016) {
   const s = G.state;
-  els.money.textContent = Math.round(s.money).toLocaleString('es-ES');
+  txt(els.money, Math.round(s.money).toLocaleString('es-ES'));
   $('cash').classList.toggle('neg', s.money < 0);
-  els.clock.textContent = clock(s.minute);
-  els.day.textContent = `${dayName(s.day).slice(0, 3)} · Día ${s.day}`;
+  txt(els.clock, clock(s.minute));
+  txt(els.day, `${dayName(s.day).slice(0, 3)} · Día ${s.day}`);
   els.curfew.style.display = curfew() ? '' : 'none';
   const q = QUESTS[s.quest];
-  els.qTitle.textContent = q ? q.title : 'Expande tu negocio';
-  els.qDesc.textContent = q ? q.desc : 'Has completado la historia. ¡Sigue creciendo en Puerto Lomas!';
+  txt(els.qTitle, q ? q.title : 'Expande tu negocio');
+  txt(els.qDesc, q ? q.desc : 'Has completado la historia. ¡Sigue creciendo en Puerto Lomas!');
   const r = RANKS[s.rank], nx = RANKS[s.rank + 1];
-  els.rankName.textContent = r.name;
-  els.rankXp.textContent = nx ? `${s.xp - r.xp}/${nx.xp - r.xp}` : `${s.xp}`;
+  txt(els.rankName, r.name);
+  txt(els.rankXp, nx ? `${s.xp - r.xp}/${nx.xp - r.xp}` : `${s.xp}`);
   els.rankBar.style.width = (nx ? ((s.xp - r.xp) / (nx.xp - r.xp)) * 100 : 100) + '%';
   const unread = Object.values(s.unread || {}).reduce((a, b) => a + b, 0);
-  els.phoneBadge.textContent = unread;
+  txt(els.phoneBadge, unread);
   els.phoneBadge.style.display = unread ? '' : 'none';
   els.crouch.classList.toggle('on', !!input.crouch);
   els.run.classList.toggle('on', !!input.sprintToggle);
@@ -82,12 +85,15 @@ export function updateHUD(target, dt = 0.016) {
     const slot = s.inv[i];
     d.classList.toggle('sel', i === s.sel);
     d.classList.toggle('empty', !slot);
-    d.querySelector('.ic').innerHTML = slot ? ii(slot.id) : '';
-    d.querySelector('.q').textContent = slot && ITEMS[slot.id].stack > 1 ? slot.q : '';
+    // solo se toca el DOM cuando cambia algo (esto corre en cada fotograma)
+    const id = slot ? slot.id : '';
+    if (d.dataset.id !== id) { d.dataset.id = id; d.querySelector('.ic').innerHTML = id ? ii(id) : ''; }
+    const q = slot && ITEMS[slot.id].stack > 1 ? String(slot.q) : '';
+    if (d.dataset.q !== q) { d.dataset.q = q; d.querySelector('.q').textContent = q; }
   });
   const held = s.inv[s.sel];
   els.water.style.display = held && held.id === 'regadera' ? '' : 'none';
-  els.water.textContent = `💧 ${s.water}/6`;
+  txt(els.water, `💧 ${s.water}/6`);
 
   const prim = target.actions.find((a) => !a.secondary);
   const sec = target.actions.find((a) => a.secondary);
@@ -100,7 +106,7 @@ export function updateHUD(target, dt = 0.016) {
   els.info.classList.toggle('show', !!info);
   els.use.classList.toggle('active', !!prim);
   els.alt.style.display = sec ? '' : 'none';
-  els.altLabel.textContent = sec ? sec.label : '';
+  txt(els.altLabel, sec ? sec.label : '');
   document.body.classList.toggle('aiming', !!prim);
 
   if (waypoint) {
@@ -111,7 +117,7 @@ export function updateHUD(target, dt = 0.016) {
       const ang = Math.atan2(-dx, -dz) - G.player.yaw;
       els.wp.style.display = '';
       els.wpArrow.style.transform = `rotate(${-ang}rad)`;
-      els.wpText.textContent = `${waypoint.label} · ${Math.round(d)} m`;
+      txt(els.wpText, `${waypoint.label} · ${Math.round(d)} m`);
     }
   } else els.wp.style.display = 'none';
 

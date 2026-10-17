@@ -3,6 +3,12 @@
   "appName": "Bloque 9",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#0d1117"
+    "backgroundColor": "#0d1117",
+    "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0d1117",
+    "scrollEnabled": false
   }
 }
