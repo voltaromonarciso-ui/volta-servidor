@@ -11,7 +11,8 @@ export function watchErrors(page) {
     if (m.type() !== 'error') return;
     const t = m.text();
     // el servidor de desarrollo a veces corta la descarga de un recurso: no es del juego
-    if (/Failed to load resource|net::ERR_/.test(t)) return;
+    // (y con él, alguna textura de un modelo que GLTFLoader no llega a leer)
+    if (/Failed to load resource|net::ERR_|Couldn't load texture blob/.test(t)) return;
     errors.push(t);
   });
   return errors;

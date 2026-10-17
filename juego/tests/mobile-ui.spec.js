@@ -20,14 +20,29 @@ const MIN = 44;
 
 // Mide los controles visibles y devuelve los problemas encontrados.
 function audit(sel, safe) {
+  const MIN = 44;
   const out = [];
   const W = innerWidth, H = innerHeight;
   const vis = (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05; };
   const name = (e) => (e.id ? '#' + e.id : e.className ? '.' + String(e.className).split(' ').filter(Boolean).join('.') : e.tagName) + (e.textContent.trim() ? ` «${e.textContent.trim().slice(0, 18)}»` : '');
+  // parte visible: recortada por los contenedores con desplazamiento (lo que queda
+  // más abajo en una lista no está «fuera de pantalla», solo hay que desplazarse)
+  const clip = (e) => {
+    let r = e.getBoundingClientRect();
+    let x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
+    for (let p = e.parentElement; p; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (/(auto|scroll|hidden)/.test(cs.overflow + cs.overflowY + cs.overflowX)) {
+        const q = p.getBoundingClientRect();
+        x0 = Math.max(x0, q.left); y0 = Math.max(y0, q.top); x1 = Math.min(x1, q.right); y1 = Math.min(y1, q.bottom);
+      }
+    }
+    return x1 - x0 > 2 && y1 - y0 > 2 ? { left: x0, top: y0, right: x1, bottom: y1 } : null;
+  };
   const els = [...document.querySelectorAll(sel)].filter(vis);
-  const rects = els.map((e) => [e, e.getBoundingClientRect()]);
-  for (const [e, r] of rects) {
-    if (r.width < MIN - 0.5 || r.height < MIN - 0.5) out.push(`pequeño ${name(e)} ${Math.round(r.width)}×${Math.round(r.height)}`);
+  const rects = els.map((e) => [e, clip(e), e.getBoundingClientRect()]).filter(([, c]) => c);
+  for (const [e, r, full] of rects) {
+    if (full.width < MIN - 0.5 || full.height < MIN - 0.5) out.push(`pequeño ${name(e)} ${Math.round(full.width)}×${Math.round(full.height)}`);
     if (r.left < -1 || r.top < -1 || r.right > W + 1 || r.bottom > H + 1) out.push(`fuera de pantalla ${name(e)}`);
     else if (r.left < safe.left - 1 || r.right > W - safe.right + 1 || r.top < safe.top - 1 || r.bottom > H - safe.bottom + 1) out.push(`en zona no segura ${name(e)}`);
   }
@@ -52,7 +67,7 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   await newGame(page, testInfo);
   await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; });
   const report = {};
-  const dir = testInfo.outputPath('..', 'ui');
+  const dir = testInfo.outputPath('ui');
   for (const sc of SCREENS) {
     await page.setViewportSize({ width: sc.w, height: sc.h });
     try { await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: sc.safe }); } catch { /* Chromium sin soporte */ }

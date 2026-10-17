@@ -59,8 +59,14 @@ export function fitHud() {
     free = vw - 2 * Math.max(left, right) - 20;
   }
   const gap = free < 420 ? 3 : 4;
-  const slot = Math.max(24, Math.min(48, Math.floor((free - 10 - (n - 1) * gap) / n)));
-  document.documentElement.style.setProperty('--slot', slot + 'px');
+  const fit = (k) => Math.min(48, Math.floor((free - 10 - (k - 1) * gap) / k));
+  // en táctil, si en una fila las casillas quedan por debajo de 44 pt, van en dos filas
+  const two = document.body.classList.contains('touch') && !settings().layout?.hotbar && fit(n) < 44;
+  const slot = Math.max(24, two ? fit(Math.ceil(n / 2)) : fit(n));
+  hb.classList.toggle('rows2', two);
+  const root = document.documentElement.style;
+  root.setProperty('--slot', slot + 'px');
+  root.setProperty('--hb-h', ((two ? 2 : 1) * slot + (two ? gap : 0) + 8) + 'px');
   hb.style.gap = gap + 'px';
 }
 
