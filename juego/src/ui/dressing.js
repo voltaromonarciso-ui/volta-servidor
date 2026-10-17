@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { G, money } from '../game.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch, guardGhostClick } from '../core/input.js';
+import { bendPose, clearPose, SIT } from '../entities/avatar.js';
 import { style, owns, canBeard, barberQuote, barberApply, buyClothes, equip, unequip, recognition, CLOTHES, HAIR_COLORS, BEARDS, SLOTS } from '../systems/appearance.js';
 
 // Peluquería y probador: el jugador se ve a sí mismo (su avatar real con la
@@ -54,33 +55,6 @@ export function closeDressing() {
   sfx('close');
 }
 
-// Postura sentada: muslos hacia delante y gemelos hacia abajo (sobre la animación de reposo).
-const sideAxis = new THREE.Vector3();
-function sitPose(av) {
-  const an = av.analysis, g = av.group;
-  g.updateMatrixWorld(true);
-  // el eje lateral del modelo en el mundo: el de enlace pasado por la malla con piel
-  let skin = null;
-  g.traverse((o) => { if (!skin && o.isSkinnedMesh) skin = o; });
-  sideAxis.copy(an.side).transformDirection(skin.matrixWorld);
-  // se parte siempre de la postura sin doblar (no todos los huesos los mueve la animación)
-  av.restQ ||= new Map();
-  const bend = (name, ang) => {
-    let bone = null;
-    g.traverse((o) => { if (o.isBone && o.name === name) bone = o; });
-    if (!bone) return;
-    if (!av.restQ.has(bone)) av.restQ.set(bone, bone.quaternion.clone());
-    else if (!/Thigh/.test(name)) bone.quaternion.copy(av.restQ.get(bone));
-    bone.updateWorldMatrix(true, false);
-    const parentQ = bone.parent.getWorldQuaternion(new THREE.Quaternion());
-    const worldQ = bone.getWorldQuaternion(new THREE.Quaternion());
-    tmpQ.setFromAxisAngle(sideAxis, ang).multiply(worldQ);
-    bone.quaternion.copy(parentQ.invert().multiply(tmpQ));
-    bone.updateWorldMatrix(false, true);
-  };
-  for (const s of ['L', 'R']) { bend(`Bip01_${s}_Thigh`, -1.45); bend(`Bip01_${s}_Calf`, 1.45); }
-}
-
 export function updateDressing(dt) {
   if (!D) return;
   const av = G.avatar;
@@ -88,7 +62,7 @@ export function updateDressing(dt) {
   av.animate(dt, 0);
   av.group.position.y = 0;
   if (D.sitting) {
-    sitPose(av);
+    bendPose(av, SIT);
     av.group.position.y = -0.36; // la pelvis baja al asiento
   }
   // cámara: el espejo (peluquería: la cara; probador: cuerpo entero)
@@ -106,8 +80,7 @@ export function updateDressing(dt) {
   G.camera.position.lerpVectors(camFrom, eye, k);
   G.camera.quaternion.slerpQuaternions(qFrom, tmpQ, k);
   if (D.leaving && D.blend <= 0) {
-    // de pie otra vez: rodillas y caderas como estaban
-    if (av.restQ) { for (const [b, q] of av.restQ) b.quaternion.copy(q); av.restQ = null; }
+    clearPose(av); // de pie otra vez: rodillas y caderas como estaban
     av.group.visible = false;
     document.body.classList.remove('in-dress');
     D = null;

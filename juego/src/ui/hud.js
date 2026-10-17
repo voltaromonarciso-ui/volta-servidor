@@ -9,6 +9,7 @@ import { input } from '../core/input.js';
 import { wanted, curfew } from '../systems/police.js';
 import { CONTACTS } from '../systems/economy.js';
 import { sfx } from '../core/audio.js';
+import { ridingInfo } from '../systems/riding.js';
 
 const $ = (id) => document.getElementById(id);
 let els = {};
@@ -29,6 +30,7 @@ export function initHUD() {
     wp: $('waypoint'), wpArrow: $('wp-arrow'), wpText: $('wp-text'),
     wanted: $('wanted'), wantedBar: $('wanted-bar'), phoneBadge: $('phone-badge'), water: $('h-water'),
     crouch: $('btn-crouch'), run: $('btn-run'),
+    rideKmh: document.querySelector('#ride-kmh b'), rideBat: $('ride-bat'), rideBatI: document.querySelector('#ride-bat i'), rideBatT: document.querySelector('#ride-bat span'),
   };
   for (let i = 0; i < 10; i++) {
     const d = document.createElement('div');
@@ -48,6 +50,11 @@ export function initHUD() {
   btn('btn-run', () => { input.sprintToggle = !input.sprintToggle; if (input.sprintToggle) input.crouch = false; });
   btn('btn-crouch', () => { input.crouch = !input.crouch; if (input.crouch) input.sprintToggle = false; });
   btn('btn-phone', () => emit('btn', 'phone'));
+  btn('btn-dismount', () => emit('btn', 'dismount'));
+  // frenar mientras se mantiene pulsado
+  const br = $('btn-brake');
+  br.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); br.setPointerCapture?.(e.pointerId); br.classList.add('on'); emit('btn', 'brake'); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) br.addEventListener(ev, () => { br.classList.remove('on'); emit('btn', 'brake-off'); });
   btn('btn-pause', () => emit('btn', 'escape'));
   btn('btn-bag', () => emit('btn', 'bag'));
   btn('minimap', () => G.act.openPhone('map'));
@@ -122,6 +129,19 @@ export function updateHUD(target, dt = 0.016) {
       txt(els.wpText, `${waypoint.label} · ${Math.round(d)} m`);
     }
   } else els.wp.style.display = 'none';
+
+  // velocímetro y batería al ir en vehículo
+  const ri = ridingInfo();
+  if (ri) {
+    txt(els.rideKmh, String(ri.kmh));
+    els.rideBat.style.display = ri.battery == null ? 'none' : '';
+    if (ri.battery != null) {
+      const pc = Math.round(ri.battery * 100);
+      txt(els.rideBatT, pc ? `${pc}%` : 'Sin batería');
+      els.rideBatI.style.width = pc + '%';
+      els.rideBat.classList.toggle('low', pc <= 20);
+    }
+  }
 
   // aviso de que la policía te reconoce (se refresca dos veces por segundo)
   knownT -= dt;

@@ -395,3 +395,37 @@ export function sleeveFor(look, worn) {
 }
 
 export { HAIR_COLORS, BEARDS };
+
+// ------------------------------------------------------------------
+//  Posturas hechas a mano sobre la animación (sentado, en la bici…)
+// ------------------------------------------------------------------
+// Cada hueso de la lista gira `ang` radianes alrededor del eje lateral del
+// personaje, partiendo siempre de su postura de reposo (no se acumula).
+export const SIT = [['Bip01_L_Thigh', -1.45], ['Bip01_R_Thigh', -1.45], ['Bip01_L_Calf', 1.45], ['Bip01_R_Calf', 1.45]];
+const _side = new THREE.Vector3(), _q = new THREE.Quaternion(), _pq = new THREE.Quaternion(), _wq = new THREE.Quaternion();
+export function bendPose(av, list) {
+  const an = av.analysis, g = av.group;
+  if (!an) return;
+  g.updateMatrixWorld(true);
+  av.skinMesh ||= (() => { let k = null; g.traverse((o) => { if (!k && o.isSkinnedMesh) k = o; }); return k; })();
+  av.boneByName ||= (() => { const m = {}; g.traverse((o) => { if (o.isBone) m[o.name] = o; }); return m; })();
+  _side.copy(an.side).transformDirection(av.skinMesh.matrixWorld);
+  av.restQ ||= new Map();
+  for (const [name, ang] of list) {
+    const bone = av.boneByName[name];
+    if (!bone) continue;
+    if (!av.restQ.has(bone)) av.restQ.set(bone, bone.quaternion.clone());
+    else bone.quaternion.copy(av.restQ.get(bone));
+    bone.updateWorldMatrix(true, false);
+    bone.parent.getWorldQuaternion(_pq);
+    bone.getWorldQuaternion(_wq);
+    _q.setFromAxisAngle(_side, ang).multiply(_wq);
+    bone.quaternion.copy(_pq.invert().multiply(_q));
+    bone.updateWorldMatrix(false, true);
+  }
+}
+export function clearPose(av) {
+  if (!av.restQ) return;
+  for (const [b, q] of av.restQ) b.quaternion.copy(q);
+  av.restQ = null;
+}

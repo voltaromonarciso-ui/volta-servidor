@@ -8,6 +8,7 @@ import { sfx } from '../core/audio.js';
 import { guardGhostClick, resetTouch } from '../core/input.js';
 import { product, prodValue, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
+import { VEHICLES, PARKING, RECOVER_PRICE, buyVehicle, recoverVehicle, ownsVehicle } from '../systems/riding.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
@@ -181,6 +182,59 @@ export function openShop(id) {
 }
 
 function fail(msg) { sfx('error'); G.act.toast(msg, '⚠️'); }
+
+// ------------------------------------------------------------------
+//  Tienda de vehículos (Rueda Libre)
+// ------------------------------------------------------------------
+const VEH_SVG = {
+  bike: '<svg viewBox="0 0 64 40" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="27" r="10" stroke="#222" stroke-width="3.2"/><circle cx="50" cy="27" r="10" stroke="#222" stroke-width="3.2"/><path d="M14 27l10-14h16l10 14M24 13l8 14h-18M32 27l8-14M40 13l-2-6h-5M22 10h7" stroke="#c0392b" stroke-width="3"/><path d="M38 7h6" stroke="#222" stroke-width="3"/></svg>',
+  scooter: '<svg viewBox="0 0 64 40" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="5.5" stroke="#222" stroke-width="3"/><circle cx="52" cy="32" r="5.5" stroke="#222" stroke-width="3"/><path d="M12 29h32l4-23" stroke="#2e86de" stroke-width="3.6"/><path d="M42 6h12M48 6l4 26" stroke="#222" stroke-width="3"/><circle cx="47" cy="12" r="1.6" fill="#2ecc71" stroke="none"/></svg>',
+};
+export function openVehicleShop() {
+  const hr = G.state.minute / 60;
+  if (hr < 10 || hr >= 20) return messageDialog('Rueda Libre', 'Está cerrado. Horario: 10:00 – 20:00.');
+  const p = openPanel({ title: 'Rueda Libre · Bicis y patinetes', wide: true, cls: 'shop vshop' });
+  const render = () => {
+    p.body.innerHTML = '';
+    const top = h('div', 'shop-top');
+    top.append(h('div', 'muted', 'Dependiente: «Te lo dejo aparcado en la acera, aquí delante. Si algún día lo pierdes, te lo traemos con la grúa.»'), h('div', 'cash', money(G.state.money)));
+    p.body.appendChild(top);
+    const grid = h('div', 'shop-grid');
+    for (const [id, v] of Object.entries(VEHICLES)) {
+      const owned = ownsVehicle(id);
+      const card = h('div', 'card veh' + (owned ? ' in' : ''));
+      const stats = `<div class="v-stats"><span>🏁 ${Math.round(v.max * 3.6)} km/h</span>${v.battery ? `<span>🔋 ${(v.battery / 1000).toFixed(1)} km</span><span>⚡ ${Math.round(v.chargeMin / 60)} h de carga</span>` : '<span>🦵 Sin batería</span>'}</div>`;
+      card.innerHTML = `<div class="c-ic v-ic">${VEH_SVG[v.kind]}</div><div class="c-info"><div class="c-n">${v.name} <span class="c-p">${owned ? 'Ya es tuyo' : money(v.price)}</span></div><div class="c-d">${v.desc}</div>${stats}</div>`;
+      const row = h('div', 'row end');
+      if (!owned) {
+        const buy = h('button', 'btn' + (G.state.money < v.price ? ' dim' : ''), `Comprar · ${money(v.price)}`);
+        buy.onclick = () => {
+          const r = buyVehicle(id);
+          if (!r.ok) return fail(r.msg);
+          sfx('cash');
+          G.act.toast(`${v.kind === 'bike' ? 'Bici comprada' : 'Patinete comprado'}. Está aparcado en la acera de la tienda.`, '🛵');
+          G.act.setWaypoint(PARKING[id].x, PARKING[id].z, v.kind === 'bike' ? 'Tu bici' : 'Tu patinete');
+          render();
+        };
+        row.appendChild(buy);
+      } else {
+        const rec = h('button', 'btn ghost' + (G.state.money < RECOVER_PRICE ? ' dim' : ''), `Traer al aparcamiento · ${money(RECOVER_PRICE)}`);
+        rec.onclick = () => {
+          const r = recoverVehicle(id);
+          if (!r.ok) return fail(r.msg);
+          sfx('cash');
+          G.act.toast('La grúa lo ha dejado en la acera de la tienda.', '🚚');
+          render();
+        };
+        row.appendChild(rec);
+      }
+      card.appendChild(row);
+      grid.appendChild(card);
+    }
+    p.body.appendChild(grid);
+  };
+  render();
+}
 
 // ------------------------------------------------------------------
 //  Mesa de empaquetado

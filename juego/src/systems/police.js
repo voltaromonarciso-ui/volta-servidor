@@ -4,6 +4,7 @@ import { OFFICERS } from '../data/people.js';
 import { ITEMS } from '../data/items.js';
 import { illegalCount, save } from '../core/state.js';
 import { sfx, setSiren } from '../core/audio.js';
+import { input } from '../core/input.js';
 import { ROADS } from '../world/world.js';
 import { addMoney, addRep } from './economy.js';
 import { rememberIncident, recognition, RECOG_LEVEL } from './appearance.js';
@@ -67,6 +68,11 @@ export function updatePolice(dt) {
       const cop = friskCop;
       friskCop = null;
       G.act.friskDialog(cop);
+    } else if (G.riding && !G.riding.leaving && friskCop.distToPlayer() > 9 && Math.abs(G.riding.speed) > 3) {
+      // te dan el alto y sigues pedaleando: eso es darse a la fuga
+      const cop = friskCop;
+      friskCop = null;
+      startChase(cop, '¡Alto! ¡Bájate de ahí!');
     } else if (friskT <= 0 || friskCop.distToPlayer() > 25) {
       friskCop.mode = 'return'; friskCop.path = []; friskCop = null;
     }
@@ -84,7 +90,7 @@ export function updatePolice(dt) {
       cop.friskCooldown = 120;
       const r = recognition();
       const known = r >= RECOG_LEVEL;
-      if (Math.random() < friskChance(r, !!G.input?.sprint, illegalCount())) {
+      if (Math.random() < friskChance(r, !!input.sprint || Math.abs(G.riding?.speed || 0) > 6, illegalCount())) {
         friskCop = cop;
         friskT = 12;
         cop.mode = 'approach';
@@ -143,6 +149,7 @@ export function arrest(cop) {
   for (const c of G.police) { c.mode = 'return'; c.path = []; }
   if (cop) { cop.mode = 'return'; }
   G.act.arrested({ lost, fine, officer: cop ? cop.name : 'La policía' });
+  G.act.forceDismount?.(); // el vehículo se queda donde te pararon
   const hq = G.world.policeHQ;
   G.player.teleport(hq.x + rand(-1, 1), hq.z + 2, Math.PI);
   G.act.advanceTime(180);

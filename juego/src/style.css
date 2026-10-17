@@ -494,3 +494,28 @@ body.in-dress #hud, body.in-dress #joy, body.in-dress #touch-layer { visibility:
 .wardrobe { margin-top: 12px; }
 #known { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--hb-h, 56px) + 34px + var(--safe-t)); padding: 4px 12px; border-radius: 12px; background: rgba(120, 20, 20, 0.7); color: #fff; font-size: 12px; font-weight: 700; display: none; pointer-events: none; }
 body:not(.touch) #known { top: 92px; }
+
+/* --- En vehículo: velocímetro, batería y botones grandes de frenar / bajar --- */
+#ride, .rideb { display: none; }
+body.riding #ride { display: flex; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(18px + var(--safe-b)); gap: 10px; align-items: center; pointer-events: none; }
+#ride-kmh { background: rgba(14,18,24,0.62); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 14px; padding: 4px 12px; display: flex; align-items: baseline; gap: 4px; }
+#ride-kmh b { font-size: 26px; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+#ride-kmh small { font-size: 11px; color: var(--mut); font-weight: 700; }
+#ride-bat { position: relative; width: 108px; height: 30px; border-radius: 9px; background: rgba(14,18,24,0.62); border: 1.5px solid rgba(255,255,255,0.35); overflow: hidden; }
+#ride-bat i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #27ae60, #2ecc71); }
+#ride-bat.low i { background: linear-gradient(90deg, #c0392b, #e67e22); }
+#ride-bat span { position: relative; display: block; text-align: center; line-height: 27px; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px #000; }
+#ride-keys { font-size: 12px; color: #e8ecef; background: rgba(14,18,24,0.55); padding: 6px 10px; border-radius: 10px; }
+body.touch #ride-keys { display: none; }
+body.riding #crosshair, body.riding #prompt, body.riding #info { display: none !important; }
+body.riding #actions .cb { display: none; }
+body.touch.riding .rideb { display: grid; }
+.rideb b { font-size: 14px; font-weight: 900; letter-spacing: 0.04em; }
+#btn-brake { right: calc(26px + var(--safe-r)); bottom: calc(40px + var(--safe-b)); width: 104px; height: 104px; background: rgba(192,57,43,0.55); border-color: #fff; }
+#btn-brake.on { background: rgba(231,76,60,0.92); transform: scale(0.96); }
+#btn-brake b { font-size: 16px; }
+#btn-dismount { right: calc(40px + var(--safe-r)); bottom: calc(168px + var(--safe-b)); width: 76px; height: 76px; }
+@media (max-height: 430px) {
+  #btn-brake { width: 92px; height: 92px; bottom: calc(22px + var(--safe-b)); right: calc(20px + var(--safe-r)); }
+  #btn-dismount { width: 66px; height: 66px; bottom: calc(132px + var(--safe-b)); right: calc(33px + var(--safe-r)); }
+}

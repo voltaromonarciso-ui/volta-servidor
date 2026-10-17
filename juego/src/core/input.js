@@ -123,6 +123,7 @@ export function pollInput() {
   if (keys.has('KeyD') || keys.has('ArrowRight')) mx += 1;
   if (keys.has('KeyA') || keys.has('ArrowLeft')) mx -= 1;
   if (joy) { mx += joy.x; my += joy.y; }
+  input.brakeKey = keys.has('Space');
   input.mx = Math.max(-1, Math.min(1, mx));
   input.my = Math.max(-1, Math.min(1, my));
   if (!G.touch) input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight');

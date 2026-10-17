@@ -4,6 +4,8 @@ import { StaticBatch, GEO, MAT } from './batch.js';
 import { makeCar, vehiclesReady, CAR_MODELS } from '../entities/vehicles.js';
 import { propsReady, propSize, addProp, buildProps } from './props.js';
 import * as TX from './textures.js';
+import { buildBike, buildScooter } from '../entities/rideables.js';
+import { PARKING } from '../data/vehicles.js';
 import { Nav } from './nav.js';
 
 // ------------------------------------------------------------------
@@ -1336,6 +1338,31 @@ function buildEastShops() {
     hitbox(106.0, 1.1, 20.3, 1.6, 2.2, 2.4, {
       actions: () => [{ label: 'Entrar en el probador', fn: () => G.act.openClothes?.() }],
     });
+  }
+
+  // --- Vehículos: bici y patinete de exposición; los comprados salen al aparcamiento de la acera
+  {
+    const x0 = 98, x1 = 110, z0 = 38, z1 = 54;
+    lot(x0, x1, z0, z1);
+    const sh = walkInShop({ id: 'vehiculos', x0, x1, z0, z1, h: 5, wall: '#1f3b4d', trim: '#f2c14e', sign: 'RUEDA LIBRE', signBg: '#1f6f8b', awning: '#f2c14e', seed: 207, mapColor: '#2f6f8f', label: 'Bicis y patinetes', tint: '#eef2f4', floor: '#9aa4ab', counterColor: '#1f6f8b', hours: [10, 20], buyLabel: 'Ver bicis y patinetes', onBuy: () => G.act.openVehicleShop?.() });
+    W.pois.vehiculos = sh;
+    const { L, LM } = sh;
+    // tarimas de exposición con un modelo de cada
+    for (const [z, mk] of [[41.2, () => buildBike('#c0392b')], [50.8, () => buildScooter('#2e86de')]]) {
+      B.add(GEO.cyl16, '#d9dde0', 103, 0.06, z, 2.2, 0.12, 2.2, 0, LM);
+      const m = mk();
+      m.position.set(103, 0.12, z);
+      m.rotation.y = Math.PI / 2.6;
+      m.userData.display = true;
+      scene.add(m);
+      addBox(101.9, 104.1, z - 1.1, z + 1.1, 0.8);
+    }
+    // pared de cascos y repuestos
+    sh.shelfUnit(108.6, z1 - 0.35, 2.2, 4, 0.35, Math.PI, '#2a2d31', true);
+    const HC = ['#e74c3c', '#f1c40f', '#2ecc71', '#ecf0f1', '#34495e', '#9b59b6'];
+    for (let i = 0; i < 6; i++) B.add(GEO.sphere, HC[i], 100 + i * 0.8, 1.9, z0 + 0.3, 0.32, 0.26, 0.34, 0, L);
+    // señal de aparcamiento en la acera
+    for (const k of ['bici', 'patinete']) { const p = PARKING[k]; B.box('#f2f2f2', p.x, 0.012, p.z, 1.0, 0.01, 1.8, 0, { ao: 0 }); }
   }
 }
 

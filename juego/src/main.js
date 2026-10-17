@@ -2,6 +2,7 @@ import { startStation, updateStation, exitStation, stationAuto } from './systems
 import { makeAvatar, sleeveFor } from './entities/avatar.js';
 import { style, syncInventory } from './systems/appearance.js';
 import { openBarber, openClothes, updateDressing, closeDressing, dressingOpen } from './ui/dressing.js';
+import { spawnVehicles, updateRiding, dismount, forceDismount, brake, riding } from './systems/riding.js';
 import * as THREE from 'three';
 import './style.css';
 import { G, on } from './game.js';
@@ -124,6 +125,7 @@ initPhone();
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
   openShop: P.openShop, openPacker: P.openPacker, startStation, openBarber, openClothes,
+  openVehicleShop: P.openVehicleShop, forceDismount, currentStyle: () => style(),
   // la apariencia ha cambiado: avatar y mangas en primera persona
   lookChanged: () => {
     const look = G.state.look, st = style();
@@ -174,6 +176,9 @@ Object.assign(G.act, {
 on('btn', (b) => {
   if (G.paused) return;
   initAudio();
+  if (b === 'brake') return brake(true);
+  if (b === 'brake-off') return brake(false);
+  if (b === 'dismount') return dismount();
   if (b === 'escape') {
     if (G.station) return exitStation();
     if (dressingOpen()) return closeDressing();
@@ -184,6 +189,8 @@ on('btn', (b) => {
   if (b === 'phone') return togglePhone();
   if (b === 'bag') { if (phoneOpen()) closePhone(); return P.panelOpen() ? P.closePanel() : P.openBag(); }
   if (G.uiOpen) return;
+  // en un vehículo: E / el botón de usar sirven para bajarse
+  if (riding()) { if (b === 'primary') dismount(); return; }
   if (b === 'primary') runAction(false);
   if (b === 'secondary') runAction(true);
 });
@@ -235,6 +242,7 @@ async function startGame(fresh, look) {
     scene.add(G.avatar.group);
   }
   G.act.lookChanged();
+  spawnVehicles();
   document.getElementById('menu').classList.add('hide');
   // precompilar lo recién creado (vecinos, coches, objetos) antes de jugar
   const ld = document.getElementById('loading');
@@ -389,7 +397,8 @@ function frame() {
   }
   pollInput();
   const gdt = updateTime(dt);
-  G.player.update(dt, G.uiOpen);
+  G.player.update(dt, G.uiOpen || !!riding());
+  updateRiding(dt);
   updateStation(dt);
   updateDressing(dt);
   for (const n of G.npcs) n.update(dt, gdt);
@@ -398,7 +407,7 @@ function frame() {
   updateObjects(dt);
   G.world.update(dt);
   if (G.uiOpen) hideGhost();
-  const target = updateInteract(dt);
+  const target = riding() ? { actions: [], info: '' } : updateInteract(dt);
   sky.update(dt);
   leo.animate(dt, 0);
   for (const c of clerks) { const near = c.group.position.distanceToSquared(G.player.pos) < 900; c.group.visible = near; if (near) c.animate(dt, 0); }
@@ -415,7 +424,7 @@ function frame() {
   updateHUD(target, dt);
   phoneT -= dt;
   if (phoneT <= 0) { phoneT = 0.5; tickPhone(); }
-  renderFrame(!G.uiOpen);
+  renderFrame(!G.uiOpen && !riding());
   frames++; fpsT += dt;
   if (fpsT > 1) {
     fpsEl.textContent = frames + ' fps';

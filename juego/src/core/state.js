@@ -35,6 +35,7 @@ export function newState() {
     style: { hair: 'orig', beard: 'none' },          // peluquería
     wardrobe: { owned: [], worn: {} },                 // ropa comprada y puesta
     policeMemory: null,                                // aspecto que recuerda la policía
+    vehicles: [],                                      // bici, patinete… { uid, type, x, z, yaw, battery }
     settings: { sens: 1, shadows: true, res: 1, sound: true, quality: 'alta' },
   };
 }
@@ -96,6 +97,7 @@ function migrate(s) {
   // la mezcladora ya no existe: se devuelve su precio
   const mixers = (s.objects || []).filter((o) => o.type === 'mixer').length;
   if (mixers) { s.objects = s.objects.filter((o) => o.type !== 'mixer'); s.money += mixers * 400; }
+  if (!Array.isArray(s.vehicles)) s.vehicles = [];
   for (const o of s.orders || []) o.items = (o.items || []).filter((it) => ITEMS[it.id]);
   return s;
 }
