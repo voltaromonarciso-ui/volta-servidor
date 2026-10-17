@@ -203,7 +203,7 @@ export function openVehicleShop() {
     for (const [id, v] of Object.entries(VEHICLES)) {
       const owned = ownsVehicle(id);
       const card = h('div', 'card veh' + (owned ? ' in' : ''));
-      const stats = `<div class="v-stats"><span>🏁 ${Math.round(v.max * 3.6)} km/h</span>${v.battery ? `<span>🔋 ${(v.battery / 1000).toFixed(1)} km</span><span>⚡ ${Math.round(v.chargeMin / 60)} h de carga</span>` : '<span>🦵 Sin batería</span>'}</div>`;
+      const stats = `<div class="v-stats"><span>🏁 ${Math.round(v.max * 3.6)} km/h</span>${v.battery ? `<span>🔋 ${(v.battery / 1000).toFixed(1)} km</span><span>⚡ ${Math.round(v.chargeMin / 60)} h de carga</span>` : '<span>🦵 A pedal, sin cargar</span>'}</div>`;
       card.innerHTML = `<div class="c-ic v-ic">${VEH_SVG[v.kind]}</div><div class="c-info"><div class="c-n">${v.name} <span class="c-p">${owned ? 'Ya es tuyo' : money(v.price)}</span></div><div class="c-d">${v.desc}</div>${stats}</div>`;
       const row = h('div', 'row end');
       if (!owned) {
