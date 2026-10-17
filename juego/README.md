@@ -2,7 +2,7 @@
 
 Juego 3D en primera persona para móvil (y escritorio), con estética estilizada de "golden hour": montas un negocio de cultivo y venta callejera en un pueblo costero, esquivando a la policía. Género "simulador de camello" inspirado en las mecánicas del género, con **nombre, pueblo, personajes, textos, efectos, ingredientes, modelos y estética propios** (nada copiado de otros juegos).
 
-Hecho con **Three.js + Vite** (todo procedural: no hay modelos ni texturas externas) y empaquetado para Android con **Capacitor**.
+Hecho con **Three.js + Vite** y empaquetado para Android e iOS con **Capacitor**. Estado real de móvil, compilación y pruebas: [docs/MOVIL.md](docs/MOVIL.md).
 
 ## Probarlo
 
@@ -18,17 +18,23 @@ Controles:
 - **Móvil:** joystick abajo a la izquierda, arrastra en la derecha para mirar, ✋ usar, agacharse, correr, botón pequeño = acción secundaria (recoger / girar), saltar. Minimapa (tócalo para abrir el mapa), móvil y mochila arriba.
 - **Escritorio:** WASD · ratón · E usar · R secundaria · Shift correr · C agacharse · Espacio saltar · Tab móvil · I mochila · 1-0 / rueda inventario · Esc pausa.
 
-## Android (Play Store)
-
-Requiere Android Studio (JDK 17+ y Android SDK).
+## Android e iOS
 
 ```bash
 npm run build
-npx cap sync android
-npx cap open android      # Build > Generate Signed Bundle (.aab) para Play Store
+npx cap sync              # copia dist/ a android/ e ios/
+npx cap open android      # Android Studio (JDK 17+ y SDK 35)
+npx cap open ios          # Xcode, solo en macOS
 ```
 
-El proyecto nativo ya está generado en `android/` (id `com.volta.bloque9`, orientación horizontal forzada).
+Proyectos nativos en `android/` e `ios/` (id `com.volta.bloque9`, solo horizontal). Detalles, requisitos y bloqueos: [docs/MOVIL.md](docs/MOVIL.md).
+
+## Pruebas
+
+```bash
+npx playwright test                                   # ciclo completo en Android, iPhone y escritorio
+npx playwright test tests/mobile-ui.spec.js --project=android   # interfaz en 6 pantallas
+```
 
 ## Qué incluye esta versión
 
@@ -39,8 +45,8 @@ El proyecto nativo ya está generado en `android/` (id `com.volta.bloque9`, orie
 | Propiedades | Tu nave del polígono (estanterías, banco de trabajo, carretilla, persiana enrollable; alquiler semanal $100) y bungalow en venta ($2.500). |
 | Producto (ficticio) | **Lumaflor**, una flor luminosa inventada que está prohibida en Puerto Lomas. No representa ninguna sustancia real. 4 variedades (Verde, Violeta, Dorada, Azul). |
 | Cultivo | Macetas, tierra normal/abonada, semillas de Lumaflor, riego (la regadera se rellena en el fregadero), fertilizante, lámpara de cultivo, flores que crecen y brillan, cosecha de pétalos. |
-| Producción | Mesa de empaquetado con tres formas: **sobres** (1 ud.), **viales** de líquido luminoso (5 uds.) y **gominolas** (3 uds.). Mezcladora: 12 ingredientes, 22 efectos, transformaciones y productos nuevos con nombre propio. |
-| Ventas | 17 vecinos con gustos, presupuesto y nivel de exigencia. Cada uno prefiere una forma (sobres, viales o gominolas) y deja propina si se la das así. Te escriben pedidos al móvil: aceptar, contraofertar (+20%) o rechazar; quedas en un punto de encuentro y entregas en mano (el cliente coge el producto y te da el dinero). Confianza, enganche, recomendaciones y muestras gratis para captar clientes. |
+| Producción | Envasado a mano en la mesa (arrastrar envase, meter producto, cerrar): **sobres** (1 ud.), **tarros** de cristal (5 uds., con la envasadora) y **Sweet Shards** (cristales cocinados en el hornillo con azúcar, colorante y catalizador). |
+| Ventas | 17 vecinos con gustos, presupuesto y nivel de exigencia. Cada uno prefiere una forma (sobres o tarros) y deja propina si se la das así. Te escriben pedidos al móvil: aceptar, contraofertar (+20%) o rechazar; quedas en un punto de encuentro y entregas en mano (el cliente coge el producto y te da el dinero). Confianza, enganche, recomendaciones y muestras gratis para captar clientes. |
 | Móvil del juego | Mensajes, Clientes, Productos (precios y venta), Mapa con destinos, Proveedor de semillas (entrega en contenedor), Objetivos, Perfil y Ajustes. |
 | Policía | Patrullas a pie, toque de queda 21:00–05:00, cacheos aleatorios (cooperar o huir), persecuciones con nivel de búsqueda, escondite y arresto con multa y requisa. |
 | Progreso | 7 rangos que desbloquean objetos y semillas, 12 objetivos de historia que hacen de tutorial, resumen diario, guardado automático. |

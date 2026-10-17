@@ -59,6 +59,26 @@ Limitaciones de estas pruebas:
 - El perfil «iphone» es Chromium con medidas y táctil de iPhone, **no Safari/WebKit**.
   WebKit no está instalado en este entorno.
 
+### Resultados (17-10-2026)
+
+| Prueba | Android (Pixel 7) | iPhone 14* | Escritorio |
+|---|---|---|---|
+| Ciclo completo (`core.spec.js`, 11 pasos) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
+| Interfaz en 6 pantallas (`mobile-ui.spec.js`) | sin problemas ✔ | — | — |
+
+\* Chromium con medidas de iPhone, no Safari.
+
+Problemas reales encontrados por estas pruebas y corregidos:
+- El aviso «Mensaje de X», al ocultarse, quedaba invisible encima de las casillas
+  centrales de la barra de objetos (arriba en móvil) y se comía los toques.
+- La barra de objetos rehacía sus 10 imágenes en cada fotograma (y varios textos
+  del HUD se reescribían igual): trabajo inútil en cada frame en el móvil.
+- Casillas de la barra de 24–38 px en móviles estrechos → ahora 2 filas de ≥ 44 pt.
+- −/+ de tiendas (30 px), cerrar paneles (34 px), botones (≈38 px) y navegación del
+  móvil del juego (40 px) → 44 pt.
+- En iPhone con muesca, joystick, correr y bordes de paneles caían bajo la muesca o
+  la barra de gestos; los paneles anchos se salían de la pantalla y ocultaban «Pagar».
+
 ## 4. Compilación
 
 ### Android — estado: proyecto listo, compilación BLOQUEADA en este entorno

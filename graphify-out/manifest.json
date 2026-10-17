@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   "juego/android/app/capacitor.build.gradle": {
-    "mtime": 1792169179.7713168,
-    "seen": 1792184737.2630656,
-    "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
+    "mtime": 1792250241.8353322,
+    "seen": 1792250326.2794013,
+    "ast_hash": "93f3ad54811def1cdc1fa78a7f73a55b",
     "semantic_hash": ""
   },
   "juego/android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "juego/android/capacitor.settings.gradle": {
-    "mtime": 1792169179.769929,
-    "seen": 1792184737.2630718,
-    "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
+    "mtime": 1792250241.8353322,
+    "seen": 1792250326.2795591,
+    "ast_hash": "2b6a0642232e909f3f9307801c438d7a",
     "semantic_hash": ""
   },
   "juego/android/gradlew": {
@@ -90,15 +90,15 @@
     "semantic_hash": ""
   },
   "juego/capacitor.config.json": {
-    "mtime": 1792162304.9381824,
-    "seen": 1792184737.2630763,
-    "ast_hash": "2c29b72f1e9e965ad35fea630ceb80a8",
+    "mtime": 1792242550.501667,
+    "seen": 1792250326.2796316,
+    "ast_hash": "98f55b1aafb621e5a61d438f8930d88a",
     "semantic_hash": ""
   },
   "juego/package.json": {
-    "mtime": 1792162326.4681454,
-    "seen": 1792184737.2630773,
-    "ast_hash": "74d725b8e1277838ff8c422cb6562188",
+    "mtime": 1792242551.374875,
+    "seen": 1792250326.279644,
+    "ast_hash": "0de08e7e798d58a8a2ce4cadb52f4eb0",
     "semantic_hash": ""
   },
   "juego/src/assets/people/anims.json": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "juego/src/core/state.js": {
-    "mtime": 1792232599.9170597,
-    "seen": 1792235900.1923032,
-    "ast_hash": "38b9b7d83f7f975908d6a332be1fd212",
+    "mtime": 1792242568.7688136,
+    "seen": 1792250326.2797318,
+    "ast_hash": "02fce088feff0e1ac7c12ce08d5b04ed",
     "semantic_hash": ""
   },
   "juego/src/data/effects.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792233675.3789487,
-    "seen": 1792235900.1925626,
-    "ast_hash": "98c82c01bc07d7297b118d8a9c059533",
+    "mtime": 1792242568.776277,
+    "seen": 1792250326.2801032,
+    "ast_hash": "79aa51d9260ec4ca090bb8961cb8fa13",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -240,15 +240,15 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792232825.5865304,
-    "seen": 1792235900.1927414,
-    "ast_hash": "86ff095b713de8f7bc172206f1a9114b",
+    "mtime": 1792244495.979217,
+    "seen": 1792250326.2803082,
+    "ast_hash": "fdad0a42404e723727230bbbc64af316",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
-    "mtime": 1792171331.9979882,
-    "seen": 1792184737.2631042,
-    "ast_hash": "c50c4ae72d2b51e84c890eed622b95e3",
+    "mtime": 1792248370.9302933,
+    "seen": 1792250326.2803361,
+    "ast_hash": "4dbd71aac59e9e6323f7bcadce4bf7fa",
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792232806.0552697,
-    "seen": 1792235900.1927836,
-    "ast_hash": "fbf5fa297ea70c51783ed10ccf043ddf",
+    "mtime": 1792242568.7693994,
+    "seen": 1792250326.2803628,
+    "ast_hash": "20f7555945adb0e6d30803aec3bb4d92",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -504,9 +504,9 @@
     "semantic_hash": ""
   },
   "juego/README.md": {
-    "mtime": 1792188640.576922,
-    "seen": 1792188643.734832,
-    "ast_hash": "7e0e5800ac3b911409fc6949504c1e44",
+    "mtime": 1792250237.964446,
+    "seen": 1792250326.2822113,
+    "ast_hash": "101c65fca76a5ffd68674385b294a8a2",
     "semantic_hash": ""
   },
   "juego/index.html": {
@@ -1173,6 +1173,102 @@
     "mtime": 1792235403.798718,
     "seen": 1792235900.192822,
     "ast_hash": "2abb4b943b47cb34d566b8367728581c",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/AppDelegate.swift": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2796345,
+    "ast_hash": "b2865a48d0e54c1613fa58272418bf98",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2796364,
+    "ast_hash": "7453c3002126811a57c38b2740f990cf",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/Contents.json": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.279638,
+    "ast_hash": "31cc68f34934a99c0b0c1bebde56309c",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/Splash.imageset/Contents.json": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2796397,
+    "ast_hash": "1162e1cddd7ea769bcacdd1aa7b4ac72",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/CapApp-SPM/Package.swift": {
+    "mtime": 1792250241.9033322,
+    "seen": 1792250326.2796412,
+    "ast_hash": "59de1a0c38a9087a0d378ed592cd4a27",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2796423,
+    "ast_hash": "0d92cb44a62bc3f2d73464a2e4f9a890",
+    "semantic_hash": ""
+  },
+  "juego/playwright.config.js": {
+    "mtime": 1792241684.7507026,
+    "seen": 1792250326.2796454,
+    "ast_hash": "be71fdc38ca93c0ab2c35d05fa690b90",
+    "semantic_hash": ""
+  },
+  "juego/tests/core.spec.js": {
+    "mtime": 1792246843.147137,
+    "seen": 1792250326.2805426,
+    "ast_hash": "eb62125deb3a0f3a6db9d4835946c96a",
+    "semantic_hash": ""
+  },
+  "juego/tests/helpers.js": {
+    "mtime": 1792248395.314053,
+    "seen": 1792250326.280545,
+    "ast_hash": "e3861fc396cfcdf8694ee12defe73538",
+    "semantic_hash": ""
+  },
+  "juego/tests/mobile-ui.spec.js": {
+    "mtime": 1792248387.230327,
+    "seen": 1792250326.2805467,
+    "ast_hash": "e88e993c9211b1e32a040d9845e03755",
+    "semantic_hash": ""
+  },
+  "juego/docs/MOVIL.md": {
+    "mtime": 1792250237.9649725,
+    "seen": 1792250326.2822134,
+    "ast_hash": "2782d4fceedcb0707a5fad16a5e8d265",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/CapApp-SPM/README.md": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2822375,
+    "ast_hash": "9cfb163b70d2e73140eab9557c445dfa",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2831547,
+    "ast_hash": "0ac741c9e1701ee14dd05ea131f7cfd8",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2831564,
+    "ast_hash": "958532b95c3e7d4997327dc977b80600",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.2831583,
+    "ast_hash": "958532b95c3e7d4997327dc977b80600",
+    "semantic_hash": ""
+  },
+  "juego/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png": {
+    "mtime": 1788213756.0,
+    "seen": 1792250326.28316,
+    "ast_hash": "958532b95c3e7d4997327dc977b80600",
     "semantic_hash": ""
   }
 }
