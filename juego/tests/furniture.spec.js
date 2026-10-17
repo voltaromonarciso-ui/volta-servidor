@@ -201,7 +201,10 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
     await ev(page, () => { __G.state.minute = 22 * 60; });
     await ev(page, (uid) => { const o = __G.objects.get(uid); o.hit.userData.ia.actions().find((a) => a.label === 'Dormir').fn(); }, bed.uid);
     await expect(page.locator('.panel')).toBeVisible({ timeout: 60_000 });
-    expect(await ev(page, () => [__G.state.day, __G.state.minute])).toEqual([day + 1, 6 * 60]);
+    const [d, min] = await ev(page, () => [__G.state.day, __G.state.minute]);
+    expect(d).toBe(day + 1);
+    expect(min).toBeGreaterThanOrEqual(6 * 60);
+    expect(min).toBeLessThan(6 * 60 + 2); // el reloj sigue andando tras despertar
     await press(page, testInfo, '.panel .btn');
     await expect.poll(() => ev(page, () => !__G.uiOpen)).toBe(true);
   });
