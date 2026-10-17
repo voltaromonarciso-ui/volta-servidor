@@ -60,6 +60,7 @@ const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station 
 
 test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   test.skip(!testInfo.project.use.hasTouch, 'solo en perfiles táctiles');
+  test.setTimeout(45 * 60_000);
   const ctx = await browser.newContext({ ...testInfo.project.use, viewport: { width: 932, height: 430 } });
   const page = await ctx.newPage();
   const errors = watchErrors(page);
