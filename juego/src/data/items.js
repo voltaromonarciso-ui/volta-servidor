@@ -28,6 +28,11 @@ export const ITEMS = {
   colorante: { name: 'Colorante alimentario', icon: '🎨', stack: 20, price: 4, rank: 2, desc: 'Ingrediente para el hornillo (1 por tanda).' },
   lampara:   { name: 'Lámpara de cultivo', icon: '💡', stack: 2, price: 150, rank: 1, place: 'lamp', desc: 'Acelera ×1.5 las plantas cercanas.' },
   estante:   { name: 'Estantería', icon: '🗄️', stack: 2, price: 60, place: 'shelf', desc: 'Guarda 12 huecos de objetos.' },
+  // Muebles Nido: cada mueble hace algo de verdad
+  cama:      { name: 'Cama buena', icon: '🛏️', stack: 1, price: 380, place: 'bed', desc: 'Duerme en ella (desde las 18:00) y te despiertas a las 6:00 en vez de a las 7:00: una hora más de día.' },
+  armario:   { name: 'Armario de almacenaje', icon: '🚪', stack: 1, price: 320, place: 'locker', desc: 'Guarda 24 huecos de objetos, el doble que una estantería.' },
+  caja_fuerte:{ name: 'Caja fuerte', icon: '🔒', stack: 1, price: 450, place: 'safe', desc: 'Guarda dinero en casa. Si te detienen, la multa solo sale de lo que llevas encima.' },
+  humidificador:{ name: 'Humidificador', icon: '💨', stack: 2, price: 220, place: 'humid', desc: 'Las macetas a menos de 2,5 m pierden el agua un 40 % más despacio.' },
 };
 
 export const STRAINS = {
@@ -44,6 +49,12 @@ export const SHOPS = {
     name: 'Ferretería Tornillo',
     open: [7, 21],
     stock: ['maceta', 'tierra', 'tierra_plus', 'fertil', 'regadera', 'bolsita', 'mesa_emp', 'tarro_v', 'envasadora', 'estante', 'lampara', 'bolsa_ss', 'catalizador', 'hornillo'],
+  },
+  muebles: {
+    name: 'Muebles Nido',
+    open: [10, 21],
+    stock: ['cama', 'armario', 'caja_fuerte', 'humidificador', 'estante'],
+    greet: ['Bienvenido a Muebles Nido. Te lo llevas hoy mismo.', 'Todo lo que ves sirve para algo, nada de adornos.', '¿Amueblando la nave? Mira el catálogo.'],
   },
   gasolinera: {
     name: 'Gas&Go 24h',

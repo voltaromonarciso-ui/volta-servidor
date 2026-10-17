@@ -27,6 +27,9 @@ export function initInput() {
     if (e.code === 'Space') { input.jump = true; e.preventDefault(); }
     if (e.code === 'KeyE') emit('btn', 'primary');
     if (e.code === 'KeyR') emit('btn', 'secondary');
+    if (e.code === 'KeyQ') emit('btn', 'rot-left');
+    if (e.code === 'KeyX') emit('btn', 'place-cancel');
+    if (e.code === 'KeyG') emit('btn', 'place-store');
     if (e.code === 'Tab' || e.code === 'KeyP') { emit('btn', 'phone'); e.preventDefault(); }
     if (e.code === 'KeyI') emit('btn', 'bag');
     if (e.code === 'KeyC' || e.code === 'ControlLeft') input.crouch = !input.crouch;

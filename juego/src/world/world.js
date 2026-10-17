@@ -1364,6 +1364,28 @@ function buildEastShops() {
     // señal de aparcamiento en la acera
     for (const k of ['bici', 'patinete']) { const p = PARKING[k]; B.box('#f2f2f2', p.x, 0.012, p.z, 1.0, 0.01, 1.8, 0, { ao: 0 }); }
   }
+
+  // --- Muebles: exposición con un ejemplar de cada mueble (los modelos los pone objects.js)
+  {
+    const x0 = 98, x1 = 110, z0 = 62, z1 = 78;
+    lot(x0, x1, z0, z1);
+    const sh = walkInShop({ id: 'muebles', x0, x1, z0, z1, h: 4.8, wall: '#c9b79c', trim: '#3b2f25', sign: 'MUEBLES NIDO', signBg: '#5a3d2b', awning: '#7a9a5a', seed: 208, mapColor: '#9a7a52', label: 'Muebles', tint: '#f3eee6', floor: '#b89a74', counterColor: '#5a3d2b', hours: [10, 21], buyLabel: 'Ver el catálogo' });
+    W.pois.muebles = sh;
+    const { L } = sh;
+    // alfombras bajo cada pieza expuesta
+    W.showroom = [
+      { type: 'bed', x: 101.6, z: 64.3, r: Math.PI / 2, rug: [2.6, 1.6] },
+      { type: 'locker', x: 104.6, z: 77.4, r: Math.PI, rug: [1.6, 1.0] },
+      { type: 'safe', x: 106.8, z: 77.2, r: Math.PI, rug: [1.0, 1.0] },
+      { type: 'humid', x: 100.8, z: 76.6, r: 0, rug: [1.0, 1.0] },
+    ];
+    for (const it of W.showroom) {
+      B.box('#8c5a3c', it.x, 0.02, it.z, it.rug[0], 0.015, it.rug[1], 0, L);
+      const [w, d] = { bed: [1.1, 2.1], locker: [1.2, 0.6], safe: [0.7, 0.7], humid: [0.5, 0.5] }[it.type];
+      const [fw, fd] = Math.abs(Math.sin(it.r)) > 0.5 ? [d, w] : [w, d];
+      addBox(it.x - fw / 2, it.x + fw / 2, it.z - fd / 2, it.z + fd / 2, 1.1);
+    }
+  }
 }
 
 function buildPolice() {

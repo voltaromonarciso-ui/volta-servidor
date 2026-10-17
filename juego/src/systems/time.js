@@ -60,18 +60,20 @@ export function canSleep() {
   return h >= 18 || h < 4;
 }
 
-export function sleep(propId, forced = false) {
+// opts.wake: hora de despertar en minutos (la cama buena despierta a las 6:00)
+export function sleep(propId, forced = false, opts = {}) {
+  const wake = opts.wake ?? 7 * 60;
   if (!forced && !canSleep()) return G.act.toast('No tienes sueño. Podrás dormir a partir de las 18:00.', '😴');
   if (wanted.level > 0 && !forced) return G.act.toast('¡No puedes dormir con la policía detrás!', '🚨');
   if (G.sleeping) return;
   G.sleeping = true;
   const s = G.state;
   const summary = { day: s.day, earned: s.today.earned, deals: s.today.deals };
-  let mins = (7 * 60 - s.minute + 1440) % 1440;
+  let mins = (wake - s.minute + 1440) % 1440;
   if (mins === 0) mins = 1440;
   G.act.fade(() => {
     advanceTime(mins);
-    s.minute = 7 * 60;
+    s.minute = wake;
     const prop = G.world.props[propId || s.home] || G.world.props.nave;
     G.player.teleport(prop.spawn.x, prop.spawn.z, prop.spawn.yaw);
     for (const n of G.npcs) n.resetHome();

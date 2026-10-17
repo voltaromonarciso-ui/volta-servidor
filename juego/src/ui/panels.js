@@ -128,7 +128,7 @@ export function openShop(id) {
   const cart = new Map();
   const top = h('div', 'shop-top');
   const cash = h('div', 'cash', money(G.state.money));
-  top.append(h('div', 'muted', `Dependiente: «${pick(id === 'ferreteria' ? ['Buenas. ¿Qué necesitas para tu huerto?', '¿Qué te pongo? Tenemos de todo.', 'Hola de nuevo. Mira el catálogo.'] : ['¿Algo más con la gasolina?', 'Bienvenido a Gas&Go. ¿Qué te llevas?', 'Buenas. Todo lo que ves está a la venta.'])}»`), cash);
+  top.append(h('div', 'muted', `Dependiente: «${pick(shop.greet || (id === 'ferreteria' ? ['Buenas. ¿Qué necesitas para tu huerto?', '¿Qué te pongo? Tenemos de todo.', 'Hola de nuevo. Mira el catálogo.'] : ['¿Algo más con la gasolina?', 'Bienvenido a Gas&Go. ¿Qué te llevas?', 'Buenas. Todo lo que ves está a la venta.']))}»`), cash);
   p.body.appendChild(top);
   const grid = h('div', 'shop-grid');
   p.body.appendChild(grid);
@@ -301,8 +301,48 @@ function productStacks(id) {
 // ------------------------------------------------------------------
 //  Estantería (transferir objetos)
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+//  Caja fuerte: el dinero de dentro no se pierde si te detienen
+// ------------------------------------------------------------------
+export function moveCash(obj, n) {
+  const d = obj.entry.data;
+  d.cash ||= 0;
+  n = Math.round(n);
+  if (n > 0) n = Math.min(n, Math.max(0, Math.floor(G.state.money)));
+  else n = -Math.min(-n, d.cash);
+  if (!n) return 0;
+  d.cash += n;
+  G.state.money -= n;
+  save();
+  return n;
+}
+export function openSafe(obj) {
+  const p = openPanel({ title: '🔒 Caja fuerte', cls: 'safe' });
+  const render = () => {
+    const d = obj.entry.data;
+    p.body.innerHTML = '';
+    p.foot.innerHTML = '';
+    p.body.appendChild(h('div', 'sum', `<div><small>Llevas encima</small><b class="money">${money(G.state.money)}</b></div><div><small>En la caja</small><b class="money">${money(d.cash || 0)}</b></div>`));
+    p.body.appendChild(h('p', 'muted', 'Si te detienen, la multa solo sale del dinero que llevas encima.'));
+    const row = (label, list) => {
+      const r = h('div', 'row safe-row');
+      r.appendChild(h('div', 'label', label));
+      for (const [txt, n] of list) {
+        const b = h('button', 'btn' + (n < 0 ? ' ghost' : ''), txt);
+        b.onclick = () => { if (!moveCash(obj, n)) return fail(n > 0 ? 'No llevas dinero encima.' : 'La caja está vacía.'); sfx('cash'); render(); };
+        r.appendChild(b);
+      }
+      p.body.appendChild(r);
+    };
+    row('Guardar', [['100 $', 100], ['500 $', 500], ['Todo', 1e9]]);
+    row('Sacar', [['100 $', -100], ['500 $', -500], ['Todo', -1e9]]);
+  };
+  render();
+}
+
 export function openShelf(obj) {
-  const p = openPanel({ title: 'Estantería', wide: true });
+  const locker = obj.entry.type === 'locker';
+  const p = openPanel({ title: locker ? 'Armario de almacenaje' : 'Estantería', wide: true });
   const slots = obj.entry.data.slots;
   const render = () => {
     p.body.innerHTML = '';
@@ -328,7 +368,7 @@ export function openShelf(obj) {
       col.appendChild(grid);
       return col;
     };
-    cols.append(make('Tu inventario', G.state.inv, slots), make('Estantería', slots, G.state.inv));
+    cols.append(make('Tu inventario', G.state.inv, slots), make(locker ? 'Armario' : 'Estantería', slots, G.state.inv));
     p.body.appendChild(cols);
   };
   render();

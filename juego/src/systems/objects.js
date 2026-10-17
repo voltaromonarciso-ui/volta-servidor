@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { G, clamp, randi } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
-import { inv, slotsCount } from '../core/state.js';
+import { inv, slotsCount, save } from '../core/state.js';
 import { removeBox } from '../world/world.js';
 import { mat } from '../entities/human.js';
 import { sfx } from '../core/audio.js';
@@ -12,8 +12,12 @@ import { buildPacker, buildJarPacker, buildStove } from '../world/benches.js';
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
 export const FOOT = {
   pot: [0.8, 0.8], packer: [1.6, 0.9], lamp: [0.6, 0.6], shelf: [1.6, 0.6], jarpacker: [1.3, 0.8], stove: [1.2, 0.75],
+  bed: [1.1, 2.1], locker: [1.2, 0.6], safe: [0.7, 0.7], humid: [0.5, 0.5],
 };
-const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo' };
+const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo', bed: 'cama', locker: 'armario', safe: 'caja_fuerte', humid: 'humidificador' };
+// altura de la caja de colisión / selección de cada objeto
+const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.9 };
+const SLOTS = { shelf: 12, locker: 24 };
 // Hornillo: receta y tiempo de cada tanda de cristales
 export const RECIPE = { azucar: 2, colorante: 1, catalizador: 1 };
 const COOK_MIN = 120, COOK_OUT = 6;
@@ -48,7 +52,7 @@ export function spawnObject(entry) {
   o.col = G.world.addBox(entry.x - fw / 2, entry.x + fw / 2, entry.z - fd / 2, entry.z + fd / 2, entry.type === 'lamp' ? 2 : 1.1, 'obj');
   const hb = new THREE.Mesh(bx, hitMat);
   const [w, d] = FOOT[entry.type];
-  const h = entry.type === 'shelf' ? 1.8 : entry.type === 'lamp' ? 2 : 1.2;
+  const h = HEIGHT[entry.type] || 1.2;
   hb.scale.set(w + 0.1, h, d + 0.1);
   hb.position.y = h / 2;
   hb.userData.ia = { actions: () => actionsFor(o), info: () => infoFor(o) };
@@ -58,6 +62,13 @@ export function spawnObject(entry) {
   G.objects.set(entry.uid, o);
   if (entry.type === 'pot') refreshPot(o);
   return o;
+}
+
+// Modelo suelto (para la exposición de la tienda de muebles).
+export function furnitureModel(type) {
+  const o = { entry: { uid: 0, type, data: {} }, group: new THREE.Group() };
+  BUILD[type](o);
+  return o.group;
 }
 
 export function footprint(type, r = 0) {
@@ -74,19 +85,33 @@ function removeObject(o) {
   G.state.objects = G.state.objects.filter((e) => e.uid !== o.entry.uid);
 }
 
+// Por qué no se puede guardar en el inventario (lo de dentro se perdería).
+// Para cambiarlo de sitio está «Mover», que lo conserva todo.
+export function pickBlock(o) {
+  const e = o.entry, d = e.data;
+  if (SLOTS[e.type] && d.slots.some(Boolean)) return `Vacía ${e.type === 'locker' ? 'el armario' : 'la estantería'} antes de guardarlo.`;
+  if (e.type === 'safe' && d.cash > 0) return 'Saca el dinero de la caja fuerte antes de guardarla.';
+  if (e.type === 'pot' && (d.soil || d.strain)) return 'La maceta tiene tierra: usa «Mover» para cambiarla de sitio sin perderla.';
+  if (e.type === 'stove' && d.batch) return 'El hornillo está ocupado.';
+  return null;
+}
+
 function pickUp(o) {
   const id = ITEM_OF[o.entry.type];
-  if (inv.room(id) < 1) return G.act.toast('No tienes hueco en el inventario.');
-  if (o.entry.type === 'shelf' && o.entry.data.slots.some(Boolean)) return G.act.toast('Vacía la estantería antes de recogerla.');
+  const why = pickBlock(o);
+  if (why) { sfx('error'); G.act.toast(why, '⚠️'); return false; }
+  if (inv.room(id) < 1) { G.act.toast('No tienes hueco en el inventario.'); return false; }
   inv.add(id, 1);
   removeObject(o);
   sfx('pop');
+  return true;
 }
 
 export function placeObject(type, x, z, r) {
   const entry = { uid: G.state.nextUid++, type, x, z, r, data: {} };
   if (type === 'pot') entry.data = { soil: 0, strain: null, growth: 0, water: 0, fert: 0 };
-  if (type === 'shelf') entry.data = { slots: Array(12).fill(null) };
+  if (SLOTS[type]) entry.data = { slots: Array(SLOTS[type]).fill(null) };
+  if (type === 'safe') entry.data = { cash: 0 };
   if (type === 'stove') entry.data = { batch: null };
   if (type === 'jarpacker') G.state.flags.jars = true;
   G.state.objects.push(entry);
@@ -148,6 +173,44 @@ const BUILD = {
     mesh(bx, '#34495e', 0.7, 0.1, 0.4, 0, 1.85, 0.25, g);
     mesh(bx, new THREE.MeshBasicMaterial({ color: 0xff8ef0 }), 0.6, 0.03, 0.32, 0, 1.79, 0.25, g);
   },
+  bed(o) {
+    const g = o.group;
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a3a, roughness: 0.6 });
+    mesh(bx, wood, 1.1, 0.28, 2.1, 0, 0.2, 0, g);                       // somier
+    mesh(bx, wood, 1.14, 0.95, 0.08, 0, 0.47, -1.03, g);                // cabecero
+    mesh(bx, wood, 1.14, 0.45, 0.06, 0, 0.25, 1.03, g);                 // piecero
+    mesh(bx, '#f4f1ea', 1.02, 0.18, 2.0, 0, 0.43, 0, g);                // colchón
+    mesh(bx, '#3f78c4', 1.06, 0.06, 1.3, 0, 0.53, 0.33, g);             // manta
+    mesh(bx, '#ffffff', 0.7, 0.12, 0.32, 0, 0.56, -0.78, g);            // almohada
+  },
+  locker(o) {
+    const g = o.group;
+    mesh(bx, '#6f7d88', 1.2, 1.95, 0.6, 0, 0.975, 0, g);
+    for (const x of [-0.3, 0.3]) {
+      mesh(bx, '#8796a1', 0.56, 1.85, 0.02, x, 0.975, 0.305, g);
+      for (const y of [1.62, 1.7, 1.78]) mesh(bx, '#56636c', 0.36, 0.02, 0.01, x, y, 0.318, g);
+      mesh(bx, '#e0e4e7', 0.03, 0.22, 0.03, x * 0.15, 1.0, 0.33, g);
+    }
+  },
+  safe(o) {
+    const g = o.group;
+    const steel = new THREE.MeshStandardMaterial({ color: 0x3d4650, roughness: 0.4, metalness: 0.6 });
+    mesh(bx, steel, 0.7, 0.8, 0.7, 0, 0.42, 0, g);
+    mesh(bx, '#56616c', 0.58, 0.66, 0.02, 0, 0.42, 0.355, g);
+    const dial = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.7, roughness: 0.3 }), 0.16, 0.03, 0.16, -0.05, 0.46, 0.37, g);
+    dial.rotation.x = Math.PI / 2;
+    mesh(bx, '#c8ccd0', 0.04, 0.16, 0.04, 0.18, 0.42, 0.38, g);
+    for (const x of [-0.3, 0.3]) for (const z of [-0.3, 0.3]) mesh(bx, '#20262b', 0.06, 0.04, 0.06, x, 0.02, z, g);
+  },
+  humid(o) {
+    const g = o.group;
+    mesh(cyl, '#eef3f6', 0.36, 0.7, 0.36, 0, 0.35, 0, g);
+    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x7cc7ef, transparent: true, opacity: 0.8 }), 0.37, 0.3, 0.37, 0, 0.2, 0, g);
+    mesh(cyl, '#c8d2d8', 0.14, 0.08, 0.14, 0, 0.74, 0, g);
+    mesh(cyl, new THREE.MeshBasicMaterial({ color: 0x2ecc71 }), 0.05, 0.02, 0.05, 0, 0.5, 0.18, g).rotation.x = Math.PI / 2;
+    o.mist = mesh(new THREE.SphereGeometry(0.5, 10, 8), new THREE.MeshBasicMaterial({ color: 0xdff3ff, transparent: true, opacity: 0.35, depthWrite: false }), 0.22, 0.3, 0.22, 0, 0.95, 0, g);
+    o.mist.castShadow = false;
+  },
   shelf(o) {
     const g = o.group;
     for (const x of [-0.78, 0.78]) mesh(bx, '#5d6d7e', 0.05, 1.8, 0.6, x, 0.9, 0, g);
@@ -192,16 +255,26 @@ function lampBoost(o) {
   return 1;
 }
 
+// Humidificador cerca: el agua dura más (1 / 0,6).
+export const HUMID_R = 2.5, HUMID_K = 0.6;
+function drainK(o) {
+  for (const other of G.objects.values()) {
+    if (other.entry.type === 'humid' && Math.hypot(other.entry.x - o.entry.x, other.entry.z - o.entry.z) < HUMID_R) return HUMID_K;
+  }
+  return 1;
+}
+
 // Avanza el cultivo `min` minutos de juego (vale para saltos grandes al dormir).
 export function simulateObjects(min) {
   for (const o of G.objects.values()) {
     if (o.entry.type !== 'pot') continue;
     const d = o.entry.data;
-    if (!d.strain || d.growth >= 1) { if (d.water > 0) d.water = Math.max(0, d.water - min / DRAIN_MIN); continue; }
-    const wet = Math.min(min, (d.water * DRAIN_MIN));
+    const drain = DRAIN_MIN / drainK(o);
+    if (!d.strain || d.growth >= 1) { if (d.water > 0) d.water = Math.max(0, d.water - min / drain); continue; }
+    const wet = Math.min(min, (d.water * drain));
     const rate = (STRAINS[d.strain].speed * (d.soil === 2 ? 1.25 : 1) * lampBoost(o)) / GROW_MIN;
     d.growth = Math.min(1, d.growth + rate * wet);
-    d.water = Math.max(0, d.water - min / DRAIN_MIN);
+    d.water = Math.max(0, d.water - min / drain);
   }
 }
 
@@ -213,6 +286,7 @@ export function updateObjects(dt) {
     for (const o of G.objects.values()) if (o.entry.type === 'pot') refreshPot(o);
   }
   for (const o of G.objects.values()) if (o.spin) o.spin.rotation.y += dt * (o.busy ? 12 : 0.3);
+  for (const o of G.objects.values()) if (o.mist) { const k = (G.time * 0.6 + o.entry.uid * 0.37) % 1; o.mist.position.y = 0.85 + k * 0.5; o.mist.material.opacity = 0.35 * (1 - k); o.mist.scale.setScalar(0.18 + k * 0.25); }
   for (const o of G.objects.values()) {
     if (o.entry.type !== 'stove') continue;
     const b = o.entry.data.batch, now = absNow();
@@ -237,7 +311,10 @@ function potInfo(d) {
 function infoFor(o) {
   const e = o.entry;
   if (e.type === 'pot') return potInfo(e.data);
-  if (e.type === 'shelf') return `Estantería · ${e.data.slots.filter(Boolean).length}/12 huecos ocupados`;
+  if (SLOTS[e.type]) return `${ITEMS[ITEM_OF[e.type]].name} · ${e.data.slots.filter(Boolean).length}/${SLOTS[e.type]} huecos ocupados`;
+  if (e.type === 'safe') return `Caja fuerte · ${e.data.cash || 0} $ guardados`;
+  if (e.type === 'humid') return 'Humidificador · el agua de las macetas cercanas dura más';
+  if (e.type === 'bed') return 'Cama buena · te despiertas a las 6:00';
   if (e.type === 'stove') { const b = e.data.batch; return !b ? 'Hornillo · 2 azúcar + 1 colorante + 1 catalizador = 6 cristales' : absNow() >= b.ready ? 'Hornillo · ¡Cristales listos!' : 'Hornillo · Cocinando…'; }
   return ITEMS[ITEM_OF[e.type]].name;
 }
@@ -246,7 +323,8 @@ function actionsFor(o) {
   const e = o.entry, d = e.data;
   const held = inv.held();
   const hid = held && held.id;
-  const pick = { label: `Recoger ${ITEMS[ITEM_OF[e.type]].name.toLowerCase()}`, fn: () => pickUp(o), secondary: true };
+  // cualquier objeto colocado se puede mover sin perder lo que tiene (o guardarlo desde ahí)
+  const pick = { label: 'Mover', fn: () => startMove(o), secondary: true };
   switch (e.type) {
     case 'pot': {
       const acts = [];
@@ -264,6 +342,7 @@ function actionsFor(o) {
         if (hid === 'regadera') acts.push({ label: 'Regar', fn: () => water(o) });
         else if (hid === 'fertil') acts.push({ label: d.fert ? 'Ya tiene fertilizante' : 'Echar fertilizante', fn: () => { if (d.fert) return; inv.remove('fertil', 1); d.fert = 1; G.player.use(); sfx('pop'); } });
         else acts.push({ label: d.water < 0.3 ? 'Necesita agua (coge la regadera)' : 'Creciendo...', fn: () => G.act.toast(potInfo(d)) });
+        acts.push(pick);
       }
       return acts;
     }
@@ -275,13 +354,21 @@ function actionsFor(o) {
       const b = d.batch;
       if (!b) return [{ label: 'Cocinar cristales', fn: () => cook(o) }, pick];
       const left = Math.ceil(b.ready - absNow());
-      if (left > 0) return [{ label: `Cocinando… ${Math.floor(left / 60)}h ${String(left % 60).padStart(2, '0')}min`, fn: () => G.act.toast('Los cristales tienen que enfriarse. Vuelve más tarde (puedes dormir mientras).', '🔥') }];
+      if (left > 0) return [{ label: `Cocinando… ${Math.floor(left / 60)}h ${String(left % 60).padStart(2, '0')}min`, fn: () => G.act.toast('Los cristales tienen que enfriarse. Vuelve más tarde (puedes dormir mientras).', '🔥') }, pick];
       return [{ label: `Recoger ${b.n} cristales`, fn: () => collect(o) }];
     }
     case 'lamp':
       return [{ label: 'Lámpara de cultivo (encendida)', fn: () => G.act.toast('Acelera las plantas a menos de 2,5 m.') }, pick];
     case 'shelf':
       return [{ label: 'Abrir estantería', fn: () => G.act.openShelf(o) }, pick];
+    case 'locker':
+      return [{ label: 'Abrir armario', fn: () => G.act.openShelf(o) }, pick];
+    case 'safe':
+      return [{ label: 'Abrir caja fuerte', fn: () => G.act.openSafe(o) }, pick];
+    case 'humid':
+      return [{ label: 'Humidificador (encendido)', fn: () => G.act.toast('Las macetas a menos de 2,5 m pierden el agua un 40 % más despacio.', '💨') }, pick];
+    case 'bed':
+      return [{ label: 'Dormir', fn: () => G.act.sleep(G.world.inProperty(e.x, e.z), { wake: 6 * 60 }) }, pick];
   }
   return [];
 }
@@ -344,7 +431,9 @@ const ray = new THREE.Raycaster();
 let ghost = null, ghostType = null;
 const ghostOk = new THREE.MeshBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: 0.45, depthWrite: false });
 const ghostBad = new THREE.MeshBasicMaterial({ color: 0xe74c3c, transparent: true, opacity: 0.45, depthWrite: false });
-export const placement = { rot: 0 };
+// rot: giro elegido · moving: objeto que se está cambiando de sitio · skip: colocación cancelada
+// (hasta que cambies de objeto en la mano) · active: hay algo que colocar ahora mismo
+export const placement = { rot: 0, moving: null, skip: null, active: false };
 
 function setGhost(type) {
   if (ghostType === type) return;
@@ -352,44 +441,132 @@ function setGhost(type) {
   ghost = null; ghostType = type;
   if (!type) return;
   const [w, d] = FOOT[type];
-  const h = type === 'shelf' ? 1.8 : type === 'lamp' ? 2 : 1;
+  const h = HEIGHT[type] || 1;
   ghost = new THREE.Mesh(bx, ghostOk);
   ghost.scale.set(w, h, d);
   ghost.userData.h = h;
   G.scene.add(ghost);
 }
 
+// ¿Cabe un objeto de este tipo aquí? (dentro de tu propiedad, sin chocar y sin pisarte)
+export function canPlace(type, x, z, r, propId) {
+  const prop = G.world.props[propId];
+  if (!prop || !G.state.props[propId]) return false;
+  const [fw, fd] = footprint(type, r);
+  if (!(x - fw / 2 >= prop.x0 && x + fw / 2 <= prop.x1 && z - fd / 2 >= prop.z0 && z + fd / 2 <= prop.z1)) return false;
+  for (const c of G.world.colliders) {
+    if (c.on && c.x0 < x + fw / 2 && c.x1 > x - fw / 2 && c.z0 < z + fd / 2 && c.z1 > z - fd / 2) return false;
+  }
+  const p = G.player.pos;
+  if (Math.abs(p.x - x) < fw / 2 + 0.3 && Math.abs(p.z - z) < fd / 2 + 0.3) return false;
+  return true;
+}
+
+// --- Mover un objeto ya colocado (conserva uid y datos: plantas, contenido, dinero…)
+export function startMove(o) {
+  if (placement.moving) cancelMove();
+  placement.moving = { o, x: o.entry.x, z: o.entry.z, r: o.entry.r || 0 };
+  placement.rot = o.entry.r || 0;
+  o.col.on = false;
+  o.group.visible = false;
+  const i = G.interactables.indexOf(o.hit);
+  if (i >= 0) G.interactables.splice(i, 1);
+  sfx('click');
+  G.act.toast?.(G.touch ? 'Apunta al suelo y toca Colocar. Gira con las flechas.' : 'Apunta al suelo y pulsa E. R / Q giran, X cancela, G lo guarda.', '🔧');
+}
+
+function settle(o, x, z, r) {
+  const e = o.entry;
+  e.x = x; e.z = z; e.r = r;
+  o.group.position.set(x, 0, z);
+  o.group.rotation.y = r;
+  removeBox(o.col);
+  const [fw, fd] = footprint(e.type, r);
+  o.col = G.world.addBox(x - fw / 2, x + fw / 2, z - fd / 2, z + fd / 2, e.type === 'lamp' ? 2 : 1.1, 'obj');
+  o.group.visible = true;
+  if (!G.interactables.includes(o.hit)) G.interactables.push(o.hit);
+}
+
+export function cancelMove() {
+  const m = placement.moving;
+  if (!m) return false;
+  placement.moving = null;
+  settle(m.o, m.x, m.z, m.r);
+  setGhost(null);
+  return true;
+}
+
+// Cancelar: el objeto vuelve a su sitio, o el de la mano deja de colocarse (y sigue en el inventario).
+export function cancelPlacement() {
+  if (cancelMove()) { G.act.toast?.('Se queda donde estaba.', '↩️'); return true; }
+  const held = inv.held();
+  if (held && ITEMS[held.id].place) {
+    placement.skip = { sel: G.state.sel, id: held.id };
+    setGhost(null);
+    G.act.toast?.(`${ITEMS[held.id].name}: sigue en tu inventario.`, '↩️');
+    return true;
+  }
+  return false;
+}
+
+// Para el HUD: 'move' moviendo algo, 'place' con un objeto colocable en la mano, o null.
+export function placingMode() {
+  if (placement.moving) return 'move';
+  const held = inv.held();
+  if (placement.skip && (placement.skip.sel !== G.state.sel || placement.skip.id !== held?.id)) placement.skip = null;
+  return held && ITEMS[held.id].place && !placement.skip && !G.uiOpen && !G.riding ? 'place' : null;
+}
+
+export function rotatePlacement(dir = 1) {
+  placement.rot = (placement.rot + dir * Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
+  sfx('click');
+}
+
+// Guardar en el inventario el objeto que estás moviendo (si no tiene nada dentro).
+export function storeMoving() {
+  const m = placement.moving;
+  if (!m) return false;
+  if (pickBlock(m.o) || inv.room(ITEM_OF[m.o.entry.type]) < 1) {
+    const why = pickBlock(m.o) || 'No tienes hueco en el inventario.';
+    sfx('error'); G.act.toast(why, '⚠️');
+    return false;
+  }
+  placement.moving = null;
+  settle(m.o, m.x, m.z, m.r); // vuelve a existir un instante para quitarlo bien
+  setGhost(null);
+  return pickUp(m.o);
+}
+
 // Devuelve la acción de colocar si procede.
 export function updatePlacement() {
+  const m = placement.moving;
   const held = inv.held();
-  const type = held && ITEMS[held.id].place;
+  if (!m && placement.skip && (placement.skip.sel !== G.state.sel || placement.skip.id !== held?.id)) placement.skip = null;
+  const type = m ? m.o.entry.type : !placement.skip && held && ITEMS[held.id].place;
+  placement.active = !!type && !G.uiOpen;
   if (!type || G.uiOpen) { setGhost(null); return null; }
+  // si te alejas mucho mientras mueves algo, vuelve a su sitio
+  if (m && Math.hypot(G.player.pos.x - m.x, G.player.pos.z - m.z) > 30) { cancelPlacement(); return null; }
   ray.setFromCamera({ x: 0, y: 0 }, G.camera);
   ray.far = 4.5;
   const hit = ray.intersectObjects(G.world.floors, false)[0];
-  if (!hit || !G.state.props[hit.object.userData.prop]) { setGhost(null); return null; }
-  setGhost(type);
-  const prop = G.world.props[hit.object.userData.prop];
-  const r = placement.rot;
-  const [fw, fd] = footprint(type, r);
-  const x = Math.round(hit.point.x * 4) / 4, z = Math.round(hit.point.z * 4) / 4;
-  let ok = x - fw / 2 >= prop.x0 && x + fw / 2 <= prop.x1 && z - fd / 2 >= prop.z0 && z + fd / 2 <= prop.z1;
-  if (ok) {
-    for (const c of G.world.colliders) {
-      if (c.on && c.x0 < x + fw / 2 && c.x1 > x - fw / 2 && c.z0 < z + fd / 2 && c.z1 > z - fd / 2) { ok = false; break; }
-    }
-    const p = G.player.pos;
-    if (Math.abs(p.x - x) < fw / 2 + 0.3 && Math.abs(p.z - z) < fd / 2 + 0.3) ok = false;
+  const rotate = { label: 'Girar', fn: () => rotatePlacement(1), secondary: true };
+  if (!hit || !G.state.props[hit.object.userData.prop]) {
+    setGhost(null);
+    return m ? { actions: [{ label: 'Apunta al suelo de tu propiedad', fn: () => sfx('error') }, rotate] } : null;
   }
+  setGhost(type);
+  const r = placement.rot;
+  const x = Math.round(hit.point.x * 4) / 4, z = Math.round(hit.point.z * 4) / 4;
+  const ok = canPlace(type, x, z, r, hit.object.userData.prop);
   ghost.position.set(x, ghost.userData.h / 2, z);
   ghost.rotation.y = r;
   ghost.material = ok ? ghostOk : ghostBad;
-  return {
-    actions: [
-      { label: ok ? `Colocar ${ITEMS[held.id].name.toLowerCase()}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r); sfx('pop'); G.player.use(); } },
-      { label: 'Girar', fn: () => { placement.rot = (placement.rot + Math.PI / 2) % (Math.PI * 2); }, secondary: true },
-    ],
-  };
+  const name = ITEMS[ITEM_OF[type]].name.toLowerCase();
+  const place = m
+    ? { label: ok ? 'Dejar aquí' : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); placement.moving = null; settle(m.o, x, z, r); setGhost(null); sfx('pop'); G.player.use(); save(); } }
+    : { label: ok ? `Colocar ${name}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r); sfx('pop'); G.player.use(); save(); } };
+  return { actions: [place, rotate] };
 }
 
 export function hideGhost() { setGhost(null); }

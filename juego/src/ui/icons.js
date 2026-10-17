@@ -304,6 +304,43 @@ const DRAW = {
     s += `<rect x="20" y="40" width="22" height="8" fill="#c8955a" stroke="${OL}" stroke-width="1"/>`;
     return s;
   },
+  cama: () => {
+    let s = shadow(32, 58, 28);
+    s += `<rect x="6" y="20" width="8" height="34" rx="2" fill="#8a5a3a" stroke="${OL}" stroke-width="${W}"/>`;
+    s += `<path d="M10 36H56V50H10Z" fill="#a8744c" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
+    s += `<path d="M12 30H56Q58 30 58 33V38H12Z" fill="#f4f1ea" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
+    s += `<path d="M28 30H57Q59 30 59 34V40H28Z" fill="#3f78c4" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
+    s += `<rect x="14" y="25" width="13" height="7" rx="3.5" fill="#fff" stroke="${OL}" stroke-width="1.2"/>`;
+    s += `<path d="M12 50V56M54 50V56" stroke="${OL}" stroke-width="3" stroke-linecap="round"/>`;
+    return s + `<text x="46" y="20" font-family="Arial Black,Arial" font-weight="900" font-size="9" fill="#8fb6ff">z</text><text x="52" y="13" font-family="Arial Black,Arial" font-weight="900" font-size="7" fill="#8fb6ff">z</text>`;
+  },
+  armario: () => {
+    let s = shadow(32, 60, 20);
+    s += `<rect x="13" y="4" width="38" height="54" rx="3" fill="#6f7d88" stroke="${OL}" stroke-width="${W}"/>`;
+    s += `<rect x="16" y="7" width="15" height="48" rx="1.5" fill="#8796a1" stroke="${OL}" stroke-width="1.1"/><rect x="33" y="7" width="15" height="48" rx="1.5" fill="#8796a1" stroke="${OL}" stroke-width="1.1"/>`;
+    for (const y of [12, 16, 20]) s += `<path d="M19 ${y}H28M36 ${y}H45" stroke="#56636c" stroke-width="1.4" stroke-linecap="round"/>`;
+    s += `<rect x="28" y="28" width="2" height="9" rx="1" fill="#e0e4e7"/><rect x="34" y="28" width="2" height="9" rx="1" fill="#e0e4e7"/>`;
+    return s;
+  },
+  caja_fuerte: () => {
+    let s = shadow(32, 58, 24);
+    s += `<rect x="10" y="12" width="44" height="44" rx="4" fill="#3d4650" stroke="${OL}" stroke-width="${W}"/>`;
+    s += `<rect x="14" y="16" width="36" height="36" rx="2" fill="#56616c" stroke="${OL}" stroke-width="1.2"/>`;
+    s += `<circle cx="32" cy="34" r="9" fill="#c9a227" stroke="${OL}" stroke-width="1.4"/><circle cx="32" cy="34" r="3" fill="#7a5f12"/>`;
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; s += `<path d="M${(32 + Math.cos(a) * 6).toFixed(1)} ${(34 + Math.sin(a) * 6).toFixed(1)}L${(32 + Math.cos(a) * 8).toFixed(1)} ${(34 + Math.sin(a) * 8).toFixed(1)}" stroke="#7a5f12" stroke-width="1"/>`; }
+    s += `<rect x="44" y="28" width="4" height="12" rx="2" fill="#c8ccd0" stroke="${OL}" stroke-width="1"/>`;
+    s += `<path d="M14 56V60M50 56V60" stroke="${OL}" stroke-width="3" stroke-linecap="round"/>`;
+    return s;
+  },
+  humidificador: () => {
+    let s = shadow(32, 58, 16);
+    s += `<path d="M20 26Q20 22 24 22H40Q44 22 44 26V54Q44 57 41 57H23Q20 57 20 54Z" fill="#eef3f6" stroke="${OL}" stroke-width="${W}"/>`;
+    s += `<path d="M21 40H43V54Q43 56 41 56H23Q21 56 21 54Z" fill="#7cc7ef" opacity=".85"/>`;
+    s += `<rect x="27" y="17" width="10" height="6" rx="2" fill="#c8d2d8" stroke="${OL}" stroke-width="1.2"/>`;
+    s += `<circle cx="32" cy="47" r="3" fill="#2ecc71" stroke="${OL}" stroke-width="1"/>`;
+    s += `<path d="M30 15Q26 11 30 7Q34 3 30 0M36 14Q40 10 36 6" fill="none" stroke="#b9e3f7" stroke-width="2.4" stroke-linecap="round"/>`;
+    return s;
+  },
 };
 
 export function iconSVG(id) {

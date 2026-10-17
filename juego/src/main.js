@@ -23,7 +23,7 @@ import { Player } from './entities/player.js';
 import { NPC } from './entities/npc.js';
 import { spawnCars } from './entities/cars.js';
 import { PEOPLE } from './data/people.js';
-import { spawnObject, placeObject, updateObjects, hideGhost } from './systems/objects.js';
+import { spawnObject, placeObject, updateObjects, hideGhost, furnitureModel, placement, placingMode, rotatePlacement, cancelPlacement, storeMoving } from './systems/objects.js';
 import { updateInteract, runAction } from './systems/interact.js';
 import { updateTime, advanceTime, sleep, checkQuests } from './systems/time.js';
 import { spawnPolice, updatePolice, arrest } from './systems/police.js';
@@ -66,6 +66,8 @@ let sky, leo;
 
 function buildWorld() {
   G.world = createWorld(scene);
+  // exposición de la tienda de muebles
+  for (const it of G.world.showroom || []) { const m = furnitureModel(it.type); m.position.set(it.x, 0, it.z); m.rotation.y = it.r; scene.add(m); }
   sky = createSky(scene);
   G.player = new Player(camera);
   G.player.teleport(-66, -38, 0);
@@ -136,7 +138,8 @@ Object.assign(G.act, {
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),
   openPhone: (app, arg) => { P.closePanel(true); openPhone(app, arg); },
-  sleep: (prop) => sleep(prop),
+  sleep: (prop, opts) => sleep(prop, false, opts),
+  openSafe: P.openSafe,
   refill: () => {
     if (!inv.count('regadera')) return toast('No llevas regadera.');
     G.state.water = 6; sfx('water'); toast('Regadera llena (6 usos).', '💧');
@@ -179,9 +182,13 @@ on('btn', (b) => {
   if (b === 'brake') return brake(true);
   if (b === 'brake-off') return brake(false);
   if (b === 'dismount') return dismount();
+  if (b === 'rot-left' || b === 'rot-right') { if (!G.uiOpen && placingMode()) rotatePlacement(b === 'rot-left' ? -1 : 1); return; }
+  if (b === 'place-cancel') { if (!G.uiOpen) cancelPlacement(); return; }
+  if (b === 'place-store') { if (!G.uiOpen) storeMoving(); return; }
   if (b === 'escape') {
     if (G.station) return exitStation();
     if (dressingOpen()) return closeDressing();
+    if (!G.uiOpen && placement.moving) return cancelPlacement();
     if (phoneOpen()) return closePhone();
     if (P.panelOpen()) return P.closePanel();
     return pauseMenu();

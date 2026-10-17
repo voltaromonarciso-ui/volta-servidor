@@ -10,6 +10,7 @@ import { wanted, curfew } from '../systems/police.js';
 import { CONTACTS } from '../systems/economy.js';
 import { sfx } from '../core/audio.js';
 import { ridingInfo } from '../systems/riding.js';
+import { placingMode } from '../systems/objects.js';
 
 const $ = (id) => document.getElementById(id);
 let els = {};
@@ -51,6 +52,10 @@ export function initHUD() {
   btn('btn-crouch', () => { input.crouch = !input.crouch; if (input.crouch) input.sprintToggle = false; });
   btn('btn-phone', () => emit('btn', 'phone'));
   btn('btn-dismount', () => emit('btn', 'dismount'));
+  btn('btn-rotl', () => emit('btn', 'rot-left'));
+  btn('btn-rotr', () => emit('btn', 'rot-right'));
+  btn('btn-cancel', () => emit('btn', 'place-cancel'));
+  btn('btn-store', () => emit('btn', 'place-store'));
   // frenar mientras se mantiene pulsado
   const br = $('btn-brake');
   br.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); br.setPointerCapture?.(e.pointerId); br.classList.add('on'); emit('btn', 'brake'); });
@@ -129,6 +134,11 @@ export function updateHUD(target, dt = 0.016) {
       txt(els.wpText, `${waypoint.label} · ${Math.round(d)} m`);
     }
   } else els.wp.style.display = 'none';
+
+  // colocando o moviendo un objeto: botones grandes de girar / cancelar / guardar
+  const pm = placingMode();
+  document.body.classList.toggle('placing', !!pm);
+  document.body.classList.toggle('moving', pm === 'move');
 
   // velocímetro y batería al ir en vehículo
   const ri = ridingInfo();

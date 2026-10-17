@@ -519,3 +519,25 @@ body.touch.riding .rideb { display: grid; }
   #btn-brake { width: 92px; height: 92px; bottom: calc(22px + var(--safe-b)); right: calc(20px + var(--safe-r)); }
   #btn-dismount { width: 66px; height: 66px; bottom: calc(132px + var(--safe-b)); right: calc(33px + var(--safe-r)); }
 }
+
+/* --- Colocar / mover objetos: girar a los dos lados, cancelar y guardar --- */
+.placeb { display: none; }
+body.touch.placing .placeb { display: grid; }
+body.touch.placing:not(.moving) .moveb { display: none; }
+body.touch.placing #btn-alt { display: none !important; }
+.placeb { width: 64px; height: 64px; }
+.placeb svg { width: 32px; height: 32px; }
+.placeb b { font-size: 10.5px; font-weight: 900; letter-spacing: 0.02em; }
+#btn-rotr { right: calc(132px + var(--safe-r)); bottom: calc(206px + var(--safe-b)); }
+#btn-rotl { right: calc(206px + var(--safe-r)); bottom: calc(206px + var(--safe-b)); }
+#btn-cancel { right: calc(132px + var(--safe-r)); bottom: calc(120px + var(--safe-b)); background: rgba(120, 30, 30, 0.55); }
+#btn-store { right: calc(206px + var(--safe-r)); bottom: calc(120px + var(--safe-b)); }
+.safe-row { align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.safe-row .label { min-width: 70px; font-weight: 800; }
+@media (max-height: 520px) {
+  .placeb { width: 56px; height: 56px; }
+  #btn-rotr { right: calc(108px + var(--safe-r)); bottom: calc(160px + var(--safe-b)); }
+  #btn-rotl { right: calc(172px + var(--safe-r)); bottom: calc(160px + var(--safe-b)); }
+  #btn-cancel { right: calc(108px + var(--safe-r)); bottom: calc(92px + var(--safe-b)); }
+  #btn-store { right: calc(172px + var(--safe-r)); bottom: calc(92px + var(--safe-b)); }
+}

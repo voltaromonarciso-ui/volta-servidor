@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "juego/src/core/input.js": {
-    "mtime": 1792264397.9607415,
-    "seen": 1792272832.9616876,
-    "ast_hash": "65707dcd8020c67b1bd0bac8914065ca",
+    "mtime": 1792273557.146319,
+    "seen": 1792273609.6238334,
+    "ast_hash": "c098a92305af348e408b8425a79a85ff",
     "semantic_hash": ""
   },
   "juego/src/core/state.js": {
@@ -132,9 +132,9 @@
     "semantic_hash": ""
   },
   "juego/src/data/items.js": {
-    "mtime": 1792232599.916405,
-    "seen": 1792235900.1923084,
-    "ast_hash": "3ed0b66d44638a37ee1e58c84284fee6",
+    "mtime": 1792273445.07507,
+    "seen": 1792273609.6238866,
+    "ast_hash": "2e93679b8745c784b3dac73c7e0e2fca",
     "semantic_hash": ""
   },
   "juego/src/data/people.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792264383.360913,
-    "seen": 1792272832.9620655,
-    "ast_hash": "95df7d70fb97dec031e95e039a747374",
+    "mtime": 1792273600.2367845,
+    "seen": 1792273609.6242557,
+    "ast_hash": "89d544c1d2550c87e6d9d51351309463",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -210,15 +210,15 @@
     "semantic_hash": ""
   },
   "juego/src/systems/interact.js": {
-    "mtime": 1792165471.8114924,
-    "seen": 1792184737.263098,
-    "ast_hash": "d5ab76abaa41372c668911f005d44f9b",
+    "mtime": 1792273543.5417445,
+    "seen": 1792273609.6243746,
+    "ast_hash": "d8a93e7a4168c00791807b1e14245a5f",
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792233148.4116366,
-    "seen": 1792235900.1926312,
-    "ast_hash": "d215aeee0c40d8f9f67b8b7f822271db",
+    "mtime": 1792273595.829305,
+    "seen": 1792273609.6243765,
+    "ast_hash": "aaccf5e0436d7451ed5015656f1ecc0e",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
@@ -228,9 +228,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
-    "mtime": 1792165446.4856708,
-    "seen": 1792184737.2631013,
-    "ast_hash": "d001a93b260e5dfafc4950f21fb5c8a6",
+    "mtime": 1792273562.7107277,
+    "seen": 1792273609.6244593,
+    "ast_hash": "4ecd02405b5c2a20e059917a2b4b1c34",
     "semantic_hash": ""
   },
   "juego/src/ui/creator.js": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792264465.5135756,
-    "seen": 1792272832.9622781,
-    "ast_hash": "b4597c2f97e28a501cab55ca1c9819a6",
+    "mtime": 1792273557.1460922,
+    "seen": 1792273609.624511,
+    "ast_hash": "3cf417e5dc38e1bf39f4cf444f6bcf50",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792264454.243173,
-    "seen": 1792272832.9623404,
-    "ast_hash": "b4f9531add398c6e38d05932131e1977",
+    "mtime": 1792273576.4460318,
+    "seen": 1792273609.6245396,
+    "ast_hash": "66479ae992679c4087ffac74a23f5e83",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792264535.7664866,
-    "seen": 1792272832.9625618,
-    "ast_hash": "517ae6c877a4943522fe8c610a63ce3b",
+    "mtime": 1792273595.8286462,
+    "seen": 1792273609.624712,
+    "ast_hash": "835704f72a6c4efec702a20f6c4307f6",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "juego/index.html": {
-    "mtime": 1792264465.5047538,
-    "seen": 1792272832.9642563,
-    "ast_hash": "202c840f2f2fc103ec90cb8d32a2d093",
+    "mtime": 1792273557.1452086,
+    "seen": 1792273609.626593,
+    "ast_hash": "9936326b02ea4e74e3673c412c64e6ea",
     "semantic_hash": ""
   },
   "juego/android/app/src/main/res/drawable-land-hdpi/splash.png": {
@@ -1164,9 +1164,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/icons.js": {
-    "mtime": 1792232891.4440153,
-    "seen": 1792235900.192744,
-    "ast_hash": "190f1e3c0236de17e4396bdab592d1b9",
+    "mtime": 1792273464.2569108,
+    "seen": 1792273609.6245127,
+    "ast_hash": "64eac1d12938d52891537be426e09681",
     "semantic_hash": ""
   },
   "juego/src/world/benches.js": {

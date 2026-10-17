@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { G } from '../game.js';
-import { updatePlacement } from './objects.js';
+import { updatePlacement, placement } from './objects.js';
 
 // Rayo desde el centro de la pantalla: decide qué acción ofrecen los botones.
 const ray = new THREE.Raycaster();
@@ -16,6 +16,12 @@ export function updateInteract(dt) {
   target.actions = [];
   target.info = '';
   if (G.uiOpen) return target;
+  // moviendo un objeto: lo único que hacen los botones es colocarlo o girarlo
+  if (placement.moving) {
+    const place = updatePlacement();
+    if (place) target.actions = place.actions;
+    return target;
+  }
 
   ray.setFromCamera({ x: 0, y: 0 }, G.camera);
   const hits = ray.intersectObjects(G.interactables, false);
