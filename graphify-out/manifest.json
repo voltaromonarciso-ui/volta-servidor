@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792190799.2908592,
-    "seen": 1792191309.8958592,
-    "ast_hash": "3d09500eee89da7c543dec4be6e1a392",
+    "mtime": 1792191957.0213103,
+    "seen": 1792215693.8393695,
+    "ast_hash": "30aae8727b5be36caee210f8f7ad6601",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792188081.4580681,
-    "seen": 1792188643.734014,
-    "ast_hash": "018a8ad19a53a192e5c71c5cc7f5033f",
+    "mtime": 1792191935.4727898,
+    "seen": 1792215693.8395498,
+    "ast_hash": "456f8dc69bde63bf17b5071884f22fdd",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {

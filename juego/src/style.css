@@ -423,3 +423,5 @@ body.lay-edit #hud > * { pointer-events: none !important; }
 .inv-grid.big { grid-template-columns: repeat(5, 62px); }
 .inv-grid.big .inv-cell { width: 62px; height: 62px; aspect-ratio: auto; min-height: 0; font-size: 26px; }
 @media (max-width: 600px) { .bag-cols { grid-template-columns: 1fr; } }
+.shop .card.in { border-color: var(--acc); background: rgba(126, 217, 87, 0.08); }
+.cart-sum { margin-right: auto; align-self: center; font-size: 14px; }

@@ -671,6 +671,16 @@ function update(dt) {
     s.hit.position.y = s.open ? s.h - 0.6 : 0.9;
     s.hit.updateMatrixWorld();
   }
+  // puertas automáticas de las tiendas: se abren si estás cerca y está abierto
+  for (const d of W.autoDoors || []) {
+    const p = G.player?.pos;
+    const near = p && Math.hypot(p.x - d.x, p.z - d.z) < 3.4 && d.open();
+    const before = d.k;
+    d.k += ((near ? 1 : 0) - d.k) * Math.min(1, dt * 5);
+    for (const { leaf, side } of d.leaves) leaf.position.z = d.z + side * (0.55 + d.k * 0.95);
+    d.col.on = d.k < 0.6;
+    if (before < 0.05 && d.k >= 0.05) G.act.sfx?.('door');
+  }
   if (W.water) W.water.position.y = -0.35 + Math.sin(G.time * 0.6) * 0.04;
   updateTrafficLights();
 }
@@ -1043,10 +1053,161 @@ function buildPlaza() {
   W.mapRects.push({ x0: -23.5, x1: 23.5, z0: -23.5, z1: 23.5, c: '#79ad58' });
 }
 
+// ------------------------------------------------------------------
+//  Tiendas en las que se entra (ferretería y tienda de la gasolinera)
+// ------------------------------------------------------------------
+// Edificio hueco con el frente hacia -x: escaparates, puertas de cristal que se
+// abren solas, mostrador con dependiente y estanterías. Al hablar con el
+// dependiente se abre el catálogo. Fuera de horario las puertas no se abren.
+const glassMat = () => new THREE.MeshStandardMaterial({ color: 0xbfd2de, transparent: true, opacity: 0.18, roughness: 0.03, metalness: 0.9, depthWrite: false });
+function walkInShop(o) {
+  const { id, x0, x1, z0, z1, h, wall, trim = '#ffffff', roof = '#5b5b5b', sign, signBg, awning, tint = '#f4efe6', floor = '#cfc9bd', seed = 1, label, mapColor } = o;
+  const t = 0.25, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+  const dw = 2.2, d0 = cz - dw / 2, d1 = cz + dw / 2; // hueco de la puerta doble
+  const gh = 3.0; // altura de escaparates y puerta
+  const ext = { ao: 0.25, aoH: 1.4 };
+  const seg = (ax0, ax1, az0, az1, y0, y1, col = wall, opts = ext) => {
+    B.box(col, (ax0 + ax1) / 2, y0, (az0 + az1) / 2, ax1 - ax0, y1 - y0, az1 - az0, 0, opts);
+    if (y0 < 2) addBox(ax0, ax1, az0, az1, y1 + 1);
+  };
+  // paredes exteriores (detrás, lados) y fachada con escaparates
+  seg(x1, x1 + t, z0 - t, z1 + t, 0, h);
+  seg(x0 - t, x1 + t, z0 - t, z0, 0, h);
+  seg(x0 - t, x1 + t, z1, z1 + t, 0, h);
+  for (const [a, b] of [[z0 - t, d0], [d1, z1 + t]]) {
+    seg(x0 - t, x0, a, b, 0, 0.55, '#3a3d42');           // zócalo del escaparate
+    seg(x0 - t, x0, a, b, gh, h);                          // pared sobre el escaparate
+    for (const zz of [a + 0.2, b - 0.2, (a + b) / 2]) seg(x0 - t, x0, zz - 0.1, zz + 0.1, 0.55, gh, '#2a2d31', { mat: 'metal', ao: 0 });
+    addBox(x0 - t, x0, a, b, gh + 1); // el cristal no se atraviesa
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(b - a - 0.4, gh - 0.55), glassMat());
+    g.rotation.y = -Math.PI / 2;
+    g.position.set(x0 - t / 2, 0.55 + (gh - 0.55) / 2, (a + b) / 2);
+    scene.add(g);
+  }
+  seg(x0 - t, x0, d0, d1, gh, h); // dintel de la puerta
+  B.box('#2a2d31', x0 - t / 2, gh - 0.12, cz, t + 0.04, 0.12, dw, 0, { mat: 'metal', ao: 0 });
+  // tejado plano con pretil
+  B.box(roof, (x0 + x1) / 2, h, cz, w + 2 * t, 0.3, d + 2 * t, 0, { ao: 0 });
+  B.box(trim, x0 - t - 0.05, h - 0.2, cz, 0.12, 0.7, d + 2 * t + 0.1, 0, { ao: 0 });
+  B.box('#a7adb3', (x0 + x1) / 2 + w * 0.2, h + 0.3, cz - d * 0.2, 1.6, 1.0, 1.2, 0, { mat: 'metal', ao: 0 });
+  W.mapRects.push({ x0, x1, z0, z1, c: mapColor || '#8b8f99' });
+  if (label) W.mapLabels.push({ x: (x0 + x1) / 2, z: cz, t: label });
+  // rótulo, toldo y luz de la fachada
+  if (sign) {
+    const sm = signMesh(sign, Math.min(d * 0.7, 8), Math.min(d * 0.7, 8) / 4.5, { bg: signBg, fg: '#fff', border: '#ffffff' });
+    sm.rotation.y = -Math.PI / 2;
+    sm.position.set(x0 - t - 0.04, Math.min(h - 0.9, gh + 1.25), cz);
+    W.signMats = W.signMats || [];
+    W.signMats.push(sm.material);
+  }
+  if (awning) {
+    for (const [a, b] of [[z0, d0 - 0.2], [d1 + 0.2, z1]]) {
+      B.add(GEO.box, awning, x0 - t - 0.7, gh + 0.35, (a + b) / 2, 1.4, 0.07, b - a, 0, { rz: 0.28, ao: 0 });
+      B.box(awning, x0 - t - 1.38, gh - 0.05, (a + b) / 2, 0.05, 0.28, b - a, 0, { ao: 0 });
+    }
+  }
+  // interior: suelo de baldosa, paredes claras iluminadas, techo con paneles de luz
+  const { rand, L, LM, shelfUnit, counter, register, fridge } = interiorKit(seed);
+  const ft = TX.tileTex(floor, new THREE.Color(floor).multiplyScalar(0.82).getStyle(), 4);
+  ft.repeat.set(w / 2.4, d / 2.4);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: ft, roughness: 0.45, emissiveMap: ft, emissive: 0xffffff, emissiveIntensity: 0.18 }));
+  fl.rotation.x = -Math.PI / 2;
+  fl.position.set((x0 + x1) / 2, 0.025, cz);
+  fl.receiveShadow = true;
+  scene.add(fl);
+  const ih = h - 0.35;
+  B.box(tint, x1 - 0.04, 0, cz, 0.08, ih, d, 0, L);
+  B.box(tint, (x0 + x1) / 2, 0, z0 + 0.04, w, ih, 0.08, 0, L);
+  B.box(tint, (x0 + x1) / 2, 0, z1 - 0.04, w, ih, 0.08, 0, L);
+  for (const [a, b] of [[z0, d0], [d1, z1]]) B.box(tint, x0 + 0.04, gh, (a + b) / 2, 0.08, ih - gh, b - a, 0, L);
+  B.box('#ece9e2', (x0 + x1) / 2, ih, cz, w, 0.06, d, 0, L);
+  for (const zz of [cz - d * 0.25, cz + d * 0.25]) for (let x = x0 + 2; x < x1 - 1; x += 3.2) B.box('#fffaf0', x, ih - 0.05, zz, 1.6, 0.04, 0.4, 0, { mat: 'glow' });
+  for (const zz of [z0 + 0.1, z1 - 0.1]) B.box('#3a3d42', (x0 + x1) / 2, 0.02, zz, w, 0.14, 0.05, 0, L); // rodapié
+  // mostrador al fondo y dependiente detrás
+  const kx = x1 - 2.6, kz0 = cz - 2.4, kz1 = cz + 0.6;
+  counter(kx, (kz0 + kz1) / 2, kz1 - kz0, o.counterColor || '#6b4f3a', '#d9d4cc', Math.PI / 2);
+  addBox(kx - 0.35, kx + 0.35, kz0, kz1, 1.2);
+  register(kx, kz1 - 0.5);
+  (W.clerks = W.clerks || []).push({ x: x1 - 1.6, z: (kz0 + kz1) / 2, yaw: -Math.PI / 2, kind: id });
+  hitbox(kx, 1.3, (kz0 + kz1) / 2, 1.0, 1.4, kz1 - kz0, {
+    actions: () => [{ label: o.buyLabel || 'Comprar', fn: () => G.act.openShop(id) }],
+  });
+  // puertas de cristal correderas que se abren al acercarse
+  const leaves = [];
+  for (const side of [-1, 1]) {
+    const leaf = new THREE.Group();
+    const gl = new THREE.Mesh(new THREE.BoxGeometry(0.04, gh - 0.15, dw / 2), glassMat());
+    gl.position.y = (gh - 0.15) / 2;
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, dw / 2), plainMat('#2a2d31', { metalness: 0.6, roughness: 0.4 }));
+    fr.position.y = 0.04;
+    const fr2 = fr.clone(); fr2.position.y = gh - 0.15;
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.04), plainMat('#c8ccd0', { metalness: 0.8, roughness: 0.3 }));
+    handle.position.set(-0.05, 1.05, -side * (dw / 4 - 0.08));
+    leaf.add(gl, fr, fr2, handle);
+    leaf.position.set(x0 - t / 2, 0, cz + side * dw / 4);
+    scene.add(leaf);
+    leaves.push({ leaf, side });
+  }
+  const col = addBox(x0 - t, x0, d0, d1, gh + 1);
+  const shopDef = o.hours || [0, 24];
+  const door = { x: x0, z: cz, leaves, col, k: 0, open: () => { const hr = G.state.minute / 60; return hr >= shopDef[0] && hr < shopDef[1]; } };
+  (W.autoDoors = W.autoDoors || []).push(door);
+  hitbox(x0 - t - 0.3, 1.2, cz, 0.3, 2.4, dw, {
+    enabled: () => !door.open(),
+    actions: () => [{ label: `Cerrado · abre a las ${shopDef[0]}:00`, fn: () => G.act.toast?.(`${label || 'La tienda'} abre de ${shopDef[0]}:00 a ${shopDef[1]}:00.`, '🕖') }],
+  });
+  return { x: x0 - 1.5, z: cz, rand, L, LM, shelfUnit, fridge, kx, kz0, kz1 };
+}
+
+// Productos de ferretería hechos a mano (botes de pintura, cajas, macetas, sacos).
+function hardwareItems(rand, L, LM) {
+  return (P, len, y, ry) => {
+    let u = -len / 2 + 0.08;
+    while (u < len / 2 - 0.12) {
+      const k = rand();
+      const [px, pz] = P(u + 0.1, (rand() - 0.5) * 0.04);
+      if (k < 0.3) { // botes de pintura
+        const col = ['#c0392b', '#2e86de', '#f1c40f', '#ecf0f1', '#27ae60'][Math.floor(rand() * 5)];
+        B.add(GEO.cyl12, '#b8bcc0', px, y + 0.09, pz, 0.17, 0.18, 0.17, 0, LM);
+        B.add(GEO.cyl12, col, px, y + 0.09, pz, 0.175, 0.1, 0.175, 0, L);
+        u += 0.2;
+      } else if (k < 0.55) { // cajas de herramienta / tornillería
+        const col = ['#e67e22', '#2c3e50', '#16a085', '#8e44ad', '#d35400'][Math.floor(rand() * 5)];
+        B.box(col, px, y, pz, 0.24, 0.12 + rand() * 0.12, 0.2, ry, L);
+        u += 0.27;
+      } else if (k < 0.8) { // macetas
+        B.add(GEO.cyl8, '#b5653a', px, y + 0.1, pz, 0.2, 0.2, 0.2, 0, L);
+        B.add(GEO.cyl8, '#8d4a28', px, y + 0.2, pz, 0.23, 0.03, 0.23, 0, L);
+        u += 0.24;
+      } else { // sacos de tierra
+        B.box('#6b4a2f', px, y, pz, 0.32, 0.22, 0.22, ry, L);
+        B.box('#e8d9b8', px, y + 0.08, pz, 0.2, 0.08, 0.225, ry, L);
+        u += 0.36;
+      }
+    }
+  };
+}
+
 function buildShops() {
-  const fer = building({ x0: 38, x1: 54, z0: -20, z1: -4, h: 6.4, wall: '#e8dcc6', trim: '#ffffff', roof: '#5b5b5b', style: 'shop', front: '-x', sign: 'FERRETERÍA TORNILLO', signBg: '#b0302a', awning: '#c0392b', seed: 201, mapColor: '#c25b4e', label: 'Ferretería' });
+  const fer = walkInShop({ id: 'ferreteria', x0: 38, x1: 54, z0: -20, z1: -4, h: 6.4, wall: '#e8dcc6', trim: '#ffffff', sign: 'FERRETERÍA TORNILLO', signBg: '#b0302a', awning: '#c0392b', seed: 201, mapColor: '#c25b4e', label: 'Ferretería', tint: '#f3ede2', floor: '#c9c3b8', counterColor: '#b0302a', hours: [7, 21], buyLabel: 'Comprar en la ferretería' });
   W.pois.ferreteria = fer;
-  hitbox(38, 1.2, -12, 0.5, 2.4, 2.4, { actions: () => [{ label: 'Entrar en la ferretería', fn: () => G.act.openShop('ferreteria') }] });
+  {
+    // pasillos con estanterías de ferretería y expositor junto a la entrada
+    const items = hardwareItems(fer.rand, fer.L, fer.LM);
+    for (const z of [-16.4, -7.6]) {
+      fer.shelfUnit(44, z - 0.2, 7, 4, 0.42, 0, '#d0d3d6', true, items);
+      fer.shelfUnit(44, z + 0.2, 7, 4, 0.42, Math.PI, '#d0d3d6', true, items);
+      addBox(40.4, 47.6, z - 0.45, z + 0.45, 2);
+    }
+    fer.shelfUnit(44, -19.6, 9, 5, 0.45, 0, '#c0392b', true, items);
+    fer.shelfUnit(44, -4.4, 9, 5, 0.45, Math.PI, '#c0392b', true, items);
+    fer.shelfUnit(53.4, -12, 5, 5, 0.45, -Math.PI / 2, '#c0392b', true, items);
+    // palé con sacos de tierra y macetas apiladas
+    B.box('#a07a4f', 40.2, 0, -10.2, 1.2, 0.14, 1.0, 0, fer.L);
+    for (let i = 0; i < 6; i++) B.box('#6b4a2f', 39.9 + (i % 2) * 0.55, 0.14 + Math.floor(i / 2) * 0.24, -10.2, 0.5, 0.22, 0.85, 0, fer.L);
+    for (let i = 0; i < 5; i++) B.add(GEO.cyl8, '#b5653a', 40.2, 0.15 + i * 0.12, -13.8, 0.42 - i * 0.01, 0.26, 0.42 - i * 0.01, 0, fer.L);
+    addBox(39.5, 40.9, -10.8, -9.6, 1.2);
+  }
   for (const x of [37.6, 46.4]) for (const z of [6, 18]) { B.box('#ecf0f1', x, 0, z, 0.4, 4.6, 0.4, 0, { mat: 'metal' }); addBox(x - 0.25, x + 0.25, z - 0.25, z + 0.25, 4.6); }
   B.box('#ecf0f1', 42, 4.6, 12, 11.5, 0.5, 14.5);
   B.box('#d63031', 42, 4.85, 12, 11.6, 0.3, 14.6, 0, { ao: 0 });
@@ -1058,9 +1219,18 @@ function buildShops() {
     addBox(41.4, 42.6, z - 1.2, z + 1.2, 1.8);
   }
   asphalt(36.5, 49.5, 2, 22, '#4f5257');
-  const gas = building({ x0: 50, x1: 62, z0: 6, z1: 18, h: 4.2, wall: '#f4f4f4', trim: '#2e86de', roof: '#5b5b5b', style: 'shop', front: '-x', sign: 'GAS&GO 24H', signBg: '#2e86de', awning: '#2e86de', seed: 202, mapColor: '#4f8fd0', label: 'Gasolinera' });
+  const gas = walkInShop({ id: 'gasolinera', x0: 50, x1: 62, z0: 6, z1: 18, h: 4.2, wall: '#f4f4f4', trim: '#2e86de', sign: 'GAS&GO 24H', signBg: '#2e86de', awning: '#2e86de', seed: 202, mapColor: '#4f8fd0', label: 'Gasolinera', tint: '#f6f6f2', floor: '#dcd8cf', counterColor: '#2e86de', hours: [0, 24], buyLabel: 'Comprar en Gas&Go' });
   W.pois.gasolinera = gas;
-  hitbox(50, 1.2, 12, 0.5, 2.4, 2.4, { actions: () => [{ label: 'Entrar en la tienda', fn: () => G.act.openShop('gasolinera') }] });
+  {
+    // neveras al fondo, góndola de snacks y estantería lateral
+    for (let i = 0; i < 4; i++) gas.fridge(61.5, 13.2 + i * 0.92, -Math.PI / 2);
+    addBox(61, 62, 12.6, 17.4, 2.2);
+    const SNACKS = ['bag', 'chocolate', 'candy-bar', 'soda-can', 'soda-bottle', 'peanut-butter', 'honey', 'can-small', 'loaf', 'donut-chocolate', 'muffin'];
+    gas.shelfUnit(55, 14.6, 4.5, 4, 0.38, 0, '#f0f0f0', true, SNACKS);
+    gas.shelfUnit(55, 15.0, 4.5, 4, 0.38, Math.PI, '#f0f0f0', true, SNACKS);
+    addBox(52.7, 57.3, 14.4, 15.2, 2);
+    gas.shelfUnit(55, 6.4, 6, 4, 0.4, 0, '#2e86de', true, ['soda-bottle', 'bottle-oil', 'carton', 'can', 'bag', 'wine-red']);
+  }
   B.add(GEO.cyl8, '#5a5f66', 37, 4, 21.5, 0.3, 8, 0.3, 0, { mat: 'metal' });
   const pt = TX.signTex('GAS&GO', { bg: '#2e86de', fg: '#fff', border: '#fff', w: 256, h: 256, font: 'bold 64px sans-serif' });
   const pm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 2.6), new THREE.MeshStandardMaterial({ map: pt, emissiveMap: pt, emissive: 0xffffff, emissiveIntensity: 0.25 }));
@@ -1179,31 +1349,13 @@ function storefront({ x0, x1, zf, depth = 12, h = 5, wall = '#3a3d42', name, sig
 //  Interiores de las tiendas (visibles a través del escaparate)
 // ------------------------------------------------------------------
 const PRODUCT_COLS = ['#d8402f', '#f2c230', '#2f7fd8', '#3fae5a', '#f28c28', '#ffffff', '#8e44ad', '#1abc9c', '#e84393', '#c0392b', '#f5e6c8', '#2c3e50'];
-function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
-  const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2;
+// Piezas para amueblar interiores de tiendas (estanterías con producto,
+// mostrador, caja registradora, taburetes, mesas, neveras).
+function interiorKit(seed) {
   let r = seed * 9301 + 49297;
   const rand = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
   const L = { mat: 'lit', shadow: false, ao: 0.15 };
   const LM = { mat: 'litMetal', shadow: false, ao: 0 };
-  const kind = /Súper|24/.test(name) ? 'super' : /Bar/.test(name) ? 'bar' : /Empeñ/.test(name) ? 'pawn' : /Café/.test(name) ? 'cafe' : /Lava/.test(name) ? 'laundry' : /Farmac/.test(name) ? 'pharma' : /Taquer/.test(name) ? 'taco' : 'super';
-  const floor = { super: '#d9d4c8', bar: '#5a3a24', pawn: '#6b5a48', cafe: '#a87a50', laundry: '#e6e9ec', pharma: '#eef1f0', taco: '#c9b28c' }[kind];
-  // suelo (baldosas a cuadros), paredes y techo
-  for (let i = 0; i < Math.ceil(w / 0.6); i++) for (let j = 0; j < Math.ceil(d / 0.6); j++) {
-    const c = (i + j) % 2 ? floor : new THREE.Color(floor).multiplyScalar(0.86).getStyle();
-    B.box(c, x0 + 0.3 + i * 0.6, 0.0, z0 + 0.3 + j * 0.6, 0.6, 0.03, 0.6, 0, L);
-  }
-  const wallC = new THREE.Color(tint).multiplyScalar(0.92).getStyle();
-  B.box(wallC, cx, 0, z0 + 0.05, w, hgt, 0.1, 0, L); // fondo
-  B.box(wallC, x0 + 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
-  B.box(wallC, x1 - 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
-  B.box('#e9e6df', cx, hgt - 0.06, (z0 + z1) / 2, w, 0.06, d, 0, L); // techo
-  B.box('#3a3d42', cx, 0.03, z0 + 0.12, w, 0.14, 0.04, 0, L); // rodapié
-  // paneles de luz en el techo
-  for (let i = 0; i < Math.max(1, Math.floor(w / 2.6)); i++) {
-    const lx = x0 + (i + 0.5) * (w / Math.max(1, Math.floor(w / 2.6)));
-    B.box('#fffaf0', lx, hgt - 0.1, (z0 + z1) / 2, 1.2, 0.04, 0.3, 0, { mat: 'glow' });
-  }
-  const clerk = (x, z) => { (W.clerks = W.clerks || []).push({ x, z, yaw: 0, kind }); };
   // balda llena de productos reales: grupos de 1-4 iguales, de cara al pasillo
   const stockShelf = (P, len, y, ry, pool) => {
     let u = -len / 2 + 0.05;
@@ -1227,6 +1379,7 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
       const y = 0.12 + l * 0.42;
       B.box(color, x, y, z, len, 0.04, depthS, ry, LM);
       if (!items) continue;
+      if (typeof pool === 'function') { pool(P, len, y + 0.02, ry); continue; }
       if (pool && propsReady()) { stockShelf(P, len, y + 0.02, ry, pool); continue; }
       let u = -len / 2 + 0.06;
       while (u < len / 2 - 0.08) {
@@ -1267,6 +1420,45 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     }
   };
 
+  // nevera de bebidas con puerta de cristal iluminada (frente hacia ry)
+  const fridge = (x, z, ry = 0) => {
+    const c = Math.cos(ry), sn = Math.sin(ry);
+    const P = (u, v) => [x + u * c + v * sn, z - u * sn + v * c];
+    B.box('#d9dde1', x, 0, z, 0.88, 2.1, 0.7, ry, LM);
+    const [gx, gz] = P(0, 0.36);
+    B.box('#bfe6ff', gx, 0.15, gz, 0.78, 1.8, 0.02, ry, { mat: 'glow' });
+    for (let l = 0; l < 5; l++) {
+      const [bx, bz] = P(0, 0.05);
+      B.box('#cfd6dc', bx, 0.18 + l * 0.36, bz, 0.8, 0.02, 0.5, ry, LM);
+      const kind = ['soda-can', 'soda-bottle', 'carton-small', 'soda-can', 'carton'][l];
+      if (propsReady()) { const sw = propSize(kind).x + 0.01; for (let k = 0; (k + 1) * sw < 0.72; k++) { const [px, pz] = P(-0.34 + sw / 2 + k * sw, 0.15); addProp(kind, px, 0.2 + l * 0.36, pz, ry); } }
+    }
+  };
+  return { rand, L, LM, stockShelf, shelfUnit, counter, register, stool, table, fridge };
+}
+
+function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
+  const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2;
+  const { rand, L, LM, stockShelf, shelfUnit, counter, register, stool, table, fridge } = interiorKit(seed);
+  const kind = /Súper|24/.test(name) ? 'super' : /Bar/.test(name) ? 'bar' : /Empeñ/.test(name) ? 'pawn' : /Café/.test(name) ? 'cafe' : /Lava/.test(name) ? 'laundry' : /Farmac/.test(name) ? 'pharma' : /Taquer/.test(name) ? 'taco' : 'super';
+  const floor = { super: '#d9d4c8', bar: '#5a3a24', pawn: '#6b5a48', cafe: '#a87a50', laundry: '#e6e9ec', pharma: '#eef1f0', taco: '#c9b28c' }[kind];
+  // suelo (baldosas a cuadros), paredes y techo
+  for (let i = 0; i < Math.ceil(w / 0.6); i++) for (let j = 0; j < Math.ceil(d / 0.6); j++) {
+    const c = (i + j) % 2 ? floor : new THREE.Color(floor).multiplyScalar(0.86).getStyle();
+    B.box(c, x0 + 0.3 + i * 0.6, 0.0, z0 + 0.3 + j * 0.6, 0.6, 0.03, 0.6, 0, L);
+  }
+  const wallC = new THREE.Color(tint).multiplyScalar(0.92).getStyle();
+  B.box(wallC, cx, 0, z0 + 0.05, w, hgt, 0.1, 0, L); // fondo
+  B.box(wallC, x0 + 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
+  B.box(wallC, x1 - 0.05, 0, (z0 + z1) / 2, 0.1, hgt, d, 0, L);
+  B.box('#e9e6df', cx, hgt - 0.06, (z0 + z1) / 2, w, 0.06, d, 0, L); // techo
+  B.box('#3a3d42', cx, 0.03, z0 + 0.12, w, 0.14, 0.04, 0, L); // rodapié
+  // paneles de luz en el techo
+  for (let i = 0; i < Math.max(1, Math.floor(w / 2.6)); i++) {
+    const lx = x0 + (i + 0.5) * (w / Math.max(1, Math.floor(w / 2.6)));
+    B.box('#fffaf0', lx, hgt - 0.1, (z0 + z1) / 2, 1.2, 0.04, 0.3, 0, { mat: 'glow' });
+  }
+  const clerk = (x, z) => { (W.clerks = W.clerks || []).push({ x, z, yaw: 0, kind }); };
   if (kind === 'super') {
     // neveras al fondo con puertas de cristal iluminadas
     const nf = Math.floor((w - 2.2) / 0.9);

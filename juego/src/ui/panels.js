@@ -118,43 +118,62 @@ export function openShop(id) {
   if (hr < shop.open[0] || hr >= shop.open[1]) {
     return messageDialog(shop.name, `Está cerrado. Horario: ${shop.open[0]}:00 – ${shop.open[1]}:00.`);
   }
+  // catálogo con carrito: eliges cantidades y pagas todo junto al dependiente
   const p = openPanel({ title: shop.name, wide: true, cls: 'shop' });
+  const cart = new Map();
   const top = h('div', 'shop-top');
   const cash = h('div', 'cash', money(G.state.money));
-  top.append(h('div', 'muted', id === 'ferreteria' ? 'Todo para tu "huerto urbano".' : 'Snacks, bebidas y cosas raras.'), cash);
+  top.append(h('div', 'muted', `Dependiente: «${pick(id === 'ferreteria' ? ['Buenas. ¿Qué necesitas para tu huerto?', '¿Qué te pongo? Tenemos de todo.', 'Hola de nuevo. Mira el catálogo.'] : ['¿Algo más con la gasolina?', 'Bienvenido a Gas&Go. ¿Qué te llevas?', 'Buenas. Todo lo que ves está a la venta.'])}»`), cash);
   p.body.appendChild(top);
   const grid = h('div', 'shop-grid');
   p.body.appendChild(grid);
+  const sum = h('div', 'cart-sum');
+  const clear = h('button', 'btn ghost', 'Vaciar');
+  const pay = h('button', 'btn', 'Pagar');
+  p.foot.append(sum, clear, pay);
+  const steppers = [];
+  const total = () => [...cart].reduce((a, [k, q]) => a + ITEMS[k].price * q, 0);
+  const upd = () => {
+    const n = [...cart.values()].reduce((a, q) => a + q, 0);
+    const t = total();
+    sum.innerHTML = n ? `🛒 ${n} artículo${n > 1 ? 's' : ''} · <b class="money">${money(t)}</b>` : '<span class="muted">El carrito está vacío</span>';
+    pay.textContent = n ? `Pagar ${money(t)}` : 'Pagar';
+    pay.classList.toggle('dim', !n || t > G.state.money);
+    cash.textContent = money(G.state.money);
+  };
   for (const itemId of shop.stock) {
     const it = ITEMS[itemId];
     const locked = (it.rank || 0) > G.state.rank;
     const card = h('div', 'card' + (locked ? ' locked' : ''));
-    let qty = 1;
     card.innerHTML = `<div class="c-ic">${it.icon}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${it.desc || ''}</div></div>`;
     if (!locked) {
-      const row = h('div', 'qty');
-      const minus = h('button', 'qb', '−'), plus = h('button', 'qb', '+'), q = h('span', 'qv', '1');
-      const buy = h('button', 'btn sm', 'Comprar');
-      const upd = () => { q.textContent = qty; buy.textContent = `Comprar ${money(it.price * qty)}`; };
-      minus.onclick = () => { qty = Math.max(1, qty - (qty > 10 ? 5 : 1)); upd(); sfx('click'); };
-      plus.onclick = () => { qty = Math.min(it.stack * 2, qty + (qty >= 10 ? 5 : 1)); upd(); sfx('click'); };
-      buy.onclick = () => {
-        const cost = it.price * qty;
-        if (G.state.money < cost) return fail('No tienes suficiente dinero.');
-        if (inv.room(itemId) < qty) return fail('No te cabe en el inventario.');
-        addMoney(-cost);
-        inv.add(itemId, qty);
-        sfx('cash');
-        cash.textContent = money(G.state.money);
-        G.act.toast(`Comprado: ${qty}× ${it.name}`, it.icon);
-        save();
-      };
-      row.append(minus, q, plus, buy);
-      card.append(row);
-      upd();
+      const st = stepper(0, { min: 0, max: it.stack * 2, step: (v) => (v >= 10 ? 5 : 1), onChange: (n) => { if (n) cart.set(itemId, n); else cart.delete(itemId); card.classList.toggle('in', n > 0); upd(); } });
+      steppers.push(st);
+      card.appendChild(st);
     }
     grid.appendChild(card);
   }
+  clear.onclick = () => { steppers.forEach((st) => st.set(0)); sfx('click'); };
+  pay.onclick = () => {
+    if (!cart.size) return fail('Elige algo del catálogo.');
+    const t = total();
+    if (G.state.money < t) return fail('No tienes suficiente dinero.');
+    let refund = 0;
+    const bought = [];
+    for (const [k, q] of cart) {
+      const left = inv.add(k, q);
+      refund += left * ITEMS[k].price;
+      if (q - left > 0) bought.push(`${q - left}× ${ITEMS[k].name}`);
+    }
+    addMoney(-(t - refund));
+    sfx('cash');
+    if (refund) G.act.toast(`No te cabía todo en la mochila: te devuelven ${money(refund)}.`, '🎒');
+    if (bought.length) G.act.toast(`Comprado: ${bought.join(', ')}`, '🛍️');
+    save();
+    steppers.forEach((st) => st.set(0));
+    upd();
+  };
+  upd();
 }
 
 function fail(msg) { sfx('error'); G.act.toast(msg, '⚠️'); }
