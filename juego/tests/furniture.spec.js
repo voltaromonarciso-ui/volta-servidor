@@ -113,7 +113,12 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
     await act(page, testInfo);
     expect(await mode(page)).toBe(null);
     const after = await ev(page, (uid) => __G.state.objects.find((o) => o.uid === uid), uid);
-    expect(JSON.stringify(after.data)).toBe(before);
+    // misma planta (sigue creciendo mientras la mueves: el tiempo de juego no se para)
+    const b0 = JSON.parse(before);
+    expect([after.data.soil, after.data.strain, after.data.fert]).toEqual([b0.soil, b0.strain, b0.fert]);
+    expect(after.data.growth).toBeGreaterThanOrEqual(b0.growth);
+    expect(after.data.growth).toBeLessThan(b0.growth + 0.05);
+    expect(after.data.water).toBeGreaterThan(b0.water - 0.05);
     expect(after.z).toBeLessThan(-60.6);
     expect(+after.r.toFixed(3)).toBe(+(Math.PI / 2).toFixed(3));
     expect(await ev(page, () => __G.state.objects.filter((o) => o.type === 'pot').length)).toBe(1);
