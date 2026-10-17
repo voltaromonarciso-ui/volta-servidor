@@ -56,6 +56,7 @@ function audit(sel, safe) {
 }
 
 const HUD = '#btn-use, #btn-alt, #btn-jump, #btn-run, #btn-crouch, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
+const RIDE = '#btn-brake, #btn-dismount, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
 const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station button, .dress button';
 
 test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
@@ -66,7 +67,8 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   const errors = watchErrors(page);
   const cdp = await ctx.newCDPSession(page);
   await newGame(page, testInfo);
-  await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; __G.state.money = 900; });
+  await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; __G.state.money = 1500; });
+  await page.evaluate(async () => (await import('/src/systems/riding.js')).buyVehicle('patinete'));
   const report = {};
   const dir = testInfo.outputPath('ui');
   for (const sc of SCREENS) {
@@ -93,6 +95,12 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
       await page.evaluate(async () => (await import('/src/ui/dressing.js')).closeDressing());
       await page.waitForFunction(() => !__G.uiOpen, null, { timeout: 60_000 });
     }
+    // tienda de vehículos y conducción (velocímetro, batería, frenar y bajar)
+    await ev(page, () => __G.act.openVehicleShop()); await shot('vehiculos', PANEL); await ev(page, () => __debug.panels.closePanel(true));
+    await ev(page, () => { const h = __G.interactables.find((o) => o.userData.ia?.actions?.()[0]?.label.startsWith('Montar')); h.userData.ia.actions()[0].fn(); });
+    await frames(page, 12);
+    await shot('conduciendo', RIDE);
+    await ev(page, () => __G.act.forceDismount());
     await frames(page, 4);
     report[sc.name] = issues;
   }
