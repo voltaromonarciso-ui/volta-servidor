@@ -2,9 +2,10 @@ import { G, money, clamp } from '../game.js';
 import { ITEMS, SHOPS, STRAINS, RANKS } from '../data/items.js';
 import { EFFECTS } from '../data/effects.js';
 import { ii } from './icons.js';
+import { wardrobeSection } from './dressing.js';
 import { inv, slotsAdd, slotsRemove, illegalCount, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
-import { resetTouch } from '../core/input.js';
+import { guardGhostClick, resetTouch } from '../core/input.js';
 import { product, prodValue, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
@@ -24,6 +25,7 @@ export function openPanel({ title, wide = false, cls = '', onClose }) {
   closePanel(true);
   G.uiOpen = true;
   resetTouch();
+  if (G.touch) guardGhostClick();
   if (document.pointerLockElement) document.exitPointerLock();
   const wrap = h('div', 'panel-wrap');
   const p = h('div', `panel ${wide ? 'wide' : ''} ${cls}`);
@@ -326,6 +328,7 @@ export function openBag() {
     } else cols.appendChild(h('div', 'detail muted', 'Toca un objeto para ver qué es, llevarlo en la mano o tirarlo.'));
     const st = h('div', 'muted small', `💧 Agua en la regadera: ${G.state.water}/6 · Producto ilegal encima: ${illegalCount()}`);
     p.body.appendChild(st);
+    p.body.appendChild(wardrobeSection(render));
   };
   render();
 }

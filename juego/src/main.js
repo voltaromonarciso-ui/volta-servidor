@@ -1,4 +1,7 @@
 import { startStation, updateStation, exitStation, stationAuto } from './systems/station.js';
+import { makeAvatar, sleeveFor } from './entities/avatar.js';
+import { style, syncInventory } from './systems/appearance.js';
+import { openBarber, openClothes, updateDressing, closeDressing, dressingOpen } from './ui/dressing.js';
 import * as THREE from 'three';
 import './style.css';
 import { G, on } from './game.js';
@@ -120,7 +123,13 @@ initPhone();
 // acciones globales que usan los distintos sistemas
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
-  openShop: P.openShop, openPacker: P.openPacker, startStation, openShelf: P.openShelf,
+  openShop: P.openShop, openPacker: P.openPacker, startStation, openBarber, openClothes,
+  // la apariencia ha cambiado: avatar y mangas en primera persona
+  lookChanged: () => {
+    const look = G.state.look, st = style();
+    G.avatar?.apply(st);
+    if (look) G.player.applyLook?.({ ...look, shirt: sleeveFor(look, st.worn) || look.shirt });
+  }, openShelf: P.openShelf,
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),
@@ -167,6 +176,7 @@ on('btn', (b) => {
   initAudio();
   if (b === 'escape') {
     if (G.station) return exitStation();
+    if (dressingOpen()) return closeDressing();
     if (phoneOpen()) return closePhone();
     if (P.panelOpen()) return P.closePanel();
     return pauseMenu();
@@ -216,7 +226,15 @@ async function startGame(fresh, look) {
   else { G.player.teleport(-62.5, -38.2, 0.32); G.player.pitch = -0.08; }
 
   if (look) { s.look = look; s.name = String(look.name || '').replace(/[<>&"]/g, '').slice(0, 14); }
-  G.player.applyLook?.(s.look);
+  syncInventory();
+  // avatar del jugador (se ve en el espejo, el probador y, más adelante, en vehículos)
+  if (G.avatar) { G.avatar.group.removeFromParent(); G.avatar = null; }
+  if (s.look?.model && MODELS[s.look.model]) {
+    G.avatar = makeAvatar(s.look.model);
+    G.avatar.group.visible = false;
+    scene.add(G.avatar.group);
+  }
+  G.act.lookChanged();
   document.getElementById('menu').classList.add('hide');
   // precompilar lo recién creado (vecinos, coches, objetos) antes de jugar
   const ld = document.getElementById('loading');
@@ -225,7 +243,10 @@ async function startGame(fresh, look) {
   G.player.update(0, true);
   camera.updateMatrixWorld();
   await nextFrame();
+  // el avatar se compila ahora (aunque luego quede oculto) para que el espejo no tarde
+  if (G.avatar) G.avatar.group.visible = true;
   await warmup(true);
+  if (G.avatar) G.avatar.group.visible = false;
   ld.classList.add('hide');
   document.getElementById('hud').classList.remove('hide');
   applyLayout();
@@ -370,6 +391,7 @@ function frame() {
   const gdt = updateTime(dt);
   G.player.update(dt, G.uiOpen);
   updateStation(dt);
+  updateDressing(dt);
   for (const n of G.npcs) n.update(dt, gdt);
   updatePolice(dt);
   for (const c of G.cars) c.update(dt);

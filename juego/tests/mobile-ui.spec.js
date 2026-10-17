@@ -56,7 +56,7 @@ function audit(sel, safe) {
 }
 
 const HUD = '#btn-use, #btn-alt, #btn-jump, #btn-run, #btn-crouch, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
-const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station button';
+const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station button, .dress button';
 
 test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   test.skip(!testInfo.project.use.hasTouch, 'solo en perfiles táctiles');
@@ -65,7 +65,7 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   const errors = watchErrors(page);
   const cdp = await ctx.newCDPSession(page);
   await newGame(page, testInfo);
-  await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; });
+  await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; __G.state.money = 900; });
   const report = {};
   const dir = testInfo.outputPath('ui');
   for (const sc of SCREENS) {
@@ -84,6 +84,14 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
     await ev(page, () => __debug.panels.openBag()); await shot('mochila', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openShop('ferreteria')); await shot('tienda', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openPhone()); await shot('movil', PANEL); await page.evaluate(async () => (await import('/src/ui/phone.js')).closePhone());
+    // peluquería y probador (vistas con el personaje y panel lateral)
+    for (const [k, fn] of [['peluqueria', 'openBarber'], ['probador', 'openClothes']]) {
+      await ev(page, (fn) => __G.act[fn](), fn);
+      await frames(page, 12);
+      await shot(k, PANEL);
+      await page.evaluate(async () => (await import('/src/ui/dressing.js')).closeDressing());
+      await page.waitForFunction(() => !__G.uiOpen, null, { timeout: 60_000 });
+    }
     await frames(page, 4);
     report[sc.name] = issues;
   }

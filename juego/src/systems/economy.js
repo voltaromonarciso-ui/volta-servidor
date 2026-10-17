@@ -4,6 +4,7 @@ import { EFFECTS, productValue } from '../data/effects.js';
 import { PEOPLE, STARTING_CUSTOMERS } from '../data/people.js';
 import { inv, absNow, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
+import { styleBonus } from './appearance.js';
 
 // ------------------------------------------------------------------
 //  Productos
@@ -140,7 +141,7 @@ export function priceTolerance(id) {
 export function acceptChance(id, prod, unit) {
   const person = personOf(id);
   const v = prodValue(prod);
-  const tol = priceTolerance(id) + (person ? prefMatches(person, prod) * 0.08 : 0);
+  const tol = priceTolerance(id) + (person ? prefMatches(person, prod) * 0.08 + styleBonus(person) : 0);
   return clamp(1 / (1 + Math.exp((unit / v - tol) * 7)), 0.02, 0.98);
 }
 // Probabilidad media de aceptación de un precio entre los clientes que ya tienes.

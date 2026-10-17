@@ -53,6 +53,7 @@ export function createWorld(sc) {
   buildMotel();
   buildPlaza();
   buildShops();
+  buildEastShops();
   buildPolice();
   buildCommercial();
   buildResidential();
@@ -1130,7 +1131,7 @@ function walkInShop(o) {
   register(kx, kz1 - 0.5);
   (W.clerks = W.clerks || []).push({ x: x1 - 1.6, z: (kz0 + kz1) / 2, yaw: -Math.PI / 2, kind: id });
   hitbox(kx, 1.3, (kz0 + kz1) / 2, 1.0, 1.4, kz1 - kz0, {
-    actions: () => [{ label: o.buyLabel || 'Comprar', fn: () => G.act.openShop(id) }],
+    actions: () => [{ label: o.buyLabel || 'Comprar', fn: o.onBuy || (() => G.act.openShop(id)) }],
   });
   // puertas de cristal correderas que se abren al acercarse
   const leaves = [];
@@ -1156,7 +1157,7 @@ function walkInShop(o) {
     enabled: () => !door.open(),
     actions: () => [{ label: `Cerrado · abre a las ${shopDef[0]}:00`, fn: () => G.act.toast?.(`${label || 'La tienda'} abre de ${shopDef[0]}:00 a ${shopDef[1]}:00.`, '🕖') }],
   });
-  return { x: x0 - 1.5, z: cz, rand, L, LM, shelfUnit, fridge, kx, kz0, kz1 };
+  return { x: x0 - 1.5, z: cz, rand, L, LM, shelfUnit, fridge, counter, kx, kz0, kz1, door };
 }
 
 // Productos de ferretería hechos a mano (botes de pintura, cajas, macetas, sacos).
@@ -1247,6 +1248,95 @@ function buildShops() {
   trashCan(52, 24.6); hydrant(60.5, 24.4);
   W.spots.push({ id: 'gasolinera', name: 'Detrás de la gasolinera', x: 64, z: 12 });
   W.wander.push({ x: 35.5, z: -12 }, { x: 47.5, z: 12 });
+}
+
+// ------------------------------------------------------------------
+//  Avenida del Este: peluquería y tienda de ropa (locales en los que se entra)
+// ------------------------------------------------------------------
+function buildEastShops() {
+  W.lots = W.lots || [];
+  const lot = (x0, x1, z0, z1) => { W.lots.push({ x0, x1, z0, z1 }); paving(96.5, x0, z0 - 1, z1 + 1); };
+
+  // --- Peluquería: dos sillones frente al espejo de la pared del fondo (z0)
+  {
+    const x0 = 98, x1 = 110, z0 = -24, z1 = -10;
+    lot(x0, x1, z0, z1);
+    const sh = walkInShop({ id: 'peluqueria', x0, x1, z0, z1, h: 4.6, wall: '#2c2f36', trim: '#e8e2d6', sign: 'BARBERÍA NAVAJA', signBg: '#8c1d22', awning: '#202326', seed: 205, mapColor: '#7a3a3e', label: 'Peluquería', tint: '#efe9df', floor: '#2e2e33', counterColor: '#8c1d22', hours: [9, 21], buyLabel: 'Hablar con el peluquero', onBuy: () => G.act.toast?.('Peluquero: «Siéntate en el sillón libre, ahora te atiendo.»', '💈') });
+    W.pois.peluqueria = sh;
+    const { L, LM } = sh;
+    // poste de barbero en la fachada
+    B.add(GEO.cyl12, '#f4f4f4', x0 - 0.6, 2.2, z0 + 1.6, 0.22, 1.2, 0.22, 0, { ao: 0 });
+    for (let i = 0; i < 4; i++) B.box(i % 2 ? '#c0392b' : '#2e5fa8', x0 - 0.6, 1.65 + i * 0.28, z0 + 1.6, 0.235, 0.12, 0.235, i * 0.6, { ao: 0 });
+    // espejo corrido y encimera
+    B.box('#cfd8dc', 103, 1.0, z0 + 0.08, 7, 1.35, 0.04, 0, { mat: 'litMetal', shadow: false, ao: 0 });
+    B.box('#2a2d31', 103, 0.8, z0 + 0.32, 7.2, 0.08, 0.5, 0, LM);
+    B.box('#3a3d42', 103, 0, z0 + 0.32, 7.2, 0.8, 0.45, 0, L);
+    for (const x of [100.4, 103, 105.6]) { B.add(GEO.cyl8, '#e8e8e8', x + 0.4, 0.95, z0 + 0.3, 0.07, 0.22, 0.07, 0, L); B.add(GEO.cyl8, '#2e86de', x - 0.3, 0.92, z0 + 0.32, 0.06, 0.16, 0.06, 0, L); }
+    addBox(99.4, 106.6, z0, z0 + 0.6, 1.2);
+    // sillones (el de la izquierda es el del jugador)
+    const chair = (x, z) => {
+      B.add(GEO.cyl16, '#bfc4c8', x, 0.05, z, 0.62, 0.1, 0.62, 0, LM);
+      B.add(GEO.cyl12, '#bfc4c8', x, 0.3, z, 0.12, 0.4, 0.12, 0, LM);
+      B.box('#1b1b1e', x, 0.48, z, 0.62, 0.14, 0.6, 0, L);
+      B.box('#1b1b1e', x, 0.6, z + 0.28, 0.62, 0.72, 0.12, 0, L);       // respaldo (detrás del cliente)
+      B.box('#1b1b1e', x, 1.32, z + 0.3, 0.3, 0.2, 0.1, 0, L);          // reposacabezas
+      for (const s of [-1, 1]) B.box('#bfc4c8', x + s * 0.34, 0.66, z, 0.06, 0.06, 0.5, 0, LM);
+      B.box('#bfc4c8', x, 0.18, z - 0.42, 0.4, 0.04, 0.22, 0, LM);       // reposapiés
+      addBox(x - 0.36, x + 0.36, z - 0.35, z + 0.36, 1.2);
+    };
+    const seat = { x: 101.2, z: z0 + 1.55, yaw: Math.PI };
+    chair(seat.x, seat.z);
+    chair(104.8, z0 + 1.55);
+    W.barber = { seat, mirrorZ: z0 + 0.1, hours: [9, 21] };
+    hitbox(seat.x, 0.8, seat.z, 0.8, 1.6, 0.8, {
+      actions: () => [{ label: 'Sentarse en el sillón', fn: () => G.act.openBarber?.() }],
+    });
+    // banco de espera y revistero
+    B.box('#5a3d2b', 100.5, 0.42, z1 - 0.6, 3.2, 0.08, 0.5, 0, L);
+    for (const x of [99.1, 101.9]) B.box('#2a2d31', x, 0, z1 - 0.6, 0.08, 0.42, 0.45, 0, LM);
+    addBox(98.8, 102.2, z1 - 0.9, z1 - 0.3, 0.6);
+    sh.shelfUnit(108.6, z0 + 0.35, 2.2, 4, 0.35, 0, '#2a2d31', true);
+  }
+
+  // --- Ropa: percheros, mesa con prendas dobladas y probador con espejo
+  {
+    const x0 = 98, x1 = 110, z0 = 6, z1 = 22;
+    lot(x0, x1, z0, z1);
+    const sh = walkInShop({ id: 'ropa', x0, x1, z0, z1, h: 4.8, wall: '#e9e4dc', trim: '#1d1d1f', sign: 'BOUTIQUE MAREA', signBg: '#1d1d1f', awning: '#c9a227', seed: 206, mapColor: '#a88c3a', label: 'Tienda de ropa', tint: '#f7f4ee', floor: '#d6cfc2', counterColor: '#1d1d1f', hours: [10, 21], buyLabel: 'Ver la ropa', onBuy: () => G.act.openClothes?.() });
+    W.pois.ropa = sh;
+    const { L, LM } = sh;
+    const COLS = ['#1d1e22', '#7d8085', '#1f2a44', '#a8794a', '#b3262b', '#e9e6df', '#2f4a73', '#4a5434', '#b49a72'];
+    const rack = (x, z, len, ry) => {
+      const c = Math.cos(ry), sn = Math.sin(ry);
+      for (const u of [-len / 2, len / 2]) B.add(GEO.cyl8, '#9aa0a6', x + u * c, 0.75, z - u * sn, 0.04, 1.5, 0.04, 0, LM);
+      B.add(GEO.cyl8, '#9aa0a6', x, 1.48, z, 0.03, len, 0.03, ry, { ...LM, rz: Math.PI / 2 });
+      let k = 0;
+      for (let u = -len / 2 + 0.15; u < len / 2 - 0.1; u += 0.13) {
+        const col = COLS[(k++ * 7 + Math.floor(x + z)) % COLS.length];
+        B.box(col, x + u * c, 0.72, z - u * sn, 0.04, 0.72, 0.46, ry, L);
+      }
+    };
+    rack(100.6, z0 + 0.6, 4, 0);
+    rack(104.2, z0 + 0.6, 3, 0);
+    rack(100.6, z1 - 0.6, 4, 0);
+    // mesa central con prendas dobladas
+    B.box('#6b4f3a', 102.4, 0, 14, 2.2, 0.82, 1.1, 0, L);
+    for (let i = 0; i < 8; i++) B.box(COLS[i % COLS.length], 101.6 + (i % 4) * 0.52, 0.82, 13.75 + Math.floor(i / 4) * 0.5, 0.42, 0.08 + (i % 3) * 0.04, 0.34, 0, L);
+    addBox(101.3, 103.5, 13.45, 14.55, 1);
+    // probador con cortina y espejo grande
+    const fx0 = 104.6, fx1 = 107.4, fz0 = 18.6, fz1 = z1;
+    B.box('#3a3d42', fx1 - 0.04, 0, (fz0 + fz1) / 2, 0.08, 2.4, fz1 - fz0, 0, L);
+    B.box('#3a3d42', (fx0 + fx1) / 2, 0, fz0 + 0.04, fx1 - fx0, 2.4, 0.08, 0, L);
+    B.box('#cfd8dc', fx1 - 0.1, 0.25, (fz0 + fz1) / 2, 0.03, 1.9, 1.1, 0, { mat: 'litMetal', shadow: false, ao: 0 });
+    B.box('#8c1d22', fx0 + 0.05, 0.1, fz0 + 0.5, 0.06, 2.2, 0.9, 0, L); // cortina recogida
+    B.box('#9aa0a6', (fx0 + fx1) / 2, 2.35, (fz0 + fz1) / 2, fx1 - fx0, 0.04, 0.04, 0, LM);
+    addBox(fx1 - 0.15, fx1, fz0, fz1, 2.4);
+    addBox(fx0, fx1, fz0, fz0 + 0.12, 2.4);
+    W.fitting = { x: 106.4, z: 20.3, yaw: -Math.PI / 2 };
+    hitbox(106.0, 1.1, 20.3, 1.6, 2.2, 2.4, {
+      actions: () => [{ label: 'Entrar en el probador', fn: () => G.act.openClothes?.() }],
+    });
+  }
 }
 
 function buildPolice() {
@@ -1853,6 +1943,7 @@ function buildSkyline() {
 function buildOutskirts() {
   const free = (x, z) => {
     for (const r of ROADS) if (Math.abs(x - r) < SWO + 1.5 || Math.abs(z - r) < SWO + 1.5) return false;
+    for (const q of W.lots || []) if (x > q.x0 - 2 && x < q.x1 + 2 && z > q.z0 - 2 && z < q.z1 + 2) return false;
     return true;
   };
   let n = 0;

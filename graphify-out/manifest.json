@@ -114,15 +114,15 @@
     "semantic_hash": ""
   },
   "juego/src/core/input.js": {
-    "mtime": 1792171242.5965438,
-    "seen": 1792184737.2630806,
-    "ast_hash": "447bb0382efa06bffc88534fbf59fff1",
+    "mtime": 1792258985.3150952,
+    "seen": 1792260041.2678032,
+    "ast_hash": "a216a4469cf780449f3ed8efb5452632",
     "semantic_hash": ""
   },
   "juego/src/core/state.js": {
-    "mtime": 1792242568.7688136,
-    "seen": 1792250326.2797318,
-    "ast_hash": "02fce088feff0e1ac7c12ce08d5b04ed",
+    "mtime": 1792257285.8751001,
+    "seen": 1792260041.2678068,
+    "ast_hash": "47233f75a85797e2f6a87e7723555103",
     "semantic_hash": ""
   },
   "juego/src/data/effects.js": {
@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "juego/src/data/people.js": {
-    "mtime": 1792222429.8311226,
-    "seen": 1792227521.1424074,
-    "ast_hash": "a1f9bcfefc08a3b75accad568bff17ed",
+    "mtime": 1792257097.6191044,
+    "seen": 1792260041.2678614,
+    "ast_hash": "cefcc9d250fe04193e9ebc7b11c7aa87",
     "semantic_hash": ""
   },
   "juego/src/data/quests.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792242568.776277,
-    "seen": 1792250326.2801032,
-    "ast_hash": "79aa51d9260ec4ca090bb8961cb8fa13",
+    "mtime": 1792258784.1372695,
+    "seen": 1792260041.268173,
+    "ast_hash": "fad79baf4a787b781c0305389f60685f",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -204,9 +204,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/economy.js": {
-    "mtime": 1792232599.913713,
-    "seen": 1792235900.192597,
-    "ast_hash": "c2654deb4615f7e59eb452a3e6db3751",
+    "mtime": 1792257097.6088824,
+    "seen": 1792260041.2682061,
+    "ast_hash": "3fab93c1a196202731adfdbbff200fbb",
     "semantic_hash": ""
   },
   "juego/src/systems/interact.js": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792190181.465679,
-    "seen": 1792191309.895748,
-    "ast_hash": "4cbb9dc11338f440237750360ad9f90a",
+    "mtime": 1792259307.746007,
+    "seen": 1792260041.2682652,
+    "ast_hash": "a5eb4884fe78f8eed26bc981e7ae0bc5",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792244495.979217,
-    "seen": 1792250326.2803082,
-    "ast_hash": "fdad0a42404e723727230bbbc64af316",
+    "mtime": 1792257311.5295916,
+    "seen": 1792260041.2683477,
+    "ast_hash": "eac77c70db9c6efe83efa62b641dda8e",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -252,15 +252,15 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792233667.3223975,
-    "seen": 1792235900.192781,
-    "ast_hash": "9029a1ebf05f3b7bdccaad81079341a9",
+    "mtime": 1792258985.3157668,
+    "seen": 1792260041.268401,
+    "ast_hash": "dab8c217f84f73f53e989d663b510dbe",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792242568.7693994,
-    "seen": 1792250326.2803628,
-    "ast_hash": "20f7555945adb0e6d30803aec3bb4d92",
+    "mtime": 1792258994.9051201,
+    "seen": 1792260041.2684026,
+    "ast_hash": "77b6272dade399f590fa90ec4daa632f",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792191935.4727898,
-    "seen": 1792215693.8395498,
-    "ast_hash": "456f8dc69bde63bf17b5071884f22fdd",
+    "mtime": 1792257190.390046,
+    "seen": 1792260041.268555,
+    "ast_hash": "3e66cb175f3f11f6d3d782ff446b0763",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "juego/index.html": {
-    "mtime": 1792232821.9462566,
-    "seen": 1792235900.1951346,
-    "ast_hash": "34fc5e5ff2a85ff4bc159e86c64c9353",
+    "mtime": 1792257311.5290723,
+    "seen": 1792260041.2707672,
+    "ast_hash": "0cf78d32c2851f146ed542262a4d84f9",
     "semantic_hash": ""
   },
   "juego/android/app/src/main/res/drawable-land-hdpi/splash.png": {
@@ -1230,9 +1230,9 @@
     "semantic_hash": ""
   },
   "juego/tests/mobile-ui.spec.js": {
-    "mtime": 1792248387.230327,
-    "seen": 1792250326.2805467,
-    "ast_hash": "e88e993c9211b1e32a040d9845e03755",
+    "mtime": 1792260016.278207,
+    "seen": 1792260041.268605,
+    "ast_hash": "be24f466575a822bb7fd8c785a5fcb42",
     "semantic_hash": ""
   },
   "juego/docs/MOVIL.md": {
@@ -1269,6 +1269,42 @@
     "mtime": 1788213756.0,
     "seen": 1792250326.28316,
     "ast_hash": "958532b95c3e7d4997327dc977b80600",
+    "semantic_hash": ""
+  },
+  "juego/src/data/style.js": {
+    "mtime": 1792257014.5296326,
+    "seen": 1792260041.2678888,
+    "ast_hash": "75be530df4969030002b22728f5161d9",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/avatar.js": {
+    "mtime": 1792257053.9818287,
+    "seen": 1792260041.267891,
+    "ast_hash": "fba74a6155714da687d2a9342ce78a0e",
+    "semantic_hash": ""
+  },
+  "juego/src/systems/appearance.js": {
+    "mtime": 1792257077.9883149,
+    "seen": 1792260041.2682035,
+    "ast_hash": "b5741cfa12f832137575ae02abb63096",
+    "semantic_hash": ""
+  },
+  "juego/src/ui/dressing.js": {
+    "mtime": 1792258985.3146765,
+    "seen": 1792260041.2683454,
+    "ast_hash": "32dca281fc63a45a25d057ed1985c491",
+    "semantic_hash": ""
+  },
+  "juego/tests/style.spec.js": {
+    "mtime": 1792260007.1417894,
+    "seen": 1792260041.2686064,
+    "ast_hash": "8d77e1ef9bf9a586c32a29160e72dfe9",
+    "semantic_hash": ""
+  },
+  "juego/dev/avatar.html": {
+    "mtime": 1792256789.2001374,
+    "seen": 1792260041.2707388,
+    "ast_hash": "77d40d4b584085168038a4e94986b89d",
     "semantic_hash": ""
   }
 }

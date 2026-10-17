@@ -1,4 +1,6 @@
 import { ii, icon as svgIcon } from './icons.js';
+import { recognition, RECOG_LEVEL } from '../systems/appearance.js';
+let knownT = 0;
 import { G, on, emit, money } from '../game.js';
 import { ITEMS, RANKS, STRAINS } from '../data/items.js';
 import { QUESTS } from '../data/quests.js';
@@ -121,6 +123,15 @@ export function updateHUD(target, dt = 0.016) {
     }
   } else els.wp.style.display = 'none';
 
+  // aviso de que la policía te reconoce (se refresca dos veces por segundo)
+  knownT -= dt;
+  if (knownT <= 0) {
+    knownT = 0.5;
+    const r = wanted.level > 0 ? 0 : recognition();
+    const k = $('known');
+    k.style.display = r >= 0.3 ? '' : 'none';
+    if (r >= 0.3) txt(k, `👁 ${r >= RECOG_LEVEL ? 'La policía te tiene fichado' : 'Te pareces al sospechoso'} · ${Math.round(r * 100)}%`);
+  }
   if (wanted.level > 0) {
     els.wanted.style.display = '';
     els.wantedBar.style.width = (100 - (wanted.unseen / wanted.escape) * 100) + '%';

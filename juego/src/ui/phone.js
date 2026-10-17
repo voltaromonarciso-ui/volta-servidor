@@ -9,7 +9,7 @@ import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotia
 import { clock, dayName } from '../systems/time.js';
 import { save, wipe } from '../core/state.js';
 import { sfx } from '../core/audio.js';
-import { resetTouch } from '../core/input.js';
+import { resetTouch, guardGhostClick } from '../core/input.js';
 import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './panels.js';
 import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
@@ -54,6 +54,7 @@ export function openPhone(app = null, arg = null) {
   open = true;
   G.uiOpen = true;
   resetTouch();
+  if (G.touch) guardGhostClick();
   if (document.pointerLockElement) document.exitPointerLock();
   root.classList.add('open');
   sfx('open');

@@ -6,6 +6,7 @@ import { illegalCount, save } from '../core/state.js';
 import { sfx, setSiren } from '../core/audio.js';
 import { ROADS } from '../world/world.js';
 import { addMoney, addRep } from './economy.js';
+import { rememberIncident, recognition, RECOG_LEVEL } from './appearance.js';
 
 // Patrullas, toque de queda (21:00–05:00), cacheos y persecuciones.
 export const wanted = { level: 0, unseen: 0, escape: 14, reason: '' };
@@ -45,7 +46,10 @@ export function updatePolice(dt) {
       if (cop.mode === 'chase' && cop.canSee(45)) seen = true;
       if (cop.mode === 'chase' && cop.distToPlayer() < 1.3) { arrest(cop); return; }
     }
-    wanted.unseen = seen ? 0 : wanted.unseen + step * (inside ? 3 : 1);
+    // cambiarse de ropa o de pelo no corta la persecución, pero si ya no encajas
+    // con la descripción, te pierden antes
+    const fit = recognition() < 0.45 ? 1.3 : 1;
+    wanted.unseen = seen ? 0 : wanted.unseen + step * (inside ? 3 : 1) * fit;
     if (wanted.unseen >= wanted.escape) {
       wanted.level = 0;
       wanted.unseen = 0;
@@ -76,22 +80,33 @@ export function updatePolice(dt) {
         startChase(cop, '¡Alto! ¡Estás incumpliendo el toque de queda!');
         return;
       }
-    } else if (cop.friskCooldown <= 0 && !inside && cop.notices(9)) {
+    } else if (cop.friskCooldown <= 0 && !inside && cop.notices(recognized() ? 14 : 9)) {
       cop.friskCooldown = 120;
-      const suspicious = (G.input?.sprint ? 0.25 : 0) + Math.min(0.3, illegalCount() * 0.01);
-      if (Math.random() < 0.18 + suspicious) {
+      const r = recognition();
+      const known = r >= RECOG_LEVEL;
+      if (Math.random() < friskChance(r, !!G.input?.sprint, illegalCount())) {
         friskCop = cop;
         friskT = 12;
         cop.mode = 'approach';
         sfx('whistle');
-        G.act.toast(`${cop.name}: «¡Eh, tú! Quieto ahí un momento.»`, '👮');
+        G.act.toast(known ? `${cop.name}: «¡Eh, tú! Te pareces al que se nos escapó. Quieto ahí.»` : `${cop.name}: «¡Eh, tú! Quieto ahí un momento.»`, '👮');
         return;
       }
     }
   }
 }
 
+const recognized = () => recognition() >= RECOG_LEVEL;
+
+// Probabilidad de que una patrulla te pare al verte (sin toque de queda). Si
+// encajas con la descripción de un incidente reciente, te paran casi seguro.
+export function friskChance(recog, running, illegal) {
+  const suspicious = (running ? 0.25 : 0) + Math.min(0.3, illegal * 0.01);
+  return Math.min(0.97, 0.18 + suspicious + (recog >= RECOG_LEVEL ? 0.45 + (recog - RECOG_LEVEL) : 0));
+}
+
 export function startChase(cop, shout) {
+  rememberIncident();
   wanted.level = Math.max(1, wanted.level + 1);
   wanted.unseen = 0;
   wanted.escape = 12 + wanted.level * 4;
@@ -122,6 +137,7 @@ export function arrest(cop) {
   const fine = Math.min(Math.max(0, s.money), 150 + s.rank * 75 + lost * 5);
   addMoney(-fine);
   addRep(-4); // que te detengan se sabe en el barrio
+  rememberIncident();
   wanted.level = 0; wanted.unseen = 0;
   setSiren(false);
   for (const c of G.police) { c.mode = 'return'; c.path = []; }

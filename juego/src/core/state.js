@@ -32,6 +32,9 @@ export function newState() {
     rentPaidWeek: 1,
     stats: { earned: 0, deals: 0, best: 0 },
     flags: {},
+    style: { hair: 'orig', beard: 'none' },          // peluquería
+    wardrobe: { owned: [], worn: {} },                 // ropa comprada y puesta
+    policeMemory: null,                                // aspecto que recuerda la policía
     settings: { sens: 1, shadows: true, res: 1, sound: true, quality: 'alta' },
   };
 }

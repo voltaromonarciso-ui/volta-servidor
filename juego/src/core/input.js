@@ -128,3 +128,11 @@ export function pollInput() {
   if (!G.touch) input.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
   else input.sprint = !!input.sprintToggle && my > 0.2;
 }
+
+// En móvil, el toque que abre una ventana también genera un «click» que cae en lo
+// que haya aparecido debajo del dedo. Tras abrir algo, se ignoran los clics un momento.
+let ghostUntil = 0;
+export function guardGhostClick(ms = 400) { ghostUntil = performance.now() + ms; }
+window.addEventListener('click', (e) => {
+  if (performance.now() < ghostUntil) { e.stopPropagation(); e.preventDefault(); }
+}, true);
