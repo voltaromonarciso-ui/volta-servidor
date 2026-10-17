@@ -63,10 +63,14 @@ function sitPose(av) {
   let skin = null;
   g.traverse((o) => { if (!skin && o.isSkinnedMesh) skin = o; });
   sideAxis.copy(an.side).transformDirection(skin.matrixWorld);
+  // se parte siempre de la postura sin doblar (no todos los huesos los mueve la animación)
+  av.restQ ||= new Map();
   const bend = (name, ang) => {
     let bone = null;
     g.traverse((o) => { if (o.isBone && o.name === name) bone = o; });
     if (!bone) return;
+    if (!av.restQ.has(bone)) av.restQ.set(bone, bone.quaternion.clone());
+    else if (!/Thigh/.test(name)) bone.quaternion.copy(av.restQ.get(bone));
     bone.updateWorldMatrix(true, false);
     const parentQ = bone.parent.getWorldQuaternion(new THREE.Quaternion());
     const worldQ = bone.getWorldQuaternion(new THREE.Quaternion());
@@ -102,6 +106,8 @@ export function updateDressing(dt) {
   G.camera.position.lerpVectors(camFrom, eye, k);
   G.camera.quaternion.slerpQuaternions(qFrom, tmpQ, k);
   if (D.leaving && D.blend <= 0) {
+    // de pie otra vez: rodillas y caderas como estaban
+    if (av.restQ) { for (const [b, q] of av.restQ) b.quaternion.copy(q); av.restQ = null; }
     av.group.visible = false;
     document.body.classList.remove('in-dress');
     D = null;
