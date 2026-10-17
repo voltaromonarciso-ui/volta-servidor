@@ -28,7 +28,6 @@ export const ITEMS = {
   colorante: { name: 'Colorante alimentario', icon: '🎨', stack: 20, price: 4, rank: 2, desc: 'Ingrediente para el hornillo (1 por tanda).' },
   lampara:   { name: 'Lámpara de cultivo', icon: '💡', stack: 2, price: 150, rank: 1, place: 'lamp', desc: 'Acelera ×1.5 las plantas cercanas.' },
   estante:   { name: 'Estantería', icon: '🗄️', stack: 2, price: 60, place: 'shelf', desc: 'Guarda 12 huecos de objetos.' },
-  mezcladora:{ name: 'Mezcladora', icon: '⚗️', stack: 1, price: 400, rank: 2, place: 'mixer', desc: 'Mezcla producto con ingredientes para crear nuevos efectos.' },
 };
 
 export const STRAINS = {
@@ -44,12 +43,12 @@ export const SHOPS = {
   ferreteria: {
     name: 'Ferretería Tornillo',
     open: [7, 21],
-    stock: ['maceta', 'tierra', 'tierra_plus', 'fertil', 'regadera', 'bolsita', 'mesa_emp', 'tarro_v', 'envasadora', 'estante', 'lampara', 'bolsa_ss', 'catalizador', 'hornillo', 'mezcladora'],
+    stock: ['maceta', 'tierra', 'tierra_plus', 'fertil', 'regadera', 'bolsita', 'mesa_emp', 'tarro_v', 'envasadora', 'estante', 'lampara', 'bolsa_ss', 'catalizador', 'hornillo'],
   },
   gasolinera: {
     name: 'Gas&Go 24h',
     open: [0, 24],
-    stock: ['energetica', 'cafe', 'platano', 'chicle', 'ibuprofeno', 'leche', 'guindilla', 'menta', 'purpurina', 'batido', 'pila', 'miel', 'azucar', 'colorante'],
+    stock: ['bolsita', 'azucar', 'colorante'],
   },
 };
 

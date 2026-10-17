@@ -15,7 +15,7 @@ export const QUESTS = [
   { title: 'Empaquetado', desc: 'Compra sobres vacíos y una mesa de empaquetado en la ferretería, colócala y envasa tus cogollos en sobres.', done: () => G.state.flags.packed, xp: 20 },
   { title: 'Primer trato', desc: 'Espera un mensaje de un cliente (Chema o Nuria), acepta el pedido y entrégaselo en persona.', done: () => G.state.stats.deals >= 1, xp: 30 },
   { title: 'Correr la voz', desc: 'Consigue un cliente nuevo regalando una muestra a un vecino (coge el producto en la mano y habla con él).', done: () => G.state.flags.sampleWon, xp: 30 },
-  { title: 'Química de barrio', desc: 'Alcanza el rango Trapichero, compra una mezcladora y crea un producto nuevo con ingredientes de la gasolinera.', done: () => G.state.flags.mixed, xp: 50 },
+  { title: 'Cristales dulces', desc: 'Alcanza el rango Trapichero, compra un hornillo de cristalización y cocina tu primera tanda de Sweet Shards.', done: () => G.state.flags.cooked, xp: 50 },
   { title: 'Casa propia', desc: 'Ahorra y compra el bungalow del Barrio Alto (oeste). Más espacio para cultivar.', done: () => G.state.props.bungalow, xp: 80 },
   { title: 'Imperio', desc: 'Gana $10.000 en total vendiendo tu producto.', done: () => G.state.stats.earned >= 10000, xp: 200 },
 ];

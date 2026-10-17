@@ -4,6 +4,7 @@ import { G } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
 import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
+import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack } from './goods.js';
 
 // Brazos y manos en primera persona (escena aparte, nunca atraviesan paredes).
 const SKIN = '#e2b08c', SLEEVE = '#24272e', CUFF = '#30343c';
@@ -142,76 +143,6 @@ function productColor(s) {
   return STRAINS[strain] ? '#' + new THREE.Color(STRAINS[strain].color).getHexString() : '#6abf45';
 }
 
-function budCluster(color, n, spread, parent, y = 0) {
-  const geo = new THREE.IcosahedronGeometry(0.02, 1);
-  const mat = M(color, { roughness: 0.9, flatShading: true });
-  for (let i = 0; i < n; i++) {
-    const m = mesh(geo, mat, (Math.random() - 0.5) * spread, y + Math.random() * spread * 0.5, (Math.random() - 0.5) * spread, parent);
-    m.scale.set(1, 1.3, 1);
-    m.rotation.set(Math.random(), Math.random(), 0);
-  }
-}
-
-// Cogollos: bolas irregulares verdes con hojitas, como los de la imagen de referencia.
-const budGeo = (() => { const g = new THREE.IcosahedronGeometry(0.5, 3); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); const k = 0.86 + 0.14 * Math.abs(Math.sin(x * 23 + y * 31) * Math.cos(z * 27 - y * 19)) + Math.random() * 0.05; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); } g.computeVertexNormals(); return g; })();
-const leafGeo = new THREE.ConeGeometry(0.5, 1, 4);
-function budPile(color, n, spread, parent, y = 0, scale = 1) {
-  const c = new THREE.Color(color);
-  const mats = [0.85, 1, 1.15].map((k) => M('#' + c.clone().multiplyScalar(k).getHexString(), { roughness: 1 }));
-  const leaf = M('#4e8f2f', { roughness: 0.9, side: THREE.DoubleSide });
-  for (let i = 0; i < n; i++) {
-    const r = (0.022 + Math.random() * 0.012) * scale;
-    const b = mesh(budGeo, mats[i % 3], (Math.random() - 0.5) * spread, y + r + Math.floor(i / 4) * r * 1.25, (Math.random() - 0.5) * spread * 0.5, parent);
-    b.scale.set(r * 2, r * 2.3, r * 2);
-    b.rotation.set(Math.random(), Math.random() * 6, Math.random());
-    if (i % 2 === 0) {
-      const l = mesh(leafGeo, leaf, b.position.x + r * 0.8, b.position.y + r * 0.2, b.position.z, parent);
-      l.scale.set(r * 0.5, r * 1.4, r * 0.15);
-      l.rotation.z = -1.1;
-    }
-  }
-}
-function zipBag(parent, w, h, d = 0.02) {
-  const film = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false });
-  mesh(bx(w, h, d, 0.004), film, 0, 0, 0, parent);
-  mesh(new THREE.BoxGeometry(w * 1.01, 0.006, d + 0.002), new THREE.MeshStandardMaterial({ color: 0xdfe8ee, transparent: true, opacity: 0.7 }), 0, h * 0.36, 0, parent); // cierre zip
-  const tab = mesh(new THREE.TorusGeometry(0.008, 0.002, 6, 14), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }), 0, h * 0.45, 0, parent); // agujero de colgar
-  tab.scale.set(1.6, 1, 1);
-}
-const CRYSTAL_COLS = ['#3fc1ff', '#47e08a', '#a66bff', '#ff4f6d', '#5a7bff'];
-function crystals(parent, n, spread, scale) {
-  for (let i = 0; i < n; i++) {
-    const c = CRYSTAL_COLS[i % CRYSTAL_COLS.length];
-    const m = mesh(new THREE.OctahedronGeometry(0.5, 0), M(c, { emissive: c, emissiveIntensity: 0.35, roughness: 0.08, metalness: 0.25 }), (Math.random() - 0.5) * spread, Math.random() * 0.02, (Math.random() - 0.5) * spread * 0.5, parent);
-    m.scale.set(0.022 * scale, 0.05 * scale * (0.7 + Math.random() * 0.6), 0.022 * scale);
-    m.rotation.set((Math.random() - 0.5) * 0.8, Math.random() * 6, (Math.random() - 0.5) * 0.8);
-  }
-}
-let _ssTex = null;
-function shardsLabel() {
-  if (!_ssTex) {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 320;
-    const x = c.getContext('2d');
-    x.fillStyle = '#f6f2f8'; x.fillRect(0, 0, 256, 320);
-    x.fillStyle = '#e8e0ee'; for (let i = 0; i < 256; i += 16) x.fillRect(i, 0, 8, 14); // dentado del cierre
-    // logo
-    x.fillStyle = '#ffffff'; x.strokeStyle = '#ff6fb5'; x.lineWidth = 6;
-    x.beginPath(); x.roundRect(28, 40, 200, 74, 24); x.fill(); x.stroke();
-    x.fillStyle = '#7b3fd1'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center';
-    x.fillText('SWEET', 128, 74); x.fillText('SHARDS', 128, 108);
-    // cristales dibujados
-    const col = ['#2fb8ff', '#3fd98a', '#9b5cff', '#ff4f6d', '#5a7bff', '#7d4dff'];
-    const shard = (cx, by, w, h, cl) => {
-      x.fillStyle = cl; x.beginPath(); x.moveTo(cx, by - h); x.lineTo(cx + w / 2, by - h * 0.75); x.lineTo(cx + w / 2, by); x.lineTo(cx - w / 2, by); x.lineTo(cx - w / 2, by - h * 0.75); x.closePath(); x.fill();
-      x.fillStyle = 'rgba(255,255,255,0.35)'; x.beginPath(); x.moveTo(cx, by - h); x.lineTo(cx - w / 2, by - h * 0.75); x.lineTo(cx - w / 2, by); x.lineTo(cx - w * 0.1, by); x.closePath(); x.fill();
-    };
-    [[70, 300, 44, 110, 0], [120, 300, 50, 150, 2], [175, 300, 46, 120, 1], [95, 305, 34, 70, 3], [205, 305, 38, 80, 4], [145, 308, 30, 60, 5]].forEach(([cx, by, w, h, k]) => shard(cx, by, w, h, col[k]));
-    x.fillStyle = '#ffffff'; for (const [sx, sy] of [[40, 160], [220, 150], [200, 260], [30, 250]]) { x.beginPath(); x.arc(sx, sy, 4, 0, 7); x.fill(); }
-    _ssTex = new THREE.CanvasTexture(c); _ssTex.colorSpace = THREE.SRGBColorSpace;
-  }
-  return mats.ssLabel ||= new THREE.MeshStandardMaterial({ map: _ssTex, roughness: 0.55 });
-}
-
 const cardMat = () => (mats.card ||= new THREE.MeshStandardMaterial({ map: cardboardTex(), roughness: 0.9 }));
 
 export function buildItem(s) {
@@ -220,9 +151,8 @@ export function buildItem(s) {
   let pose = 'one';
   switch (s.id) {
     case 'cash': {
-      // fajo de billetes con goma
-      for (let i = 0; i < 3; i++) mesh(bx(0.075, 0.006, 0.15, 0.002), M(i % 2 ? '#7ccf6a' : '#5fb653', { roughness: 0.8 }), i * 0.003, i * 0.006, i * 0.004, g);
-      mesh(new THREE.BoxGeometry(0.078, 0.022, 0.02), M('#c0392b'), 0.003, 0.008, 0, g);
+      // fajo de billetes con faja
+      const c = cashStack(7); c.rotation.y = Math.PI / 2; c.position.y = -0.005; g.add(c);
       break;
     }
     case 'phone': {
@@ -241,7 +171,7 @@ export function buildItem(s) {
       mesh(new THREE.TorusGeometry(0.06, 0.01, 6, 12, Math.PI), M('#3a3a3a'), 0, -0.04, 0, g);
       break;
     }
-    case 'caja': case 'mesa_emp': case 'estante': case 'mezcladora': case 'lampara': case 'envasadora': case 'hornillo': {
+    case 'caja': case 'mesa_emp': case 'estante': case 'lampara': case 'envasadora': case 'hornillo': {
       pose = 'box';
       const b = mesh(bx(0.46, 0.28, 0.32, 0.008), cardMat(), 0, 0, 0, g);
       b.castShadow = false;
@@ -278,44 +208,26 @@ export function buildItem(s) {
       break;
     }
     case 'cogollo': {
-      // puñado de cogollos verdes esponjosos con alguna hojita
-      budPile(productColor(s), 6, 0.07, g, -0.02, 0.8);
+      // puñado de cogollos sueltos
+      const p = new THREE.Group(); goodsPile(p, productColor(s), 5, 0.07, 0.04, 0.034, 3); p.position.y = -0.03; g.add(p);
       break;
     }
-    case 'bolsa': {
-      // bolsa zip transparente con agujero para colgar y cogollos dentro
-      zipBag(g, 0.1, 0.12);
-      budPile(productColor(s), 6, 0.055, g, -0.05, 0.72);
-      break;
-    }
+    case 'bolsa': g.add(zipBag(productColor(s))); break;
     case 'bolsita':
-      for (let i = 0; i < 4; i++) { const b = new THREE.Group(); zipBag(b, 0.1, 0.12, 0.004); b.position.set(i * 0.004, i * 0.003, i * 0.006); g.add(b); }
+      for (let i = 0; i < 4; i++) { const b = zipBag(null, { flat: true }); b.position.set(i * 0.004, i * 0.003, i * 0.005); b.rotation.z = (i - 1.5) * 0.06; g.add(b); }
       break;
     case 'tarro': case 'tarro_v': {
-      // tarro de cristal con tapa de corcho (lleno de cogollos o vacío)
-      const glass = mats.jarGlass ||= new THREE.MeshStandardMaterial({ color: 0xeaf7fb, roughness: 0.04, metalness: 0.2, transparent: true, opacity: 0.32, depthWrite: false, envMapIntensity: 1.5 });
-      const prof = [[0.001, -0.06], [0.04, -0.06], [0.045, -0.052], [0.046, 0.03], [0.04, 0.045], [0.036, 0.05], [0.036, 0.058]].map(([x, y]) => new THREE.Vector2(x, y));
-      mesh(new THREE.LatheGeometry(prof, 24), glass, 0, 0, 0, g);
-      mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.022, 24), M('#b5895a', { roughness: 0.95 }), 0, 0.07, 0, g);
-      mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 20), M('#9c7246', { roughness: 1 }), 0, 0.056, 0, g);
-      if (s.id === 'tarro') budPile(productColor(s), 10, 0.05, g, -0.058, 0.72);
+      const j = jar(s.id === 'tarro' ? productColor(s) : null); j.position.y = -0.06; g.add(j);
       break;
     }
     case 'cristal': {
-      // puñado de cristales de colores
-      crystals(g, 8, 0.11, 1.5);
+      const c = new THREE.Group(); crystalCluster(c, 8, 0.07, 0.05, 5); c.position.y = -0.02; g.add(c);
       break;
     }
-    case 'shards': case 'bolsa_ss': {
-      // bolsa blanca "Sweet Shards" con su etiqueta
-      const n = s.id === 'shards' ? 1 : 3;
-      for (let i = 0; i < n; i++) {
-        const b = mesh(bx(0.1, 0.13, s.id === 'shards' ? 0.022 : 0.006, 0.006), [M('#f4f0f6'), M('#f4f0f6'), M('#f4f0f6'), M('#f4f0f6'), shardsLabel(), M('#ece6f0')], i * 0.004, i * 0.003, i * 0.008, g);
-        b.material = [M('#f4f0f6'), M('#f4f0f6'), M('#f4f0f6'), M('#f4f0f6'), shardsLabel(), M('#ece6f0')];
-      }
-      mesh(new THREE.BoxGeometry(0.102, 0.012, 0.024), M('#e2dbe8'), 0, 0.064, 0, g);
+    case 'shards': g.add(shardsBag(true)); break;
+    case 'bolsa_ss':
+      for (let i = 0; i < 3; i++) { const b = shardsBag(false); b.position.set(i * 0.004, i * 0.003, i * 0.006); b.rotation.z = (i - 1) * 0.07; g.add(b); }
       break;
-    }
     case 'azucar':
       mesh(bx(0.07, 0.1, 0.04, 0.008), M('#fafafa', { roughness: 0.8 }), 0, 0, 0, g);
       mesh(new THREE.BoxGeometry(0.072, 0.03, 0.042), M('#2e86de'), 0, 0.01, 0, g);
@@ -336,35 +248,9 @@ export function buildItem(s) {
       mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.14, 14), M('#2e7d32', { roughness: 0.35 }), 0, 0, 0, g);
       mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 10), M('#f5f5f5'), 0, 0.085, 0, g);
       break;
-    case 'energetica':
-      mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 16), M('#1f8ad1', { roughness: 0.25, metalness: 0.6 }), 0, 0, 0, g);
-      mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.03, 16), M('#d7e05a', { roughness: 0.3, metalness: 0.4 }), 0, 0.01, 0, g);
-      break;
-    case 'platano': {
-      const c = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.017, 8, 16, 2.2), M('#f2d03b'));
-      c.rotation.z = 0.6; g.add(c);
-      break;
-    }
-    case 'guindilla':
-      mesh(new THREE.ConeGeometry(0.018, 0.1, 10), M('#d32f2f', { roughness: 0.35 }), 0, 0, 0, g).rotation.z = Math.PI;
-      break;
-    case 'leche':
-      mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), M('#f5f5f5'), 0, 0, 0, g);
-      mesh(new THREE.BoxGeometry(0.061, 0.04, 0.061), M('#2f80ed'), 0, -0.02, 0, g);
-      break;
-    case 'pila':
-      mesh(new THREE.BoxGeometry(0.045, 0.07, 0.025), M('#222', { metalness: 0.4, roughness: 0.4 }), 0, 0, 0, g);
-      mesh(new THREE.BoxGeometry(0.046, 0.02, 0.026), M('#e6b422'), 0, 0.02, 0, g);
-      break;
     default:
-      if (it.ingredient) {
-        const col = { cafe: '#6d4c41', chicle: '#ec6fa8', ibuprofeno: '#ffffff', menta: '#43a047', purpurina: '#b388ff', batido: '#90a4ae', miel: '#f9a825' }[s.id] || '#ccc';
-        mesh(bx(0.06, 0.1, 0.04, 0.008), M(col, { roughness: 0.5 }), 0, 0, 0, g);
-        mesh(new THREE.BoxGeometry(0.062, 0.03, 0.042), M('#fafafa'), 0, 0.005, 0, g);
-      } else {
-        pose = 'box';
-        mesh(bx(0.3, 0.2, 0.25), cardMat(), 0, 0, 0, g);
-      }
+      pose = 'box';
+      mesh(bx(0.3, 0.2, 0.25), cardMat(), 0, 0, 0, g);
   }
   if (s.id === 'regadera') g.scale.setScalar(0.72);
   g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });

@@ -51,9 +51,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 #cash { display: flex; align-items: center; gap: 12px; background: rgba(14, 18, 24, 0.68); border: 1.5px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 8px 18px 8px 12px; min-width: 150px; justify-content: space-between; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
 #h-money { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 #cash.neg #h-money { color: #ff7b72; }
-.cash-ic { position: relative; width: 34px; height: 26px; display: block; }
-.cash-ic i { position: absolute; left: 2px; width: 30px; height: 12px; border-radius: 3px; background: linear-gradient(180deg, #6fe05a, #2f9a2a); border: 1.5px solid #1f6b1c; transform: skewX(-12deg); }
-.cash-ic i:nth-child(1) { top: 14px; } .cash-ic i:nth-child(2) { top: 8px; left: 4px; } .cash-ic i:nth-child(3) { top: 2px; left: 6px; }
+.cash-ic { width: 38px; height: 34px; display: block; }
+.cash-ic .ico { width: 100%; height: 100%; }
 #rank { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #dfe6ee; background: rgba(14, 18, 24, 0.45); padding: 3px 8px; border-radius: 10px; }
 #rank-name { font-weight: 800; color: var(--gold); }
 #rank .bar { width: 70px; margin: 0; }
@@ -425,3 +424,26 @@ body.lay-edit #hud > * { pointer-events: none !important; }
 @media (max-width: 600px) { .bag-cols { grid-template-columns: 1fr; } }
 .shop .card.in { border-color: var(--acc); background: rgba(126, 217, 87, 0.08); }
 .cart-sum { margin-right: auto; align-self: center; font-size: 14px; }
+
+/* iconos ilustrados */
+.ico { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
+.ico.emo { width: auto; height: auto; }
+.slot .ic .ico { width: calc(var(--slot, 48px) * 0.78); height: calc(var(--slot, 48px) * 0.78); filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.c-ic .ico { width: 54px; height: 54px; }
+.inv-cell span .ico { width: 78%; height: 78%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.d-h .ico { width: 34px; height: 34px; }
+.ti .ico { width: 26px; height: 26px; }
+.pick b .ico { width: 26px; height: 26px; margin: -4px 2px -4px 0; }
+.act .a-ic .ico { width: 30px; height: 30px; }
+
+/* estación de empaquetado */
+body.in-station #hud, body.in-station #joy, body.in-station #touch-layer { visibility: hidden; }
+#station { position: fixed; inset: 0; z-index: 5; display: none; touch-action: none; user-select: none; -webkit-user-select: none; }
+#station.on { display: block; }
+#station .st-top { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); text-align: center; max-width: min(92vw, 560px); background: rgba(18, 22, 28, 0.78); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 10px 18px; color: #fff; pointer-events: none; }
+#station .st-title { font-weight: 800; font-size: 15px; opacity: 0.85; }
+#station .st-title .ico, #station .st-count .ico { width: 24px; height: 24px; }
+#station .st-step { font-size: 17px; margin-top: 4px; line-height: 1.3; }
+#station .st-step b { color: var(--gold, #f4c542); }
+#station .st-count { position: absolute; left: 16px; bottom: max(16px, env(safe-area-inset-bottom)); background: rgba(18, 22, 28, 0.78); border-radius: 14px; padding: 8px 14px; color: #fff; font-size: 15px; display: flex; gap: 8px; align-items: center; pointer-events: none; }
+#station .st-exit { position: absolute; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }

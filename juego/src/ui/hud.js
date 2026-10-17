@@ -1,3 +1,4 @@
+import { ii, icon as svgIcon } from './icons.js';
 import { G, on, emit, money } from '../game.js';
 import { ITEMS, RANKS, STRAINS } from '../data/items.js';
 import { QUESTS } from '../data/quests.js';
@@ -13,6 +14,7 @@ let waypoint = null;
 let mm, mctx, mmT = 0;
 
 export function initHUD() {
+  document.querySelector('#cash .cash-ic').innerHTML = svgIcon('cash');
   els = {
     money: $('h-money'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'),
     qTitle: $('q-title'), qDesc: $('q-desc'), quest: $('quest'),
@@ -80,7 +82,7 @@ export function updateHUD(target, dt = 0.016) {
     const slot = s.inv[i];
     d.classList.toggle('sel', i === s.sel);
     d.classList.toggle('empty', !slot);
-    d.querySelector('.ic').textContent = slot ? ITEMS[slot.id].icon : '';
+    d.querySelector('.ic').innerHTML = slot ? ii(slot.id) : '';
     d.querySelector('.q').textContent = slot && ITEMS[slot.id].stack > 1 ? slot.q : '';
   });
   const held = s.inv[s.sel];

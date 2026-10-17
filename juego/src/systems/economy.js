@@ -1,6 +1,6 @@
 import { G, rand, randi, pick, clamp, money, emit } from '../game.js';
 import { ITEMS, STRAINS, RANKS } from '../data/items.js';
-import { EFFECTS, productValue, productKey, mixEffects, randomProductName } from '../data/effects.js';
+import { EFFECTS, productValue } from '../data/effects.js';
 import { PEOPLE, STARTING_CUSTOMERS } from '../data/people.js';
 import { inv, absNow, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
@@ -20,22 +20,6 @@ export function ensureBaseProduct(strain) {
 
 export const prodValue = (p) => productValue(p.strain, p.effects);
 export const product = (id) => G.state.products[id];
-
-export function previewMix(pid, ingId) {
-  const p = product(pid);
-  const effects = mixEffects(p.effects, ingId);
-  const id = productKey(p.strain, effects);
-  return { id, effects, value: productValue(p.strain, effects), exists: !!G.state.products[id] || id === pid };
-}
-
-export function registerMix(pid, ingId, name) {
-  const p = product(pid);
-  const r = previewMix(pid, ingId);
-  if (!G.state.products[r.id]) {
-    G.state.products[r.id] = { id: r.id, name: name || randomProductName(), strain: p.strain, effects: r.effects, price: r.value, listed: true };
-  }
-  return r.id;
-}
 
 export function unitsOf(slot) { return slot.q * (ITEMS[slot.id].units || 1); }
 

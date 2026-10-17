@@ -65,6 +65,9 @@ function migrate(s) {
   fix(s.inv);
   for (const o of s.objects || []) if (o.data?.slots) fix(o.data.slots);
   for (const d of s.deals || []) if (d.form === 'gomi') d.form = 'bolsa';
+  // la mezcladora ya no existe: se devuelve su precio
+  const mixers = (s.objects || []).filter((o) => o.type === 'mixer').length;
+  if (mixers) { s.objects = s.objects.filter((o) => o.type !== 'mixer'); s.money += mixers * 400; }
   for (const o of s.orders || []) o.items = (o.items || []).filter((it) => ITEMS[it.id]);
   return s;
 }

@@ -1,10 +1,11 @@
 import { G, money, clamp } from '../game.js';
 import { ITEMS, SHOPS, STRAINS, RANKS } from '../data/items.js';
-import { EFFECTS, INGREDIENTS } from '../data/effects.js';
+import { EFFECTS } from '../data/effects.js';
+import { ii } from './icons.js';
 import { inv, slotsAdd, slotsRemove, illegalCount, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch } from '../core/input.js';
-import { product, prodValue, previewMix, registerMix, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
+import { product, prodValue, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
@@ -146,7 +147,7 @@ export function openShop(id) {
     const it = ITEMS[itemId];
     const locked = (it.rank || 0) > G.state.rank;
     const card = h('div', 'card' + (locked ? ' locked' : ''));
-    card.innerHTML = `<div class="c-ic">${it.icon}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${it.desc || ''}</div></div>`;
+    card.innerHTML = `<div class="c-ic">${ii(itemId)}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${it.desc || ''}</div></div>`;
     if (!locked) {
       const st = stepper(0, { min: 0, max: it.stack * 2, step: (v) => (v >= 10 ? 5 : 1), onChange: (n) => { if (n) cart.set(itemId, n); else cart.delete(itemId); card.classList.toggle('in', n > 0); upd(); } });
       steppers.push(st);
@@ -187,7 +188,7 @@ export function openPacker(obj) {
   const forms = FORMS.filter((f) => f.at === at);
   const srcs = [...new Set(forms.map((f) => f.src))];
   const p = openPanel({ title: at === 'jarpacker' ? 'Envasadora de tarros' : 'Mesa de empaquetado', wide: true });
-  let sel = null, mode = null, busy = false;
+  let sel = null, mode = null;
   const render = () => {
     p.body.innerHTML = '';
     p.foot.innerHTML = '';
@@ -205,7 +206,7 @@ export function openPacker(obj) {
     const list = h('div', 'pick-row');
     for (const b of stacks) {
       const prod = product(b.p);
-      const e = h('button', 'pick' + (b.p === sel.p && b.id === sel.id ? ' on' : ''), `<b>${ITEMS[b.id].icon} ${prod.name}</b><small>${b.q} ${b.id === 'cristal' ? 'cristales' : 'cogollos'}</small>`);
+      const e = h('button', 'pick' + (b.p === sel.p && b.id === sel.id ? ' on' : ''), `<b>${ii(b.id)} ${prod.name}</b><small>${b.q} ${b.id === 'cristal' ? 'cristales' : 'cogollos'}</small>`);
       e.onclick = () => { sel = b; render(); sfx('click'); };
       list.appendChild(e);
     }
@@ -214,7 +215,7 @@ export function openPacker(obj) {
     const m = h('div', 'pick-row');
     for (const f of valid) {
       const have = inv.count(f.pack);
-      const e = h('button', 'pick' + (mode === f.id ? ' on' : '') + (have ? '' : ' dim'), `<b>${ITEMS[f.id].icon} ${ITEMS[f.id].name}</b><small>${f.per} ${sel.id === 'cristal' ? 'cristal' : f.per > 1 ? 'cogollos' : 'cogollo'} + 1 envase · tienes ${have} ${ITEMS[f.pack].name.toLowerCase()}</small>`);
+      const e = h('button', 'pick' + (mode === f.id ? ' on' : '') + (have ? '' : ' dim'), `<b>${ii(f.id)} ${ITEMS[f.id].name}</b><small>${f.per} ${sel.id === 'cristal' ? 'cristal' : f.per > 1 ? 'cogollos' : 'cogollo'} + 1 envase · tienes ${have} ${ITEMS[f.pack].name.toLowerCase()}</small>`);
       e.onclick = () => { mode = f.id; render(); sfx('click'); };
       m.appendChild(e);
     }
@@ -222,37 +223,15 @@ export function openPacker(obj) {
     if (at === 'packer' && sel.id === 'cogollo') p.body.appendChild(h('div', 'small muted', G.state.flags.jars ? 'Para tarros usa la envasadora de tarros.' : '🔒 Tarros: compra la envasadora de tarros en la ferretería (rango Buscavidas). Los clientes pagan más por los tarros.'));
     const F = forms.find((f) => f.id === mode);
     const max = Math.min(Math.floor(inv.count(sel.id, sel.p) / F.per), inv.count(F.pack));
-    const bar = h('div', 'progress', '<i></i>');
-    const one = h('button', 'btn ghost', 'Envasar 1');
-    const all = h('button', 'btn', `Envasar todo (${max})`);
-    const go = (n) => {
-      if (busy) return;
-      if (n <= 0) return fail(!inv.count(F.pack) ? `Te faltan envases (${ITEMS[F.pack].name}).` : `Necesitas ${F.per} unidades para cada ${ITEMS[F.id].name.toLowerCase()}.`);
-      busy = true;
-      const steps = Math.min(n, 8);
-      let k = 0;
-      const tick = () => {
-        k++;
-        bar.firstChild.style.width = (k / steps) * 100 + '%';
-        sfx('pack');
-        if (k < steps) return setTimeout(tick, 220);
-        const done = Math.min(n, inv.room(F.id, sel.p));
-        if (!done) { busy = false; return fail('No tienes hueco en el inventario.'); }
-        inv.remove(sel.id, done * F.per, sel.p);
-        inv.remove(F.pack, done);
-        inv.add(F.id, done, sel.p);
-        G.act.flag('packed');
-        G.act.toast(`Envasado: ${done}× ${ITEMS[F.id].name}`, ITEMS[F.id].icon);
-        addXP(done * (F.per > 1 ? 2 : 0.5));
-        busy = false;
-        render();
-      };
-      tick();
+    p.body.appendChild(h('div', 'small muted', `Podrás hacer ${max}. En la mesa: arrastra el envase vacío, mete ${F.per > 1 ? `${F.per} cogollos` : sel.id === 'cristal' ? 'los cristales' : 'el cogollo'} y ciérralo.`));
+    const go = h('button', 'btn', 'Ponerse a envasar');
+    go.onclick = () => {
+      if (max <= 0) return fail(!inv.count(F.pack) ? `Te faltan envases (${ITEMS[F.pack].name}).` : `Necesitas ${F.per} unidades para cada ${ITEMS[F.id].name.toLowerCase()}.`);
+      if (!inv.room(F.id, sel.p)) return fail('No tienes hueco en el inventario.');
+      closePanel(true);
+      G.act.startStation(obj, { id: sel.id, p: sel.p }, F);
     };
-    one.onclick = () => go(Math.min(1, max));
-    all.onclick = () => go(max);
-    p.foot.append(one, all);
-    p.body.append(bar);
+    p.foot.append(go);
   };
   render();
 }
@@ -261,96 +240,6 @@ function productStacks(id) {
   const map = new Map();
   for (const s of G.state.inv) if (s && s.id === id) map.set(s.p, (map.get(s.p) || 0) + s.q);
   return [...map].map(([p, q]) => ({ p, q }));
-}
-
-// ------------------------------------------------------------------
-//  Mezcladora
-// ------------------------------------------------------------------
-export function openMixer(obj) {
-  const p = openPanel({ title: 'Mezcladora', wide: true });
-  let sel = null, ing = null, busy = false, name = '';
-  const render = () => {
-    p.body.innerHTML = '';
-    const buds = productStacks('cogollo');
-    const ings = Object.keys(INGREDIENTS).filter((k) => inv.count(k) > 0);
-    if (!buds.length || !ings.length) {
-      p.body.appendChild(h('p', 'txt', 'Necesitas <b>cogollos de Lumaflor</b> y al menos un <b>ingrediente</b> (de la gasolinera Gas&Go) en el inventario.'));
-      return;
-    }
-    if (!sel || !buds.find((b) => b.p === sel)) sel = buds[0].p;
-    if (!ing || !ings.includes(ing)) ing = ings[0];
-    const cols = h('div', 'mix-cols');
-    const a = h('div', 'mix-col'), b = h('div', 'mix-col'), c = h('div', 'mix-col result');
-    a.appendChild(h('div', 'label', 'Producto'));
-    for (const bd of buds) {
-      const pr = product(bd.p);
-      const e = h('button', 'pick block' + (bd.p === sel ? ' on' : ''), `<b>${pr.name}</b> <small>×${bd.q}</small><div class="chips">${chips(pr.effects)}</div>`);
-      e.onclick = () => { sel = bd.p; name = ''; render(); sfx('click'); };
-      a.appendChild(e);
-    }
-    b.appendChild(h('div', 'label', 'Ingrediente'));
-    for (const k of ings) {
-      const it = INGREDIENTS[k];
-      const e = h('button', 'pick block' + (k === ing ? ' on' : ''), `${it.icon} <b>${it.name}</b> <small>×${inv.count(k)}</small>`);
-      e.onclick = () => { ing = k; name = ''; render(); sfx('click'); };
-      b.appendChild(e);
-    }
-    const prev = previewMix(sel, ing);
-    const base = product(sel);
-    const qty = Math.min(inv.count('cogollo', sel), inv.count(ing), 10);
-    c.appendChild(h('div', 'label', 'Resultado'));
-    const known = G.state.products[prev.id];
-    const same = prev.id === sel;
-    c.appendChild(h('div', 'chips big', chips(prev.effects)));
-    c.appendChild(h('div', 'val', `Valor: <b>${money(prev.value)}</b> <small>(antes ${money(prodValue(base))})</small>`));
-    if (same) c.appendChild(h('div', 'muted', 'Este ingrediente no cambia nada.'));
-    else if (known) c.appendChild(h('div', 'muted', `Ya conoces esta mezcla: <b>${known.name}</b>`));
-    else {
-      c.appendChild(h('div', 'new', '✨ ¡Producto nuevo!'));
-      const inp = h('input', 'name-in');
-      inp.placeholder = 'Ponle nombre';
-      inp.maxLength = 22;
-      inp.value = name;
-      inp.oninput = () => { name = inp.value; };
-      c.appendChild(inp);
-    }
-    const bar = h('div', 'progress', '<i></i>');
-    const go = h('button', 'btn', `Mezclar ${qty} cogollo${qty > 1 ? 's' : ''}`);
-    go.onclick = () => {
-      if (busy || same) return same && fail('No tendría ningún efecto.');
-      busy = true; obj.busy = true;
-      sfx('mix');
-      let k = 0;
-      const tick = () => {
-        k++;
-        bar.firstChild.style.width = k * 10 + '%';
-        if (k < 10) return setTimeout(tick, 150);
-        const id = registerMix(sel, ing, name.trim() || undefined);
-        inv.remove('cogollo', qty, sel);
-        inv.remove(ing, qty);
-        const left = inv.add('cogollo', qty, id);
-        busy = false; obj.busy = false;
-        if (left) {
-          inv.remove('cogollo', qty - left, id);
-          inv.add('cogollo', qty, sel);
-          inv.add(ing, qty);
-          render();
-          return fail('No tienes hueco en el inventario para el resultado.');
-        }
-        G.act.flag('mixed');
-        addXP(qty * 2 + (known ? 0 : 15));
-        G.act.toast(`Has creado ${qty}× ${product(id).name}`, '⚗️');
-        sel = id;
-        name = '';
-        render();
-      };
-      tick();
-    };
-    c.append(bar, go);
-    cols.append(a, b, c);
-    p.body.appendChild(cols);
-  };
-  render();
 }
 
 // ------------------------------------------------------------------
@@ -368,7 +257,7 @@ export function openShelf(obj) {
       col.appendChild(h('div', 'label', title));
       const grid = h('div', 'inv-grid');
       from.forEach((s, i) => {
-        const cell = h('button', 'inv-cell' + (s ? '' : ' empty'), s ? `<span>${ITEMS[s.id].icon}</span><small>${s.q}</small>` : '');
+        const cell = h('button', 'inv-cell' + (s ? '' : ' empty'), s ? `<span>${ii(s.id)}</span><small>${s.q}</small>` : '');
         if (s) cell.title = itemLabel(s);
         cell.onclick = () => {
           if (!s) return;
@@ -401,7 +290,7 @@ export function openBag() {
     const cols = h('div', 'bag-cols');
     const grid = h('div', 'inv-grid big');
     G.state.inv.forEach((s, i) => {
-      const cell = h('button', 'inv-cell' + (s ? '' : ' empty') + (i === picked ? ' on' : '') + (i === G.state.sel ? ' held' : ''), s ? `<span>${ITEMS[s.id].icon}</span><small>${s.q}</small>` : `<em>${(i + 1) % 10}</em>`);
+      const cell = h('button', 'inv-cell' + (s ? '' : ' empty') + (i === picked ? ' on' : '') + (i === G.state.sel ? ' held' : ''), s ? `<span>${ii(s.id)}</span><small>${s.q}</small>` : `<em>${(i + 1) % 10}</em>`);
       cell.onclick = () => {
         sfx('click');
         if (picked >= 0 && picked !== i) {
@@ -425,7 +314,7 @@ export function openBag() {
         const pr = product(s.p);
         extra = `<div class="chips">${chips(pr.effects)}</div><div class="muted">Valor por unidad: ${money(prodValue(pr))} · Tu precio: ${money(pr.price)}</div>`;
       }
-      d.innerHTML = `<div class="d-h">${it.icon} <b>${itemLabel(s)}</b> ×${s.q}</div><div class="muted">${it.desc || (it.illegal ? '⚠️ Ilegal: si te cachean, te lo quitarán.' : '')}</div>${extra}`;
+      d.innerHTML = `<div class="d-h">${ii(s.id)} <b>${itemLabel(s)}</b> ×${s.q}</div><div class="muted">${it.desc || (it.illegal ? '⚠️ Ilegal: si te cachean, te lo quitarán.' : '')}</div>${extra}`;
       const row = h('div', 'row end');
       const hold = h('button', 'btn ghost', 'Llevar en la mano');
       hold.onclick = () => { G.state.sel = picked; render(); };
@@ -484,7 +373,7 @@ export function openNpc(npc, view = 'main') {
   const main = () => {
     if (c.unlocked) {
       p.body.appendChild(h('div', 'npc-stats', meter('Confianza', c.affinity / 100, trustLabel(c.affinity)) + meter('Adicción', c.addiction, addictionLabel(c.addiction), '#e67e22')));
-      p.body.appendChild(h('div', 'small', `<span class="muted">Le gusta:</span><div class="chips">${chips(npc.person.prefs)}</div><span class="muted">Lo prefiere en ${ITEMS[npc.person.form].icon} ${ITEMS[npc.person.form].form}</span>`));
+      p.body.appendChild(h('div', 'small', `<span class="muted">Le gusta:</span><div class="chips">${chips(npc.person.prefs)}</div><span class="muted">Lo prefiere en ${ii(npc.person.form)} ${ITEMS[npc.person.form].form}</span>`));
     } else {
       p.body.appendChild(h('div', 'txt', 'Aún no es cliente tuyo. <b>Regálale una muestra</b>: si le gusta, te dará su número y empezará a hacerte pedidos.'));
     }
@@ -499,7 +388,7 @@ export function openNpc(npc, view = 'main') {
     if (c.unlocked) {
       const packed = stacksOf(PACKED);
       const why = deal ? 'Primero entrégale su pedido.' : c.walkDay === G.state.day ? 'Ya te ha comprado hoy. Vuelve mañana.' : !packed.length ? 'No llevas producto empaquetado.' : '';
-      act('💵', 'Vender', why || 'Ofrécele producto a tu precio', () => show('sell'), !!why);
+      act(ii('cash'), 'Vender', why || 'Ofrécele producto a tu precio', () => show('sell'), !!why);
     }
     const gifts = stacksOf(GIFTABLE);
     const gwhy = !canGift(npc) ? 'Ya le has regalado algo hoy.' : !gifts.length ? 'No llevas producto para regalar.' : '';
@@ -523,7 +412,7 @@ export function openNpc(npc, view = 'main') {
     const row = h('div', 'pick-row');
     for (const x of packed) {
       const pr = product(x.p);
-      const b = h('button', 'pick' + (x === sel || (x.id === sel.id && x.p === sel.p) ? ' on' : ''), `<b>${ITEMS[x.id].icon} ${pr.name}</b><small>${ITEMS[x.id].name} · tienes ${x.q}</small>`);
+      const b = h('button', 'pick' + (x === sel || (x.id === sel.id && x.p === sel.p) ? ' on' : ''), `<b>${ii(x.id)} ${pr.name}</b><small>${ITEMS[x.id].name} · tienes ${x.q}</small>`);
       b.onclick = () => { sel = x; qty = 1; unit = pr.price; render(); sfx('click'); };
       row.appendChild(b);
     }
@@ -556,7 +445,7 @@ export function openNpc(npc, view = 'main') {
       npc.playExchange({ id: sel.id, p: sel.p }, true);
       G.player.vm.give();
       setTimeout(() => G.player.vm.flash('cash', 1.6), 550);
-      G.act.toast(`${r.msg} +${money(r.total)}`, '💵');
+      G.act.toast(`${r.msg} +${money(r.total)}`, ii('cash'));
       save();
     };
     upd();
@@ -574,7 +463,7 @@ export function openNpc(npc, view = 'main') {
     for (const x of list) {
       const pr = product(x.p);
       const likes = c.unlocked && prefMatches(npc.person, pr) ? ' ★' : '';
-      const b = h('button', 'pick' + (x.id === sel.id && x.p === sel.p ? ' on' : ''), `<b>${ITEMS[x.id].icon} ${pr.name}${likes}</b><small>1 ${ITEMS[x.id].name.toLowerCase()} · tienes ${x.q}</small>`);
+      const b = h('button', 'pick' + (x.id === sel.id && x.p === sel.p ? ' on' : ''), `<b>${ii(x.id)} ${pr.name}${likes}</b><small>1 ${ITEMS[x.id].name.toLowerCase()} · tienes ${x.q}</small>`);
       b.onclick = () => { sel = x; render(); sfx('click'); };
       row.appendChild(b);
     }
@@ -620,11 +509,11 @@ export function openHandover(npc, deal) {
   const render = () => {
     p.body.innerHTML = '';
     p.foot.innerHTML = '';
-    const fav = deal.form ? ` · lo prefiere en <b>${ITEMS[deal.form].icon} ${ITEMS[deal.form].form}</b> (+10% propina)` : '';
+    const fav = deal.form ? ` · lo prefiere en <b>${ii(deal.form)} ${ITEMS[deal.form].form}</b> (+10% propina)` : '';
     p.body.appendChild(h('div', 'deal-req', `Pide <b>${deal.qty}×</b> <b>${prod.name}</b> por <b class="money">${money(deal.price)}</b><div class="small muted">${chips(prod.effects)}${fav}</div>`));
     const got = units();
     const ok = got >= deal.qty;
-    const lines = [...offer.values()].map((o) => `${ITEMS[o.id].icon} ${o.q} ${ITEMS[o.id].name.toLowerCase()}${o.q > 1 ? 's' : ''} de ${product(o.p).name}`).join('<br>') || 'Nada';
+    const lines = [...offer.values()].map((o) => `${ii(o.id)} ${o.q} ${ITEMS[o.id].name.toLowerCase()}${o.q > 1 ? 's' : ''} de ${product(o.p).name}`).join('<br>') || 'Nada';
     p.body.appendChild(h('div', 'give-box ' + (ok ? 'ok' : 'bad'), `<div class="label">Le das (${got}/${deal.qty} uds.)</div><div>${lines}</div>${ok ? '' : `<div class="warn">Te faltan ${deal.qty - got} unidades empaquetadas de ${prod.name}.</div>`}`));
     if (manual) {
       const packed = G.state.inv.filter((s) => s && ITEMS[s.id].packed);
@@ -636,7 +525,7 @@ export function openHandover(npc, deal) {
         seen.add(k);
         const inOffer = offer.get(k)?.q || 0;
         const have = inv.count(s.id, s.p) - inOffer;
-        const b = h('button', 'pick' + (s.p === deal.product ? ' match' : ''), `<b>${ITEMS[s.id].icon} ${product(s.p).name}</b><small>${ITEMS[s.id].name} · +1 (quedan ${have})${inOffer ? ` · −1 manteniendo` : ''}</small>`);
+        const b = h('button', 'pick' + (s.p === deal.product ? ' match' : ''), `<b>${ii(s.id)} ${product(s.p).name}</b><small>${ITEMS[s.id].name} · +1 (quedan ${have})${inOffer ? ` · −1 manteniendo` : ''}</small>`);
         b.onclick = () => {
           if (have <= 0) return fail('No te quedan más.');
           const o = offer.get(k) || { id: s.id, p: s.p, q: 0 };
@@ -668,7 +557,7 @@ export function openHandover(npc, deal) {
       npc.playExchange({ id: first.id, p: first.p }, true);
       G.player.vm.give();
       setTimeout(() => G.player.vm.flash('cash', 1.6), 550);
-      G.act.toast(`Trato cerrado: +${money(r.pay)}${r.tip ? ` (propina ${money(r.tip)})` : ''}`, '💵');
+      G.act.toast(`Trato cerrado: +${money(r.pay)}${r.tip ? ` (propina ${money(r.tip)})` : ''}`, ii('cash'));
       save();
     };
     p.foot.appendChild(give);

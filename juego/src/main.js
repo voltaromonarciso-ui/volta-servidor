@@ -1,3 +1,4 @@
+import { startStation, updateStation, exitStation, stationAuto } from './systems/station.js';
 import * as THREE from 'three';
 import './style.css';
 import { G, on } from './game.js';
@@ -119,7 +120,7 @@ initPhone();
 // acciones globales que usan los distintos sistemas
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
-  openShop: P.openShop, openPacker: P.openPacker, openMixer: P.openMixer, openShelf: P.openShelf,
+  openShop: P.openShop, openPacker: P.openPacker, startStation, openShelf: P.openShelf,
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),
@@ -165,6 +166,7 @@ on('btn', (b) => {
   if (G.paused) return;
   initAudio();
   if (b === 'escape') {
+    if (G.station) return exitStation();
     if (phoneOpen()) return closePhone();
     if (P.panelOpen()) return P.closePanel();
     return pauseMenu();
@@ -365,6 +367,7 @@ function frame() {
   pollInput();
   const gdt = updateTime(dt);
   G.player.update(dt, G.uiOpen);
+  updateStation(dt);
   for (const n of G.npcs) n.update(dt, gdt);
   updatePolice(dt);
   for (const c of G.cars) c.update(dt);
@@ -404,7 +407,7 @@ window.addEventListener('beforeunload', () => { if (!G.paused) save(); });
 
 // exponer para depuración
 window.__G = G;
-window.__debug = { layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
+window.__debug = { stationAuto, layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
   arrest, advanceTime, econ: ECON, panels: P, R, spawn: (e) => { if (!G.objects.has(e.uid)) spawnObject(e); },
   // ejecuta la acción del centro de la pantalla al instante (para pruebas automáticas)
   act: (secondary = false) => { G.player.update(0, false); camera.updateMatrixWorld(); updateInteract(1); runAction(secondary); },

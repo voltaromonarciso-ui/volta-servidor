@@ -1,3 +1,4 @@
+import { ii } from './icons.js';
 import { openLayoutEditor } from './layout.js';
 import { G, on, money } from '../game.js';
 import { STRAINS, RANKS } from '../data/items.js';
@@ -194,7 +195,7 @@ function clients() {
       ${meter('Confianza', c.affinity / 100, trustLabel(c.affinity))}
       ${meter('Adicción', c.addiction, addictionLabel(c.addiction), '#e67e22')}
       <div class="small muted">Le gusta:</div><div class="chips">${chips(p.prefs)}</div>
-      <div class="small muted">Prefiere ${ITEMS[p.form].icon} ${ITEMS[p.form].form} · Gasta ${money(p.budget[0])}–${money(p.budget[1])} · Exigencia ${'★'.repeat(p.std + 1)}</div>
+      <div class="small muted">Prefiere ${ii(p.form)} ${ITEMS[p.form].form} · Gasta ${money(p.budget[0])}–${money(p.budget[1])} · Exigencia ${'★'.repeat(p.std + 1)}</div>
       ${pend ? `<div class="small" style="color:var(--gold)">● ${pend.status === 'offer' ? 'Te ha pedido algo (mira Mensajes)' : 'Pedido aceptado pendiente de entregar'}</div>` : ''}`);
     list.appendChild(row);
   }
