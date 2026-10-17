@@ -95,6 +95,8 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
   test('tienda: comprar la bici una sola vez', async ({}, testInfo) => {
     await ev(page, () => { __G.state.money = 1000; });
     await press(page, testInfo, '.panel .x');
+    await expect.poll(() => ev(page, () => !__G.uiOpen)).toBe(true);
+    await frames(page, 5); // la mira vuelve a detectar el mostrador
     await act(page, testInfo);
     await expect(page.locator('.vshop')).toBeVisible();
     await press(page, testInfo, '.vshop .card:has-text("Bicicleta") .btn');
@@ -235,16 +237,17 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     await ev(page, () => { __G.state.minute = 12 * 60; });
     await mod(page, RD, (m) => m.moveVehicle('bici', { x: 95.4, z: 58, yaw: 0 }));
     await mountAt(page, testInfo, 'bici');
-    await hold(page, testInfo, 'up', async () => (await speed(page)) > 3.5);
-    // patrulla detrás, mirando al jugador; el azar fuerza el alto
+    // parado en la bici: una patrulla detrás, mirándote; el azar fuerza el alto
     await ev(page, () => {
       const p = __G.player.pos, c = __G.police[0];
-      c.pos.set(p.x, 0, p.z - 5); c.g.position.copy(c.pos); c.g.rotation.y = 0;
+      c.pos.set(p.x, 0, p.z - 7); c.g.position.copy(c.pos);
       c.mode = 'patrol'; c.friskCooldown = 0;
+      c.__notices = c.notices; c.notices = () => true; // el cono de visión no es lo que se prueba aquí
       window.__rnd = Math.random; Math.random = () => 0;
     });
     await expect.poll(() => ev(page, () => __G.police[0].mode), { timeout: 60_000 }).toBe('approach');
-    await ev(page, () => { Math.random = window.__rnd; });
+    await ev(page, () => { Math.random = window.__rnd; const c = __G.police[0]; c.notices = c.__notices; });
+    expect(await ev(page, () => __G.uiOpen)).toBe(false);
     await hold(page, testInfo, 'up', async () => (await mod(page, '/src/systems/police.js', (m) => m.wanted.level)) > 0, 120_000);
     expect(await ev(page, () => __G.uiOpen)).toBe(false);
     // si te pillan, el vehículo se queda donde estaba y tú vas a comisaría
