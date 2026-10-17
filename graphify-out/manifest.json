@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "juego/src/core/input.js": {
-    "mtime": 1792273557.146319,
-    "seen": 1792273609.6238334,
-    "ast_hash": "c098a92305af348e408b8425a79a85ff",
+    "mtime": 1792273714.5282693,
+    "seen": 1792280672.41888,
+    "ast_hash": "e24b4dfea1480f6e9f67be27f963a0e4",
     "semantic_hash": ""
   },
   "juego/src/core/state.js": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792273595.829305,
-    "seen": 1792273609.6243765,
-    "ast_hash": "aaccf5e0436d7451ed5015656f1ecc0e",
+    "mtime": 1792275524.5537543,
+    "seen": 1792280672.4194224,
+    "ast_hash": "009c6365ad1e46667fed2db35e3ffdff",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "juego/index.html": {
-    "mtime": 1792273557.1452086,
-    "seen": 1792273609.626593,
-    "ast_hash": "9936326b02ea4e74e3673c412c64e6ea",
+    "mtime": 1792275508.0718513,
+    "seen": 1792280672.424159,
+    "ast_hash": "628102b25f17e083adea3804d959a66c",
     "semantic_hash": ""
   },
   "juego/android/app/src/main/res/drawable-land-hdpi/splash.png": {
@@ -1230,15 +1230,15 @@
     "semantic_hash": ""
   },
   "juego/tests/mobile-ui.spec.js": {
-    "mtime": 1792269914.2094102,
-    "seen": 1792272832.9626105,
-    "ast_hash": "9a3aee9a1c8c644e56bda6fc8645f35b",
+    "mtime": 1792275524.5547926,
+    "seen": 1792280672.4198594,
+    "ast_hash": "3f9ceff4a4cdef4412239a035811ffee",
     "semantic_hash": ""
   },
   "juego/docs/MOVIL.md": {
-    "mtime": 1792272814.6988692,
-    "seen": 1792272832.9642544,
-    "ast_hash": "99bcfe297d5ddc84c7de07b887aa4088",
+    "mtime": 1792280668.122473,
+    "seen": 1792280672.4241557,
+    "ast_hash": "d6a7c0a61c28b0a89a891c9bc74f4cf4",
     "semantic_hash": ""
   },
   "juego/ios/App/CapApp-SPM/README.md": {
@@ -1323,6 +1323,12 @@
     "mtime": 1792272795.7338605,
     "seen": 1792272832.9626365,
     "ast_hash": "a6b4c01782479e18719f865311da9d64",
+    "semantic_hash": ""
+  },
+  "juego/tests/furniture.spec.js": {
+    "mtime": 1792277303.61799,
+    "seen": 1792280672.4198372,
+    "ast_hash": "b2d64de2f98e7f9d1623440e256e9c6a",
     "semantic_hash": ""
   }
 }

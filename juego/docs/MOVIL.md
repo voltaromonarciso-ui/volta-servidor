@@ -62,6 +62,14 @@ calle), da el alto la policía y huir pedaleando inicia la persecución, detenid
 deja la bici donde estaba, guarda/carga sin duplicados y devuelve a la tienda un
 vehículo guardado en un sitio imposible.
 
+`tests/furniture.spec.js` compra en Muebles Nido con el dedo (sin dinero no se compra,
+el carrito vacío no cobra), coloca la cama con vista previa, la gira con los botones
+grandes a los dos lados, cancela sin perderla ni cobrar, mueve una maceta con planta
+conservando la planta (y no deja guardarla en el inventario porque perdería la tierra),
+cancela un movimiento dejándolo todo igual, valida sitios imposibles, comprueba la caja
+fuerte frente a una multa, los 24 huecos del armario, el humidificador sobre el agua de
+las macetas, la cama que despierta a las 6:00 y guardar/cargar.
+
 Limitaciones de estas pruebas:
 - Usan Chromium con WebGL por software (SwiftShader): **no miden el rendimiento real**
   de un móvil (aquí el juego va a 1–25 fps por la CPU, no por el juego).
@@ -75,7 +83,8 @@ Limitaciones de estas pruebas:
 | Ciclo completo (`core.spec.js`, 11 pasos) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
 | Peluquería, ropa y disfraz (`style.spec.js`, fase 3 bloque A) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
 | Bici y patinete (`vehicles.spec.js`, fase 3 bloque B) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
-| Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos y conducción) | sin problemas ✔ | — | — |
+| Muebles: comprar, colocar, girar, cancelar, mover y efectos (`furniture.spec.js`, fase 3 bloque C) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
+| Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos, conducción y mover muebles) | sin problemas ✔ | — | — |
 
 \* Chromium con medidas de iPhone, no Safari.
 
