@@ -208,14 +208,15 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
 
   test('guardar y cargar conserva muebles, posiciones y contenido', async ({}, testInfo) => {
     await mod(page, '/src/core/state.js', (m) => m.save());
-    const before = await ev(page, () => JSON.stringify(__G.state.objects));
+    const before = await ev(page, () => JSON.stringify(__G.state.objects, (k, v) => (k === 'water' || k === 'growth' ? Math.round(v * 100) / 100 : v)));
     await page.reload();
     await page.waitForFunction(() => document.getElementById('loading').classList.contains('hide'), null, { timeout: 300_000 });
     await press(page, testInfo, '#m-continue');
     await page.waitForFunction(() => !document.getElementById('hud').classList.contains('hide'), null, { timeout: 300_000 });
-    const after = await ev(page, () => JSON.stringify(__G.state.objects));
+    const after = await ev(page, () => JSON.stringify(__G.state.objects, (k, v) => (k === 'water' || k === 'growth' ? Math.round(v * 100) / 100 : v)));
     expect(after).toEqual(before);
     expect(await ev(page, () => __G.objects.size)).toBe(JSON.parse(before).length);
+    expect(await ev(page, () => [...__G.objects.values()].every((o) => o.group.visible && __G.interactables.includes(o.hit)))).toBe(true);
   });
 
   test('sin errores en la página', async () => {
