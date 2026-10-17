@@ -186,13 +186,12 @@ export function dismount() {
 // ------------------------------------------------------------------
 //  Cada fotograma
 // ------------------------------------------------------------------
-let chargeT = 0;
+let lastNow = -1;
 export function updateRiding(dt) {
   // carga de baterías aparcadas en tus propiedades (también al saltar el tiempo durmiendo)
-  chargeT -= dt;
-  if (chargeT <= 0) {
-    chargeT = 1;
-    const now = absNow();
+  const now = absNow();
+  if (now !== lastNow) {
+    lastNow = now;
     for (const v of vehicles.values()) {
       const e = v.entry, def = v.def;
       const mins = Math.max(0, now - (e.t ?? now));
