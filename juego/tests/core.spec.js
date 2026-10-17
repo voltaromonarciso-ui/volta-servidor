@@ -133,7 +133,9 @@ test.describe.serial('Ciclo completo', () => {
     await ev(page, () => { while (__G.state.inv.some((s) => s && s.id === 'cogollo') && __debug.stationAuto()); });
     await press(page, testInfo, '#station .st-exit');
     await expect.poll(() => ev(page, () => !__G.station && !__G.uiOpen), { timeout: 120_000 }).toBe(true);
-    expect(await count(page, 'bolsa', 'brisa')).toBe(buds0);
+    // se envasa lo que dé de sí lo menor: cogollos o sobres vacíos (empezamos con 10)
+    expect(await count(page, 'bolsa', 'brisa')).toBe(Math.min(buds0, 10));
+    expect(await count(page, 'cogollo', 'brisa')).toBe(Math.max(0, buds0 - 10));
     expect(await ev(page, () => __G.state.flags.packed)).toBe(true);
   });
 
