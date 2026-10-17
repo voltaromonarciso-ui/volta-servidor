@@ -12,7 +12,7 @@ export const QUESTS = [
   { title: 'Siembra', desc: 'Con la tierra en la mano, llena la maceta. Después coge la semilla y plántala.', done: () => pots().some((p) => p.data.strain), xp: 10 },
   { title: 'Que no le falte agua', desc: 'Coge la regadera y riega la planta. Si está vacía, rellénala en el fregadero de la nave.', done: () => G.state.flags.watered, xp: 10 },
   { title: 'Paciencia', desc: 'Espera a que la planta crezca y cosecha. Dormir en el catre de la nave (desde las 18:00) adelanta el tiempo. ¡No olvides regarla!', done: () => G.state.flags.harvested, xp: 20 },
-  { title: 'Empaquetado', desc: 'Compra sobres vacíos y una mesa de empaquetado en la ferretería, colócala y prepara tus pétalos.', done: () => G.state.flags.packed, xp: 20 },
+  { title: 'Empaquetado', desc: 'Compra sobres vacíos y una mesa de empaquetado en la ferretería, colócala y envasa tus cogollos en sobres.', done: () => G.state.flags.packed, xp: 20 },
   { title: 'Primer trato', desc: 'Espera un mensaje de un cliente (Chema o Nuria), acepta el pedido y entrégaselo en persona.', done: () => G.state.stats.deals >= 1, xp: 30 },
   { title: 'Correr la voz', desc: 'Consigue un cliente nuevo regalando una muestra a un vecino (coge el producto en la mano y habla con él).', done: () => G.state.flags.sampleWon, xp: 30 },
   { title: 'Química de barrio', desc: 'Alcanza el rango Trapichero, compra una mezcladora y crea un producto nuevo con ingredientes de la gasolinera.', done: () => G.state.flags.mixed, xp: 50 },

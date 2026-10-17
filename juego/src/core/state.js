@@ -48,10 +48,25 @@ export function load() {
     if (!raw) return null;
     const s = JSON.parse(raw);
     if (!s || s.version !== 3) return null;
-    return Object.assign(newState(), s);
+    return migrate(Object.assign(newState(), s));
   } catch (e) {
     return null;
   }
+}
+
+// Partidas antiguas: las gominolas pasan a sobres (3 por bolsa) y los moldes a sobres vacíos.
+function migrate(s) {
+  const fix = (slots) => slots.forEach((x, i) => {
+    if (!x) return;
+    if (x.id === 'gomi') slots[i] = { id: 'bolsa', q: Math.min(30, x.q * 3), p: x.p };
+    else if (x.id === 'molde') slots[i] = { id: 'bolsita', q: x.q };
+    else if (!ITEMS[x.id]) slots[i] = null;
+  });
+  fix(s.inv);
+  for (const o of s.objects || []) if (o.data?.slots) fix(o.data.slots);
+  for (const d of s.deals || []) if (d.form === 'gomi') d.form = 'bolsa';
+  for (const o of s.orders || []) o.items = (o.items || []).filter((it) => ITEMS[it.id]);
+  return s;
 }
 
 export function hasSave() {

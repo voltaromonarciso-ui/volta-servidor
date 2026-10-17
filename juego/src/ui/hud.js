@@ -203,7 +203,11 @@ function drawMinimap() {
 
 export function itemLabel(slot) {
   const it = ITEMS[slot.id];
-  if (slot.p && G.state.products[slot.p]) return `${it.name} de ${G.state.products[slot.p].name}`;
+  if (slot.p && G.state.products[slot.p]) {
+    const pn = G.state.products[slot.p].name;
+    if (pn === it.name) return it.name;
+    return `${it.name.replace(/ de Lumaflor$/, '')} de ${pn}`;
+  }
   if (slot.id === 'semilla' && slot.p) return `Semilla de ${STRAINS[slot.p] ? STRAINS[slot.p].name : slot.p}`;
   return it.name;
 }

@@ -56,7 +56,7 @@ export function addXP(n) {
     sfx('level');
     const unlocks = [
       ...Object.entries(ITEMS).filter(([, it]) => it.rank === s.rank).map(([, it]) => it.name),
-      ...Object.values(STRAINS).filter((st) => st.rank === s.rank).map((st) => 'Semillas de ' + st.name),
+      ...Object.values(STRAINS).filter((st) => st.rank === s.rank && !st.noSeed).map((st) => 'Semillas de ' + st.name),
     ];
     G.act.bigToast?.(`¡Nuevo rango: ${RANKS[s.rank].name}!`, unlocks.length ? 'Desbloqueado: ' + unlocks.join(', ') : 'Tus clientes te respetan más.');
   }
@@ -207,9 +207,12 @@ function makeDeal(person, c, urgent = false) {
   const maxQ = 3 + G.state.rank * 3 + Math.floor(c.affinity / 20) + Math.floor(c.addiction * 6);
   const qty = clamp(Math.floor(budget / p.price), 1, maxQ);
   const spot = spotFor(person);
+  // envase preferido: los cristales solo van en bolsas Sweet Shards; los tarros
+  // solo se piden si ya tienes con qué hacerlos
+  const form = p.strain === 'shards' ? 'shards' : person.form === 'tarro' && !G.state.flags.jars ? 'bolsa' : person.form;
   const deal = {
     id: `d${Date.now().toString(36)}${dealSeq++}`, npc: person.id, product: p.id, qty, price: qty * p.price,
-    spot: spot.id, status: 'offer', created: absNow(), expires: absNow() + 75, form: person.form,
+    spot: spot.id, status: 'offer', created: absNow(), expires: absNow() + 75, form,
   };
   G.state.deals.push(deal);
   const fm = ITEMS[person.form].form;
@@ -289,7 +292,9 @@ export function completeDeal(deal, given) {
   for (const g of given) inv.remove(g.id, g.q, g.p);
   const formOk = deal.form && given.every((g) => g.id === deal.form);
   let pay = rightUnits >= deal.qty ? deal.price : Math.round(deal.price * 0.85);
-  const tip = formOk ? Math.max(2, Math.round(pay * 0.1)) : 0;
+  const jars = given.filter((g) => g.id === 'tarro').reduce((a, g) => a + g.q * 5, 0);
+  // propina por el envase preferido, y un extra por la presentación en tarro
+  const tip = (formOk ? Math.max(2, Math.round(pay * 0.1)) : 0) + Math.round(pay * 0.08 * Math.min(1, jars / Math.max(1, units)));
   pay += tip;
   const p = product(deal.product);
   const unit = deal.price / deal.qty;
@@ -324,7 +329,7 @@ export function completeDeal(deal, given) {
 // - Si aún no es cliente: puede engancharse y darte su número.
 // - Si ya lo es: gana confianza y algo de adicción.
 // En ambos casos sube un poco tu reputación. Una vez al día por persona.
-export const GIFTABLE = ['cogollo', 'bolsa', 'tarro', 'gomi'];
+export const GIFTABLE = ['cogollo', 'bolsa', 'tarro', 'cristal', 'shards'];
 export function canGift(npc) { return customer(npc.id).sampleDay !== G.state.day; }
 export function giveSample(npc, slot = inv.held()) {
   if (!slot || !GIFTABLE.includes(slot.id)) return G.act.toast('Elige producto para regalar.');

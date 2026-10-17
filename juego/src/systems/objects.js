@@ -6,12 +6,16 @@ import { removeBox } from '../world/world.js';
 import { mat } from '../entities/human.js';
 import { sfx } from '../core/audio.js';
 import { ensureBaseProduct } from './economy.js';
+import { absNow } from '../core/state.js';
 
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
 export const FOOT = {
-  pot: [0.8, 0.8], packer: [1.6, 0.9], mixer: [1.1, 1.0], lamp: [0.6, 0.6], shelf: [1.6, 0.6],
+  pot: [0.8, 0.8], packer: [1.6, 0.9], mixer: [1.1, 1.0], lamp: [0.6, 0.6], shelf: [1.6, 0.6], jarpacker: [1.3, 0.8], stove: [1.2, 0.75],
 };
-const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', mixer: 'mezcladora', lamp: 'lampara', shelf: 'estante' };
+const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', mixer: 'mezcladora', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo' };
+// Hornillo: receta y tiempo de cada tanda de cristales
+export const RECIPE = { azucar: 2, colorante: 1, catalizador: 1 };
+const COOK_MIN = 120, COOK_OUT = 6;
 const GROW_MIN = 14 * 60;     // minutos de juego para crecer del todo
 const DRAIN_MIN = 10 * 60;    // minutos que dura el agua
 
@@ -84,6 +88,8 @@ export function placeObject(type, x, z, r) {
   const entry = { uid: G.state.nextUid++, type, x, z, r, data: {} };
   if (type === 'pot') entry.data = { soil: 0, strain: null, growth: 0, water: 0, fert: 0 };
   if (type === 'shelf') entry.data = { slots: Array(12).fill(null) };
+  if (type === 'stove') entry.data = { batch: null };
+  if (type === 'jarpacker') G.state.flags.jars = true;
   G.state.objects.push(entry);
   return spawnObject(entry);
 }
@@ -146,15 +152,17 @@ const BUILD = {
     // pila de sobres y caja de sobres
     for (let i = 0; i < 4; i++) mesh(bx, '#f2efe6', 0.2, 0.012, 0.13, -0.05 + i * 0.01, 0.94 + i * 0.013, 0.2, g).rotation.y = i * 0.1;
     mesh(bx, '#7d5a3a', 0.3, 0.16, 0.22, 0.12, 1.01, -0.22, g);
-    // gradilla con viales
-    mesh(bx, dark, 0.34, 0.05, 0.12, 0.5, 0.95, -0.15, g);
-    for (let i = 0; i < 4; i++) {
-      mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xdff2f7, roughness: 0.05, transparent: true, opacity: 0.5 }), 0.05, 0.16, 0.05, 0.38 + i * 0.08, 1.04, -0.15, g);
-      mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x7dffb0, emissive: 0x3dff8a, emissiveIntensity: 0.8 }), 0.04, 0.08, 0.04, 0.38 + i * 0.08, 1.0, -0.15, g);
+    // bolsitas zip transparentes con cogollos, listas para cerrar
+    const zip = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, transparent: true, opacity: 0.35 });
+    const bud = new THREE.MeshStandardMaterial({ color: 0x6abf45, roughness: 0.9, flatShading: true });
+    for (let i = 0; i < 3; i++) {
+      mesh(bx, zip, 0.14, 0.01, 0.18, 0.32 + i * 0.16, 0.94, -0.18, g).rotation.y = (i - 1) * 0.15;
+      for (let k = 0; k < 3; k++) mesh(ico, bud, 0.035, 0.03, 0.035, 0.3 + i * 0.16 + (k - 1) * 0.03, 0.955, -0.18 + (k % 2) * 0.03, g);
     }
-    // bandeja de moldes de gominola
-    mesh(bx, '#d94a8c', 0.3, 0.03, 0.2, 0.45, 0.945, 0.2, g);
-    for (let i = 0; i < 6; i++) mesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshStandardMaterial({ color: 0xff7ab8, emissive: 0xff3d8a, emissiveIntensity: 0.3 }), 0.05, 0.035, 0.05, 0.36 + (i % 3) * 0.09, 0.97, 0.15 + Math.floor(i / 3) * 0.1, g);
+    // bote de cogollos y caja de bolsas
+    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xe6f6fb, roughness: 0.05, transparent: true, opacity: 0.4 }), 0.18, 0.22, 0.18, 0.5, 1.04, 0.2, g);
+    for (let k = 0; k < 5; k++) mesh(ico, bud, 0.06, 0.05, 0.06, 0.47 + (k % 3) * 0.03, 0.97 + Math.floor(k / 3) * 0.05, 0.19 + (k % 2) * 0.03, g);
+    mesh(cyl, '#9b6b3d', 0.19, 0.03, 0.19, 0.5, 1.16, 0.2, g);
     // lámpara de mesa
     mesh(cyl, dark, 0.03, 0.5, 0.03, -0.7, 1.15, -0.32, g);
     mesh(new THREE.ConeGeometry(0.5, 1, 12, 1, true), dark, 0.18, 0.12, 0.18, -0.62, 1.38, -0.28, g).rotation.z = -0.5;
@@ -178,6 +186,56 @@ const BUILD = {
     // tubos
     mesh(cyl, steel, 0.04, 0.5, 0.04, 0.35, 1.05, -0.25, g);
     mesh(cyl, steel, 0.04, 0.4, 0.04, 0.15, 1.3, -0.25, g).rotation.z = Math.PI / 2;
+  },
+  jarpacker(o) {
+    const g = o.group;
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9ced3, roughness: 0.35, metalness: 0.7 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2f3a45, roughness: 0.5, metalness: 0.4 });
+    const glass = new THREE.MeshStandardMaterial({ color: 0xe6f6fb, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.38 });
+    const cork = new THREE.MeshStandardMaterial({ color: 0xb08050, roughness: 0.95 });
+    const bud = new THREE.MeshStandardMaterial({ color: 0x6abf45, roughness: 0.9, flatShading: true });
+    mesh(bx, steel, 1.3, 0.06, 0.8, 0, 0.9, 0, g);
+    mesh(bx, dark, 1.2, 0.04, 0.7, 0, 0.3, 0, g);
+    for (const [x, z] of [[-0.6, -0.35], [0.6, -0.35], [-0.6, 0.35], [0.6, 0.35]]) mesh(bx, dark, 0.06, 0.9, 0.06, x, 0.45, z, g);
+    // prensa de tapas
+    mesh(bx, dark, 0.3, 0.06, 0.3, -0.4, 0.96, -0.12, g);
+    mesh(cyl, steel, 0.05, 0.55, 0.05, -0.4, 1.25, -0.25, g);
+    mesh(bx, '#c0392b', 0.28, 0.1, 0.12, -0.4, 1.45, -0.12, g);
+    // tarros: unos llenos y otros vacíos
+    for (let i = 0; i < 6; i++) {
+      const x = 0.05 + (i % 3) * 0.17, z = -0.15 + Math.floor(i / 3) * 0.2;
+      mesh(cyl, glass, 0.13, 0.17, 0.13, x, 1.02, z, g);
+      mesh(cyl, cork, 0.135, 0.035, 0.135, x, 1.12, z, g);
+      if (i < 4) for (let k = 0; k < 4; k++) mesh(ico, bud, 0.06, 0.055, 0.06, x + (k % 2 - 0.5) * 0.04, 0.97 + Math.floor(k / 2) * 0.05, z + (k % 2) * 0.02, g);
+    }
+  },
+  stove(o) {
+    const g = o.group;
+    const steel = new THREE.MeshStandardMaterial({ color: 0xb8bec4, roughness: 0.3, metalness: 0.8 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x24292f, roughness: 0.5, metalness: 0.5 });
+    mesh(bx, dark, 1.2, 0.85, 0.75, 0, 0.425, 0, g);
+    mesh(bx, steel, 1.22, 0.04, 0.77, 0, 0.87, 0, g);
+    // dos fuegos con olla y bandeja de cristales
+    o.flames = [];
+    for (const x of [-0.3, 0.3]) {
+      mesh(cyl, '#111', 0.32, 0.03, 0.32, x, 0.9, 0, g);
+      const f = mesh(new THREE.TorusGeometry(0.5, 0.12, 6, 16), new THREE.MeshBasicMaterial({ color: 0x3d8bff, toneMapped: false, transparent: true, opacity: 0.0 }), 0.22, 0.22, 0.22, x, 0.92, 0, g);
+      f.rotation.x = Math.PI / 2;
+      o.flames.push(f);
+    }
+    mesh(cyl, steel, 0.34, 0.24, 0.34, -0.3, 1.04, 0, g);
+    o.liquid = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xc58bff, emissive: 0x8a4dff, emissiveIntensity: 0.0, roughness: 0.2 }), 0.3, 0.02, 0.3, -0.3, 1.14, 0, g);
+    mesh(bx, steel, 0.4, 0.03, 0.3, 0.3, 0.93, 0, g);
+    o.tray = [];
+    const cols = [0x4fc3ff, 0x6dff8a, 0xb388ff, 0xff5f7a];
+    for (let i = 0; i < 6; i++) {
+      const c = mesh(new THREE.OctahedronGeometry(0.5, 0), new THREE.MeshStandardMaterial({ color: cols[i % 4], emissive: cols[i % 4], emissiveIntensity: 0.5, roughness: 0.1, metalness: 0.2 }), 0.06, 0.12, 0.06, 0.18 + (i % 3) * 0.12, 0.99, -0.07 + Math.floor(i / 3) * 0.14, g);
+      c.rotation.set(0.3, i, 0.2);
+      o.tray.push(c);
+    }
+    // panel y campana
+    mesh(bx, '#1d2329', 0.4, 0.14, 0.03, 0, 0.7, 0.39, g);
+    o.led = mesh(bx, new THREE.MeshBasicMaterial({ color: 0x333333, toneMapped: false }), 0.08, 0.05, 0.01, 0.12, 0.72, 0.405, g);
   },
   lamp(o) {
     const g = o.group;
@@ -251,6 +309,16 @@ export function updateObjects(dt) {
     for (const o of G.objects.values()) if (o.entry.type === 'pot') refreshPot(o);
   }
   for (const o of G.objects.values()) if (o.spin) o.spin.rotation.y += dt * (o.busy ? 12 : 0.3);
+  for (const o of G.objects.values()) {
+    if (o.entry.type !== 'stove') continue;
+    const b = o.entry.data.batch, now = absNow();
+    const cooking = b && now < b.ready, ready = b && now >= b.ready;
+    for (const f of o.flames) { f.material.opacity = cooking ? 0.7 + Math.sin(G.time * 20 + f.position.x * 9) * 0.2 : 0; }
+    o.liquid.material.emissiveIntensity = cooking ? 1.2 : 0;
+    o.liquid.visible = !!cooking;
+    for (const c of o.tray) c.visible = !!ready;
+    o.led.material.color.setHex(cooking ? 0xff6a00 : ready ? 0x2ecc71 : 0x333333);
+  }
 }
 
 function potInfo(d) {
@@ -266,6 +334,7 @@ function infoFor(o) {
   const e = o.entry;
   if (e.type === 'pot') return potInfo(e.data);
   if (e.type === 'shelf') return `Estantería · ${e.data.slots.filter(Boolean).length}/12 huecos ocupados`;
+  if (e.type === 'stove') { const b = e.data.batch; return !b ? 'Hornillo · 2 azúcar + 1 colorante + 1 catalizador = 6 cristales' : absNow() >= b.ready ? 'Hornillo · ¡Cristales listos!' : 'Hornillo · Cocinando…'; }
   return ITEMS[ITEM_OF[e.type]].name;
 }
 
@@ -298,12 +367,42 @@ function actionsFor(o) {
       return [{ label: 'Usar mesa de empaquetado', fn: () => G.act.openPacker(o) }, pick];
     case 'mixer':
       return [{ label: 'Usar mezcladora', fn: () => G.act.openMixer(o) }, pick];
+    case 'jarpacker':
+      return [{ label: 'Usar envasadora de tarros', fn: () => G.act.openPacker(o) }, pick];
+    case 'stove': {
+      const b = d.batch;
+      if (!b) return [{ label: 'Cocinar cristales', fn: () => cook(o) }, pick];
+      const left = Math.ceil(b.ready - absNow());
+      if (left > 0) return [{ label: `Cocinando… ${Math.floor(left / 60)}h ${String(left % 60).padStart(2, '0')}min`, fn: () => G.act.toast('Los cristales tienen que enfriarse. Vuelve más tarde (puedes dormir mientras).', '🔥') }];
+      return [{ label: `Recoger ${b.n} cristales`, fn: () => collect(o) }];
+    }
     case 'lamp':
       return [{ label: 'Lámpara de cultivo (encendida)', fn: () => G.act.toast('Acelera las plantas a menos de 2,5 m.') }, pick];
     case 'shelf':
       return [{ label: 'Abrir estantería', fn: () => G.act.openShelf(o) }, pick];
   }
   return [];
+}
+
+// ---- Hornillo de cristalización ----
+function cook(o) {
+  const miss = Object.entries(RECIPE).filter(([k, n]) => inv.count(k) < n).map(([k, n]) => `${n}× ${ITEMS[k].name}`);
+  if (miss.length) return G.act.toast(`Te falta: ${miss.join(', ')}. Azúcar y colorante en Gas&Go; catalizador en la ferretería.`, '⚠️');
+  for (const [k, n] of Object.entries(RECIPE)) inv.remove(k, n);
+  o.entry.data.batch = { ready: absNow() + COOK_MIN, n: COOK_OUT };
+  G.player.use();
+  sfx('mix');
+  G.act.toast(`Tanda en marcha: ${COOK_OUT} cristales en ${COOK_MIN / 60} horas.`, '🔥');
+  G.act.flag('cooked');
+}
+function collect(o) {
+  const b = o.entry.data.batch;
+  const pid = ensureBaseProduct('shards');
+  if (inv.room('cristal', pid) < b.n) return G.act.toast('No tienes hueco en el inventario.');
+  inv.add('cristal', b.n, pid);
+  o.entry.data.batch = null;
+  sfx('harvest');
+  G.act.toast(`Has recogido ${b.n} cristales. Envásalos en bolsas Sweet Shards en la mesa de empaquetado.`, '💎');
 }
 
 function water(o) {
@@ -325,13 +424,13 @@ function harvest(o) {
   if (d.soil === 2) n = Math.round(n * 1.4);
   if (d.fert) n += 3;
   const pid = ensureBaseProduct(d.strain);
-  if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} pétalos.`);
+  if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} cogollos.`);
   inv.add('cogollo', n, pid);
   Object.assign(d, { soil: 0, strain: null, growth: 0, water: 0, fert: 0 });
   refreshPot(o);
   G.player.use();
   sfx('harvest');
-  G.act.toast(`Has cosechado ${n} pétalos de ${s.name}.`, '🌸');
+  G.act.toast(`Has cosechado ${n} cogollos de ${s.name}. Envásalos en la mesa de empaquetado.`, '🌿');
   G.act.addXP(8);
   G.act.flag('harvested');
 }

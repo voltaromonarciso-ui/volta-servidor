@@ -10,10 +10,11 @@ import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
 
+// Envases: qué producto suelto (src) se mete en qué envase, en qué máquina.
 export const FORMS = [
-  { id: 'bolsa', pack: 'bolsita', per: 1 },
-  { id: 'tarro', pack: 'tarro_v', per: 5 },
-  { id: 'gomi', pack: 'molde', per: 3 },
+  { id: 'bolsa', src: 'cogollo', pack: 'bolsita', per: 1, at: 'packer' },
+  { id: 'shards', src: 'cristal', pack: 'bolsa_ss', per: 1, at: 'packer' },
+  { id: 'tarro', src: 'cogollo', pack: 'tarro_v', per: 5, at: 'jarpacker' },
 ];
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 let current = null;
@@ -181,47 +182,52 @@ function fail(msg) { sfx('error'); G.act.toast(msg, '⚠️'); }
 // ------------------------------------------------------------------
 //  Mesa de empaquetado
 // ------------------------------------------------------------------
-export function openPacker() {
-  const p = openPanel({ title: 'Mesa de empaquetado', wide: true });
-  let sel = null, mode = 'bolsa', busy = false;
+export function openPacker(obj) {
+  const at = obj?.entry?.type === 'jarpacker' ? 'jarpacker' : 'packer';
+  const forms = FORMS.filter((f) => f.at === at);
+  const srcs = [...new Set(forms.map((f) => f.src))];
+  const p = openPanel({ title: at === 'jarpacker' ? 'Envasadora de tarros' : 'Mesa de empaquetado', wide: true });
+  let sel = null, mode = null, busy = false;
   const render = () => {
     p.body.innerHTML = '';
-    const buds = productStacks('cogollo');
-    if (!buds.length) {
-      p.foot.innerHTML = '';
-      p.body.appendChild(h('p', 'txt', 'No llevas pétalos de Lumaflor. Cosecha tus plantas y vuelve.'));
+    p.foot.innerHTML = '';
+    const stacks = srcs.flatMap((id) => productStacks(id).map((x) => ({ ...x, id })));
+    if (!stacks.length) {
+      p.body.appendChild(h('p', 'txt', at === 'jarpacker'
+        ? 'No llevas cogollos. Cosecha tus plantas y vuelve: cada tarro lleva 5 cogollos y un tarro vacío.'
+        : 'No llevas cogollos ni cristales. Cosecha tus plantas (o cocina cristales en el hornillo) y vuelve.'));
       return;
     }
-    if (!sel || !buds.find((b) => b.p === sel)) sel = buds[0].p;
+    if (!sel || !stacks.find((b) => b.p === sel.p && b.id === sel.id)) sel = stacks[0];
+    const valid = forms.filter((f) => f.src === sel.id);
+    if (!mode || !valid.find((f) => f.id === mode)) mode = valid[0].id;
     p.body.appendChild(h('div', 'label', '1. Elige el producto'));
     const list = h('div', 'pick-row');
-    for (const b of buds) {
+    for (const b of stacks) {
       const prod = product(b.p);
-      const e = h('button', 'pick' + (b.p === sel ? ' on' : ''), `<b>${prod.name}</b><small>${b.q} pétalos</small>`);
-      e.onclick = () => { sel = b.p; render(); sfx('click'); };
+      const e = h('button', 'pick' + (b.p === sel.p && b.id === sel.id ? ' on' : ''), `<b>${ITEMS[b.id].icon} ${prod.name}</b><small>${b.q} ${b.id === 'cristal' ? 'cristales' : 'cogollos'}</small>`);
+      e.onclick = () => { sel = b; render(); sfx('click'); };
       list.appendChild(e);
     }
     p.body.appendChild(list);
-    p.body.appendChild(h('div', 'label', '2. Elige el envase'));
+    p.body.appendChild(h('div', 'label', '2. Envase'));
     const m = h('div', 'pick-row');
-    for (const [k, label, has] of FORMS.map((f) => [f.id, `${ITEMS[f.id].icon} ${ITEMS[f.id].name} · ${f.per} pétalo${f.per > 1 ? 's' : ''} + ${ITEMS[f.pack].name.toLowerCase()} (tienes ${inv.count(f.pack)})`, inv.count(f.pack)])) {
-      const e = h('button', 'pick' + (mode === k ? ' on' : ''), label);
-      e.onclick = () => { mode = k; render(); sfx('click'); };
-      if (!has) e.classList.add('dim');
+    for (const f of valid) {
+      const have = inv.count(f.pack);
+      const e = h('button', 'pick' + (mode === f.id ? ' on' : '') + (have ? '' : ' dim'), `<b>${ITEMS[f.id].icon} ${ITEMS[f.id].name}</b><small>${f.per} ${sel.id === 'cristal' ? 'cristal' : f.per > 1 ? 'cogollos' : 'cogollo'} + 1 envase · tienes ${have} ${ITEMS[f.pack].name.toLowerCase()}</small>`);
+      e.onclick = () => { mode = f.id; render(); sfx('click'); };
       m.appendChild(e);
     }
     p.body.appendChild(m);
-    const F = FORMS.find((f) => f.id === mode);
-    const per = F.per, pack = F.pack;
-    const max = Math.min(Math.floor(inv.count('cogollo', sel) / per), inv.count(pack));
+    if (at === 'packer' && sel.id === 'cogollo') p.body.appendChild(h('div', 'small muted', G.state.flags.jars ? 'Para tarros usa la envasadora de tarros.' : '🔒 Tarros: compra la envasadora de tarros en la ferretería (rango Buscavidas). Los clientes pagan más por los tarros.'));
+    const F = forms.find((f) => f.id === mode);
+    const max = Math.min(Math.floor(inv.count(sel.id, sel.p) / F.per), inv.count(F.pack));
     const bar = h('div', 'progress', '<i></i>');
-    const row = p.foot;
-    row.innerHTML = '';
-    const one = h('button', 'btn ghost', 'Empaquetar 1');
-    const all = h('button', 'btn', `Empaquetar todo (${max})`);
+    const one = h('button', 'btn ghost', 'Envasar 1');
+    const all = h('button', 'btn', `Envasar todo (${max})`);
     const go = (n) => {
       if (busy) return;
-      if (n <= 0) return fail(max === 0 ? (inv.count(pack) ? 'No tienes suficientes pétalos.' : `Te faltan envases (${ITEMS[pack].name}).`) : 'Nada que empaquetar.');
+      if (n <= 0) return fail(!inv.count(F.pack) ? `Te faltan envases (${ITEMS[F.pack].name}).` : `Necesitas ${F.per} unidades para cada ${ITEMS[F.id].name.toLowerCase()}.`);
       busy = true;
       const steps = Math.min(n, 8);
       let k = 0;
@@ -230,15 +236,14 @@ export function openPacker() {
         bar.firstChild.style.width = (k / steps) * 100 + '%';
         sfx('pack');
         if (k < steps) return setTimeout(tick, 220);
-        const room = inv.room(mode, sel);
-        const done = Math.min(n, room);
+        const done = Math.min(n, inv.room(F.id, sel.p));
         if (!done) { busy = false; return fail('No tienes hueco en el inventario.'); }
-        inv.remove('cogollo', done * per, sel);
-        inv.remove(pack, done);
-        inv.add(mode, done, sel);
+        inv.remove(sel.id, done * F.per, sel.p);
+        inv.remove(F.pack, done);
+        inv.add(F.id, done, sel.p);
         G.act.flag('packed');
-        G.act.toast(`Empaquetado: ${done}× ${ITEMS[mode].name}`, '📦');
-        addXP(done * 0.5);
+        G.act.toast(`Envasado: ${done}× ${ITEMS[F.id].name}`, ITEMS[F.id].icon);
+        addXP(done * (F.per > 1 ? 2 : 0.5));
         busy = false;
         render();
       };
@@ -246,7 +251,7 @@ export function openPacker() {
     };
     one.onclick = () => go(Math.min(1, max));
     all.onclick = () => go(max);
-    row.append(one, all);
+    p.foot.append(one, all);
     p.body.append(bar);
   };
   render();
@@ -269,7 +274,7 @@ export function openMixer(obj) {
     const buds = productStacks('cogollo');
     const ings = Object.keys(INGREDIENTS).filter((k) => inv.count(k) > 0);
     if (!buds.length || !ings.length) {
-      p.body.appendChild(h('p', 'txt', 'Necesitas <b>pétalos de Lumaflor</b> y al menos un <b>ingrediente</b> (de la gasolinera Gas&Go) en el inventario.'));
+      p.body.appendChild(h('p', 'txt', 'Necesitas <b>cogollos de Lumaflor</b> y al menos un <b>ingrediente</b> (de la gasolinera Gas&Go) en el inventario.'));
       return;
     }
     if (!sel || !buds.find((b) => b.p === sel)) sel = buds[0].p;
@@ -310,7 +315,7 @@ export function openMixer(obj) {
       c.appendChild(inp);
     }
     const bar = h('div', 'progress', '<i></i>');
-    const go = h('button', 'btn', `Mezclar ${qty} pétalo${qty > 1 ? 's' : ''}`);
+    const go = h('button', 'btn', `Mezclar ${qty} cogollo${qty > 1 ? 's' : ''}`);
     go.onclick = () => {
       if (busy || same) return same && fail('No tendría ningún efecto.');
       busy = true; obj.busy = true;
@@ -445,7 +450,7 @@ const stacksOf = (ids) => {
   for (const s of G.state.inv) if (s && ids.includes(s.id) && s.p) map.set(s.id + '|' + s.p, { id: s.id, p: s.p, q: (map.get(s.id + '|' + s.p)?.q || 0) + s.q });
   return [...map.values()];
 };
-const PACKED = ['bolsa', 'tarro', 'gomi'];
+const PACKED = ['bolsa', 'tarro', 'shards'];
 
 export function npcActions(npc) {
   const deal = npc.deal;
@@ -602,7 +607,7 @@ export function openHandover(npc, deal) {
   const autoFill = () => {
     offer.clear();
     let need = deal.qty;
-    const order = [...new Set([deal.form, 'tarro', 'gomi', 'bolsa'])].filter(Boolean);
+    const order = [...new Set([deal.form, 'tarro', 'shards', 'bolsa'])].filter(Boolean);
     for (const id of order) {
       if (need <= 0) break;
       const u = ITEMS[id].units;

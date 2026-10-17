@@ -107,7 +107,7 @@ function leoTip() {
     'Primero la tierra, luego la semilla. No tiene más misterio.',
     'El fregadero está junto al banco. Llena la regadera ahí.',
     'Si estás cansado, el catre del fondo es todo tuyo.',
-    'Sobres vacíos y mesa de empaquetado, en la ferretería. Los viales y los moldes de gominola también.',
+    'Sobres vacíos y mesa de empaquetado, en la ferretería. Más adelante, tarros y el hornillo de cristales.',
   ];
   return tips[q] || 'Tú a lo tuyo, que yo vigilo la nave.';
 }
@@ -134,7 +134,7 @@ Object.assign(G.act, {
     addXP(q.xp);
     sfx('level');
     bigToast(`✔ ${q.title}`, next ? `Siguiente: ${next.title}` : '¡Has completado la historia!');
-    if (q.title === 'Paciencia') setTimeout(() => sendMsg('leo', 'Primo, ¡ya tienes cosecha! Prepárala en sobres, viales o gominolas: nadie compra pétalos sueltos. Chema y Nuria ya saben de ti.'), 3000);
+    if (q.title === 'Paciencia') setTimeout(() => sendMsg('leo', 'Primo, ¡ya tienes cosecha! Envásala en sobres: nadie compra cogollos sueltos. Cuando crezcas, pásate a los tarros. Chema y Nuria ya saben de ti.'), 3000);
   },
   fade: (mid) => {
     const f = document.getElementById('fade');
