@@ -527,7 +527,7 @@ body.touch.placing:not(.moving) .moveb { display: none; }
 body.touch.placing #btn-alt { display: none !important; }
 .placeb { width: 64px; height: 64px; }
 .placeb svg { width: 32px; height: 32px; }
-.placeb b { font-size: 10.5px; font-weight: 900; letter-spacing: 0.02em; }
+.placeb .pl { position: absolute; top: 100%; margin-top: 2px; font-size: 10px; font-weight: 800; white-space: nowrap; text-shadow: 0 1px 3px #000; }
 #btn-rotr { right: calc(132px + var(--safe-r)); bottom: calc(206px + var(--safe-b)); }
 #btn-rotl { right: calc(206px + var(--safe-r)); bottom: calc(206px + var(--safe-b)); }
 #btn-cancel { right: calc(132px + var(--safe-r)); bottom: calc(120px + var(--safe-b)); background: rgba(120, 30, 30, 0.55); }

@@ -67,7 +67,7 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
     if (isTouch(testInfo)) for (const b of ['#btn-rotl', '#btn-rotr', '#btn-cancel']) await expect(page.locator(b)).toBeVisible();
     await shot(page, testInfo, 'colocar');
     // vista previa: un fantasma verde donde va la cama
-    const ghost = () => ev(page, () => { const g = __G.scene.children.find((o) => o.isMesh && o.material?.transparent && o.material.color?.getHex() === 0x2ecc71 && o.userData.h); return g ? { y: +g.rotation.y.toFixed(3), x: g.position.x } : null; });
+    const ghost = () => ev(page, () => { const g = __G.scene.children.find((o) => o.userData.ghost); return g ? { y: +g.rotation.y.toFixed(3), x: g.position.x } : null; });
     await expect.poll(ghost).not.toBe(null);
     // girar con los botones grandes (a la derecha y a la izquierda)
     await btn(page, testInfo, '#btn-rotr', 'KeyR');

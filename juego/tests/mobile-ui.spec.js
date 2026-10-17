@@ -57,6 +57,7 @@ function audit(sel, safe) {
 
 const HUD = '#btn-use, #btn-alt, #btn-jump, #btn-run, #btn-crouch, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
 const RIDE = '#btn-brake, #btn-dismount, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
+const MOVE = '#btn-use, #btn-rotl, #btn-rotr, #btn-cancel, #btn-store, #btn-run, #btn-crouch, #btn-jump, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
 const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station button, .dress button';
 
 test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
@@ -101,6 +102,12 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
     await frames(page, 12);
     await shot('conduciendo', RIDE);
     await ev(page, () => __G.act.forceDismount());
+    await frames(page, 4);
+    // moviendo un mueble: girar a los dos lados, cancelar y guardar
+    await page.evaluate(async () => { const m = await import('/src/systems/objects.js'); __G.player.teleport(-64, -56, Math.PI / 2); __G.player.pitch = -0.55; const o = m.placeObject('safe', -69, -52, 0); m.startMove(o); });
+    await frames(page, 6);
+    await shot('mover', MOVE);
+    await page.evaluate(async () => { const m = await import('/src/systems/objects.js'); const o = m.placement.moving.o; m.cancelPlacement(); m.storeMoving(); __G.objects.forEach((x) => { if (x === o) { m.startMove(o); m.storeMoving(); } }); });
     await frames(page, 4);
     report[sc.name] = issues;
   }

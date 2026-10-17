@@ -68,6 +68,7 @@ export function spawnObject(entry) {
 export function furnitureModel(type) {
   const o = { entry: { uid: 0, type, data: {} }, group: new THREE.Group() };
   BUILD[type](o);
+  if (o.plant) o.plant.visible = false;
   return o.group;
 }
 
@@ -440,12 +441,17 @@ function setGhost(type) {
   if (ghost) G.scene.remove(ghost);
   ghost = null; ghostType = type;
   if (!type) return;
-  const [w, d] = FOOT[type];
-  const h = HEIGHT[type] || 1;
-  ghost = new THREE.Mesh(bx, ghostOk);
-  ghost.scale.set(w, h, d);
-  ghost.userData.h = h;
+  // la silueta real del objeto, translúcida (verde si cabe, roja si no)
+  ghost = furnitureModel(type);
+  ghost.traverse((m) => { if (m.isMesh) { m.material = ghostOk; m.castShadow = false; m.receiveShadow = false; } });
+  ghost.userData.ghost = true;
+  ghost.userData.ok = true;
   G.scene.add(ghost);
+}
+function tintGhost(ok) {
+  if (ghost.userData.ok === ok) return;
+  ghost.userData.ok = ok;
+  ghost.traverse((m) => { if (m.isMesh) m.material = ok ? ghostOk : ghostBad; });
 }
 
 // ¿Cabe un objeto de este tipo aquí? (dentro de tu propiedad, sin chocar y sin pisarte)
@@ -559,9 +565,9 @@ export function updatePlacement() {
   const r = placement.rot;
   const x = Math.round(hit.point.x * 4) / 4, z = Math.round(hit.point.z * 4) / 4;
   const ok = canPlace(type, x, z, r, hit.object.userData.prop);
-  ghost.position.set(x, ghost.userData.h / 2, z);
+  ghost.position.set(x, 0, z);
   ghost.rotation.y = r;
-  ghost.material = ok ? ghostOk : ghostBad;
+  tintGhost(ok);
   const name = ITEMS[ITEM_OF[type]].name.toLowerCase();
   const place = m
     ? { label: ok ? 'Dejar aquí' : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); placement.moving = null; settle(m.o, x, z, r); setGhost(null); sfx('pop'); G.player.use(); save(); } }
