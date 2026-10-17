@@ -137,6 +137,8 @@ body.touch #joy { display: block; }
 @keyframes bin { from { opacity: 0; transform: translateX(-50%) scale(0.85); } }
 #notify { position: absolute; left: 50%; top: 10px; transform: translate(-50%, -150%); background: rgba(245, 247, 250, 0.96); color: #111; border-radius: 22px; padding: 6px 16px 6px 8px; width: auto; max-width: 60vw; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); transition: transform 0.35s, opacity 0.3s; opacity: 0; pointer-events: auto !important; cursor: pointer; z-index: 5; }
 #notify.show { transform: translate(-50%, 0); opacity: 1; }
+/* oculto no debe tapar la barra de objetos (en móvil queda justo encima) */
+#hud #notify:not(.show) { pointer-events: none !important; visibility: hidden; transition: transform 0.35s, opacity 0.3s, visibility 0s 0.35s; }
 .n-ic { font-size: 20px; width: 32px; height: 32px; border-radius: 50%; background: #e8ecf1; display: grid; place-items: center; }
 .n-l { font-size: 14px; white-space: nowrap; }
 .n-t { font-size: 13px; color: #333; max-height: 3em; overflow: hidden; }
@@ -447,3 +449,8 @@ body.in-station #hud, body.in-station #joy, body.in-station #touch-layer { visib
 #station .st-step b { color: var(--gold, #f4c542); }
 #station .st-count { position: absolute; left: 16px; bottom: max(16px, env(safe-area-inset-bottom)); background: rgba(18, 22, 28, 0.78); border-radius: 14px; padding: 8px 14px; color: #fff; font-size: 15px; display: flex; gap: 8px; align-items: center; pointer-events: none; }
 #station .st-exit { position: absolute; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
+
+/* objetivos táctiles de al menos 44 pt en móvil (guía de Apple; Android pide 48 dp) */
+body.touch .qb { width: 44px; height: 44px; font-size: 20px; border-radius: 10px; }
+body.touch .panel .x { width: 44px; height: 44px; }
+body.touch .btn { min-height: 44px; }
