@@ -149,7 +149,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
 
   test('bici: no atraviesa paredes y no te bajas sin sitio', async ({}, testInfo) => {
     // apuntando al escaparate de la tienda (pared en x = 97,75)
-    await ev(page, () => { const e = __G.state.vehicles[0]; e.x = 94; e.z = 41.2; e.yaw = Math.PI / 2; });
+    await mod(page, RD, (m) => m.moveVehicle('bici', { x: 94, z: 41.2, yaw: Math.PI / 2 }));
     await mountAt(page, testInfo, 'bici');
     const t0 = await ev(page, () => __G.time);
     await hold(page, testInfo, 'up', async () => (await ev(page, () => __G.time)) > t0 + 4);
@@ -219,7 +219,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     const inside = await ev(page, async () => {
       const e = __G.state.vehicles.find((v) => v.type === 'patinete');
       const sp = __G.world.props.nave.spawn;
-      e.x = sp.x + 1; e.z = sp.z;
+      (await import('/src/systems/riding.js')).moveVehicle('patinete', { x: sp.x + 1, z: sp.z });
       await new Promise((r) => setTimeout(r, 1500));
       __debug.advanceTime(60);
       await new Promise((r) => setTimeout(r, 2500));
@@ -232,7 +232,8 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
   });
 
   test('policía: el alto en bici y salir pedaleando es una fuga', async ({}, testInfo) => {
-    await ev(page, () => { __G.state.minute = 12 * 60; __G.state.vehicles.find((v) => v.type === 'bici').yaw = 0; });
+    await ev(page, () => { __G.state.minute = 12 * 60; });
+    await mod(page, RD, (m) => m.moveVehicle('bici', { x: 95.4, z: 58, yaw: 0 }));
     await mountAt(page, testInfo, 'bici');
     await hold(page, testInfo, 'up', async () => (await speed(page)) > 3.5);
     // patrulla detrás, mirando al jugador; el azar fuerza el alto

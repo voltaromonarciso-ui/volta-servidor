@@ -55,6 +55,13 @@ export function recoverVehicle(type) {
   return { ok: true };
 }
 
+// Recolocar un vehículo aparcado (grúa, pruebas…).
+export function moveVehicle(type, p) {
+  const e = (G.state.vehicles || []).find((v) => v.type === type);
+  if (e && !(R && R.v.entry === e)) park(e, { yaw: e.yaw, ...p });
+  return e;
+}
+
 function park(e, p) {
   e.x = p.x; e.z = p.z; e.yaw = p.yaw;
   const v = vehicles.get(e.uid);
