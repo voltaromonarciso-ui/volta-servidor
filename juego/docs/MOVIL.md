@@ -53,6 +53,15 @@ pantalla (iPhone SE, 15 Pro, 15 Pro Max, Android pequeño, Pixel 7 y tablet) con
 seguras emuladas, y comprueba que los controles miden ≥ 44 pt, no se solapan, no se
 salen de la pantalla y no caen bajo la muesca o la barra de gestos.
 
+`tests/vehicles.spec.js` compra en la tienda Rueda Libre con el dedo (sin dinero no
+se compra, no se cobra dos veces), monta con la acción real, acelera y gira con el
+joystick táctil (teclado en escritorio), frena manteniendo el botón FRENAR, se baja con
+BAJAR, choca contra un escaparate sin atravesarlo, no deja bajarse sin sitio, usa la
+grúa de pago, gasta la batería del patinete hasta 0, la carga en la nave (y no en la
+calle), da el alto la policía y huir pedaleando inicia la persecución, detenido en bici
+deja la bici donde estaba, guarda/carga sin duplicados y devuelve a la tienda un
+vehículo guardado en un sitio imposible.
+
 Limitaciones de estas pruebas:
 - Usan Chromium con WebGL por software (SwiftShader): **no miden el rendimiento real**
   de un móvil (aquí el juego va a 1–25 fps por la CPU, no por el juego).
@@ -64,7 +73,9 @@ Limitaciones de estas pruebas:
 | Prueba | Android (Pixel 7) | iPhone 14* | Escritorio |
 |---|---|---|---|
 | Ciclo completo (`core.spec.js`, 11 pasos) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
-| Interfaz en 6 pantallas (`mobile-ui.spec.js`) | sin problemas ✔ | — | — |
+| Peluquería, ropa y disfraz (`style.spec.js`, fase 3 bloque A) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
+| Bici y patinete (`vehicles.spec.js`, fase 3 bloque B) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
+| Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos y conducción) | sin problemas ✔ | — | — |
 
 \* Chromium con medidas de iPhone, no Safari.
 

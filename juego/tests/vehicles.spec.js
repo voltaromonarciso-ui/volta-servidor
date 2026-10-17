@@ -102,6 +102,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     await press(page, testInfo, '.vshop .card:has-text("Bicicleta") .btn');
     await expect.poll(() => money(page)).toBe(820);
     await expect(page.locator('.vshop .card:has-text("Bicicleta")')).toContainText('Ya es tuyo');
+    await shot(page, testInfo, 'tienda');
     const again = await mod(page, RD, (m) => m.buyVehicle('bici'));
     expect(again.ok).toBe(false);
     expect(await money(page)).toBe(820);
