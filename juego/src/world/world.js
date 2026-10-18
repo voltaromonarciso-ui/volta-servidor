@@ -1330,6 +1330,13 @@ function buildEastShops() {
     D.poster(104.5, 1.6, z1 - 0.06, Math.PI, 0.7, 0.9, ['#2b2b30', '#f1c40f', '#e8e2d6']);
     D.poster(x1 - 0.06, 1.8, -16, -Math.PI / 2, 1.2, 0.8, ['#1f2a44', '#e74c3c', '#ecf0f1', '#f1c40f']);
     D.rug(101.2, z0 + 1.55, 1.6, 1.6, '#1b1b1e');
+    // centro: alfombra, expositor de productos y sillas de espera
+    D.rug(103.8, -15.6, 4.2, 3.2, '#5a2a2e');
+    B.add(GEO.cyl16, '#2a2d31', 104.6, 0.45, -13.2, 0.9, 0.9, 0.9, 0, LM);
+    for (let i = 0; i < 8; i++) { const a = i * 0.785; B.add(GEO.cyl8, ['#e74c3c', '#ecf0f1', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6'][i % 6], 104.6 + Math.cos(a) * 0.28, 0.98, -13.2 + Math.sin(a) * 0.28, 0.09, 0.16 + (i % 3) * 0.04, 0.09, 0, L); }
+    addBox(104.15, 105.05, -13.65, -12.75, 1);
+    for (const x of [99.4, 100.2]) D.chair(x, -20.2, 0, '#8c1d22');
+    D.poster(x1 - 0.06, 1.9, -12.2, -Math.PI / 2, 1.0, 0.7, ['#8c1d22', '#e8e2d6', '#2b2b30']);
   }
 
   // --- Ropa: percheros, mesa con prendas dobladas y probador con espejo
@@ -1410,6 +1417,7 @@ function buildEastShops() {
     // pared de cascos y repuestos
     sh.shelfUnit(108.6, z1 - 0.35, 2.2, 4, 0.35, Math.PI, '#2a2d31', true);
     const HC = ['#e74c3c', '#f1c40f', '#2ecc71', '#ecf0f1', '#34495e', '#9b59b6'];
+    B.box('#5a5f66', 102, 1.74, z0 + 0.3, 5.2, 0.05, 0.42, 0, LM); // balda de los cascos
     for (let i = 0; i < 6; i++) B.add(GEO.sphere, HC[i], 100 + i * 0.8, 1.9, z0 + 0.3, 0.32, 0.26, 0.34, 0, L);
     // señal de aparcamiento en la acera
     for (const k of ['bici', 'patinete']) { const p = PARKING[k]; B.box('#f2f2f2', p.x, 0.012, p.z, 1.0, 0.01, 1.8, 0, { ao: 0 }); }
@@ -1434,6 +1442,12 @@ function buildEastShops() {
     D.poster(x1 - 0.06, 2.2, 50.5, -Math.PI / 2, 1.6, 1.0, ['#1f6f8b', '#f2c14e', '#ecf0f1', '#2e86de']);
     D.poster(105.5, 2.4, z1 - 0.06, Math.PI, 1.4, 0.8, ['#f2c14e', '#1f3b4d', '#ecf0f1']);
     D.rug(103, 46, 3.4, 2.2, '#2a3a46');
+    // fila de bicis nuevas a la venta junto a la pared
+    [['#8e44ad', 104.3], ['#2c3e50', 105.3], ['#e67e22', 106.3]].forEach(([col, x]) => { const b = buildBike(col); b.position.set(x, 0, z1 - 1.45); b.userData.display = true; scene.add(b); });
+    addBox(103.9, 106.7, z1 - 2.2, z1 - 0.7, 1.1);
+    B.box('#f2c14e', 105.3, 0, z1 - 2.45, 2.6, 0.04, 0.3, 0, { mat: 'glow' }); // franja en el suelo
+    // banco para probarse los cascos
+    B.box('#2a3a46', 100.2, 0.4, 40.6, 0.5, 0.08, 2, 0, L); for (const z of [39.8, 41.4]) B.box('#5a5f66', 100.2, 0, z, 0.4, 0.4, 0.06, 0, LM); addBox(99.95, 100.45, 39.6, 41.6, 0.5);
   }
 
   // --- Muebles: exposición con un ejemplar de cada mueble (los modelos los pone objects.js)
