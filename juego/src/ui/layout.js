@@ -6,14 +6,12 @@ import { input } from '../core/input.js';
 // solape y un editor para que cada jugador coloque los botones a su gusto.
 export const CONTROLS = [
   { id: 'joy', sel: '#joy', label: 'Joystick' },
-  { id: 'use', sel: '#btn-use', label: 'Usar' },
-  { id: 'alt', sel: '#btn-alt', label: 'Secundaria' },
   { id: 'crouch', sel: '#btn-crouch', label: 'Agacharse' },
   { id: 'run', sel: '#btn-run', label: 'Correr' },
   { id: 'jump', sel: '#btn-jump', label: 'Saltar' },
   { id: 'hotbar', sel: '#hotbar', label: 'Objetos' },
   { id: 'map', sel: '#tl', label: 'Mapa' },
-  { id: 'menu', sel: '#tr .tr-btns', label: 'Mochila y móvil' },
+  { id: 'menu', sel: '#tr .tr-btns', label: 'Móvil' },
 ];
 const el = (c) => document.querySelector(c.sel);
 const settings = () => G.state?.settings || {};

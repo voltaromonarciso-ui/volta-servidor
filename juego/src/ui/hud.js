@@ -18,15 +18,18 @@ let waypoint = null;
 let mm, mctx, mmT = 0;
 
 // Cambia un texto solo si es distinto (el HUD se refresca en cada fotograma).
+// miles siempre con punto, también 1.000 (toLocaleString('es-ES') no agrupa 4 cifras)
+const miles = (n) => (n < 0 ? '-' : '') + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 const txt = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
 
 export function initHUD() {
   document.querySelector('#cash .cash-ic').innerHTML = svgIcon('cash');
+  document.querySelector('#bank .cash-ic').innerHTML = svgIcon('card');
   els = {
     money: $('h-money'), clean: $('h-clean'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'),
     qTitle: $('q-title'), qDesc: $('q-desc'), quest: $('quest'),
     rankName: $('rank-name'), rankBar: $('rank-bar'), rankXp: $('rank-xp'),
-    prompt: $('prompt'), info: $('info'), use: $('btn-use'), alt: $('btn-alt'), altLabel: $('alt-label'),
+    prompt: $('prompt'), info: $('info'),
     hotbar: $('hotbar'), toasts: $('toasts'), notify: $('notify'),
     wp: $('waypoint'), wpArrow: $('wp-arrow'), wpText: $('wp-text'),
     wanted: $('wanted'), wantedBar: $('wanted-bar'), phoneBadge: $('phone-badge'), water: $('h-water'),
@@ -45,8 +48,6 @@ export function initHUD() {
     els.hotbar.appendChild(d);
   }
   const btn = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(e); });
-  btn('btn-use', () => emit('btn', 'primary'));
-  btn('btn-alt', () => emit('btn', 'secondary'));
   btn('btn-jump', () => { input.jump = true; });
   btn('btn-run', () => { input.sprintToggle = !input.sprintToggle; if (input.sprintToggle) input.crouch = false; });
   btn('btn-crouch', () => { input.crouch = !input.crouch; if (input.crouch) input.sprintToggle = false; });
@@ -61,9 +62,8 @@ export function initHUD() {
   br.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); br.setPointerCapture?.(e.pointerId); br.classList.add('on'); emit('btn', 'brake'); });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) br.addEventListener(ev, () => { br.classList.remove('on'); emit('btn', 'brake-off'); });
   btn('btn-pause', () => emit('btn', 'escape'));
-  btn('btn-bag', () => emit('btn', 'bag'));
   btn('minimap', () => G.act.openPhone('map'));
-  // en móvil, tocar la etiqueta de acción también la ejecuta
+  // en móvil se interactúa tocando la etiqueta de acción (la principal o la secundaria)
   els.prompt.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     emit('btn', e.target.closest('.pp.sec') ? 'secondary' : 'primary');
@@ -77,13 +77,10 @@ export function initHUD() {
 
 export function updateHUD(target, dt = 0.016) {
   const s = G.state;
-  txt(els.money, Math.round(s.money).toLocaleString('es-ES'));
+  txt(els.money, miles(Math.round(s.money)));
   $('cash').classList.toggle('neg', s.money < 0);
-  // dinero limpio: solo si hay (no es un banco; solo el saldo)
-  const cl = Math.floor(s.clean || 0);
-  els.clean.classList.toggle('on', cl > 0);
-  $('cash').classList.toggle('has-clean', cl > 0);
-  if (cl > 0) txt(els.clean, `Limpio ${cl.toLocaleString('es-ES')} $`);
+  // dinero limpio = saldo del banco (tarjeta)
+  txt(els.clean, miles(Math.floor(s.clean || 0)));
   txt(els.clock, clock(s.minute));
   txt(els.day, `${dayName(s.day).slice(0, 3)} · Día ${s.day}`);
   els.curfew.style.display = curfew() ? '' : 'none';
@@ -123,9 +120,6 @@ export function updateHUD(target, dt = 0.016) {
   const info = target.info || (held ? itemLabel(held) : '');
   if (els.info.textContent !== info) els.info.textContent = info;
   els.info.classList.toggle('show', !!info);
-  els.use.classList.toggle('active', !!prim);
-  els.alt.style.display = sec ? '' : 'none';
-  txt(els.altLabel, sec ? sec.label : '');
   document.body.classList.toggle('aiming', !!prim);
 
   if (waypoint) {

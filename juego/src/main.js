@@ -269,6 +269,7 @@ async function startGame(fresh, look) {
   if (G.avatar) G.avatar.group.visible = false;
   ld.classList.add('hide');
   document.getElementById('hud').classList.remove('hide');
+  document.body.classList.add('ingame'); // joystick y botones solo en partida, nunca en el menú
   applyLayout();
   clock.getDelta();
   G.paused = false;
@@ -281,7 +282,7 @@ function intro() {
   P.messageDialog('Puerto Lomas', `
     <p>${G.state.name ? `<b>${G.state.name.replace(/[<>&"]/g, '')}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha prestado una vieja nave en el polígono de Puerto Lomas, una ciudad costera de palmeras donde nunca pasa nada... en apariencia.</p>
     <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva, empaqueta y vende a los vecinos sin que la policía te pille. Construye tu imperio desde cero.</p>
-    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. ✋ interactuar · agacharse · correr.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
+    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
   '¡A trabajar!', () => {
     setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${G.state.name || 'primo'}. La nave es tuya: deja la caja dentro y ábrela, te he metido lo básico para empezar.`), 1500);
     setTimeout(() => sendMsg('leo', 'Te paso dos contactos: Chema y Nuria. Cuando tengas material, te escribirán. Y ojo: a partir de las 21:00 hay toque de queda, la poli no perdona.'), 8000);

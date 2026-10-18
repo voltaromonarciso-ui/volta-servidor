@@ -55,9 +55,9 @@ function audit(sel, safe) {
   return out;
 }
 
-const HUD = '#btn-use, #btn-alt, #btn-jump, #btn-run, #btn-crouch, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
-const RIDE = '#btn-brake, #btn-dismount, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
-const MOVE = '#btn-use, #btn-rotl, #btn-rotr, #btn-cancel, #btn-store, #btn-run, #btn-crouch, #btn-jump, #btn-bag, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
+const HUD = '#prompt .pp, #cash, #bank, #btn-jump, #btn-run, #btn-crouch, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
+const RIDE = '#btn-brake, #btn-dismount, #cash, #bank, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
+const MOVE = '#prompt .pp, #btn-rotl, #btn-rotr, #btn-cancel, #btn-store, #btn-run, #btn-crouch, #btn-jump, #btn-phone, #btn-pause, #joy, #hotbar .slot, #minimap';
 const PANEL = '.panel button, .panel .qb, .panel input, #phone button, #station button, .dress button';
 
 test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
@@ -89,7 +89,7 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
     // con dinero limpio (segunda línea dentro del contador de efectivo): misma auditoría,
     // incluido el propio contador, para ver que no empuja ni tapa ningún control
     await ev(page, () => { __G.state.clean = 123456; });
-    await shot('hud-limpio', HUD + ', #cash');
+    await shot('hud-limpio', HUD);
     await ev(page, () => { __G.state.clean = 0; });
     await ev(page, () => __debug.panels.openBag()); await shot('mochila', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openShop('ferreteria')); await shot('tienda', PANEL); await ev(page, () => __debug.panels.closePanel(true));

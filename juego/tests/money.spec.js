@@ -32,7 +32,7 @@ test.describe.serial('Dinero sucio y limpio', () => {
     await ev(page, () => { __G.paused = true; });
     expect(await ev(page, () => [__G.state.version, __G.state.money, __G.state.clean, __G.state.ledger.length])).toEqual([4, 350, 0, 0]);
     await frames(page, 2);
-    expect(await page.locator('#h-clean').isVisible()).toBe(false);
+    await expect(page.locator('#h-clean')).toHaveText('0');
   });
 
   test('migración v3 → v4: el dinero pasa entero a efectivo y no se pierde nada', async ({}, testInfo) => {
@@ -332,15 +332,19 @@ test.describe.serial('Dinero sucio y limpio', () => {
     expect(await ev(page, () => JSON.stringify([__G.state.money, __G.state.clean, __G.state.ledger, __G.state.txKeys, __G.state.txSeq]))).toBe(before);
   });
 
-  test('HUD y Perfil: el dinero limpio solo aparece si hay', async ({}, testInfo) => {
+  test('HUD y Perfil: billetes para el efectivo y tarjeta para el limpio', async ({}, testInfo) => {
     await ev(page, () => { __G.state.clean = 12345; __G.paused = false; });
     await frames(page, 3);
-    await expect(page.locator('#h-clean')).toBeVisible();
-    await expect(page.locator('#h-clean')).toHaveText(/Limpio 12\.345 \$/);
+    await expect(page.locator('#bank')).toBeVisible();
+    await expect(page.locator('#h-clean')).toHaveText('12.345');
+    await expect(page.locator('#bank .cash-ic img')).toHaveCount(1);
+    await expect(page.locator('#cash .cash-ic img')).toHaveCount(1);
+    await ev(page, () => { __G.state.money = 1000; });
+    await expect(page.locator('#h-money')).toHaveText('1.000'); // miles con punto también con 4 cifras
     await page.screenshot({ path: `tests/.results/money-${testInfo.project.name}-hud.png` });
     await ev(page, () => { __G.state.clean = 0; });
     await frames(page, 3);
-    await expect(page.locator('#h-clean')).toBeHidden();
+    await expect(page.locator('#h-clean')).toHaveText('0');
     await ev(page, () => { __G.state.clean = 1234; __G.act.openPhone('stats'); });
     await expect(page.locator('#phone')).toContainText('Efectivo (sucio)');
     await expect(page.locator('#phone')).toContainText('Dinero limpio');

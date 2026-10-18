@@ -117,7 +117,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     if (isTouch(testInfo)) {
       await expect(page.locator('#btn-brake')).toBeVisible();
       await expect(page.locator('#btn-dismount')).toBeVisible();
-      await expect(page.locator('#btn-use')).toBeHidden();
+      await expect(page.locator('#prompt')).toBeHidden();
     }
     // tercera persona: la cámara está detrás y por encima de la bici
     await frames(page, 40);
@@ -232,6 +232,37 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     expect(inside).toBeLessThan(0.6);
     // vuelve a la acera de la tienda para el resto de pruebas
     await mod(page, RD, async (m) => { __G.state.money += 15; m.recoverVehicle('patinete'); });
+  });
+
+  test('patinete a toda velocidad no atraviesa una pared fina', async ({}, testInfo) => {
+    await mountAt(page, testInfo, 'patinete');
+    const r = await ev(page, async () => {
+      const m = await import('/src/systems/riding.js');
+      const { input } = await import('/src/core/input.js');
+      const { removeBox } = await import('/src/world/world.js');
+      __G.paused = true;
+      const R = m.riding(), e = R.v.entry;
+      e.yaw = 0; // en línea recta hacia +z
+      const fx = 0, fz = 1;
+      // pared de 10 cm de grosor, 1,5 m por delante y perpendicular a la marcha
+      const wx = e.x + fx * 1.5, wz = e.z + fz * 1.5;
+      const box = __G.world.addBox(wx - 3, wx + 3, wz - 0.05, wz + 0.05, 3);
+      const x0 = e.x, z0 = e.z;
+      let maxAlong = -1;
+      input.my = 1; e.battery = 1;
+      for (let i = 0; i < 40; i++) {
+        R.speed = 12.5; // al máximo en cada fotograma (12,5 m/s × 0,05 s = 0,62 m por paso)
+        m.updateRiding(0.05);
+        maxAlong = Math.max(maxAlong, (e.x - x0) * fx + (e.z - z0) * fz);
+      }
+      input.my = 0; R.speed = 0;
+      removeBox(box);
+      __G.paused = false;
+      return maxAlong;
+    });
+    expect(r).toBeLessThan(1.5); // nunca pasa al otro lado de la pared
+    await dismountBtn(page, testInfo);
+    await expect.poll(() => mod(page, RD, (m) => m.riding() === null), { timeout: 60_000 }).toBe(true);
   });
 
   test('policía: el alto en bici y salir pedaleando es una fuga', async ({}, testInfo) => {

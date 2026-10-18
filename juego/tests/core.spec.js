@@ -17,13 +17,20 @@ test.describe.serial('Ciclo completo', () => {
   });
   test.afterAll(async () => { await page?.context().close(); });
 
+  test('menú principal: sin joystick ni botones de partida', async ({}, testInfo) => {
+    await page.goto('/');
+    await page.waitForFunction(() => document.getElementById('loading').classList.contains('hide'), null, { timeout: 300_000 });
+    await expect(page.locator('#menu')).toBeVisible();
+    for (const id of ['#joy', '#btn-jump', '#btn-run', '#btn-crouch', '#btn-phone', '#cash']) await expect(page.locator(id)).toBeHidden();
+  });
+
   test('arranque y partida nueva', async ({}, testInfo) => {
     await newGame(page, testInfo);
     const s = await ev(page, () => ({ money: __G.state.money, quest: __G.state.quest, rep: __G.state.rep, day: __G.state.day, inv: __G.state.inv.filter(Boolean).map((x) => x.id), touch: __G.touch }));
     expect(s).toMatchObject({ money: 350, quest: 0, rep: 0, day: 1, inv: ['caja'] });
     if (isTouch(testInfo)) {
       expect(s.touch).toBe(true);
-      for (const id of ['#btn-use', '#btn-jump', '#btn-run', '#btn-crouch', '#joy', '#btn-bag', '#btn-phone']) await expect(page.locator(id)).toBeVisible();
+      for (const id of ['#btn-jump', '#btn-run', '#btn-crouch', '#joy', '#btn-phone', '#cash', '#bank']) await expect(page.locator(id)).toBeVisible();
     }
   });
 

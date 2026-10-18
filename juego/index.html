@@ -25,10 +25,10 @@
     <div id="quest"><div id="q-title"></div><div id="q-desc"></div></div>
 
     <div id="tr">
-      <div id="cash"><span class="cash-ic"></span><span class="cash-txt"><span id="h-money">0</span><span id="h-clean" title="Dinero limpio"></span></span></div>
+      <div id="cash" class="mpill" title="Efectivo (dinero sucio)"><span class="cash-ic"></span><i class="msep"></i><span id="h-money">0</span></div>
+      <div id="bank" class="mpill" title="Dinero limpio (banco)"><span class="cash-ic"></span><i class="msep"></i><span id="h-clean">0</span></div>
       <div id="rank"><span id="rank-name"></span><div class="bar"><i id="rank-bar"></i></div><span id="rank-xp"></span></div>
       <div class="tr-btns">
-        <button id="btn-bag" class="rb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M9 6V5a3 3 0 0 1 6 0v1"/><rect x="5" y="6" width="14" height="15" rx="4"/><path d="M8.5 13h7v4h-7z"/><path d="M5 12h14"/></svg></button>
         <button id="btn-phone" class="rb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><i id="phone-badge" class="badge"></i></button>
       </div>
       <div id="h-water" class="water"></div>
@@ -43,11 +43,9 @@
     <div id="info"></div>
 
     <div id="actions">
-      <button id="btn-use" class="cb big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5"/><path d="M14 11.5V5.5a1.5 1.5 0 0 1 3 0V13"/><path d="M17 9.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.2a6 6 0 0 1-4.6-2.2L3.5 15.6a1.6 1.6 0 0 1 2.4-2.1L8 15.5"/></svg></button>
-      <button id="btn-crouch" class="cb"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4" r="2.2"/><path d="M10 7.5h3.2l2.6 4.6-1.7 1L12.8 11l-.9 3.6 3.6 1.6.9 5.3h-2l-.8-4-4.4-2c-.9-.4-1.3-1.4-1.1-2.3l1.2-4.4-1.6.9-1.2 3.1-1.8-.7 1.5-4c.2-.5.6-.9 1-1.1z"/></svg></button>
+      <button id="btn-crouch" class="cb"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="14" cy="4.2" r="2.4"/><path d="M11.6 7.6c1.4-.5 3 .1 3.6 1.5l1.2 3.1c.3.8 0 1.7-.8 2.1l-2.7 1.4 1.4 2.4h2.6c.6 0 1 .4 1 1s-.4 1-1 1h-3.2c-.4 0-.7-.2-.9-.5l-2.1-3.6-1.8 2.3h1.3c.6 0 1 .4 1 1s-.4 1-1 1H5.8c-.8 0-1.3-.9-.8-1.6l2.9-4.1-.9-.7c-.5-.4-.6-1-.3-1.5l2.2-3.6c.6-.9 1.6-1.6 2.7-1.8z"/></svg></button>
       <button id="btn-run" class="cb"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="14.5" cy="3.8" r="2.1"/><path d="M11.2 7.2l3.6-.6c.6-.1 1.2.2 1.5.7l1.6 3 3 .8-.5 1.9-3.6-1-1-1.8-1.5 3.5 2.9 2.4-.9 6h-2l.7-4.9-3.2-2.4-1.6 3.7-5 .2-.1-2 3.8-.2 3.1-7.2-1.6.3-1.9 2.7-1.6-1.1 2.2-3.1c.2-.3.6-.5 1-.6z"/></svg></button>
-      <button id="btn-alt" class="cb sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span id="alt-label"></span></button>
-      <button id="btn-jump" class="cb sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/><path d="M6 19h12"/></svg></button>
+      <button id="btn-jump" class="cb sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15l7-7 7 7"/></svg></button>
     </div>
 
     <div id="ride"><div id="ride-kmh"><b>0</b><small>km/h</small></div><div id="ride-bat"><i></i><span></span></div><div id="ride-keys">W/S acelerar · A/D girar · <kbd>Espacio</kbd> frenar · <kbd>E</kbd> bajar</div></div>

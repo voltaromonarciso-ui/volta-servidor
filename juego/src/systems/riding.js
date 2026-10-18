@@ -230,9 +230,16 @@ export function updateRiding(dt) {
   const grip = clamp(Math.abs(R.speed) / 3, 0, 1);
   e.yaw -= steer * def.turn * dt * grip * Math.sign(R.speed || 1);
   const f = fwdOf(e.yaw);
-  const nx = e.x + f.x * R.speed * dt, nz = e.z + f.z * R.speed * dt;
-  tmp.set(nx, 0, nz);
-  const bumped = G.world.resolve(tmp, def.radius, 0);
+  // a mucha velocidad (o con un fotograma lento) se avanza en pasos cortos para no
+  // atravesar paredes finas: cada paso es como mucho la mitad del radio del vehículo
+  const dist = Math.abs(R.speed * dt), steps = Math.min(12, Math.ceil(dist / (def.radius * 0.5)) || 1);
+  const sx = (f.x * R.speed * dt) / steps, sz = (f.z * R.speed * dt) / steps;
+  tmp.set(e.x, 0, e.z);
+  let bumped = false;
+  for (let i = 0; i < steps; i++) {
+    tmp.x += sx; tmp.z += sz;
+    if (G.world.resolve(tmp, def.radius, 0)) { bumped = true; break; }
+  }
   for (const car of G.cars) car.pushOut(tmp, def.radius);
   if (bumped && Math.abs(R.speed) > 3) { sfx('error'); R.speed *= 0.25; }
   else if (bumped) R.speed *= 0.6;

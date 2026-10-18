@@ -87,8 +87,8 @@ export async function lookAt(page, x, z, yaw, pitch) {
 // Acción principal o secundaria: con el botón táctil en móvil, con E/R en escritorio.
 export async function act(page, testInfo, secondary = false) {
   if (isTouch(testInfo)) {
-    const id = secondary ? '#btn-alt' : '#btn-use';
-    await page.locator(id).tap();
+    // en móvil se interactúa tocando la etiqueta de acción del centro
+    await page.locator(secondary ? '#prompt .pp.sec' : '#prompt .pp:not(.sec)').tap();
   } else {
     await page.keyboard.press(secondary ? 'KeyR' : 'KeyE');
   }

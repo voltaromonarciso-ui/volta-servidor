@@ -177,6 +177,13 @@ function banknote(x, y, w, h, rot = 0) {
 const DRAW = {
   cash: () => banknote(33, 40, 44, 22, -8) + banknote(31, 33, 44, 22, 4) + banknote(32, 27, 44, 22, -3) +
     `<rect x="27" y="16" width="9" height="22" rx="1.5" fill="#f4d35e" stroke="${OL}" stroke-width="1.4" transform="rotate(-3 32 27)"/>`,
+  // tarjeta bancaria azul (dinero limpio / banco)
+  card: () => `<defs><linearGradient id="cardg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fc3ff"/><stop offset="1" stop-color="#1769d6"/></linearGradient></defs>` +
+    `<g transform="rotate(-8 32 34)"><rect x="8" y="17" width="48" height="32" rx="5" fill="url(#cardg)" stroke="${OL}" stroke-width="${W}"/>` +
+    `<path d="M8.8 23.5H55.2" stroke="#0d4fa8" stroke-width="5" opacity=".55"/>` +
+    `<rect x="13" y="31" width="20" height="3.2" rx="1.6" fill="#fff"/><rect x="13" y="37.5" width="13" height="3.2" rx="1.6" fill="#fff" opacity=".85"/>` +
+    `<rect x="41" y="35" width="10" height="8" rx="2" fill="#5a5f66" stroke="${OL}" stroke-width="1"/>` +
+    `<path d="M12 19.5Q30 17.8 52 21" stroke="#fff" stroke-width="1.4" opacity=".45" fill="none" stroke-linecap="round"/></g>`,
   semilla: () => {
     // ovalada con punta suave, cáscara gris parda lisa con jaspeado oscuro y brillo
     const seed = (x, y, r) => `<g transform="rotate(${r} ${x} ${y})">` +
