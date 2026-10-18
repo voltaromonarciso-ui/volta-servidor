@@ -1,7 +1,7 @@
 // Vitrina de modelos (solo desarrollo): cada modelo en su casilla, encuadrado y visto en
 // tres cuartos desde arriba, sobre fondo azul como la lámina de referencia.
 import * as THREE from 'three';
-import { STREET_KIT, STREET_KIT_2 } from './world/streetkit.js';
+import { STREET_KIT, STREET_KIT_2, STREET_KIT_3 } from './world/streetkit.js';
 
 const W = innerWidth, H = innerHeight;
 const r = new THREE.WebGLRenderer({ antialias: true });
@@ -11,7 +11,7 @@ r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
 r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
 r.setScissorTest(true);
 document.body.appendChild(r.domElement);
-const items = new URLSearchParams(location.search).get('kit') === '2' ? STREET_KIT_2 : STREET_KIT;
+const items = { 2: STREET_KIT_2, 3: STREET_KIT_3 }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
 const cols = 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
 const lab = document.getElementById('lab');
 items.forEach(([name, fn], i) => {

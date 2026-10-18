@@ -715,3 +715,170 @@ export const STREET_KIT_2 = [
   ['Caja eléctrica', cajaElectrica], ['Hidrante', hidrante], ['Cabina telefónica', cabinaTelefono], ['Parada de taxi', paradaTaxi],
   ['Reloj', reloj], ['Fuente', fuente], ['Poste', poste], ['Aparcabicis', () => aparcabicis()], ['Señal de tráfico', senalTrafico],
 ];
+
+// ==================================================================
+//  Tercera tanda: obras, parque y equipamiento
+// ==================================================================
+// Paso de peatones: tramo de asfalto con cebra pintada (en la isla se pinta sobre la calzada)
+export function pasoPeatones(w = 3, l = 2.6) {
+  const g = new THREE.Group();
+  add(g, rbox(w + 0.4, 0.04, l + 0.4, 0.015), mat('#3a3e45', { r: 0.95 }), 0, 0.02, 0);
+  const paint = mat('#f2f2ee', { r: 0.7 });
+  const n = Math.floor(w / 0.6);
+  for (let k = 0; k < n; k++) add(g, rbox(0.4, 0.012, l, 0.004), paint, -w / 2 + 0.3 + k * (w - 0.6) / (n - 1), 0.045, 0);
+  return g;
+}
+
+// Valla de obra: marco tubular con dos tablas a rayas y pies separados
+export function vallaObra() {
+  const g = new THREE.Group(), m = mat('#9aa1a9', { r: 0.35, m: 0.7 });
+  for (const x of [-0.7, 0.7]) {
+    add(g, cyl(0.025, 0.025, 1.0, 10), m, x, 0.55, 0);
+    add(g, rbox(0.06, 0.06, 0.06, 0.015), m, x, 1.07, 0);
+    add(g, cyl(0.022, 0.022, 0.8, 8), m, x, 0.03, 0, Math.PI / 2); // pie
+    for (const s of [-1, 1]) add(g, cyl(0.015, 0.015, 0.42, 8), m, x, 0.2, s * 0.15, s * 0.95); // tornapuntas
+    for (const s of [-1, 1]) add(g, sph(0.035, 10, 8), mat('#2b2e33'), x, 0.03, s * 0.4);
+  }
+  add(g, cyl(0.02, 0.02, 1.4, 8), m, 0, 0.18, 0, 0, 0, Math.PI / 2);
+  const stripes = mat('#ffffff', { map: stripeTex(), r: 0.5 });
+  for (const y of [0.92, 0.62]) add(g, rbox(1.4, 0.22, 0.035, 0.012), stripes, 0, y, 0.03);
+  return g;
+}
+
+// Cilindro de señalización: bidón naranja con franjas reflectantes y aros
+export function cilindro() {
+  const g = new THREE.Group(), o = mat('#ec5a1c', { r: 0.45 }), w = mat('#f4f4f0', { r: 0.25, m: 0.1 });
+  add(g, cyl(0.31, 0.33, 0.08, 28), mat('#2b2e33', { r: 0.8 }), 0, 0.04, 0);
+  add(g, lathe('cilindro', [[0, 0.06], [0.3, 0.06], [0.3, 0.2], [0.31, 0.215], [0.31, 0.245], [0.3, 0.26], [0.295, 0.5], [0.305, 0.515], [0.305, 0.545], [0.295, 0.56], [0.285, 0.82], [0.295, 0.835], [0.295, 0.865], [0.28, 0.88], [0.26, 0.94], [0.14, 0.975], [0, 0.98]], 32), o);
+  for (const y of [0.37, 0.69]) add(g, cyl(0.304, 0.308, 0.15, 32, true), w, 0, y, 0);
+  add(g, cyl(0.06, 0.07, 0.05, 16), o, 0, 0.99, 0);
+  return g;
+}
+
+// Túnel peatonal de obra: arco de chapa ondulada sobre pilares, laterales de malla
+const corrugTex = () => canvasTex('chapa', 256, 64, (c, w, h) => {
+  const gr = c.createLinearGradient(0, 0, 32, 0); gr.addColorStop(0, '#9ea6ae'); gr.addColorStop(0.5, '#cfd5db'); gr.addColorStop(1, '#9ea6ae');
+  for (let x = 0; x < w; x += 32) { c.fillStyle = gr; c.save(); c.translate(x, 0); c.fillRect(0, 0, 32, h); c.restore(); }
+});
+export function tunelPeatonal(len = 3) {
+  const g = new THREE.Group(), m = mat('#7d858d', { r: 0.4, m: 0.6 });
+  const t = corrugTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(len * 3, 1);
+  const W = 2.2, H = 2.3, R = 0.5;
+  // techo: perfil con esquinas redondeadas barrido a lo largo
+  const sh = new THREE.Shape();
+  sh.moveTo(-W / 2, H - R); sh.quadraticCurveTo(-W / 2, H, -W / 2 + R, H); sh.lineTo(W / 2 - R, H); sh.quadraticCurveTo(W / 2, H, W / 2, H - R);
+  sh.lineTo(W / 2, H - R - 0.04); sh.quadraticCurveTo(W / 2 - 0.04, H - 0.04, W / 2 - R, H - 0.04); sh.lineTo(-W / 2 + R, H - 0.04); sh.quadraticCurveTo(-W / 2 + 0.04, H - 0.04, -W / 2, H - R - 0.04);
+  const roof = cache('tunelTecho' + len, () => { const e = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: false, curveSegments: 10 }); e.translate(0, 0, -len / 2); return e; });
+  add(g, roof, mat('#ffffff', { map: t, r: 0.4, m: 0.5, side: THREE.DoubleSide }));
+  for (const x of [-W / 2, W / 2]) for (const z of [-len / 2, 0, len / 2]) add(g, rbox(0.08, H - R, 0.08, 0.01), m, x, (H - R) / 2, z);
+  for (const x of [-W / 2, W / 2]) add(g, rbox(0.05, 0.08, len, 0.01), m, x, H - R, 0);
+  const mesh = cache('tunelMalla', () => { const t2 = meshTex().clone(); t2.wrapS = t2.wrapT = THREE.RepeatWrapping; t2.repeat.set(len * 3, 4); t2.needsUpdate = true; return t2; });
+  for (const x of [-W / 2, W / 2]) add(g, rbox(0.01, H - R - 0.15, len, 0.003), mat('#ffffff', { map: mesh, alphaTest: 0.4, side: THREE.DoubleSide }), x, (H - R) / 2 + 0.05, 0);
+  add(g, rbox(W, 0.04, len, 0.01), mat('#8b8f95', { r: 0.9 }), 0, 0.02, 0);
+  for (const z of [-len / 3, len / 3]) add(g, rbox(0.5, 0.01, 0.08, 0.003), mat('#f2c21a'), 0, 0.045, z, 0, 0.6);
+  return g;
+}
+
+// Banco de parque: listones de madera, respaldo curvo y patas de fundición con brazos
+function parkFrameGeo() {
+  return cache('parkFrame', () => {
+    const s = new THREE.Shape();
+    s.moveTo(0.26, 0); s.lineTo(0.32, 0); s.quadraticCurveTo(0.28, 0.2, 0.3, 0.4);
+    s.quadraticCurveTo(0.36, 0.58, 0.28, 0.66); s.quadraticCurveTo(0.2, 0.7, 0.16, 0.62); s.quadraticCurveTo(0.2, 0.6, 0.22, 0.56);
+    s.quadraticCurveTo(0.2, 0.46, 0.0, 0.44); s.lineTo(-0.16, 0.44); s.quadraticCurveTo(-0.22, 0.62, -0.26, 0.92);
+    s.lineTo(-0.31, 0.91); s.quadraticCurveTo(-0.27, 0.6, -0.24, 0.42); s.quadraticCurveTo(-0.3, 0.2, -0.3, 0); s.lineTo(-0.24, 0);
+    s.quadraticCurveTo(-0.2, 0.25, -0.12, 0.38); s.lineTo(0.18, 0.38); s.quadraticCurveTo(0.24, 0.2, 0.26, 0);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.045, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2, curveSegments: 12 });
+    geo.translate(0, 0, -0.022); geo.rotateY(-Math.PI / 2);
+    return geo;
+  });
+}
+export function bancoParque(len = 1.7) {
+  const g = new THREE.Group(), iron = mat('#1f2226', { r: 0.4, m: 0.6 });
+  for (const x of [-len / 2 + 0.1, len / 2 - 0.1]) add(g, parkFrameGeo(), iron, x, 0, 0);
+  const woods = ['#b0632e', '#a35a29', '#b86b34', '#a95f2c'];
+  for (let i = 0; i < 4; i++) add(g, rbox(len + 0.06, 0.035, 0.085, 0.014), mat(woods[i], { r: 0.65 }), 0, 0.455, 0.2 - i * 0.1);
+  // respaldo inclinado y ligeramente curvo
+  for (let i = 0; i < 3; i++) { const y = 0.6 + i * 0.11, z = -0.2 - i * 0.03; add(g, rbox(len + 0.06, 0.085, 0.03, 0.012), mat(woods[(i + 1) % 4], { r: 0.65 }), 0, y, z, -0.18 - i * 0.04); }
+  for (const x of [-len / 2 + 0.1, len / 2 - 0.1]) add(g, sph(0.03, 10, 8), iron, x, 0.66, 0.28);
+  return g;
+}
+
+// Farol decorativo: columna de fundición acanalada, dos brazos en voluta y faroles
+function lanternGeo(g, x, y, m, glass) {
+  add(g, lathe('farolCopete', [[0, 0], [0.13, 0], [0.15, 0.03], [0.1, 0.1], [0.04, 0.16], [0.02, 0.22], [0, 0.23]], 16), m, x, y + 0.3, 0);
+  add(g, lathe('farolCuerpo', [[0.07, 0], [0.13, 0.3]], 6), glass, x, y, 0);
+  for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + Math.PI / 6; add(g, cyl(0.008, 0.008, 0.32, 4), m, x + Math.cos(a) * 0.1, y + 0.15, Math.sin(a) * 0.1, 0, 0, 0); }
+  add(g, cyl(0.075, 0.06, 0.05, 12), m, x, y - 0.02, 0);
+  add(g, sph(0.05, 8, 6), mat('#ffe7a6', { e: '#ffd27a', ei: 1, glow: 'lamp' }), x, y + 0.14, 0);
+}
+export function farolDecorativo() {
+  const g = new THREE.Group(), m = mat('#22262b', { r: 0.4, m: 0.6 });
+  add(g, lathe('farolBase', [[0, 0], [0.25, 0], [0.25, 0.06], [0.2, 0.1], [0.18, 0.3], [0.13, 0.36], [0.12, 0.6], [0.09, 0.7], [0, 0.7]], 24), m);
+  add(g, cyl(0.06, 0.075, 2.6, 12), m, 0, 2.0, 0);
+  for (const y of [0.75, 1.6, 3.25]) add(g, cyl(0.1, 0.1, 0.05, 16), m, 0, y, 0);
+  for (const s of [-1, 1]) {
+    add(g, tube('voluta' + s, [[0, 3.1, 0], [s * 0.18, 3.3, 0], [s * 0.38, 3.32, 0], [s * 0.5, 3.25, 0]], 0.022, 16), m);
+    add(g, tube('voluta2' + s, [[0, 2.95, 0], [s * 0.1, 3.0, 0], [s * 0.15, 3.08, 0], [s * 0.1, 3.14, 0]], 0.015, 10), m);
+    lanternGeo(g, s * 0.5, 2.9, m, mat('#fff2c4', { t: 0.55, e: '#ffd890', ei: 0.6, r: 0.1, glow: 'lamp' }));
+  }
+  add(g, lathe('farolRemate', [[0, 0], [0.05, 0], [0.03, 0.15], [0.05, 0.22], [0, 0.32]], 12), m, 0, 3.3, 0);
+  return g;
+}
+
+// Buzón de correos rojo sobre patas, con techo curvo, boca y placa
+export function buzon() {
+  const g = new THREE.Group(), r = mat('#d4241b', { r: 0.4, m: 0.25 }), d = mat('#2b2e33', { r: 0.5, m: 0.5 });
+  for (const x of [-0.2, 0.2]) for (const z of [-0.15, 0.15]) add(g, rbox(0.05, 0.35, 0.05, 0.01), d, x, 0.175, z);
+  add(g, rbox(0.56, 0.75, 0.42, 0.04), r, 0, 0.72, 0);
+  add(g, cyl(0.21, 0.21, 0.56, 24, false, 0, Math.PI), r, 0, 1.095, 0, 0, Math.PI / 2, Math.PI / 2);
+  add(g, rbox(0.6, 0.04, 0.46, 0.02), mat('#b81e17', { r: 0.4, m: 0.25 }), 0, 1.1, 0);
+  add(g, rbox(0.34, 0.035, 0.03, 0.01), d, 0, 0.98, 0.21);
+  add(g, rbox(0.4, 0.06, 0.04, 0.015), r, 0, 1.02, 0.225, 0.3);
+  const lab = canvasTex('buzon', 128, 64, (c, w, h) => { c.fillStyle = '#ffd400'; c.fillRect(0, 0, w, h); c.fillStyle = '#c4170f'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BUZÓN', w / 2, h / 2 + 2); });
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.11), mat('#ffffff', { map: lab, r: 0.5 })); p.position.set(0, 0.8, 0.212); g.add(p);
+  add(g, rbox(0.4, 0.3, 0.01, 0.005), mat('#b81e17', { r: 0.4, m: 0.25 }), 0, 0.55, 0.212);
+  add(g, rbox(0.06, 0.02, 0.02, 0.005), d, 0.14, 0.62, 0.22);
+  return g;
+}
+
+// Cabina de vigilancia: caseta gris con techo azul, ventanales, puerta y ruedas
+export function cabinaVigilancia() {
+  const g = new THREE.Group(), body = mat('#b4bac1', { r: 0.45, m: 0.35 }), blue = mat('#2c5b9e', { r: 0.45, m: 0.3 }), glass = mat('#9fd0ea', { t: 0.5, r: 0.05 });
+  add(g, rbox(1.5, 0.12, 1.3, 0.03), mat('#6f767e', { r: 0.6, m: 0.4 }), 0, 0.2, 0);
+  for (const x of [-0.6, 0.6]) for (const z of [-0.5, 0.5]) { add(g, cyl(0.08, 0.08, 0.06, 14), mat('#1d1f22'), x, 0.08, z, 0, 0, Math.PI / 2); add(g, rbox(0.06, 0.14, 0.06, 0.01), mat('#6f767e'), x, 0.16, z); }
+  add(g, rbox(1.4, 0.8, 1.2, 0.03), body, 0, 0.66, 0);
+  // parte alta acristalada con montantes
+  add(g, rbox(1.36, 0.85, 1.16, 0.01), glass, 0, 1.48, 0);
+  for (const x of [-0.69, 0, 0.69]) for (const z of [-0.59, 0.59]) add(g, rbox(0.05, 0.85, 0.05, 0.01), body, x, 1.48, z);
+  for (const z of [-0.2, 0.2]) add(g, rbox(0.05, 0.85, 0.05, 0.01), body, 0.69, 1.48, z);
+  add(g, rbox(1.42, 0.06, 1.22, 0.02), body, 0, 1.08, 0);
+  // puerta en el lateral derecho
+  add(g, rbox(0.02, 1.7, 0.5, 0.01), mat('#a3aab2', { r: 0.45, m: 0.35 }), 0.71, 1.05, 0.2);
+  add(g, rbox(0.03, 0.03, 0.1, 0.01), mat('#2b2e33'), 0.73, 1.0, 0.02);
+  add(g, rbox(1.62, 0.12, 1.42, 0.04), blue, 0, 1.97, 0);
+  add(g, rbox(1.4, 0.06, 1.2, 0.03), blue, 0, 2.06, 0);
+  add(g, rbox(0.9, 0.04, 0.4, 0.01), mat('#59626c', { r: 0.4, m: 0.4 }), 0, 1.1, -0.35);
+  return g;
+}
+
+// Extintor: botella roja con válvula, manómetro, manguera y boquilla negra
+export function extintor() {
+  const g = new THREE.Group(), r = mat('#d0231a', { r: 0.25, m: 0.2 }), b = mat('#1f2226', { r: 0.6 });
+  add(g, lathe('extintor', [[0, 0], [0.085, 0], [0.095, 0.02], [0.095, 0.5], [0.08, 0.55], [0.04, 0.58], [0, 0.58]], 28), r);
+  add(g, cyl(0.097, 0.097, 0.03, 28), b, 0, 0.015, 0);
+  add(g, cyl(0.03, 0.035, 0.05, 12), mat('#9aa1a9', { m: 0.8, r: 0.3 }), 0, 0.6, 0);
+  add(g, rbox(0.03, 0.03, 0.14, 0.008), b, 0, 0.64, -0.04, -0.2);
+  add(g, rbox(0.025, 0.02, 0.12, 0.006), b, 0, 0.67, -0.03, 0.25);
+  add(g, cyl(0.025, 0.025, 0.012, 16), mat('#e8e8e8'), 0.04, 0.6, 0, 0, 0, Math.PI / 2);
+  add(g, tube('manguera', [[0, 0.62, 0.03], [0.06, 0.6, 0.1], [0.11, 0.45, 0.1], [0.11, 0.25, 0.08]], 0.012, 16), b);
+  add(g, cyl(0.02, 0.014, 0.08, 10), b, 0.11, 0.21, 0.08);
+  const lab = canvasTex('extintorEt', 64, 96, (c, w, h) => { c.fillStyle = '#f2f2f2'; c.fillRect(0, 0, w, h); c.fillStyle = '#c4170f'; c.fillRect(0, 0, w, 18); c.fillStyle = '#333'; for (let k = 0; k < 6; k++) c.fillRect(8, 28 + k * 10, w - 16 - (k % 2) * 14, 4); });
+  add(g, cyl(0.0955, 0.0955, 0.16, 28, true, -0.6, 1.2), mat('#ffffff', { map: lab, r: 0.5 }), 0, 0.3, 0);
+  return g;
+}
+
+export const STREET_KIT_3 = [
+  ['Paso de peatones', () => pasoPeatones()], ['Valla de obra', vallaObra], ['Cilindro', cilindro], ['Túnel peatonal', () => tunelPeatonal()],
+  ['Banco de parque', () => bancoParque()], ['Farol decorativo', farolDecorativo], ['Buzón', buzon], ['Cabina de vigilancia', cabinaVigilancia], ['Extintor', extintor],
+];

@@ -111,6 +111,7 @@
   "109": "audio.js",
   "110": "scripts",
   "111": "benches.js",
-  "112": "Player",
+  "112": "entities/vehicles.js",
+  "113": "buildShops",
   "114": "interact.js"
 }
