@@ -109,3 +109,16 @@ interacciones abstractas, animaciones y barras de progreso (nada de recetas real
 - Almacenes Alfa, Bravo y Delta: propiedades que se compran (progresión piso → almacén
   pequeño → mayores); la nave actual pasa a ser uno de ellos.
 - Mansión: solo de la familia rica (sus encargos); no se compra.
+
+## Respuestas del usuario (4.ª tanda)
+- Zonas sin imagen propia (Bungalós, Urbanización, Puerto, Faro, Playa, Bosque, Parque
+  Central, callejones): hacerlas a partir del resto de referencias y del mapa.
+- Sitios actuales que no salen en el mapa: reubicarlos dentro del mapa (ferretería →
+  gasolineras; armas → El Cartel; bicis/patinetes → Taller; peluquería → local de
+  Corte Fino u otro; comisaría → edificio secundario).
+- Repetidos del mapa: si uno es negocio tapadera se quedan los dos. Según 12-negocios-
+  tapadera.jpg, Corte Fino es tapadera → quedan Corte Fino (tapadera) y Tienda de ropa
+  (tienda normal). Muebles no es tapadera → una sola tienda de muebles; el otro hueco,
+  edificio secundario.
+- El mensaje cortado «recuerda q la tienda…» = los artículos de la tienda pequeña
+  (bolsitas, abonos…) pasan a las gasolineras (parte 2).
