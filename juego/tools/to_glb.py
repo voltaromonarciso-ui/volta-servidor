@@ -37,7 +37,7 @@ if tex:
             # el UV de la textura pasa a ser el primero (TEXCOORD_0); los demás se quitan
             for l in list(o.data.uv_layers):
                 if l.name != uvname: o.data.uv_layers.remove(l)
-kw = dict(filepath=out, export_format='GLB', export_apply=True, export_yup=True, export_texcoords=True, export_normals=True, export_materials='EXPORT')
+kw = dict(filepath=out, export_format='GLB', export_image_format=os.environ.get('IMGFMT', 'AUTO'), export_apply=True, export_yup=True, export_texcoords=True, export_normals=True, export_materials='EXPORT')
 if sel:
     bpy.ops.object.select_all(action='DESELECT')
     root = bpy.data.objects.get(sel)

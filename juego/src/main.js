@@ -11,13 +11,14 @@ import { G, on } from './game.js';
 import { newState, load, save, hasSave, inv, restoreBackup } from './core/state.js';
 import { initInput, pollInput, input } from './core/input.js';
 import { initAudio, sfx, updateAmbience, audioStatus, setSiren } from './core/audio.js';
-import { createWorld } from './world/world.js';
+import { createWorld, mapV2 } from './world/world.js';
 import { createSky, setShadows, nightFactor, setDrawDistance } from './world/sky.js';
 import { initRender, buildComposer, resizeRender, renderFrame, syncHandLights, setQuality, R } from './render.js';
 import { makeHuman } from './entities/human.js';
 import { loadModels, makeRealHuman, MODELS, modelNames } from './entities/models.js';
 import { loadVehicles } from './entities/vehicles.js';
 import { loadProps } from './world/props.js';
+import { loadBuildings } from './world/buildingkit.js';
 import { LEO_MODEL } from './entities/npc.js';
 import { buildItem } from './entities/hands.js';
 import { ITEMS } from './data/items.js';
@@ -352,7 +353,7 @@ async function warmup(withHands) {
 async function boot() {
   setLoad(0.05, 'Construyendo Puerto Lomas…');
   await nextFrame(); await nextFrame();
-  try { await Promise.all([loadVehicles(), loadProps()]); } catch (e) { console.warn('Modelos de coches/productos no disponibles', e); }
+  try { await Promise.all([loadVehicles(), loadProps(), mapV2() ? loadBuildings() : null]); } catch (e) { console.warn('Modelos de coches/productos/edificios no disponibles', e); }
   buildWorld();
   setLoad(0.35, 'Cargando personajes…');
   await nextFrame();

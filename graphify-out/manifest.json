@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792361559.8177657,
-    "seen": 1792361663.8029263,
-    "ast_hash": "687f7436b50536eceba28ead506c6149",
+    "mtime": 1792365318.414706,
+    "seen": 1792365345.2155306,
+    "ast_hash": "135cebeb03625a653fdf122fa37de531",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792362509.821304,
-    "seen": 1792363743.2916586,
-    "ast_hash": "6947f70ad8b8ec59b9f45886b00f0033",
+    "mtime": 1792363901.3600514,
+    "seen": 1792365345.2161195,
+    "ast_hash": "45ca073a6c89c3ac8c3cc85087ef74e6",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "juego/docs/ENCARGO-ROOKTOWN.md": {
-    "mtime": 1792363521.3175268,
-    "seen": 1792363743.2941234,
-    "ast_hash": "3e2df46c1b3f99b3e30acee89895df27",
+    "mtime": 1792364101.2975614,
+    "seen": 1792365345.2186792,
+    "ast_hash": "c2fa0985add9934a43dc0e6bfb90818c",
     "semantic_hash": ""
   },
   "juego/docs/referencias/LEEME.md": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792361566.6148508,
-    "seen": 1792361663.8035152,
-    "ast_hash": "336b3c11b0d344322c9100c553041bd8",
+    "mtime": 1792365330.883412,
+    "seen": 1792365345.216242,
+    "ast_hash": "5b40add2d7ba5d4e959b511dbd3b4309",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1530,9 +1530,9 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792363669.370711,
-    "seen": 1792363743.2916875,
-    "ast_hash": "683d984661083e40bda764b099801a04",
+    "mtime": 1792365043.077458,
+    "seen": 1792365345.2161553,
+    "ast_hash": "2efb2bd3dc9c51a041d1f2504366089d",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
@@ -1683,6 +1683,54 @@
     "mtime": 1792363733.6775396,
     "seen": 1792363743.2955124,
     "ast_hash": "6cdac0850f475e68afdf249fbda834a2",
+    "semantic_hash": ""
+  },
+  "juego/src/vitrina-glb.js": {
+    "mtime": 1792365043.0618567,
+    "seen": 1792365345.216152,
+    "ast_hash": "76983a75d204d83c5c3bf7df5290238c",
+    "semantic_hash": ""
+  },
+  "juego/src/world/buildingkit.js": {
+    "mtime": 1792365279.1596944,
+    "seen": 1792365345.216213,
+    "ast_hash": "259f48d4e009999c993c8d87e0e84661",
+    "semantic_hash": ""
+  },
+  "juego/tools/blend_list.py": {
+    "mtime": 1792365175.2588997,
+    "seen": 1792365345.2168667,
+    "ast_hash": "52c4d2ff7ef50056c420c22892b53160",
+    "semantic_hash": ""
+  },
+  "juego/tools/to_glb.py": {
+    "mtime": 1792365242.8062003,
+    "seen": 1792365345.2168694,
+    "ast_hash": "5f9052978b7765590e9c5201a364d21e",
+    "semantic_hash": ""
+  },
+  "juego/docs/MODELOS-LIBRES.md": {
+    "mtime": 1792365175.2610095,
+    "seen": 1792365345.2186813,
+    "ast_hash": "c149ae2dd2a514a990c87e09b03dee78",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-14-cajero-inicio.png": {
+    "mtime": 1792364033.2394392,
+    "seen": 1792365345.2204335,
+    "ast_hash": "33609cb42c161e502c13c271b4c5f4fb",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-14-cajero-pasos.png": {
+    "mtime": 1792364033.219636,
+    "seen": 1792365345.2204359,
+    "ast_hash": "d4eb60bb0b3a188bd78ae0b273eae659",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-15-modelos-libres.png": {
+    "mtime": 1792365175.2653685,
+    "seen": 1792365345.2204378,
+    "ast_hash": "340468796805755e94d89b74d03f21f0",
     "semantic_hash": ""
   }
 }
