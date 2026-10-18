@@ -82,6 +82,7 @@ export function updateHUD(target, dt = 0.016) {
   // dinero limpio: solo si hay (no es un banco; solo el saldo)
   const cl = Math.floor(s.clean || 0);
   els.clean.classList.toggle('on', cl > 0);
+  $('cash').classList.toggle('has-clean', cl > 0);
   if (cl > 0) txt(els.clean, `Limpio ${cl.toLocaleString('es-ES')} $`);
   txt(els.clock, clock(s.minute));
   txt(els.day, `${dayName(s.day).slice(0, 3)} · Día ${s.day}`);
