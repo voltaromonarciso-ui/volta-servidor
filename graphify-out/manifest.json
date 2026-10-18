@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792359593.8652935,
-    "seen": 1792359608.3809083,
+    "mtime": 1792359662.7252975,
+    "seen": 1792359673.7365,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1542,9 +1542,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792359587.4916651,
-    "seen": 1792359608.3807967,
-    "ast_hash": "56bff4471f8bf19b50eac322337618cd",
+    "mtime": 1792359656.3304374,
+    "seen": 1792359673.7363863,
+    "ast_hash": "74618e98fb9596ad0ffbe33b3857b222",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {
@@ -1596,9 +1596,15 @@
     "semantic_hash": ""
   },
   "juego/docs/avances-07-calle4.png": {
-    "mtime": 1792359602.322236,
-    "seen": 1792359608.3843944,
-    "ast_hash": "6adc815dc05e6550194b034e4d38d289",
+    "mtime": 1792359667.9428477,
+    "seen": 1792359673.7401297,
+    "ast_hash": "3f48a9dd34fbff7b9d78aafcc12b8d11",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-08-bolardos.png": {
+    "mtime": 1792359667.9449918,
+    "seen": 1792359673.7401323,
+    "ast_hash": "23e0bf78e476b68640c0a5fe61aec4b7",
     "semantic_hash": ""
   }
 }

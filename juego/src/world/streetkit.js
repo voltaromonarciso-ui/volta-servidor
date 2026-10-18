@@ -984,13 +984,24 @@ export function cartelPublicitario() {
   return g;
 }
 
-// Bolardos de fundición con cabeza esférica (pareja)
+// Bolardos de fundición (pareja): base escalonada con molduras, fuste liso, collar y bola
+function bollardProfile() {
+  const p = [[0, 0], [0.15, 0], [0.155, 0.01], [0.155, 0.05], [0.145, 0.06], [0.14, 0.07],     // zócalo
+    [0.125, 0.075], [0.125, 0.1], [0.13, 0.11], [0.13, 0.125], [0.115, 0.135],                     // primer escalón con bocel
+    [0.1, 0.14], [0.1, 0.16], [0.105, 0.17], [0.1, 0.18], [0.085, 0.19],                          // segundo escalón
+    [0.075, 0.2], [0.072, 0.78],                                                                    // fuste
+    [0.08, 0.785], [0.085, 0.795], [0.085, 0.81], [0.078, 0.815], [0.07, 0.82],                    // collar
+    [0.06, 0.83], [0.055, 0.84]];                                                                   // cuello
+  for (let k = 0; k <= 10; k++) { const a = -Math.PI / 2 + (k / 10) * Math.PI; p.push([Math.cos(a) * 0.075, 0.915 + Math.sin(a) * 0.075]); } // bola
+  p[p.length - 1][0] = 0;
+  return p;
+}
 export function bolardos() {
-  const g = new THREE.Group(), m = mat('#22262b', { r: 0.35, m: 0.6 });
-  for (const x of [-0.35, 0.35]) {
-    add(g, lathe('bolardoClasico', [[0, 0], [0.11, 0], [0.11, 0.03], [0.09, 0.05], [0.085, 0.75], [0.084, 0.8], [0.075, 0.86], [0.055, 0.9], [0.03, 0.92], [0, 0.925]], 24), m, x, 0, 0);
-    for (const y of [0.62, 0.7]) add(g, cyl(0.09, 0.09, 0.03, 24), mat('#a0a7ae', { m: 0.6, r: 0.3 }), x, y, 0);
-    add(g, cyl(0.1, 0.11, 0.05, 24), m, x, 0.06, 0);
+  const g = new THREE.Group(), m = mat('#626a74', { r: 0.3, m: 0.5 });
+  const ring = mat('#8f969e', { r: 0.25, m: 0.7 });
+  for (const x of [-0.3, 0.3]) {
+    add(g, lathe('bolardoClasico2', bollardProfile(), 32), m, x, 0, 0);
+    for (const y of [0.115, 0.8]) add(g, cyl(0.087 + (y < 0.5 ? 0.045 : 0), 0.087 + (y < 0.5 ? 0.045 : 0), 0.012, 32), ring, x, y, 0);
   }
   return g;
 }
