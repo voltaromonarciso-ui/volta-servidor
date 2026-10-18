@@ -39,6 +39,7 @@ npx playwright test --project=android     # Pixel 7 horizontal, táctil
 npx playwright test --project=iphone      # iPhone 14 horizontal, táctil (Chromium, no Safari)
 npx playwright test --project=escritorio
 npx playwright test tests/mobile-ui.spec.js --project=android   # auditoría de interfaz
+B9_PORT=5181 npx playwright test ...   # otra ejecución a la vez, en otro puerto
 ```
 
 `tests/core.spec.js` juega el ciclo completo **con los botones táctiles reales**:
@@ -84,7 +85,8 @@ Limitaciones de estas pruebas:
 | Peluquería, ropa y disfraz (`style.spec.js`, fase 3 bloque A) | 11/11 ✔ | 11/11 ✔ | 11/11 ✔ |
 | Bici y patinete (`vehicles.spec.js`, fase 3 bloque B) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
 | Muebles: comprar, colocar, girar, cancelar, mover y efectos (`furniture.spec.js`, fase 3 bloque C) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
-| Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos, conducción y mover muebles) | sin problemas ✔ | — | — |
+| Empleados: contratar, trabajar, nómina y guardado (`employees.spec.js`, fase 4 bloque A) | 17/17 ✔ | 17/17 ✔ | 17/17 ✔ |
+| Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos, conducción, mover muebles y app Personal) | sin problemas ✔ | — | — |
 
 \* Chromium con medidas de iPhone, no Safari.
 
