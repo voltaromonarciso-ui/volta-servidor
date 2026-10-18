@@ -86,6 +86,7 @@ Limitaciones de estas pruebas:
 | Bici y patinete (`vehicles.spec.js`, fase 3 bloque B) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
 | Muebles: comprar, colocar, girar, cancelar, mover y efectos (`furniture.spec.js`, fase 3 bloque C) | 13/13 ✔ | 13/13 ✔ | 13/13 ✔ |
 | Empleados: contratar, trabajar, nómina y guardado (`employees.spec.js`, fase 4 bloque A) | 17/17 ✔ | 17/17 ✔ | 17/17 ✔ |
+| Dinero sucio/limpio (`money.spec.js`, bloque B etapa 1) | 16/16 ✔ | 16/16 ✔ | 16/16 ✔ |
 | Interfaz en 6 pantallas (`mobile-ui.spec.js`, incl. peluquería, probador, tienda de vehículos, conducción, mover muebles y app Personal) | sin problemas ✔ | — | — |
 
 \* Chromium con medidas de iPhone, no Safari.
@@ -134,6 +135,43 @@ Código: `src/data/staff.js` (candidatos y números, todo ajustable en un sitio)
   duplicados y candidatos inexistentes; los asignados a una propiedad que ya no tienes
   quedan «Sin propiedad válida» hasta que les asignes otra. Las partidas antiguas cargan
   con la lista vacía.
+
+## Dinero sucio y limpio (Bloque B, etapa 1): reglas
+
+Código: `src/core/money.js` (núcleo puro), `src/systems/economy.js` (`earn`, `spend`,
+`toSafe`, `fromSafe`, `PAY_ACCOUNT`), migración en `src/core/state.js`.
+
+- **Cuentas:** `G.state.money` = efectivo sucio (el de siempre); `G.state.clean` = dinero
+  limpio (nada lo genera todavía: el blanqueo es la etapa siguiente). La caja fuerte no es
+  una cuenta: su efectivo vive en el mueble.
+- **Qué usa cada cosa:** todo lo existente usa efectivo sucio (ventas, tratos, tiendas,
+  semillas, ropa, peluquería, vehículos, grúa, empleados, nóminas, alquiler, multa, desmayo).
+  El bungalow (2.500 $) se paga con efectivo en esta etapa (decisión A1); su cuenta está en
+  `PAY_ACCOUNT.bungalow` para cambiarla cuando exista el blanqueo.
+- **Validación:** importes en dólares enteros; un decimal se redondea al entero más cercano
+  antes de validar; NaN, infinito, 0 o negativos se rechazan sin tocar nada (ni saldo, ni
+  historial, ni claves). Ningún gasto deja el saldo negativo, salvo el alquiler semanal de
+  la nave (regla existente, decisión B1), y solo él (`reason === 'alquiler'`).
+- **Historial:** `state.ledger`, últimas 100 operaciones (id, minuto de juego, importe,
+  cuenta, motivo, tipo: ingreso/gasto/transferencia/ajuste, saldo resultante).
+- **Contra duplicados:** claves de acción concretas en `state.txKeys` (persistentes,
+  independientes del historial): `deal:<id>`, `rent:<día>`, `wage:<empleado>:<día>`,
+  `arrest:<minuto>`, `faint:<día>`, `ropa:<prenda>`, `bungalow`. Se purgan las de más de
+  14 días de juego (máx. 1.000). Además siguen las marcas de cada sistema: estado del trato,
+  `rentPaidWeek`, `paidDay` de cada empleado, `lastFaintDay` y la ventana de comisaría
+  (`lastArrestAt` + 180 min). Límite: una acción repetida más de 14 días después solo la
+  frena su marca propia (todas las acciones con clave tienen una).
+- **Tratos:** solo se cobra un trato «aceptado»; antes de tocar nada se comprueba la
+  mercancía real del inventario, el importe y la clave; si el cobro fallara, se devuelve la
+  mercancía y el trato vuelve a «aceptado».
+- **Detención y desmayo:** solo afectan al efectivo sucio (ni al limpio ni a la caja fuerte).
+- **Caja fuerte:** guardar y sacar son transferencias (no cuentan como ingresos: no suben
+  «Ganado» ni el objetivo de 10.000 $). Solo admite efectivo.
+- **Guardado v4:** la clave sigue siendo `bloque9_save_v3` (navegador y copia nativa de
+  Capacitor). `load()` acepta v3 y v4. Una partida v3 se migra una vez: el dinero queda
+  tal cual como efectivo, limpio = 0, historial vacío (no se inventa). Un saldo dañado
+  (no numérico) se pone a 0 y queda anotado como «ajuste». **Riesgo conocido:** una versión
+  anterior del juego no abre una partida ya migrada a v4 (la trataría como inexistente).
 
 ## 4. Compilación
 
