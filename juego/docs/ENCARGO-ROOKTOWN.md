@@ -100,3 +100,12 @@ interacciones abstractas, animaciones y barras de progreso (nada de recetas real
 - Progresión de productos por rango: cogollos 0 (Novato) · cristales 2 (Trapichero) ·
   polvos 3 (Distribuidor) · pastillas 4 (Mayorista) · extracto 5 (Capo).
 - Logotipo de Rooktown: lo pasa el usuario; mientras, solo texto.
+
+## Respuestas del usuario (3.ª tanda: mapa)
+- Isla de unos 400 × 300 m.
+- Interiores solo en edificios con juego (tiendas, gasolineras, Casino, El Cartel,
+  lavandería, almacenes, piso inicial, Motel, Mansión, negocios tapadera); el resto,
+  fachadas detalladas según las imágenes.
+- Almacenes Alfa, Bravo y Delta: propiedades que se compran (progresión piso → almacén
+  pequeño → mayores); la nave actual pasa a ser uno de ellos.
+- Mansión: solo de la familia rica (sus encargos); no se compra.
