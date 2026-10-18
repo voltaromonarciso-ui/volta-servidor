@@ -354,9 +354,8 @@ async function boot() {
   spawnClerks();
   // empleados visibles: cada candidato con su propio modelo
   setWorkerFactory((cid) => {
-    const pool = [...modelNames(true), ...modelNames(false)].filter((n) => n !== LEO_MODEL);
-    const i = CANDIDATES.findIndex((c) => c.id === cid);
-    return pool.length && i >= 0 ? makeRealHuman(pool[(i * 7 + 11) % pool.length]) : null;
+    const m = CANDIDATES.find((c) => c.id === cid)?.model;
+    return MODELS[m] ? makeRealHuman(m) : null;
   });
   setLoad(0.75, 'Preparando gráficos…');
   await nextFrame();

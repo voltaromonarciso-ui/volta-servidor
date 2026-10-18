@@ -14,11 +14,11 @@ export const ROLES = {
 
 // Candidatos que se pueden contratar (cada uno, una sola vez a la vez).
 export const CANDIDATES = [
-  { id: 'nerea', name: 'Nerea', role: 'cultivo', hire: 120, wage: 55, loyalty: 0.7, bio: 'Estudió jardinería. Puntual y callada.' },
-  { id: 'paco', name: 'Paco', role: 'cultivo', hire: 80, wage: 45, loyalty: 0.35, bio: 'Barato, pero habla más de la cuenta si no cobra.' },
-  { id: 'ines', name: 'Inés', role: 'envasado', hire: 100, wage: 50, loyalty: 0.75, bio: 'Manos rápidas, trabajó en un almacén.' },
-  { id: 'dani', name: 'Dani', role: 'envasado', hire: 70, wage: 40, loyalty: 0.3, bio: 'Recién llegado al barrio. Necesita el dinero.' },
-  { id: 'mateo', name: 'Mateo', role: 'cocina', hire: 200, wage: 90, loyalty: 0.6, rank: 2, bio: 'Sabe de química. No toca nada sin ingredientes.' },
+  { id: 'nerea', model: 'Female_Adult_07', name: 'Nerea', role: 'cultivo', hire: 120, wage: 55, loyalty: 0.7, bio: 'Estudió jardinería. Puntual y callada.' },
+  { id: 'paco', model: 'Male_Adult_06', name: 'Paco', role: 'cultivo', hire: 80, wage: 45, loyalty: 0.35, bio: 'Barato, pero habla más de la cuenta si no cobra.' },
+  { id: 'ines', model: 'Female_Adult_12', name: 'Inés', role: 'envasado', hire: 100, wage: 50, loyalty: 0.75, bio: 'Manos rápidas, trabajó en un almacén.' },
+  { id: 'dani', model: 'Male_Adult_17', name: 'Dani', role: 'envasado', hire: 70, wage: 40, loyalty: 0.3, bio: 'Recién llegado al barrio. Necesita el dinero.' },
+  { id: 'mateo', model: 'Male_Adult_12', name: 'Mateo', role: 'cocina', hire: 200, wage: 90, loyalty: 0.6, rank: 2, bio: 'Sabe de química. No toca nada sin ingredientes.' },
 ];
 
 export const STAFF = {

@@ -70,6 +70,7 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
   await newGame(page, testInfo);
   await ev(page, () => { __G.state.rank = 2; __G.state.minute = 12 * 60; __G.state.money = 1500; });
   await page.evaluate(async () => (await import('/src/systems/riding.js')).buyVehicle('patinete'));
+  await page.evaluate(async () => { const m = await import('/src/systems/staff.js'); m.hire('ines', 'nave'); });
   const report = {};
   const dir = testInfo.outputPath('ui');
   for (const sc of SCREENS) {
@@ -88,6 +89,7 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
     await ev(page, () => __debug.panels.openBag()); await shot('mochila', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openShop('ferreteria')); await shot('tienda', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openPhone()); await shot('movil', PANEL); await page.evaluate(async () => (await import('/src/ui/phone.js')).closePhone());
+    await ev(page, () => __G.act.openPhone('staff')); await shot('personal', PANEL); await page.evaluate(async () => (await import('/src/ui/phone.js')).closePhone());
     // peluquería y probador (vistas con el personaje y panel lateral)
     for (const [k, fn] of [['peluqueria', 'openBarber'], ['probador', 'openClothes']]) {
       await ev(page, (fn) => __G.act[fn](), fn);
