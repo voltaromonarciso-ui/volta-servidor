@@ -32,6 +32,21 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     await expect(page.locator('.staff .cand')).toHaveCount(5);
   });
 
+  test('un novato no puede contratar (plantilla según rango)', async ({}, testInfo) => {
+    await ev(page, () => { __G.state.money = 5000; });
+    await press(page, testInfo, '.cand[data-cid="ines"] .btn');
+    expect(await money(page)).toBe(5000);
+    expect(await ev(page, () => __G.state.employees.length)).toBe(0);
+    const lim = await mod(page, S, (m) => [0, 1, 2, 3].map((r) => { __G.state.rank = r; return m.maxStaff(); }));
+    expect(lim).toEqual([0, 1, 2, 3]);
+    // Buscavidas: una sola persona
+    await ev(page, () => { __G.state.rank = 1; });
+    const r = await mod(page, S, (m) => { const a = m.hire('dani', 'nave').ok, b = m.hire('paco', 'nave').ok; m.fire(__G.state.employees[0].uid); return [a, b, __G.state.employees.length]; });
+    expect(r).toEqual([true, false, 0]);
+    await ev(page, () => { __G.state.rank = 3; });
+    await ev(page, async () => { const ph = await import('/src/ui/phone.js'); ph.closePhone(); __G.act.openPhone('staff'); });
+  });
+
   test('contratar sin dinero no hace nada', async ({}, testInfo) => {
     await ev(page, () => { __G.state.money = 50; });
     await press(page, testInfo, '.cand[data-cid="ines"] .btn');
@@ -42,12 +57,12 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
   test('contratar con dinero cobra una sola vez', async ({}, testInfo) => {
     await ev(page, () => { __G.state.money = 1000; });
     await press(page, testInfo, '.cand[data-cid="ines"] .btn');
-    await expect.poll(() => money(page)).toBe(900);
+    await expect.poll(() => money(page)).toBe(200);
     await expect(page.locator('.staff .emp[data-cid="ines"]')).toBeVisible();
     await page.screenshot({ path: `tests/.results/emp-${testInfo.project.name}-personal.png` });
     const again = await mod(page, S, (m) => m.hire('ines', 'nave'));
     expect(again.ok).toBe(false);
-    expect(await money(page)).toBe(900);
+    expect(await money(page)).toBe(200);
     const e = await emp(page, 'ines');
     expect([e.role, e.prop, e.paidDay, e.debt]).toEqual(['envasado', 'nave', 1, 0]);
     await ev(page, async () => (await import('/src/ui/phone.js')).closePhone());
@@ -113,7 +128,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
   });
 
   test('cocina: tanda real del hornillo y cristales a la estantería', async () => {
-    await ev(page, () => { __G.state.rank = 2; __G.state.money = 1000; });
+    await ev(page, () => { __G.state.rank = 3; __G.state.money = 3000; });
     expect((await mod(page, S, (m) => m.hire('mateo', 'nave'))).ok).toBe(true);
     stove = await mod(page, OB, (m) => m.placeObject('stove', -69, -60, 0).entry.uid);
     // faltan ingredientes: espera
@@ -124,7 +139,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     // con la receta completa: pone la tanda y gasta justo la receta
     await setShelf(page, sh, [{ id: 'azucar', q: 3 }, { id: 'colorante', q: 1 }, { id: 'catalizador', q: 1 }]);
     await mod(page, S, (m) => m.pokeStaff());
-    await advance(page, 15);
+    await advance(page, 25);
     expect(await shelf(page, sh)).toEqual({ azucar: 1 });
     expect(await ev(page, (u) => !!__G.objects.get(u).entry.data.batch, stove)).toBe(true);
     // 2 h de cocción después, los 6 cristales están en la estantería
@@ -139,7 +154,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     await setShelf(page, sh, [{ id: 'cogollo', q: 2, p: 'brisa' }, { id: 'bolsita', q: 2 }]);
     await mod(page, S, (m) => m.pokeStaff());
     await at(page, 1, 12 * 60);
-    await advance(page, 3); // a mitad de un sobre (6 min)
+    await advance(page, 5); // a mitad de un sobre (12 min)
     expect(!!(await emp(page, 'ines')).task).toBe(true);
     const r = await mod(page, S, (m) => m.fire(__G.state.employees.find((e) => e.cid === 'ines').uid));
     expect(r.ok).toBe(true);
@@ -149,21 +164,21 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
   });
 
   test('nómina: a las 7:00, una vez por día, también al dormir', async () => {
-    const wages = 55 + 90; // Nerea + Mateo
-    await ev(page, () => { __G.state.money = 1000; });
+    const wages = 180 + 400; // Nerea + Mateo
+    await ev(page, () => { __G.state.money = 2000; });
     await at(page, 2, 6 * 60 + 50);
     await advance(page, 5);
-    expect(await money(page)).toBe(1000);       // aún no son las 7
+    expect(await money(page)).toBe(2000);       // aún no son las 7
     await advance(page, 10);
-    expect(await money(page)).toBe(1000 - wages);
+    expect(await money(page)).toBe(2000 - wages);
     await advance(page, 180);
-    expect(await money(page)).toBe(1000 - wages); // no se cobra dos veces el mismo día
+    expect(await money(page)).toBe(2000 - wages); // no se cobra dos veces el mismo día
     // dormir hasta el día siguiente cobra una vez
     await ev(page, () => { __G.state.minute = 22 * 60; });
     await ev(page, () => __G.act.sleep('nave'));
     await page.waitForFunction(() => document.querySelector('.panel'), null, { timeout: 60_000 });
     expect(await ev(page, () => __G.state.day)).toBe(3);
-    expect(await money(page)).toBe(1000 - 2 * wages);
+    expect(await money(page)).toBe(2000 - 2 * wages);
     await ev(page, () => __debug.panels.closePanel(true));
   });
 
@@ -173,9 +188,9 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     await advance(page, 10);
     expect(await money(page)).toBe(40);             // todo o nada: no se cobra a medias
     const m = await emp(page, 'mateo');
-    expect([m.status, m.owed, m.debt]).toEqual(['sin_pago', 1, 90]);
+    expect([m.status, m.owed, m.debt]).toEqual(['sin_pago', 1, 400]);
     const n = await emp(page, 'nerea');
-    expect([n.owed, n.debt]).toEqual([1, 55]);
+    expect([n.owed, n.debt]).toEqual([1, 180]);
     // sin cobrar no trabaja: deja sus cosas tal cual
     await setShelf(page, sh, [{ id: 'azucar', q: 2 }, { id: 'colorante', q: 1 }, { id: 'catalizador', q: 1 }]);
     await advance(page, 60);
@@ -188,10 +203,10 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
 
   test('pagar la deuda en el móvil reactiva al empleado', async ({}, testInfo) => {
     await press(page, testInfo, '.emp[data-cid="mateo"] .btn:has-text("Pagar deuda")');
-    expect(await money(page)).toBe(410);
+    expect(await money(page)).toBe(100);
     expect((await emp(page, 'mateo')).debt).toBe(0);
     await ev(page, async () => (await import('/src/ui/phone.js')).closePhone());
-    await advance(page, 20);
+    await advance(page, 30);
     expect(await shelf(page, sh)).toEqual({});
     expect(await ev(page, (u) => !!__G.objects.get(u).entry.data.batch, stove)).toBe(true);
   });
@@ -229,11 +244,11 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     await ev(page, () => { __G.paused = true; });
     const after = await ev(page, () => JSON.stringify(__G.state.employees.map(({ clock, wake, ...e }) => e)));
     expect(after).toEqual(before);
-    expect(await money(page)).toBe(900);
+    expect(await money(page)).toBe(200);
     // con la partida cerrada el reloj no avanzó: el pago sigue pendiente y llega al jugar
     expect(await ev(page, () => __G.state.minute < 7 * 60)).toBe(true);
     await advance(page, 20);
-    expect(await money(page)).toBe(850);
+    expect(await money(page)).toBe(40);
     // guardar después del pago y cargar no vuelve a cobrar
     await mod(page, '/src/core/state.js', (m) => m.save());
     await page.reload();
@@ -242,7 +257,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     await page.waitForFunction(() => !document.getElementById('hud').classList.contains('hide'), null, { timeout: 300_000 });
     await ev(page, () => { __G.paused = true; });
     await advance(page, 60);
-    expect(await money(page)).toBe(850);
+    expect(await money(page)).toBe(40);
   });
 
   test('cargar: sin duplicados y con propiedades inválidas marcadas', async ({}, testInfo) => {

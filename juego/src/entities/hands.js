@@ -4,7 +4,7 @@ import { G } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
 import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
-import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack } from './goods.js';
+import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile } from './goods.js';
 
 // Brazos y manos en primera persona (escena aparte, nunca atraviesan paredes).
 const SKIN = '#e2b08c', SLEEVE = '#24272e', CUFF = '#30343c';
@@ -202,9 +202,8 @@ export function buildItem(s) {
       break;
     }
     case 'semilla': {
-      mesh(bx(0.075, 0.105, 0.012, 0.003), M('#f3ead2'), 0, 0, 0, g);
-      mesh(new THREE.BoxGeometry(0.055, 0.045, 0.014), M(productColor(s), { emissive: productColor(s), emissiveIntensity: 0.3 }), 0, 0.012, 0, g);
-      mesh(new THREE.BoxGeometry(0.06, 0.008, 0.015), M('#3f7f5a'), 0, -0.03, 0, g);
+      // un puñado de semillas de verdad en la mano (algo más grandes de lo real para que se vean)
+      const p = new THREE.Group(); seedPile(p, 5, 0.026); p.position.set(0.005, -0.05, 0.01); g.add(p);
       break;
     }
     case 'cogollo': {

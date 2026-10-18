@@ -14,7 +14,7 @@ import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './p
 import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
-import { employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF } from '../systems/staff.js';
+import { maxStaff, employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF } from '../systems/staff.js';
 
 const APPS = [
   { id: 'msgs', name: 'Mensajes', icon: '💬', color: '#27ae60' },
@@ -367,7 +367,8 @@ function staff() {
   const list = h('div', 'ph-list staff');
   const cost = dailyCost(), debt = totalDebt(), nx = nextPayday();
   const short = cost + debt > s.money;
-  list.appendChild(h('div', 'ph-card', `<div class="rowsp"><b>Nómina diaria</b><span class="money">${money(cost)}</span></div>
+  list.appendChild(h('div', 'ph-card', `<div class="rowsp"><b>Plantilla</b><span>${employees().length}/${maxStaff()}</span></div>${maxStaff() ? '' : `<div class="small">Sube a ${RANKS[1].name} para poder contratar.</div>`}
+    <div class="rowsp"><b>Nómina diaria</b><span class="money">${money(cost)}</span></div>
     <div class="rowsp"><span>Próximo pago</span><span>${dayName(nx.day)} ${String(nx.hour).padStart(2, '0')}:00</span></div>
     ${debt ? `<div class="rowsp"><span>Deudas con tu personal</span><b class="neg">${money(debt)}</b></div>` : ''}
     ${employees().length && short ? `<div class="warn">⚠️ Con ${money(s.money)} no te llega para la próxima nómina (${money(cost + debt)}). Quien no cobre deja de trabajar; a los ${STAFF.quitAfterDays} días se va.</div>` : ''}

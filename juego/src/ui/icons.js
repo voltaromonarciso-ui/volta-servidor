@@ -178,8 +178,13 @@ const DRAW = {
   cash: () => banknote(33, 40, 44, 22, -8) + banknote(31, 33, 44, 22, 4) + banknote(32, 27, 44, 22, -3) +
     `<rect x="27" y="16" width="9" height="22" rx="1.5" fill="#f4d35e" stroke="${OL}" stroke-width="1.4" transform="rotate(-3 32 27)"/>`,
   semilla: () => {
-    const seed = (x, y, r) => `<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="7" ry="10" fill="#9b6a3a" stroke="${OL}" stroke-width="${W}"/><path d="M${x} ${y - 9}Q${x + 2} ${y} ${x} ${y + 9}" stroke="#6e4522" stroke-width="1.2" fill="none"/><ellipse cx="${x - 3}" cy="${y - 3}" rx="1.8" ry="3.5" fill="#d9a46a"/></g>`;
-    return shadow(32, 52, 20) + seed(23, 38, -25) + seed(38, 40, 20) + seed(31, 26, 5) + sparkle(50, 18, 4);
+    // ovalada con punta suave, cáscara gris parda lisa con jaspeado oscuro y brillo
+    const seed = (x, y, r) => `<g transform="rotate(${r} ${x} ${y})">` +
+      `<path d="M${x} ${y - 10}C${x + 5} ${y - 9} ${x + 7.5} ${y - 2} ${x + 7.5} ${y + 2}C${x + 7.5} ${y + 7} ${x + 4} ${y + 10} ${x} ${y + 10}C${x - 4} ${y + 10} ${x - 7.5} ${y + 7} ${x - 7.5} ${y + 2}C${x - 7.5} ${y - 2} ${x - 5} ${y - 9} ${x} ${y - 10}Z" fill="#9a8a72" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
+      `<path d="M${x - 4} ${y - 3}q2 -2 3 1q1 3 3 1M${x - 3} ${y + 4}q3 1 4 -1q2 -2 4 0M${x + 2} ${y - 6}q2 1 1 3M${x - 5} ${y + 1}q1 2 0 3" stroke="#3e3022" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>` +
+      `<path d="M${x} ${y - 10}V${y + 10}" stroke="#6d5c45" stroke-width=".9" opacity=".6"/>` +
+      `<ellipse cx="${x - 3}" cy="${y - 4}" rx="1.6" ry="3" fill="#fff" opacity=".45"/></g>`;
+    return shadow(32, 54, 20) + seed(22, 40, -30) + seed(41, 41, 25) + seed(32, 25, 4);
   },
   cogollo: () => shadow(32, 52, 22) + bud(23, 41, 11, 4) + bud(41, 41, 11, 7) + bud(32, 28, 12.5, 9) + sparkle(52, 16, 4) + sparkle(12, 20, 3),
   bolsa: () => zipBag(32, 33, 38, 46, true, 6, -6) + sparkle(54, 12, 4),

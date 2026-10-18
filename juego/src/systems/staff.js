@@ -82,6 +82,7 @@ export function hire(cid, prop) {
   if (!c) return { ok: false, msg: 'Esa persona no existe.' };
   if (hired(cid)) return { ok: false, msg: `${c.name} ya trabaja para ti.` };
   if ((c.rank || 0) > G.state.rank) return { ok: false, msg: 'Aún no confía en ti (sube de rango).' };
+  if (staff().length >= maxStaff()) return { ok: false, msg: maxStaff() ? `Con tu rango puedes tener ${maxStaff()} empleado${maxStaff() > 1 ? 's' : ''} como mucho.` : 'Todavía nadie quiere trabajar para un novato: sube de rango.' };
   if (!G.state.props[prop] || !G.world.props[prop]) return { ok: false, msg: 'Esa propiedad no es tuya.' };
   if (inProp(prop).length >= STAFF.maxPerProperty) return { ok: false, msg: `Ya hay ${STAFF.maxPerProperty} empleados en esa propiedad.` };
   if (G.state.money < c.hire) return { ok: false, msg: 'No tienes suficiente dinero.' };
@@ -144,6 +145,7 @@ export function payDebt(uid) {
   return { ok: true };
 }
 
+export const maxStaff = () => STAFF.maxByRank[Math.min(G.state.rank, STAFF.maxByRank.length - 1)] || 0;
 export const dailyCost = () => staff().reduce((a, e) => a + byId[e.cid].wage, 0);
 export const totalDebt = () => staff().reduce((a, e) => a + (e.debt || 0), 0);
 export function nextPayday() {

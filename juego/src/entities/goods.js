@@ -346,3 +346,71 @@ export function cashStack(n = 6) {
   g.add(band);
   return g;
 }
+
+// ------------------------------------------------------------------
+//  Semillas: forma de lágrima con punta y quilla, cáscara moteada con vetas oscuras
+// ------------------------------------------------------------------
+let seedGeo = null, seedMat = null;
+function seedTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#9a8a72'; x.fillRect(0, 0, 128, 64);
+  let s = 7;
+  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  // jaspeado: manchas oscuras irregulares y cortas en todas direcciones (no vetas de punta a punta)
+  for (let i = 0; i < 60; i++) {
+    x.strokeStyle = `rgba(${50 + r() * 20},${38 + r() * 14},${28 + r() * 10},${0.45 + r() * 0.4})`;
+    x.lineWidth = 1 + r() * 2.5; x.lineCap = 'round';
+    let px = r() * 128, py = 8 + r() * 48, a = r() * Math.PI * 2;
+    x.beginPath(); x.moveTo(px, py);
+    for (let k = 0; k < 4; k++) { a += (r() - 0.5) * 1.6; px += Math.cos(a) * 5; py += Math.sin(a) * 3; x.lineTo(px, py); }
+    x.stroke();
+  }
+  for (let i = 0; i < 300; i++) { x.fillStyle = r() < 0.5 ? `rgba(70,55,40,${0.2 + r() * 0.3})` : `rgba(205,192,168,${0.15 + r() * 0.25})`; x.fillRect(r() * 128, r() * 64, 1 + r() * 2, 1 + r() * 2); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  return t;
+}
+export function seed() {
+  if (!seedGeo) {
+    // perfil de lágrima: base redondeada y punta, girado alrededor del eje Y
+    const pts = [];
+    // ovalada (largo ≈ 1,6 × ancho), base redonda y punta suave
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16;
+      const rad = 0.33 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.9)), 0.85) * (1 - 0.22 * t);
+      pts.push(new THREE.Vector2(Math.max(0.001, rad), t - 0.5));
+    }
+    seedGeo = new THREE.LatheGeometry(pts, 18);
+    // algo aplanada, con la quilla (costura) marcada
+    const p = seedGeo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const vx = p.getX(i), vz = p.getZ(i);
+      p.setZ(i, vz * 0.8);
+      p.setX(i, vx + (Math.abs(vz) < 0.03 && vx > 0 ? 0.01 : 0));
+    }
+    seedGeo.computeVertexNormals();
+    seedMat = new THREE.MeshStandardMaterial({ map: seedTexture(), roughness: 0.3, metalness: 0.05 });
+  }
+  const m = new THREE.Mesh(seedGeo, seedMat);
+  m.castShadow = true;
+  return m;
+}
+
+// Puñado de semillas (para la mano).
+export function seedPile(parent, n = 5, size = 0.024, seedN = 5) {
+  let s = seedN;
+  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < n; i++) {
+    const m = seed();
+    m.scale.setScalar(size * (0.9 + r() * 0.2));
+    const a = (i / n) * Math.PI * 2 + r();
+    const rr = i === 0 ? 0 : size * (0.7 + r() * 0.3);
+    m.position.set(Math.cos(a) * rr, size * 0.35 + (i === 0 ? size * 0.4 : 0), Math.sin(a) * rr);
+    m.rotation.set(Math.PI / 2 + (r() - 0.5) * 0.5, r() * Math.PI * 2, (r() - 0.5) * 0.6); // tumbadas
+    parent.add(m);
+  }
+  return parent;
+}

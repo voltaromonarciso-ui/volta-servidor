@@ -12,22 +12,27 @@ export const ROLES = {
   cocina: { name: 'Cocina', icon: '🔥', does: 'Pone tandas en el hornillo con los ingredientes de las estanterías y armarios, y guarda los cristales al terminar.' },
 };
 
-// Candidatos que se pueden contratar (cada uno, una sola vez a la vez).
+// Candidatos que se pueden contratar (cada uno, una sola vez a la vez). El id es interno
+// (se guarda en la partida); el nombre es el que se ve.
 export const CANDIDATES = [
-  { id: 'nerea', model: 'Female_Adult_07', name: 'Nerea', role: 'cultivo', hire: 120, wage: 55, loyalty: 0.7, bio: 'Estudió jardinería. Puntual y callada.' },
-  { id: 'paco', model: 'Male_Adult_06', name: 'Paco', role: 'cultivo', hire: 80, wage: 45, loyalty: 0.35, bio: 'Barato, pero habla más de la cuenta si no cobra.' },
-  { id: 'ines', model: 'Female_Adult_12', name: 'Inés', role: 'envasado', hire: 100, wage: 50, loyalty: 0.75, bio: 'Manos rápidas, trabajó en un almacén.' },
-  { id: 'dani', model: 'Male_Adult_17', name: 'Dani', role: 'envasado', hire: 70, wage: 40, loyalty: 0.3, bio: 'Recién llegado al barrio. Necesita el dinero.' },
-  { id: 'mateo', model: 'Male_Adult_12', name: 'Mateo', role: 'cocina', hire: 200, wage: 90, loyalty: 0.6, rank: 2, bio: 'Sabe de química. No toca nada sin ingredientes.' },
+  { id: 'nerea', model: 'Female_Adult_07', name: 'Nerea', role: 'cultivo', hire: 900, wage: 180, loyalty: 0.7, rank: 1, bio: 'Estudió jardinería. Puntual y callada.' },
+  { id: 'paco', model: 'Male_Adult_06', name: 'Toño', role: 'cultivo', hire: 600, wage: 140, loyalty: 0.35, rank: 1, bio: 'Más barato, pero habla más de la cuenta si no cobra.' },
+  { id: 'ines', model: 'Female_Adult_12', name: 'Vero', role: 'envasado', hire: 800, wage: 160, loyalty: 0.75, rank: 1, bio: 'Manos rápidas, trabajó en un almacén.' },
+  { id: 'dani', model: 'Male_Adult_17', name: 'Rubén', role: 'envasado', hire: 550, wage: 120, loyalty: 0.3, rank: 1, bio: 'Recién llegado al barrio. Necesita el dinero.' },
+  { id: 'mateo', model: 'Male_Adult_12', name: 'Mateo', role: 'cocina', hire: 2500, wage: 400, loyalty: 0.6, rank: 3, bio: 'Sabe de química. No toca nada sin ingredientes.' },
 ];
 
+// Equilibrio (revisado): un trato típico deja 100–250 $, así que contratar cuesta varios
+// días de ventas y el sueldo diario se come 1–2 tratos. Los empleados son más lentos que
+// tú y la plantilla crece con el rango: ayudan a escalar, no a saltarse la partida.
 export const STAFF = {
   maxPerProperty: 3,        // empleados por propiedad
+  maxByRank: [0, 1, 2, 3, 3, 3, 3], // plantilla total según el rango (Novato no puede contratar)
   workFrom: 8, workTo: 20,  // horario (horas de juego)
   payHour: 7,               // la nómina se cobra cada mañana a esta hora
   quitAfterDays: 2,         // días sin cobrar antes de irse
-  // minutos de juego que tarda cada tarea
-  minutes: { water: 4, harvest: 10, bolsa: 6, shards: 6, tarro: 12, cookStart: 10, cookCollect: 5, idle: 30 },
+  // minutos de juego que tarda cada tarea (aprox. el doble que el jugador)
+  minutes: { water: 6, harvest: 20, bolsa: 12, shards: 12, tarro: 25, cookStart: 20, cookCollect: 10, idle: 30 },
   regar: 0.3,               // riega cuando el agua baja de aquí (lo mismo que avisa la maceta)
   leakChance: (loyalty) => Math.max(0, 0.8 - loyalty), // al irse sin cobrar
 };

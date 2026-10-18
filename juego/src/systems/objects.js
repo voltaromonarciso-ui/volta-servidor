@@ -21,7 +21,7 @@ const SLOTS = { shelf: 12, locker: 24 };
 // Hornillo: receta y tiempo de cada tanda de cristales
 export const RECIPE = { azucar: 2, colorante: 1, catalizador: 1 };
 export const COOK_MIN = 120, COOK_OUT = 6;
-const GROW_MIN = 14 * 60;     // minutos de juego para crecer del todo
+const GROW_MIN = 10 * 60;     // minutos de juego para crecer del todo (≈ 7 min reales)
 const DRAIN_MIN = 10 * 60;    // minutos que dura el agua
 
 const bx = new THREE.BoxGeometry(1, 1, 1);

@@ -13,7 +13,7 @@ export const clock = (m) => {
   return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
 };
 
-const TIME_SCALE = 1; // minutos de juego por segundo real
+const TIME_SCALE = 1.5; // minutos de juego por segundo real (un día ≈ 16 min reales)
 let lastMinute = -1, saveT = 0;
 
 // Avanza el reloj `min` minutos (también usado al dormir / ser arrestado).
