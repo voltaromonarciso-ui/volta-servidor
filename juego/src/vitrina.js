@@ -19,7 +19,9 @@ r.setScissorTest(true);
 // entorno para los reflejos (en el juego lo pone el cielo)
 const ENV = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
 document.body.appendChild(r.domElement);
-const items = { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
+import { loadGlbItems } from './vitrina-glb.js';
+const glbParam = new URLSearchParams(location.search).get('glb');
+const items = glbParam ? await loadGlbItems(glbParam.split(',')) : { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
 const cols = items.length === 1 ? 1 : items.length <= 10 ? 5 : 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
 const lab = document.getElementById('lab');
 items.forEach(([name, fn], i) => {
