@@ -122,3 +122,14 @@ interacciones abstractas, animaciones y barras de progreso (nada de recetas real
   edificio secundario.
 - El mensaje cortado «recuerda q la tienda…» = los artículos de la tienda pequeña
   (bolsitas, abonos…) pasan a las gasolineras (parte 2).
+
+## Decisión sobre los modelos (18-10-2026)
+El usuario no quiere modelos hechos con piezas simples («dos palos y un cuadrado»):
+quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más tiempo.
+- Método aprobado: paquetes de modelos 3D libres (CC0: Kenney, Quaternius, Poly Pizza…)
+  elegidos por parecido a cada elemento de las referencias, retocados en colores y
+  proporciones; lo que no exista, modelado a mano con detalle. Enseñar capturas
+  comparadas antes de darlos por buenos. Licencias anotadas en docs/CREDITOS.
+- Prioridad: primero todos los elementos de la lámina «Calles y ciudad»
+  (09-tiendas-calles-objetos.png) y ~10 cajeros repartidos por la isla; después
+  edificios e interiores (gasolinera 06, casino 07/08, tiendas…).
