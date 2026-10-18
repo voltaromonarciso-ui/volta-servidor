@@ -64,3 +64,5 @@ Si una referencia es ambigua o contradictoria, preguntar.
   instalaciones; se hace junto al cambio de nombre y se comprueba que compila la parte web.
 - NO tocar el backend social «VOLTA» de la raíz del repositorio (src/, sql/, client/,
   Volta-5.html): es otra aplicación distinta.
+
+- Al empezar este encargo: hacer al usuario todas las preguntas necesarias para aclararlo bien (instrucción del usuario, 18-10-2026).
