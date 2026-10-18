@@ -34,7 +34,12 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
 
   test('un novato no puede contratar (plantilla según rango)', async ({}, testInfo) => {
     await ev(page, () => { __G.state.money = 5000; });
-    await press(page, testInfo, '.cand[data-cid="ines"] .btn');
+    // en el móvil: candado y sin botón de contratar
+    await expect(page.locator('.cand[data-cid="ines"]')).toContainText('Requiere rango');
+    await expect(page.locator('.cand[data-cid="ines"] .btn')).toHaveCount(0);
+    await expect(page.locator('.staff .ph-card').first()).toContainText('para poder contratar');
+    // y por código tampoco
+    expect((await mod(page, S, (m) => m.hire('ines', 'nave'))).ok).toBe(false);
     expect(await money(page)).toBe(5000);
     expect(await ev(page, () => __G.state.employees.length)).toBe(0);
     const lim = await mod(page, S, (m) => [0, 1, 2, 3].map((r) => { __G.state.rank = r; return m.maxStaff(); }));
