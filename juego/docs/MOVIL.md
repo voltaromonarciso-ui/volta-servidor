@@ -249,6 +249,28 @@ inicio, firma, privacidad (`PrivacyInfo.xcprivacy`), revisión de contenido.
   puede huir (> 50 m, entrar en una propiedad, vehículo, policía a < 28 m, 75 s).
   Piden el 35 % del efectivo (20–500 $); clave rob:<id>.
 
+### Regresión del encargo maestro (18-10-2026)
+
+- Android: 159/160 a la primera; el fallo (bandas que se rendían solas) era un error real,
+  corregido y verificado (events 9/9 en Android antes del arreglo y en iPhone y escritorio después).
+- iPhone (perfil Chromium con medidas de iPhone): 160/160 entre las dos tandas, incluida
+  la auditoría de interfaz en 6 pantallas.
+- Escritorio: 106 pasan, 2 omitidas (auditoría táctil y medición: solo en móvil).
+
+Medición (Android emulado, GPU por software: los ms NO representan un móvil; llamadas de
+dibujo y triángulos sí son reales):
+
+| Escena | Alta + larga: llamadas / triángulos | Baja + corta: llamadas / triángulos |
+|---|---|---|
+| Nave | 219 / 255 mil | 140 / 148 mil |
+| Calle con tráfico | 907 / 636 mil | 761 / 460 mil |
+| Zona comercial | 942 / 665 mil | 809 / 474 mil |
+| Interior de tienda | 186 / 235 mil | 98 / 144 mil |
+| Noche con farolas | 291 / 320 mil | 148 / 193 mil |
+
+Memoria JS: ~104 MB. Lo más caro son las calles con tráfico y la zona comercial (~900
+llamadas): candidato a optimizar (instanciar coches/personajes, agrupar comercios).
+
 ## 5. Rendimiento en móvil (lo que ya hace el juego)
 
 - Ajustes: calidad, sombras, resolución, distancia de dibujo (corta 260 m / media 520 m /
