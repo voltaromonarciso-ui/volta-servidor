@@ -112,7 +112,5 @@
   "110": "scripts",
   "111": "benches.js",
   "112": "Player",
-  "113": "vitrina.js",
-  "114": "interact.js",
-  "115": "StaticBatch"
+  "114": "interact.js"
 }

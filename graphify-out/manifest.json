@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792358907.5412526,
-    "seen": 1792358921.9184206,
+    "mtime": 1792358998.7212582,
+    "seen": 1792359011.8586571,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1542,9 +1542,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792358899.7749586,
-    "seen": 1792358921.9183314,
-    "ast_hash": "94ea9e2c1288ae69270f99921758508e",
+    "mtime": 1792358991.0460334,
+    "seen": 1792359011.8584077,
+    "ast_hash": "0da6bd078cfc7ac319a346920ce2947e",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {
@@ -1572,9 +1572,15 @@
     "semantic_hash": ""
   },
   "juego/docs/avances-03-calle2.png": {
-    "mtime": 1792358915.9624436,
-    "seen": 1792358921.9216962,
-    "ast_hash": "eef611fea4153c8b750eb407025737ed",
+    "mtime": 1792359006.3828893,
+    "seen": 1792359011.8623025,
+    "ast_hash": "7ef76ff0b8d82d00c534d4105ce835ca",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-04-palmera.png": {
+    "mtime": 1792359006.385036,
+    "seen": 1792359011.8623056,
+    "ast_hash": "b26eb04276bd2efd04ed36ed735ad817",
     "semantic_hash": ""
   }
 }

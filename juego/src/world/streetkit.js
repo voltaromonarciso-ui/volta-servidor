@@ -438,27 +438,37 @@ export function macetero() {
 }
 
 // Palmera: tronco curvo anillado y hojas con foliolos
-const frondTex = () => canvasTex('fronda', 512, 128, (c, w, h) => {
-  // nervio central y foliolos en diagonal a ambos lados, cada vez más cortos hacia la punta
-  for (let k = 0; k < 70; k++) {
-    const x = 6 + (k / 70) * (w - 14), L = (h / 2 - 4) * Math.sin(Math.min(1, (k / 70) * 1.15) * Math.PI) + 8;
+const frondTex = () => canvasTex('fronda2', 1024, 256, (c, w, h) => {
+  // foliolos largos y apretados a ambos lados del nervio, inclinados hacia la punta y
+  // más cortos al final; dos tonos por foliolo (haz claro, borde oscuro) para que se lea la hoja
+  let s0 = 3; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
+  const N = 150;
+  for (let pass = 0; pass < 2; pass++) for (let k = 0; k < N; k++) {
+    const t = k / N, x = 10 + t * (w - 30);
+    const L = (h / 2 - 6) * (0.35 + 0.65 * Math.sin(Math.min(1, t * 1.25 + 0.08) * Math.PI)) * (0.9 + rnd() * 0.15);
     for (const sd of [-1, 1]) {
-      c.fillStyle = `hsl(${100 + (k % 3) * 6},${55 + (k % 2) * 10}%,${30 + (k % 4) * 4}%)`;
-      c.beginPath(); c.moveTo(x - 2, h / 2); c.quadraticCurveTo(x + 16, h / 2 + sd * L * 0.4, x + 26, h / 2 + sd * L);
-      c.quadraticCurveTo(x + 2, h / 2 + sd * L * 0.6, x - 8, h / 2); c.fill();
+      const tipX = x + 34 + L * 0.35, tipY = h / 2 + sd * L, wd = 5 + (1 - t) * 3;
+      const li = 30 + rnd() * 10 + t * 6;
+      c.fillStyle = pass === 0 ? `hsl(${102 + rnd() * 10},60%,${li - 10}%)` : `hsl(${100 + rnd() * 14},${58 + rnd() * 12}%,${li}%)`;
+      const sh = pass === 0 ? 1.4 : 1;
+      c.beginPath(); c.moveTo(x - wd * sh, h / 2);
+      c.quadraticCurveTo(x + 14, h / 2 + sd * L * 0.45 - sd * wd * sh, tipX, tipY);
+      c.quadraticCurveTo(x + 6, h / 2 + sd * L * 0.5 + sd * wd * sh, x + wd * sh, h / 2); c.fill();
     }
   }
-  c.strokeStyle = '#8a9a4a'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w - 6, h / 2); c.stroke();
+  const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#9aa456'); gr.addColorStop(1, '#6f8a3a');
+  c.strokeStyle = gr; c.lineWidth = 7; c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w - 20, h / 2); c.stroke();
 });
-function frondGeo2() {
-  return cache('frond3', () => {
-    const pos = [], uv = [], idx = [];
-    const N = 16, L = 2.8;
+// Hoja de palmera: tira arqueada con sección en V (los foliolos caen hacia los lados)
+function frondGeo2(L = 3.1) {
+  return cache('frond4' + L, () => {
+    const pos = [], uv = [], idx = [], S = [-1, -0.5, 0, 0.5, 1], C = S.length;
+    const N = 20;
     for (let i = 0; i <= N; i++) {
-      const t = i / N, x = t * L, y = 0.4 * Math.sin(t * Math.PI * 0.8) - t * t * 1.1;
-      const w = 0.62, droop = -0.18 - t * 0.12;
-      for (const sd of [-1, 0, 1]) { pos.push(x, y + (sd === 0 ? 0.03 : droop), sd * w); uv.push(t, (sd + 1) / 2); }
-      if (i < N) { const a = i * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
+      const t = i / N, x = t * L, y = 0.7 * Math.sin(t * Math.PI * 0.7) - t * t * 1.35;
+      const w = 0.85 * (0.55 + 0.45 * Math.sin(Math.min(1, t * 1.25 + 0.08) * Math.PI));
+      for (const sd of S) { pos.push(x + Math.abs(sd) * 0.12 * w, y - sd * sd * (0.08 + t * 0.12) * w, sd * w); uv.push(t, (sd + 1) / 2); }
+      if (i < N) for (let j = 0; j < C - 1; j++) { const a = i * C + j; idx.push(a, a + 1, a + C, a + 1, a + C + 1, a + C); }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -479,10 +489,17 @@ export function palmera(h = 6) {
   const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
   for (let k = 1; k < 22; k++) { const p = curve.getPoint(k / 22), rr = 0.3 - (k / 22) * 0.12; add(g, cyl(rr, rr - 0.02, 0.07, 14), ring, p.x, p.y, p.z, 0, 0, -0.05 - k * 0.005); }
   const top = curve.getPoint(1);
-  add(g, sph(0.22, 14, 10), mat('#6b4a2c', { r: 0.9 }), top.x, top.y, top.z);
-  const fm = mat('#ffffff', { r: 0.8, map: frondTex(), alphaTest: 0.5, side: THREE.DoubleSide });
-  for (let k = 0; k < 18; k++) add(g, frondGeo2(), fm, top.x, top.y + 0.05, top.z, (k % 2) * 0.25, (k / 18) * Math.PI * 2 + (k % 2) * 0.17, k % 3 === 0 ? 0.7 : -0.05 + (k % 3) * 0.2);
-  for (let k = 0; k < 3; k++) add(g, sph(0.08, 10, 8), mat('#5a3d22'), top.x + Math.cos(k * 2) * 0.18, top.y - 0.15, top.z + Math.sin(k * 2) * 0.18);
+  // capitel: base de las hojas, más ancha que el tronco
+  add(g, lathe('palmCapitel', [[0, 0], [0.2, 0], [0.27, 0.15], [0.24, 0.35], [0.12, 0.5], [0, 0.55]], 16), mat('#7a6a3a', { r: 0.9 }), top.x, top.y - 0.25, top.z);
+  const fm = mat('#ffffff', { r: 0.75, map: frondTex(), alphaTest: 0.45, side: THREE.DoubleSide });
+  const dry = mat('#c49a5c', { r: 0.9, map: frondTex(), alphaTest: 0.45, side: THREE.DoubleSide });
+  // tres pisos de hojas: las de arriba se levantan, las del medio abren y las de abajo cuelgan
+  const tiers = [[6, 0.75, 2.5, 0.1], [9, 0.3, 3.2, 0.6], [9, 0.0, 3.3, 0.25]];
+  for (const [n, pitch, L, off] of tiers) for (let k = 0; k < n; k++)
+    add(g, frondGeo2(L), fm, top.x, top.y + 0.1, top.z, 0.15 * Math.sin(k * 2.3), (k / n) * Math.PI * 2 + off, pitch + 0.12 * Math.sin(k * 1.7));
+  for (let k = 0; k < 3; k++) add(g, frondGeo2(1.8), dry, top.x, top.y - 0.15, top.z, 0, k * 2.1 + 0.4, -0.75);
+  const coco = mat('#5e4126', { r: 0.7 });
+  for (let k = 0; k < 6; k++) add(g, sph(0.13, 12, 10), coco, top.x + Math.cos(k * 1.05) * 0.24, top.y - 0.2 - (k % 2) * 0.1, top.z + Math.sin(k * 1.05) * 0.24);
   return g;
 }
 

@@ -1,17 +1,17 @@
 # Graph Report - volta-servidor  (2026-10-18)
 
 ## Corpus Check
-- 173 files · ~1,525,040 words
+- 173 files · ~1,531,222 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 55 file(s) not represented in the graph (top: .glb 22, (none) 10, .xml 10)
 
 ## Summary
-- 2188 nodes · 5054 edges · 116 communities (94 shown, 22 thin omitted)
+- 2188 nodes · 5055 edges · 114 communities (93 shown, 21 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 134 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `63944882`
+- Built from commit: `5b2dc6cf`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -120,9 +120,7 @@
 - scripts
 - benches.js
 - Player
-- vitrina.js
 - interact.js
-- StaticBatch
 
 ## God Nodes (most connected - your core abstractions)
 1. `three` - 179 edges
@@ -151,7 +149,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (116 total, 22 thin omitted)
+## Communities (114 total, 21 thin omitted)
 
 ### Community 0 - "addBox"
 Cohesion: 0.14
@@ -230,8 +228,8 @@ Cohesion: 0.09
 Nodes (24): description, engines, node, main, name, private, version, bcrypt (+16 more)
 
 ### Community 20 - "streetkit.js"
-Cohesion: 0.13
-Nodes (58): add(), adTex(), aparcabicis(), arbol(), atmScreenTex(), atmSignTex(), banco(), barrera() (+50 more)
+Cohesion: 0.11
+Nodes (65): three, lab, r, rows, StaticBatch, add(), adTex(), aparcabicis() (+57 more)
 
 ### Community 21 - "forum.js"
 Cohesion: 0.13
@@ -355,7 +353,7 @@ Nodes (35): PARKING, RECOVER_PRICE, VEHICLES, bendPose(), clearPose(), buildBike
 
 ### Community 67 - "station.js"
 Cohesion: 0.13
-Nodes (29): GEMS, camFrom, camTo, contY(), done(), exitStation(), fail(), finishExit() (+21 more)
+Nodes (33): GEMS, camFrom, camTo, colorOf(), contY(), done(), dropUnit(), exitStation() (+25 more)
 
 ### Community 68 - "Root Cause Tracing"
 Cohesion: 0.12
@@ -474,8 +472,8 @@ Cohesion: 0.15
 Nodes (34): addBox(), asphalt(), bench(), billboard(), buildBeach(), buildCommercial(), buildEastShops(), buildIndustrial() (+26 more)
 
 ### Community 100 - "three"
-Cohesion: 0.18
-Nodes (33): three, BAG, bud(), budGeometry(), budMat(), budPile(), cache, cashStack() (+25 more)
+Cohesion: 0.17
+Nodes (28): BAG, bud(), budGeometry(), budMat(), budPile(), cache, cashStack(), corkTex() (+20 more)
 
 ### Community 101 - "icons.js"
 Cohesion: 0.19
@@ -521,10 +519,6 @@ Nodes (4): scripts, dev, migrate, start
 Cohesion: 0.41
 Nodes (16): add(), BENCH_TOP, budTray(), buildJarPacker(), buildPacker(), buildStove(), crate(), cuttingMatTex() (+8 more)
 
-### Community 113 - "vitrina.js"
-Cohesion: 0.33
-Nodes (5): lab, r, rows, STREET_KIT, STREET_KIT_2
-
 ### Community 114 - "interact.js"
 Cohesion: 0.25
 Nodes (7): 1. Motor y arquitectura, ray, runAction(), target, updateInteract(), _v, three
@@ -532,12 +526,12 @@ Nodes (7): 1. Motor y arquitectura, ray, runAction(), target, updateInteract(), 
 ## Knowledge Gaps
 - **12 isolated node(s):** `UIKit`, `Capacitor`, `PackageDescription`, `@capacitor/android`, `@capacitor/core` (+7 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 959 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `three` connect `interact.js` to `main.js`, `island.js`, `objects.js`, `textures.js`, `dressing.js`, `streetkit.js`, `juego/package.json`, `human.js`, `npc.js`, `cars.js`, `hands.js`, `riding.js`, `station.js`, `world.js`, `props.js`, `sky.js`, `three`, `layout.js`, `benches.js`, `vitrina.js`?**
+- **Why does `three` connect `interact.js` to `main.js`, `island.js`, `objects.js`, `textures.js`, `dressing.js`, `streetkit.js`, `juego/package.json`, `human.js`, `npc.js`, `cars.js`, `hands.js`, `riding.js`, `station.js`, `world.js`, `props.js`, `sky.js`, `three`, `layout.js`, `benches.js`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `addBox()` (e.g. with `world.js` and `createWorld()`) actually correct?**
   _`addBox()` has 2 INFERRED edges - model-reasoned connections that need verification._
@@ -545,7 +539,7 @@ _Questions this graph is uniquely positioned to answer:_
   _12 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `addBox` be split into smaller, more focused modules?**
   _Cohesion score 0.1380952380952381 - nodes in this community are weakly interconnected._
-- **Why does `three` connect `three` to `addBox`, `main.js`, `island.js`, `objects.js`, `textures.js`, `dressing.js`, `streetkit.js`, `juego/package.json`, `human.js`, `npc.js`, `cars.js`, `hands.js`, `riding.js`, `station.js`, `world.js`, `props.js`, `Walker`, `sky.js`, `building`, `benches.js`, `Player`, `vitrina.js`, `StaticBatch`?**
+- **Why does `three` connect `streetkit.js` to `addBox`, `main.js`, `island.js`, `objects.js`, `textures.js`, `dressing.js`, `juego/package.json`, `human.js`, `npc.js`, `cars.js`, `hands.js`, `riding.js`, `station.js`, `world.js`, `props.js`, `Walker`, `sky.js`, `building`, `three`, `benches.js`, `Player`?**
   _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Should `main.js` be split into smaller, more focused modules?**
   _Cohesion score 0.07077922077922078 - nodes in this community are weakly interconnected._
