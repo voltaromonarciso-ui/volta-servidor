@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/cars.js": {
-    "mtime": 1792341754.528233,
-    "seen": 1792341770.0540557,
-    "ast_hash": "a19eecfbcc4cc3ad5b89aeb800687aaf",
+    "mtime": 1792343161.148813,
+    "seen": 1792343452.9219096,
+    "ast_hash": "8c76a00b55b1bfd725f2ce7f9e7eea4e",
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792342028.34489,
-    "seen": 1792343119.304721,
-    "ast_hash": "845ad82c973e69bd042b4efffa361f5a",
+    "mtime": 1792343180.2527049,
+    "seen": 1792343452.922175,
+    "ast_hash": "100e337c4483d005437f4d72e80a4fc8",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792341745.7562325,
-    "seen": 1792341770.0543609,
-    "ast_hash": "3c99f05ac800f10f7b36be64c016ecd6",
+    "mtime": 1792343225.6999483,
+    "seen": 1792343452.9223318,
+    "ast_hash": "fe31d98c458115a403b193b72ec7a307",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792341745.7562325,
-    "seen": 1792341770.0545466,
-    "ast_hash": "29a5e9f4fbec67c2deaa1307f93c32b2",
+    "mtime": 1792343172.40295,
+    "seen": 1792343452.9226177,
+    "ast_hash": "22ab6f34df3ae9e39aeea8b138c514f0",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/sky.js": {
-    "mtime": 1792341754.528233,
-    "seen": 1792341770.0546668,
-    "ast_hash": "ab2ab0a8d11ac10873d67601ec5910d9",
+    "mtime": 1792343172.4003174,
+    "seen": 1792343452.9227242,
+    "ast_hash": "27ff594d08c7d384bb32db942ae2e93f",
     "semantic_hash": ""
   },
   "juego/src/world/textures.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792341897.4779158,
-    "seen": 1792343119.3056939,
-    "ast_hash": "6f7c8770918b09e41aded9cb3a17c8fb",
+    "mtime": 1792343266.61283,
+    "seen": 1792343452.9227512,
+    "ast_hash": "fc599312323c65d5702cba20ae430d60",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792339215.8071024,
-    "seen": 1792341770.0547025,
+    "mtime": 1792343426.7083325,
+    "seen": 1792343452.922809,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },

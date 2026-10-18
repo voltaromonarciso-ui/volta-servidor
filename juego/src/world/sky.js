@@ -133,6 +133,20 @@ function sample(hour) {
 }
 
 export let nightFactor = 0;
+// Distancia de dibujo: plano lejano de la cámara, niebla y tamaño del cielo (el cielo,
+// el sol y la luna se encogen para quedar siempre dentro del plano lejano).
+export const DRAW = { corta: { far: 260, fog: [40, 230] }, media: { far: 520, fog: [55, 460] }, larga: { far: 1100, fog: [60, 640] } };
+let skyK = 1;
+export function setDrawDistance(mode = 'larga') {
+  const d = DRAW[mode] || DRAW.larga;
+  G.camera.far = d.far;
+  G.camera.updateProjectionMatrix();
+  G.scene.fog.near = d.fog[0];
+  G.scene.fog.far = d.fog[1];
+  skyK = Math.min(1, (d.far * 0.88) / 470);
+  if (dome) dome.scale.setScalar(skyK);
+  if (stars) stars.scale.setScalar(skyK);
+}
 // Farolas: se encienden a las 19:45 y se apagan a las 6:45 según el reloj del juego.
 // Con horas fijas no pueden parpadear (no dependen de un umbral de luz que oscile);
 // el encendido y el apagado son un fundido corto.
@@ -177,9 +191,10 @@ function updateSky(dt) {
     sun.position.copy(sun.target.position).addScaledVector(lightDir.normalize(), 140);
     sun.shadow.needsUpdate = true;
   }
-  sunDisc.position.copy(G.camera.position).addScaledVector(dir, 420);
-  sunHalo.position.copy(G.camera.position).addScaledVector(dir, 410);
-  moonDisc.position.copy(G.camera.position).addScaledVector(dir.clone().negate(), 400);
+  sunDisc.position.copy(G.camera.position).addScaledVector(dir, 420 * skyK);
+  sunHalo.position.copy(G.camera.position).addScaledVector(dir, 410 * skyK);
+  moonDisc.position.copy(G.camera.position).addScaledVector(dir.clone().negate(), 400 * skyK);
+  sunDisc.scale.setScalar(skyK); sunHalo.scale.set(160 * skyK, 160 * skyK, 1); moonDisc.scale.setScalar(skyK);
   sunDisc.visible = sunHalo.visible = dir.y > -0.06;
   sunHalo.material.opacity = clamp(1 - dir.y * 2.2, 0.25, 1);
   sunDisc.material.color.copy(k.sunC).lerp(C('#fff4dc'), 0.4).multiplyScalar(2.2);

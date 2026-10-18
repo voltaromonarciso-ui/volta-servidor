@@ -543,6 +543,8 @@ export function settingsPanel(container, onExit) {
     slider('Resolución', 0.5, 1, 0.05, s.res, (v) => { s.res = v; G.act.resize(); }),
     choice('Calidad gráfica', [['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']], s.quality || 'alta', (v) => { s.autoQ = false; G.act.quality(v); }),
     toggle('Sombras', s.shadows, (v) => { s.shadows = v; setShadows(v && s.quality !== 'baja'); }),
+    choice('Distancia de dibujo', [['corta', 'Corta'], ['media', 'Media'], ['larga', 'Larga']], s.draw || 'larga', (v) => G.act.drawDistance(v)),
+    choice('Tráfico', [['poco', 'Poco'], ['normal', 'Normal'], ['mucho', 'Mucho']], s.traffic || 'normal', (v) => G.act.traffic(v)),
     toggle('Sonido', s.sound, (v) => { s.sound = v; }),
   );
   const lay = h('button', 'btn ghost', '🎮 Editar controles');

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { G, clamp, randi } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
 import { inv, slotsCount, save, takeSeed } from '../core/state.js';
@@ -25,6 +26,12 @@ const GROW_MIN = 10 * 60;     // minutos de juego para crecer del todo (≈ 7 mi
 const DRAIN_MIN = 10 * 60;    // minutos que dura el agua
 
 const bx = new THREE.BoxGeometry(1, 1, 1);
+// cajas con cantos redondeados (una geometría por medida, compartida entre copias)
+const _rb = new Map();
+const rbx = (w, h, d, r) => { const k = [w, h, d, r].join(); if (!_rb.has(k)) _rb.set(k, new RoundedBoxGeometry(w, h, d, 2, r)); return _rb.get(k); };
+const leg = new THREE.CylinderGeometry(0.03, 0.022, 0.18, 10);
+const cylH = new THREE.CylinderGeometry(0.045, 0.045, 1.16, 12);
+const pillow = (() => { const g = new RoundedBoxGeometry(0.72, 0.13, 0.36, 3, 0.06); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, p.getY(i) * (1 - 0.35 * ((x / 0.36) ** 2 + (z / 0.18) ** 2) * 0.5)); } g.computeVertexNormals(); return g; })();
 const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
 const cylTaper = new THREE.CylinderGeometry(0.5, 0.38, 1, 12);
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -175,18 +182,24 @@ const BUILD = {
     mesh(bx, new THREE.MeshBasicMaterial({ color: 0xff8ef0 }), 0.6, 0.03, 0.32, 0, 1.79, 0.25, g);
   },
   bed(o) {
+    // formas redondeadas (sin que cueste mucho: pocas piezas y geometrías compartidas)
     const g = o.group;
-    const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a3a, roughness: 0.6 });
-    mesh(bx, wood, 1.1, 0.28, 2.1, 0, 0.2, 0, g);                       // somier
-    mesh(bx, wood, 1.14, 0.95, 0.08, 0, 0.47, -1.03, g);                // cabecero
-    mesh(bx, wood, 1.14, 0.45, 0.06, 0, 0.25, 1.03, g);                 // piecero
-    mesh(bx, '#f4f1ea', 1.02, 0.18, 2.0, 0, 0.43, 0, g);                // colchón
-    mesh(bx, '#3f78c4', 1.06, 0.06, 1.3, 0, 0.53, 0.33, g);             // manta
-    mesh(bx, '#ffffff', 0.7, 0.12, 0.32, 0, 0.56, -0.78, g);            // almohada
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a3a, roughness: 0.55 });
+    mesh(rbx(1.1, 0.16, 2.06, 0.03), wood, 1, 1, 1, 0, 0.26, 0, g);              // marco
+    for (const x of [-0.5, 0.5]) for (const z of [-0.98, 0.98]) mesh(leg, wood, 1, 1, 1, x, 0.09, z, g); // patas torneadas
+    mesh(rbx(1.16, 0.78, 0.07, 0.03), wood, 1, 1, 1, 0, 0.62, -1.03, g);         // cabecero
+    const top = mesh(cylH, wood, 1, 1, 1, 0, 1.01, -1.03, g); top.rotation.z = Math.PI / 2; // canto redondo arriba
+    mesh(rbx(1.16, 0.36, 0.06, 0.025), wood, 1, 1, 1, 0, 0.42, 1.03, g);         // piecero
+    mesh(rbx(1.02, 0.2, 1.98, 0.07), '#f4f1ea', 1, 1, 1, 0, 0.44, 0, g);         // colchón mullido
+    mesh(rbx(1.08, 0.07, 1.32, 0.03), '#3f78c4', 1, 1, 1, 0, 0.56, 0.32, g);     // edredón
+    for (const x of [-0.53, 0.53]) mesh(rbx(0.03, 0.22, 1.3, 0.012), '#3a6fb6', 1, 1, 1, x, 0.46, 0.32, g); // caída por los lados
+    mesh(rbx(0.06, 0.06, 1.08, 0.025), '#5b8fd6', 1, 1, 1, 0, 0.6, -0.33, g).rotation.y = Math.PI / 2; // embozo doblado
+    const pil = mesh(pillow, '#ffffff', 1, 1, 1, 0, 0.6, -0.78, g);              // almohada
+    pil.rotation.x = -0.18;
   },
   locker(o) {
     const g = o.group;
-    mesh(bx, '#6f7d88', 1.2, 1.95, 0.6, 0, 0.975, 0, g);
+    mesh(rbx(1.2, 1.95, 0.6, 0.03), '#6f7d88', 1, 1, 1, 0, 0.975, 0, g);
     for (const x of [-0.3, 0.3]) {
       mesh(bx, '#8796a1', 0.56, 1.85, 0.02, x, 0.975, 0.305, g);
       for (const y of [1.62, 1.7, 1.78]) mesh(bx, '#56636c', 0.36, 0.02, 0.01, x, y, 0.318, g);
@@ -196,8 +209,8 @@ const BUILD = {
   safe(o) {
     const g = o.group;
     const steel = new THREE.MeshStandardMaterial({ color: 0x3d4650, roughness: 0.4, metalness: 0.6 });
-    mesh(bx, steel, 0.7, 0.8, 0.7, 0, 0.42, 0, g);
-    mesh(bx, '#56616c', 0.58, 0.66, 0.02, 0, 0.42, 0.355, g);
+    mesh(rbx(0.7, 0.8, 0.7, 0.05), steel, 1, 1, 1, 0, 0.42, 0, g);
+    mesh(rbx(0.58, 0.66, 0.03, 0.012), '#56616c', 1, 1, 1, 0, 0.42, 0.355, g);
     const dial = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.7, roughness: 0.3 }), 0.16, 0.03, 0.16, -0.05, 0.46, 0.37, g);
     dial.rotation.x = Math.PI / 2;
     mesh(bx, '#c8ccd0', 0.04, 0.16, 0.04, 0.18, 0.42, 0.38, g);

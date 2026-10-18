@@ -12,7 +12,7 @@ import { newState, load, save, hasSave, inv, restoreBackup } from './core/state.
 import { initInput, pollInput, input } from './core/input.js';
 import { initAudio, sfx, updateAmbience, audioStatus, setSiren } from './core/audio.js';
 import { createWorld } from './world/world.js';
-import { createSky, setShadows, nightFactor } from './world/sky.js';
+import { createSky, setShadows, nightFactor, setDrawDistance } from './world/sky.js';
 import { initRender, buildComposer, resizeRender, renderFrame, syncHandLights, setQuality, R } from './render.js';
 import { makeHuman } from './entities/human.js';
 import { loadModels, makeRealHuman, MODELS, modelNames } from './entities/models.js';
@@ -23,7 +23,7 @@ import { buildItem } from './entities/hands.js';
 import { ITEMS } from './data/items.js';
 import { Player } from './entities/player.js';
 import { NPC } from './entities/npc.js';
-import { spawnCars } from './entities/cars.js';
+import { setTraffic } from './entities/cars.js';
 import { PEOPLE } from './data/people.js';
 import { spawnObject, placeObject, updateObjects, hideGhost, furnitureModel, placement, placingMode, rotatePlacement, cancelPlacement, storeMoving } from './systems/objects.js';
 import { updateInteract, runAction } from './systems/interact.js';
@@ -160,6 +160,8 @@ Object.assign(G.act, {
     setTimeout(() => { mid(); setTimeout(() => f.classList.remove('on'), 300); }, 650);
   },
   resize,
+  drawDistance: (d) => { G.state.settings.draw = d; setDrawDistance(d); },
+  traffic: (t) => { G.state.settings.traffic = t; setTraffic(t); },
   quality: (q) => { G.state.settings.quality = q; setQuality(q); resize(); setShadows(q !== 'baja' && G.state.settings.shadows); },
   openStarterBox: () => {
     if (G.world.inProperty(G.player.pos.x, G.player.pos.z) !== 'nave') return toast('Llévala dentro de tu nave antes de abrirla.', '📦');
@@ -237,7 +239,8 @@ async function startGame(fresh, look) {
   // vecinos
   PEOPLE.forEach((p, i) => G.npcs.push(new NPC(p, G.world.homes[i % G.world.homes.length], i + 1)));
   spawnPolice();
-  spawnCars();
+  setTraffic(s.settings.traffic || 'normal');
+  setDrawDistance(s.settings.draw || 'larga');
   if (s.props.bungalow && G.world.saleSign) G.world.saleSign.visible = false;
   const prop = G.world.props[s.home] || G.world.props.nave;
   if (loaded) G.player.teleport(prop.spawn.x, prop.spawn.z, prop.spawn.yaw);
@@ -389,6 +392,12 @@ function autoQuality(fps) {
     G.act.quality(q);
     st.quality = q;
     toast(`Calidad gráfica ajustada a ${q} para que vaya más fluido.`, '⚙️');
+  } else if (lowFps >= 8 && st.quality === 'baja' && (st.draw || 'larga') !== 'corta') {
+    // ya en calidad baja: se acorta también la distancia de dibujo
+    lowFps = 0;
+    const d = (st.draw || 'larga') === 'larga' ? 'media' : 'corta';
+    G.act.drawDistance(d);
+    toast(`Distancia de dibujo ajustada a ${d} para que vaya más fluido.`, '⚙️');
   }
 }
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { G } from '../game.js';
 import { StaticBatch, GEO, MAT } from './batch.js';
 import { makeCar, vehiclesReady, CAR_MODELS } from '../entities/vehicles.js';
@@ -166,6 +167,9 @@ function inProperty(x, z) {
 // ------------------------------------------------------------------
 //  Ayudantes de construcción
 // ------------------------------------------------------------------
+// cajas con cantos redondeados para lo que se ve de cerca (camas, cojines...)
+const _rb = new Map();
+const rbox = (w, h, d, r) => { const k = [w, h, d, r].join(); if (!_rb.has(k)) _rb.set(k, new RoundedBoxGeometry(w, h, d, 2, r)); return _rb.get(k); };
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 function hitbox(x, y, z, w, h, d, ia) {
   const m = new THREE.Mesh(GEO.box, hitMat);
@@ -934,10 +938,14 @@ function buildNave() {
   addBox(dkx - 0.8, dkx + 0.8, z0 + 0.2, z0 + 1.0, 1);
   // catre para dormir
   const cx_ = x1 - 1.9, cz_ = z0 + 9.4;
-  B.box('#3d4a3a', cx_, 0, cz_, 0.95, 0.42, 2.1, 0, { mat: 'metal' });
-  B.box('#6b7a5a', cx_, 0.42, cz_, 0.9, 0.12, 2.0, 0, { ao: 0 });
-  B.box('#e8e2d6', cx_, 0.54, cz_ - 0.8, 0.6, 0.12, 0.35, 0, { ao: 0 });
-  B.box('#7b3f3f', cx_, 0.54, cz_ + 0.3, 0.92, 0.06, 1.3, 0, { ao: 0 });
+  // catre de tubo con colchoneta, manta y almohada redondeadas (no bloques)
+  for (const sx of [-0.44, 0.44]) B.add(GEO.cyl8, '#3d4a3a', cx_ + sx, 0.4, cz_, 0.045, 2.08, 0.045, 0, { mat: 'metal', rx: Math.PI / 2 });
+  for (const sz of [-1.0, 1.0]) for (const sx of [-0.44, 0.44]) B.add(GEO.cyl8, '#3d4a3a', cx_ + sx, 0.2, cz_ + sz, 0.04, 0.4, 0.04, 0, { mat: 'metal' });
+  for (const sz of [-1.0, 1.0]) B.add(GEO.cyl8, '#3d4a3a', cx_, 0.4, cz_ + sz, 0.04, 0.9, 0.04, 0, { mat: 'metal', rz: Math.PI / 2 });
+  B.add(rbox(0.86, 0.12, 1.98, 0.05), '#6b7a5a', cx_, 0.48, cz_, 1, 1, 1, 0, { ao: 0 });
+  B.add(rbox(0.58, 0.11, 0.34, 0.05), '#e8e2d6', cx_, 0.59, cz_ - 0.78, 1, 1, 1, 0, { ao: 0, rx: -0.15 });
+  B.add(rbox(0.9, 0.05, 1.3, 0.02), '#7b3f3f', cx_, 0.565, cz_ + 0.3, 1, 1, 1, 0, { ao: 0 });
+  for (const sx of [-0.46, 0.46]) B.add(rbox(0.025, 0.18, 1.28, 0.01), '#6e3838', cx_ + sx, 0.47, cz_ + 0.3, 1, 1, 1, 0, { ao: 0 });
   addBox(cx_ - 0.5, cx_ + 0.5, cz_ - 1.05, cz_ + 1.05, 0.7);
   hitbox(cx_, 0.4, cz_, 1, 0.8, 2.1, { actions: () => [{ label: 'Dormir', fn: () => G.act.sleep('nave') }] });
   // palés, transpaleta y carretilla elevadora
@@ -1618,12 +1626,18 @@ function decorKit(L, LM) {
     },
     rug(x, z, w, d, col, ry = 0) { B.box(col, x, 0.026, z, w, 0.012, d, ry, { ...L, ao: 0 }); },
     sofa(x, z, ry, col = '#5b6b7d', seats = 3) {
+      // piezas redondeadas: base, respaldo, brazos y cojines mullidos; patas cilíndricas
       const f = P(x, z, ry), w = 0.75 * seats + 0.3;
-      B.box(col, x, 0.12, z, w, 0.32, 0.9, ry, L);
-      const [bx, bz] = f(0, -0.36); B.box(col, bx, 0.12, bz, w, 0.78, 0.2, ry, L);
-      for (const s of [-1, 1]) { const [ax, az] = f(s * (w / 2 - 0.1), 0); B.box(col, ax, 0.12, az, 0.2, 0.55, 0.9, ry, L); }
-      for (let i = 0; i < seats; i++) { const [cx, cz] = f(-w / 2 + 0.15 + 0.375 + i * 0.75, 0.05); B.box(new THREE.Color(col).offsetHSL(0, 0, 0.06).getStyle(), cx, 0.44, cz, 0.7, 0.12, 0.7, ry, L); }
-      for (const s of [-1, 1]) for (const t of [-1, 1]) { const [lx, lz] = f(s * (w / 2 - 0.1), t * 0.35); B.box('#2a2d31', lx, 0, lz, 0.06, 0.12, 0.06, ry, LM); }
+      const rb = (c, px, y0, pz, sw, sh, sd, r) => B.add(rbox(sw, sh, sd, r), c, px, y0 + sh / 2, pz, 1, 1, 1, ry, L);
+      rb(col, x, 0.12, z, w, 0.32, 0.9, 0.05);
+      const [bx, bz] = f(0, -0.36); rb(col, bx, 0.12, bz, w, 0.78, 0.2, 0.07);
+      for (const s of [-1, 1]) { const [ax, az] = f(s * (w / 2 - 0.1), 0); rb(col, ax, 0.12, az, 0.2, 0.55, 0.9, 0.08); }
+      const cush = new THREE.Color(col).offsetHSL(0, 0, 0.06).getStyle();
+      for (let i = 0; i < seats; i++) {
+        const [cx, cz] = f(-w / 2 + 0.15 + 0.375 + i * 0.75, 0.05); rb(cush, cx, 0.43, cz, 0.7, 0.14, 0.7, 0.06);
+        const [kx, kz] = f(-w / 2 + 0.15 + 0.375 + i * 0.75, -0.22); rb(cush, kx, 0.55, kz, 0.66, 0.42, 0.14, 0.06); // cojín del respaldo
+      }
+      for (const s of [-1, 1]) for (const t of [-1, 1]) { const [lx, lz] = f(s * (w / 2 - 0.1), t * 0.35); B.add(GEO.cyl8, '#2a2d31', lx, 0.06, lz, 0.06, 0.12, 0.06, ry, LM); }
       solid(x, z, w, 0.9, ry, 0.8);
     },
     armchair(x, z, ry, col = '#8a5a44') { k.sofa(x, z, ry, col, 1); },
@@ -2142,9 +2156,16 @@ function buildResidential() {
   B.box('#a9c7d8', -40.0, 1.0, 63.5, 0.06, 1.1, 1.6, 0, { mat: 'glass', shadow: false, ao: 0 });
   W.mapRects.push({ x0: -50, x1: -40, z0: 54, z1: 66, c: '#5fa38a' });
   W.mapLabels.push({ x: -45, z: 60, t: 'Bungalow' });
-  B.box('#5c4033', -48.6, 0, 64.6, 2.2, 0.45, 2.4);
-  B.box('#f2f2f2', -48.6, 0.45, 64.6, 2.1, 0.18, 2.3, 0, { ao: 0 });
-  B.box('#2e5e4e', -48.4, 0.6, 64.6, 1.6, 0.08, 2.35, 0, { ao: 0 });
+  // cama de matrimonio: cabecero contra la pared, colchón mullido, dos almohadas y edredón
+  B.add(rbox(2.1, 0.2, 2.3, 0.04), '#5c4033', -48.6, 0.3, 64.6);
+  for (const dx of [-0.95, 0.95]) for (const dz of [-1.05, 1.05]) B.add(GEO.cyl8, '#4a3328', -48.6 + dx, 0.1, 64.6 + dz, 0.07, 0.2, 0.07);
+  B.add(rbox(0.08, 1.0, 2.4, 0.035), '#5c4033', -49.72, 0.72, 64.6);
+  B.add(GEO.cyl12, '#5c4033', -49.72, 1.22, 64.6, 0.1, 2.4, 0.1, 0, { rx: Math.PI / 2 });
+  B.add(rbox(2.0, 0.22, 2.24, 0.08), '#f2f2f2', -48.6, 0.51, 64.6, 1, 1, 1, 0, { ao: 0 });
+  for (const dz of [-0.5, 0.5]) B.add(rbox(0.38, 0.13, 0.78, 0.06), '#ffffff', -49.35, 0.68, 64.6 + dz, 1, 1, 1, 0, { ao: 0, rz: 0.2 });
+  B.add(rbox(1.5, 0.07, 2.32, 0.03), '#2e5e4e', -48.3, 0.645, 64.6, 1, 1, 1, 0, { ao: 0 });
+  for (const dz of [-1.16, 1.16]) B.add(rbox(1.48, 0.22, 0.03, 0.012), '#285446', -48.3, 0.52, 64.6 + dz, 1, 1, 1, 0, { ao: 0 });
+  B.add(rbox(0.12, 0.08, 2.3, 0.035), '#3f7a66', -49.0, 0.68, 64.6, 1, 1, 1, 0, { ao: 0 }); // embozo
   addBox(-49.8, -47.4, 63.3, 65.8, 0.7);
   hitbox(-48.6, 0.4, 64.6, 2.2, 0.8, 2.4, { actions: () => [{ label: 'Dormir', fn: () => G.act.sleep('bungalow') }] });
   B.box('#e9e4dc', -49.4, 0, 55, 0.8, 0.85, 1.2);

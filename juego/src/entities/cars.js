@@ -173,6 +173,15 @@ class Car {
   }
 }
 
+// Densidad de tráfico (ajustes): coches por bucle.
+export const TRAFFIC = { poco: 2, normal: 3, mucho: 4 };
+export function setTraffic(level = 'normal') {
+  for (const c of G.cars) c.g.removeFromParent();
+  G.cars.length = 0;
+  for (const x of CROSSES) x.owner = null;
+  spawnCars(TRAFFIC[level] || 3);
+}
+
 export function spawnCars(perLoop = 3) {
   let k = 0;
   LOOPS.forEach((loop, li) => {
