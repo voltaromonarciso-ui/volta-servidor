@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { G, clamp, randi } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
-import { inv, slotsCount, save } from '../core/state.js';
+import { inv, slotsCount, save, takeSeed } from '../core/state.js';
 import { removeBox } from '../world/world.js';
 import { mat } from '../entities/human.js';
 import { sfx } from '../core/audio.js';
@@ -334,7 +334,13 @@ function actionsFor(o) {
         else acts.push({ label: 'Necesitas tierra', fn: () => G.act.toast('Coge un saco de tierra en la mano (cómpralo en la ferretería).') });
         acts.push(pick);
       } else if (!d.strain) {
-        if (hid === 'semilla') acts.push({ label: `Plantar ${STRAINS[held.p].name}`, fn: () => { const p = held.p; inv.remove('semilla', 1, p); d.strain = p; d.growth = 0; G.player.use(); sfx('pop'); refreshPot(o); G.act.flag('planted'); } });
+        if (hid === 'semilla') acts.push({ label: `Plantar ${STRAINS[held.p].name}`, fn: () => {
+          const p = takeSeed(G.state.inv, G.state.sel); // del sobre que llevas en la mano
+          if (!p) return sfx('error');
+          d.strain = p; d.growth = 0; G.player.use(); sfx('pop'); refreshPot(o); G.act.flag('planted');
+          if (G.state.inv[G.state.sel]?.id === 'sobre_vacio') G.act.toast('Era la última semilla: te queda el sobre vacío.', '✉️');
+        } });
+        else if (hid === 'sobre_vacio') acts.push({ label: 'Sobre vacío: sin semillas', fn: () => { sfx('error'); G.act.toast('Este sobre está vacío. Pide más semillas a Rubio desde el móvil.', '✉️'); } });
         else acts.push({ label: 'Necesitas una semilla', fn: () => G.act.toast('Coge una semilla en la mano. Pídeselas a Rubio desde el móvil.') });
         acts.push(pick);
       } else if (d.growth >= 1) {

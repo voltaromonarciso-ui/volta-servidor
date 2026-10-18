@@ -4,6 +4,7 @@ import { makeHuman, randomLook, markerSprite } from './human.js';
 import { rng } from '../world/textures.js';
 import { buildItem } from './hands.js';
 import { makeRealHuman, MODELS, modelNames } from './models.js';
+import { dealDue } from '../systems/economy.js';
 
 function prop(id, scale = 1.3) {
   const g = buildItem({ id }).group;
@@ -166,7 +167,8 @@ export class NPC extends Walker {
     }
   }
 
-  get deal() { return G.state.deals.find((d) => d.npc === this.id && d.status === 'accepted'); }
+  // trato aceptado cuya hora ya ha llegado (antes de la cita sigue con su vida normal)
+  get deal() { return G.state.deals.find((d) => d.npc === this.id && d.status === 'accepted' && dealDue(d)); }
 
   awake() {
     const h = G.state.minute / 60;

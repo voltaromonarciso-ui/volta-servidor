@@ -208,6 +208,54 @@ function spotFor(person) {
   return pick(sorted.slice(0, 3));
 }
 
+// ------------------------------------------------------------------
+//  Entregas programadas: cada trato tiene una hora acordada y una hora de margen.
+//  El cliente solo acude al punto a partir de media hora antes; si la cita cae en el
+//  toque de queda (21:00–5:00) paga un plus por el riesgo, que va dentro del mismo
+//  cobro del trato (clave deal:<id>), así que no se puede cobrar dos veces.
+// ------------------------------------------------------------------
+export const DELIVERY = { window: 60, early: 30, curfewBonus: 0.25, minBonus: 10 };
+const dayMin = (abs) => ((abs % 1440) + 1440) % 1440;
+export const inCurfew = (abs) => { const m = dayMin(abs); return m >= 21 * 60 || m < 5 * 60; };
+export const dealAt = (d) => d.at ?? d.created ?? 0; // tratos antiguos: «ya»
+// ¿Ya es la hora de la cita? (el cliente acude y se puede entregar)
+export const dealDue = (d, now = absNow()) => now >= dealAt(d) - DELIVERY.early;
+export function deliveryBonus(d, pay, now = absNow()) {
+  return inCurfew(now) ? Math.max(DELIVERY.minBonus, Math.round(pay * DELIVERY.curfewBonus)) : 0;
+}
+export function hhmm(abs) { const m = dayMin(abs); return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
+// «hoy 22:30», «mañana 9:00»
+export function whenLabel(abs, now = absNow()) {
+  const dd = Math.floor(abs / 1440) - Math.floor(now / 1440);
+  return `${dd <= 0 ? 'hoy' : dd === 1 ? 'mañana' : `en ${dd} días`} a las ${hhmm(abs)}`;
+}
+function pickDeliveryTime(urgent) {
+  const now = absNow();
+  const half = (t) => Math.ceil(t / 30) * 30;
+  if (urgent) return half(now + 45);
+  // de noche (con plus) a veces, cuando ya tienes algo de rango
+  if (G.state.rank >= 1 && Math.random() < 0.3) {
+    const base = now - dayMin(now);
+    for (const day of [0, 1440]) {
+      const t = base + day + 21 * 60 + 30 + randi(0, 8) * 30; // 21:30–01:30
+      if (t >= now + 60 && t <= now + 10 * 60) return t;
+    }
+  }
+  return half(now + 60 + randi(0, 10) * 30); // entre 1 y 6 horas
+}
+
+// Cuántas unidades pide: no siempre las mismas. Unas veces 1, otras varias; los más
+// enganchados y de más confianza piden más. Nunca más de lo que puede pagar.
+function wantedQty(person, c, price) {
+  const budget = rand(person.budget[0], person.budget[1]) * (1 + c.addiction * 0.8 + c.affinity / 300);
+  const afford = Math.floor(budget / price);
+  if (afford < 1) return 0;
+  const maxQ = 2 + G.state.rank * 2 + Math.floor(c.affinity / 25) + Math.floor(c.addiction * 5);
+  const r = Math.random();
+  const want = r < 0.3 ? 1 : r < 0.6 ? randi(2, 3) : r < 0.88 ? randi(3, Math.max(3, Math.ceil(maxQ * 0.6))) : randi(Math.ceil(maxQ * 0.6), maxQ);
+  return clamp(Math.min(want, afford), 1, maxQ);
+}
+
 let dealSeq = 0;
 function makeDeal(person, c, urgent = false) {
   const p = chooseProduct(person, c);
@@ -215,37 +263,46 @@ function makeDeal(person, c, urgent = false) {
     if (Math.random() < 0.25 && Object.keys(G.state.products).length) sendMsg(person.id, 'Tus precios están por las nubes, tío. Avísame si los bajas.');
     return;
   }
-  const budget = rand(person.budget[0], person.budget[1]) * (1 + c.addiction * 0.8 + c.affinity / 300);
-  const maxQ = 3 + G.state.rank * 3 + Math.floor(c.affinity / 20) + Math.floor(c.addiction * 6);
-  const qty = clamp(Math.floor(budget / p.price), 1, maxQ);
+  const qty = wantedQty(person, c, p.price);
+  if (!qty) {
+    if (Math.random() < 0.3) sendMsg(person.id, pick(['Ando pelado esta semana. Cuando cobre te escribo.', 'Ahora mismo no me llega ni para uno. Otro día.']));
+    return;
+  }
   const spot = spotFor(person);
+  const at = pickDeliveryTime(urgent);
+  const night = inCurfew(at);
   // envase preferido: los cristales solo van en bolsas Sweet Shards; los tarros
   // solo se piden si ya tienes con qué hacerlos
   const form = p.strain === 'shards' ? 'shards' : person.form === 'tarro' && !G.state.flags.jars ? 'bolsa' : person.form;
   const deal = {
     id: `d${Date.now().toString(36)}${dealSeq++}`, npc: person.id, product: p.id, qty, price: qty * p.price,
-    spot: spot.id, status: 'offer', created: absNow(), expires: absNow() + 75, form,
+    spot: spot.id, status: 'offer', created: absNow(), expires: Math.min(absNow() + 75, at - 15), form, at,
   };
   G.state.deals.push(deal);
   const fm = ITEMS[person.form].form;
+  const when = whenLabel(at);
+  const extra = night ? ` Es en pleno toque de queda: te pago un ${Math.round(DELIVERY.curfewBonus * 100)}% más por el riesgo.` : '';
   const lines = urgent ? [
-    `Tío, lo necesito ya. ${qty}× ${p.name}, te doy ${money(deal.price)}. En ${fm} si puede ser. ¿${spot.name}?`,
-    `Llevo días sin nada y estoy fatal... ¿${qty} de ${p.name} por ${money(deal.price)}? Quedamos en ${spot.name}.`,
+    `Tío, lo necesito ya. ${qty}× ${p.name}, te doy ${money(deal.price)}. En ${fm} si puede ser. ¿${spot.name}, ${when}?`,
+    `Llevo días sin nada y estoy fatal... ¿${qty} de ${p.name} por ${money(deal.price)}? Quedamos en ${spot.name} ${when}.`,
   ] : [
-    `¿Me pasas ${qty} de ${p.name} por ${money(deal.price)}? Si puede ser en ${fm}, mejor. Podemos vernos en ${spot.name}.`,
-    `Ey, necesito ${qty}× ${p.name} (me gusta en ${fm}). Te doy ${money(deal.price)}. ¿${spot.name}?`,
-    `¿Tienes ${p.name}? Me llevo ${qty} por ${money(deal.price)}, en ${fm} si puedes. Quedamos en ${spot.name}.`,
+    `¿Me pasas ${qty} de ${p.name} por ${money(deal.price)}? Si puede ser en ${fm}, mejor. Podemos vernos en ${spot.name} ${when}.`,
+    `Ey, necesito ${qty}× ${p.name} (me gusta en ${fm}). Te doy ${money(deal.price)}. ¿${spot.name} ${when}?`,
+    `¿Tienes ${p.name}? Me llevo ${qty} por ${money(deal.price)}, en ${fm} si puedes. Quedamos en ${spot.name} ${when}.`,
   ];
-  sendMsg(person.id, pick(lines), { deal: deal.id });
+  sendMsg(person.id, pick(lines) + extra, { deal: deal.id });
 }
 
 export function acceptDeal(deal, quiet = false) {
   if (deal.status !== 'offer') return;
   deal.status = 'accepted';
-  deal.expires = absNow() + 240;
+  // la cita dura una hora desde la hora acordada (los tratos antiguos sin hora: 4 h desde ya)
+  deal.expires = deal.at !== undefined ? Math.max(deal.at, absNow()) + DELIVERY.window : absNow() + 240;
   const spot = G.world.spots.find((s) => s.id === deal.spot);
-  if (!quiet) myMsg(deal.npc, 'Hecho. Voy para allá.');
-  setTimeout(() => sendMsg(deal.npc, `Genial, te espero en ${spot.name}. No tardes más de 4 horas.`), 900);
+  if (!quiet) myMsg(deal.npc, deal.at !== undefined ? `Hecho. Allí estaré ${whenLabel(deal.at)}.` : 'Hecho. Voy para allá.');
+  setTimeout(() => sendMsg(deal.npc, deal.at !== undefined
+    ? `Genial. ${spot.name}, ${whenLabel(deal.at)}. Te espero hasta las ${hhmm(deal.expires)}.`
+    : `Genial, te espero en ${spot.name}. No tardes más de 4 horas.`), 900);
   G.act.setWaypoint?.(spot.x, spot.z, CONTACTS[deal.npc].name);
   sfx('click');
 }
@@ -296,6 +353,7 @@ export function completeDeal(deal, given) {
   if (!deal || deal.status !== 'accepted') return { ok: false, msg: 'Este trato ya no está pendiente.' };
   const key = `deal:${deal.id}`;
   if (keyUsed(G.state, key)) return { ok: false, msg: 'Este trato ya está cobrado.' };
+  if (!dealDue(deal)) return { ok: false, msg: `Aún no es la hora: quedasteis ${whenLabel(dealAt(deal))}.` };
   const person = personOf(deal.npc);
   const c = customer(deal.npc);
   let units = 0, rightUnits = 0, likes = 0;
@@ -318,6 +376,9 @@ export function completeDeal(deal, given) {
   // propina por el envase preferido, y un extra por la presentación en tarro
   const tip = (formOk ? Math.max(2, Math.round(pay * 0.1)) : 0) + Math.round(pay * 0.08 * Math.min(1, jars / Math.max(1, units)));
   pay += tip;
+  // plus por entregar durante el toque de queda (va en el mismo cobro: no se duplica)
+  const bonus = deliveryBonus(deal, pay);
+  pay += bonus;
   const p = product(deal.product);
   const unit = deal.price / deal.qty;
   const satisfaction = clamp((rightUnits >= deal.qty ? 1 : 0.6) + prefMatches(person, p) * 0.15 + (prodValue(p) / unit - 1) * 0.5, 0, 2);
@@ -329,6 +390,8 @@ export function completeDeal(deal, given) {
   deal.status = 'done';
   const paid = earn('dirty', pay, 'trato', { key, sale: true });
   if (!paid.ok) { G.state.inv = before; deal.status = 'accepted'; return { ok: false, msg: paid.msg }; }
+  deal.paid = pay; deal.bonus = bonus; deal.doneAt = absNow();
+  if (bonus) G.act.toast?.(`Plus de toque de queda: +${money(bonus)}`, '🌙');
   c.affinity = clamp(c.affinity + Math.round(3 + satisfaction * 5 + (formOk ? 3 : 0)), 0, 100);
   addAddiction(c, units, p);
   c.lastBuy = G.state.day;
@@ -350,7 +413,7 @@ export function completeDeal(deal, given) {
       setTimeout(() => sendMsg(deal.npc, `Por cierto, ${ref.name} anda buscando algo. Ofrécele una muestra si le ves.`), 4000);
     }
   }
-  return { ok: true, pay, tip };
+  return { ok: true, pay, tip, bonus };
 }
 
 // Regalar producto (una unidad del montón elegido) a cualquier vecino.
@@ -359,6 +422,18 @@ export function completeDeal(deal, given) {
 // En ambos casos sube un poco tu reputación. Una vez al día por persona.
 export const GIFTABLE = ['cogollo', 'bolsa', 'tarro', 'cristal', 'shards'];
 export function canGift(npc) { return customer(npc.id).sampleDay !== G.state.day; }
+// Reacciones variadas: no se repite la última frase de cada tipo.
+const LINES = {
+  refuse: ['No, gracias. No cojo cosas de desconocidos.', '¿Y tú quién eres? Déjame en paz.', 'Uy, no, que yo de eso no.', 'Paso, tío. Tengo prisa.', 'Guárdatelo, no me interesa.', '¿Me ves cara de eso? Venga ya.'],
+  won: ['¡Uf, esto está buenísimo! Guárdame tu número.', 'Vale, vale... esto es otra cosa. ¿Cómo te encuentro?', 'Madre mía. Apúntame en tu lista.', 'No esperaba nada y mira. Dame tu número.', 'Esto me lo vuelvo a pillar seguro. ¿Me escribes?'],
+  meh: ['Mmm... no es para mí.', 'Está bien, pero no me convence.', 'Bah, he probado cosas mejores.', 'No sé, no me ha hecho nada.', 'Gracias, pero no repito.'],
+  friend: ['¡Qué detalle! Esto no se olvida.', 'Invita la casa, ¿eh? Me caes bien.', 'Gracias, tío. Te debo una.', '¡Tú sí que sabes cuidar a la gente!', 'Esto me alegra el día, en serio.'],
+};
+const lastLine = {};
+function line(kind) {
+  const opts = LINES[kind].filter((l) => l !== lastLine[kind]);
+  return (lastLine[kind] = pick(opts));
+}
 export function giveSample(npc, slot = inv.held()) {
   if (!slot || !GIFTABLE.includes(slot.id)) return G.act.toast('Elige producto para regalar.');
   const c = customer(npc.id);
@@ -366,6 +441,17 @@ export function giveSample(npc, slot = inv.held()) {
   const p = product(slot.p);
   const units = ITEMS[slot.id].units || 1;
   const spec = { id: slot.id, p: slot.p };
+  const first0 = npc.person.name.split(' ')[0];
+  // no todos aceptan algo de un desconocido: los más formales lo rechazan más (y no gastas nada)
+  if (!c.unlocked) {
+    const refuse = clamp(0.18 + npc.person.std * 0.15 - (G.state.rep || 0) / 400 - (G.state.flags['ref_' + npc.id] ? 0.15 : 0), 0.03, 0.5);
+    if (Math.random() < refuse) {
+      c.sampleDay = G.state.day;
+      G.act.toast(`${first0}: «${line('refuse')}»`, pick(['🙅', '😒', '🤨']));
+      sfx('error');
+      return false;
+    }
+  }
   inv.remove(slot.id, 1, slot.p);
   c.sampleDay = G.state.day;
   npc.playExchange(spec, false);
@@ -377,7 +463,7 @@ export function giveSample(npc, slot = inv.held()) {
     const gain = 5 + m * 3 + Math.min(4, units - 1);
     c.affinity = clamp(c.affinity + gain, 0, 100);
     addRep(1);
-    G.act.toast(`${first}: «${pick(['¡Qué detalle! Esto no se olvida.', 'Invita la casa, ¿eh? Me caes bien.', 'Gracias, tío. Te debo una.'])}» (+${gain} confianza)`, '🎁');
+    G.act.toast(`${first}: «${line('friend')}» (+${gain} confianza)`, pick(['🎁', '😄', '🙌']));
     sfx('cash');
     return true;
   }
@@ -387,7 +473,7 @@ export function giveSample(npc, slot = inv.held()) {
     c.unlocked = true;
     c.affinity = 30 + m * 10;
     if (!G.state.contacts.includes(npc.id)) G.state.contacts.push(npc.id);
-    G.act.toast(`${npc.person.name}: «¡Uf, esto está buenísimo! Guárdame tu número.»`, '🤝');
+    G.act.toast(`${npc.person.name}: «${line('won')}»`, pick(['🤝', '🤩', '😮']));
     setTimeout(() => sendMsg(npc.id, 'Soy yo, el de la muestra. Escríbeme cuando tengas más.'), 1200);
     addXP(25);
     addRep(2);
@@ -396,7 +482,7 @@ export function giveSample(npc, slot = inv.held()) {
     return true;
   }
   addRep(0.5);
-  G.act.toast(`${npc.person.name}: «Mmm... no es para mí.»`, '😕');
+  G.act.toast(`${npc.person.name}: «${line('meh')}»`, pick(['😕', '🤷', '😐']));
   sfx('error');
   return false;
 }
@@ -489,6 +575,13 @@ export function onMinute() {
       sendMsg(d.npc, pick(['Te he esperado una eternidad. Paso de ti.', 'Me has dejado tirado... no me hace gracia.', 'Ya no hace falta, gracias por nada.']));
       G.act.clearWaypoint?.();
     }
+  }
+  // aviso media hora antes de cada cita (una sola vez)
+  for (const d of G.state.deals) {
+    if (d.status !== 'accepted' || d.reminded || d.at === undefined || now < d.at - DELIVERY.early) continue;
+    d.reminded = true;
+    const spot = G.world.spots.find((s) => s.id === d.spot);
+    sendMsg(d.npc, `Voy saliendo para ${spot.name}. Nos vemos a las ${hhmm(d.at)}${inCurfew(d.at) ? ' (ojo con la poli, que es toque de queda)' : ''}.`);
   }
   if (G.state.deals.length > 60) G.state.deals = G.state.deals.filter((d) => d.status === 'offer' || d.status === 'accepted');
   for (const o of G.state.orders) {

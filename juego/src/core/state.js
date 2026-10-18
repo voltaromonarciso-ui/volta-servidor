@@ -153,6 +153,14 @@ export function slotsAdd(slots, id, q, p) {
       s.q += n; q -= n;
     }
   }
+  // semillas: antes de ocupar un hueco libre se rellenan los sobres vacíos de la misma variedad
+  if (id === 'semilla') for (let i = 0; i < slots.length && q > 0; i++) {
+    const s = slots[i];
+    if (!same(s, 'sobre_vacio', p) || s.q !== 1) continue;
+    const n = Math.min(max, q);
+    slots[i] = p ? { id, q: n, p } : { id, q: n };
+    q -= n;
+  }
   for (let i = 0; i < slots.length && q > 0; i++) {
     if (!slots[i]) {
       const n = Math.min(max, q);
@@ -165,7 +173,7 @@ export function slotsAdd(slots, id, q, p) {
 
 export function slotsRoom(slots, id, p) {
   const max = ITEMS[id].stack;
-  return slots.reduce((a, s) => a + (!s ? max : same(s, id, p) ? max - s.q : 0), 0);
+  return slots.reduce((a, s) => a + (!s ? max : same(s, id, p) ? max - s.q : id === 'semilla' && same(s, 'sobre_vacio', p) && s.q === 1 ? max : 0), 0);
 }
 
 export function slotsRemove(slots, id, q, p) {
@@ -178,6 +186,21 @@ export function slotsRemove(slots, id, q, p) {
     }
   }
   return q === 0;
+}
+
+// Planta una semilla del sobre que llevas en la mano. El sobre no desaparece: al sacar
+// la última se queda vacío en el mismo hueco (y un sobre vacío no da semillas).
+export function takeSeed(slots, i) {
+  const s = slots[i];
+  if (!s || s.id !== 'semilla' || !(s.q > 0)) return null;
+  const p = s.p;
+  s.q -= 1;
+  if (s.q <= 0) {
+    // se apila con otros sobres vacíos de la misma variedad si los hay; si no, se queda aquí
+    const other = slots.find((o, j) => j !== i && same(o, 'sobre_vacio', p) && o.q < ITEMS.sobre_vacio.stack);
+    if (other) { other.q += 1; slots[i] = null; } else slots[i] = p ? { id: 'sobre_vacio', q: 1, p } : { id: 'sobre_vacio', q: 1 };
+  }
+  return p || null;
 }
 
 export const inv = {

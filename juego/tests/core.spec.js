@@ -164,6 +164,8 @@ test.describe.serial('Ciclo completo', () => {
     const deal = await ev(page, () => __G.state.deals.find((d) => d.status === 'offer'));
     expect(deal).toBeTruthy();
     await ev(page, () => __debug.econ.acceptDeal(__G.state.deals.find((d) => d.status === 'offer')));
+    // entrega programada: se adelanta el reloj hasta la hora de la cita
+    await ev(page, () => { const s = __G.state, d = s.deals.find((x) => x.status === 'accepted'); const now = (s.day - 1) * 1440 + s.minute; s.minute += Math.max(0, d.at - now); });
     await expect.poll(async () => {
       return ev(page, () => { const d = __G.state.deals.find((x) => x.status === 'accepted'); const n = __G.npcs.find((x) => x.id === d.npc); for (let k = 0; k < 200; k++) n.update(0.05, 0.05); return n.mode; });
     }, { timeout: 120_000 }).toBe('wait');

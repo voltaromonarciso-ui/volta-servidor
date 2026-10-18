@@ -7,7 +7,7 @@ import { QUESTS } from '../data/quests.js';
 import { clock, dayName } from '../systems/time.js';
 import { input } from '../core/input.js';
 import { wanted, curfew } from '../systems/police.js';
-import { CONTACTS } from '../systems/economy.js';
+import { CONTACTS, dealAt, hhmm, inCurfew } from '../systems/economy.js';
 import { sfx } from '../core/audio.js';
 import { ridingInfo } from '../systems/riding.js';
 import { placingMode } from '../systems/objects.js';
@@ -26,7 +26,7 @@ export function initHUD() {
   document.querySelector('#cash .cash-ic').innerHTML = svgIcon('cash');
   document.querySelector('#bank .cash-ic').innerHTML = svgIcon('card');
   els = {
-    money: $('h-money'), clean: $('h-clean'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'),
+    money: $('h-money'), clean: $('h-clean'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'), next: $('h-next'),
     qTitle: $('q-title'), qDesc: $('q-desc'), quest: $('quest'),
     rankName: $('rank-name'), rankBar: $('rank-bar'), rankXp: $('rank-xp'),
     prompt: $('prompt'), info: $('info'),
@@ -84,6 +84,10 @@ export function updateHUD(target, dt = 0.016) {
   txt(els.clock, clock(s.minute));
   txt(els.day, `${dayName(s.day).slice(0, 3)} · Día ${s.day}`);
   els.curfew.style.display = curfew() ? '' : 'none';
+  // próxima entrega acordada (la más cercana en el tiempo)
+  let nd = null;
+  for (const d of s.deals) if (d.status === 'accepted' && (!nd || dealAt(d) < dealAt(nd))) nd = d;
+  txt(els.next, nd ? `📦 ${hhmm(dealAt(nd))} ${CONTACTS[nd.npc]?.name.split(' ')[0] || ''}${inCurfew(dealAt(nd)) ? ' 🌙' : ''}` : '');
   const q = QUESTS[s.quest];
   txt(els.qTitle, q ? q.title : 'Expande tu negocio');
   txt(els.qDesc, q ? q.desc : 'Has completado la historia. ¡Sigue creciendo en Puerto Lomas!');
@@ -101,6 +105,7 @@ export function updateHUD(target, dt = 0.016) {
     const slot = s.inv[i];
     d.classList.toggle('sel', i === s.sel);
     d.classList.toggle('empty', !slot);
+    d.classList.toggle('vacio', !!slot && slot.id === 'sobre_vacio');
     // solo se toca el DOM cuando cambia algo (esto corre en cada fotograma)
     const id = slot ? slot.id : '';
     if (d.dataset.id !== id) { d.dataset.id = id; d.querySelector('.ic').innerHTML = id ? ii(id) : ''; }
@@ -256,7 +261,9 @@ export function itemLabel(slot) {
     if (pn === it.name) return it.name;
     return `${it.name.replace(/ de Lumaflor$/, '')} de ${pn}`;
   }
-  if (slot.id === 'semilla' && slot.p) return `Semilla de ${STRAINS[slot.p] ? STRAINS[slot.p].name : slot.p}`;
+  const sn = slot.p ? (STRAINS[slot.p] ? STRAINS[slot.p].name : slot.p) : '';
+  if (slot.id === 'semilla' && slot.p) return `Sobre de ${sn} (${slot.q}/${it.stack} semillas)`;
+  if (slot.id === 'sobre_vacio') return sn ? `Sobre de ${sn} vacío` : it.name;
   return it.name;
 }
 

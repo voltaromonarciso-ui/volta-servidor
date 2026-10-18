@@ -5,9 +5,10 @@ import { STRAINS, RANKS } from '../data/items.js';
 const nego = {}; // precio propuesto en cada negociación abierta
 import { PEOPLE } from '../data/people.js';
 import { QUESTS } from '../data/quests.js';
+import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew } from '../systems/economy.js';
 import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotiateDeal, orderSeeds, acceptChance, marketChance, priceLabel, trustLabel, addictionLabel, REP_TIERS, repTier } from '../systems/economy.js';
 import { clock, dayName } from '../systems/time.js';
-import { save, wipe } from '../core/state.js';
+import { save, wipe, absNow } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { resetTouch, guardGhostClick } from '../core/input.js';
 import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './panels.js';
@@ -19,6 +20,7 @@ import { maxStaff, employees, candidate, hired, hire, fire, assign, setMode, pay
 const APPS = [
   { id: 'msgs', name: 'Mensajes', icon: '💬', color: '#27ae60' },
   { id: 'clients', name: 'Clientes', icon: '👥', color: '#2980b9' },
+  { id: 'deliveries', name: 'Entregas', icon: '📦', color: '#c0392b' },
   { id: 'products', name: 'Productos', icon: '🏷️', color: '#8e44ad' },
   { id: 'map', name: 'Mapa', icon: '🗺️', color: '#16a085' },
   { id: 'supplier', name: 'Proveedor', icon: '🌱', color: '#2e7d32' },
@@ -95,7 +97,7 @@ function render() {
   screen.scrollTop = 0;
   const app = APPS.find((a) => a.id === view.app);
   title.textContent = view.app === 'chat' ? CONTACTS[view.arg].name : app ? app.name : '';
-  ({ msgs, chat, clients, products, map, supplier, staff, quests, stats, settings }[view.app] || home)();
+  ({ msgs, chat, clients, deliveries, products, map, supplier, staff, quests, stats, settings }[view.app] || home)();
 }
 
 // ------------------------------------------------------------------
@@ -145,7 +147,7 @@ function chat() {
       const d = G.state.deals.find((x) => x.id === m.deal);
       if (d) {
         const prod = product(d.product);
-        const info = h('div', 'deal-card', `<div><b>${d.qty}× ${prod ? prod.name : '?'}</b> · <span class="money">${money(d.price)}</span></div>`);
+        const info = h('div', 'deal-card', `<div><b>${d.qty}× ${prod ? prod.name : '?'}</b> · <span class="money">${money(d.price)}</span></div>${d.at !== undefined ? `<div class="small">🕘 ${whenLabel(d.at)}${inCurfew(d.at) ? ` · 🌙 toque de queda: +${Math.round(DELIVERY.curfewBonus * 100)}%` : ''}</div>` : ''}`);
         if (d.status === 'offer') {
           const row = h('div', 'row');
           const ok = h('button', 'btn sm', 'Aceptar');
@@ -169,7 +171,7 @@ function chat() {
             upd(nego[d.id]);
           }
         } else {
-          const lab = { accepted: '🟢 Aceptado · ve al punto de encuentro', done: '✅ Completado', failed: '❌ Fallido', rejected: '🚫 Rechazado', expired: '⌛ Caducado' }[d.status];
+          const lab = { accepted: d.at !== undefined ? `🟢 Aceptado · cita ${whenLabel(d.at)}${inCurfew(d.at) ? ' 🌙 (+plus)' : ''}` : '🟢 Aceptado · ve al punto de encuentro', done: '✅ Completado', failed: '❌ Fallido', rejected: '🚫 Rechazado', expired: '⌛ Caducado' }[d.status];
           info.appendChild(h('div', 'muted small', lab));
           if (d.status === 'accepted') {
             const spot = G.world.spots.find((x) => x.id === d.spot);
@@ -185,6 +187,44 @@ function chat() {
   }
   screen.appendChild(box);
   setTimeout(() => { screen.scrollTop = screen.scrollHeight; }, 0);
+}
+
+// Agenda de entregas: lo que hay que entregar (con su hora), las propuestas por
+// responder y lo entregado hoy, con el plus de toque de queda si lo hubo.
+function deliveries() {
+  const s = G.state, now = absNow();
+  const list = h('div', 'ph-list');
+  const sec = (t) => list.appendChild(h('div', 'dl-sec', t));
+  const row = (d, state) => {
+    const pr = s.products[d.product];
+    const spot = G.world.spots.find((x) => x.id === d.spot);
+    const at = dealAt(d), night = inCurfew(at);
+    const r = h('div', 'ph-card dl-row', `<div class="rowsp"><span class="when${night ? ' night' : ''}">${hhmm(at)}${night ? ' 🌙' : ''}</span><small>${state}</small></div>
+      <div><b>${CONTACTS[d.npc].name}</b> · ${d.qty}× ${pr ? pr.name : '?'} en ${ITEMS[d.form]?.form || 'sobres'}</div>
+      <div class="small muted">${spot ? spot.name : ''} · ${money(d.price)}${night ? ` + ${Math.round(DELIVERY.curfewBonus * 100)}% de plus si entregas en toque de queda` : ''}</div>`);
+    if (d.status === 'accepted') {
+      const wp = h('button', 'btn sm ghost', '📍 Marcar en el mapa');
+      wp.onclick = () => { setWaypoint(spot.x, spot.z, CONTACTS[d.npc].name); sfx('click'); };
+      r.appendChild(wp);
+    } else if (d.status === 'offer') {
+      const go2 = h('button', 'btn sm ghost', '💬 Responder');
+      go2.onclick = () => { sfx('click'); go('chat', d.npc); };
+      r.appendChild(go2);
+    }
+    list.appendChild(r);
+  };
+  const byTime = (a, b) => dealAt(a) - dealAt(b);
+  const acc = s.deals.filter((d) => d.status === 'accepted').sort(byTime);
+  const off = s.deals.filter((d) => d.status === 'offer').sort(byTime);
+  const done = s.deals.filter((d) => d.status === 'done' && d.doneAt !== undefined && Math.floor(d.doneAt / 1440) === Math.floor(now / 1440));
+  sec(`Pendientes (${acc.length})`);
+  if (!acc.length) list.appendChild(h('div', 'small muted', 'No tienes entregas acordadas.'));
+  for (const d of acc) row(d, dealDue(d, now) ? `te espera hasta las ${hhmm(d.expires)}` : whenLabel(dealAt(d), now));
+  if (off.length) { sec(`Propuestas sin responder (${off.length})`); for (const d of off) row(d, 'por responder'); }
+  sec(`Entregadas hoy (${done.length})`);
+  if (!done.length) list.appendChild(h('div', 'small muted', 'Aún ninguna.'));
+  for (const d of done) list.appendChild(h('div', 'ph-card dl-row', `<div class="rowsp"><b>${CONTACTS[d.npc].name}</b><small>${hhmm(d.doneAt)}</small></div><div>Cobrado ${money(d.paid || d.price)}${d.bonus ? ` · 🌙 plus toque de queda +${money(d.bonus)}` : ''}</div>`));
+  screen.appendChild(list);
 }
 
 function clients() {

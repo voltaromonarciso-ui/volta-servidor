@@ -173,6 +173,35 @@ function banknote(x, y, w, h, rot = 0) {
   return s + '</g>';
 }
 
+// semilla suelta: ovalada con punta suave, cáscara gris parda con jaspeado oscuro y brillo
+const seedSVG = (x, y, r) => `<g transform="rotate(${r} ${x} ${y})">` +
+  `<path d="M${x} ${y - 10}C${x + 5} ${y - 9} ${x + 7.5} ${y - 2} ${x + 7.5} ${y + 2}C${x + 7.5} ${y + 7} ${x + 4} ${y + 10} ${x} ${y + 10}C${x - 4} ${y + 10} ${x - 7.5} ${y + 7} ${x - 7.5} ${y + 2}C${x - 7.5} ${y - 2} ${x - 5} ${y - 9} ${x} ${y - 10}Z" fill="#9a8a72" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
+  `<path d="M${x - 4} ${y - 3}q2 -2 3 1q1 3 3 1M${x - 3} ${y + 4}q3 1 4 -1q2 -2 4 0M${x + 2} ${y - 6}q2 1 1 3M${x - 5} ${y + 1}q1 2 0 3" stroke="#3e3022" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>` +
+  `<path d="M${x} ${y - 10}V${y + 10}" stroke="#6d5c45" stroke-width=".9" opacity=".6"/>` +
+  `<ellipse cx="${x - 3}" cy="${y - 4}" rx="1.6" ry="3" fill="#fff" opacity=".45"/></g>`;
+
+function seedPacket(empty) {
+  const paper = empty ? '#cbbd9f' : '#d9bf8c';
+  let g = `<g transform="rotate(${empty ? 7 : -5} 32 34)">`;
+  // cuerpo (vacío: algo hundido por los lados)
+  g += empty
+    ? `<path d="M15 14L49 14L50 54Q32 57 14 54Z" fill="${paper}" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`
+    : `<rect x="14" y="12" width="36" height="44" rx="3" fill="${paper}" stroke="${OL}" stroke-width="${W}"/>`;
+  // cierre: doblado si está lleno, rasgado si está vacío
+  g += empty
+    ? `<path d="M15 14l3 -4l3 3l3 -4l3 4l3 -3l3 4l3 -4l3 3l3 -3l3 4" fill="none" stroke="${OL}" stroke-width="1.3" stroke-linejoin="round"/>`
+    : `<rect x="13" y="9" width="38" height="8" rx="2" fill="#c8a970" stroke="${OL}" stroke-width="${W}"/><path d="M16 13H48" stroke="#9c8050" stroke-width="1" stroke-dasharray="2 2"/>`;
+  // etiqueta con hoja
+  g += `<rect x="14.8" y="40" width="34.4" height="9" fill="${empty ? '#8aa48a' : '#3f9d4a'}"/>`;
+  g += `<path d="M24 47q4 -7 9 -5q-2 5 -9 5zM29 45l4 -3" fill="#e8f5d8" stroke="#e8f5d8" stroke-width=".8"/>`;
+  g += `<rect x="36" y="43" width="10" height="2" rx="1" fill="#e8f5d8"/>`;
+  // ventana
+  g += `<circle cx="32" cy="28" r="9" fill="${empty ? '#ece6da' : '#f7f1e3'}" stroke="${OL}" stroke-width="1.3" ${empty ? 'stroke-dasharray="2.5 2"' : ''}/>`;
+  if (!empty) g += `<g transform="translate(32 28) scale(.5) translate(-32 -32)">${seedSVG(24, 34, -30)}${seedSVG(40, 33, 25)}${seedSVG(32, 22, 4)}</g>`;
+  else g += `<path d="M20 22l4 3M44 34l-4 2M22 50l5 -2" stroke="#9a8a6e" stroke-width="1" opacity=".7"/>`;
+  return g + '</g>';
+}
+
 // ---------- dibujos de cada objeto ----------
 const DRAW = {
   cash: () => banknote(33, 40, 44, 22, -8) + banknote(31, 33, 44, 22, 4) + banknote(32, 27, 44, 22, -3) +
@@ -184,15 +213,10 @@ const DRAW = {
     `<rect x="13" y="31" width="20" height="3.2" rx="1.6" fill="#fff"/><rect x="13" y="37.5" width="13" height="3.2" rx="1.6" fill="#fff" opacity=".85"/>` +
     `<rect x="41" y="35" width="10" height="8" rx="2" fill="#5a5f66" stroke="${OL}" stroke-width="1"/>` +
     `<path d="M12 19.5Q30 17.8 52 21" stroke="#fff" stroke-width="1.4" opacity=".45" fill="none" stroke-linecap="round"/></g>`,
-  semilla: () => {
-    // ovalada con punta suave, cáscara gris parda lisa con jaspeado oscuro y brillo
-    const seed = (x, y, r) => `<g transform="rotate(${r} ${x} ${y})">` +
-      `<path d="M${x} ${y - 10}C${x + 5} ${y - 9} ${x + 7.5} ${y - 2} ${x + 7.5} ${y + 2}C${x + 7.5} ${y + 7} ${x + 4} ${y + 10} ${x} ${y + 10}C${x - 4} ${y + 10} ${x - 7.5} ${y + 7} ${x - 7.5} ${y + 2}C${x - 7.5} ${y - 2} ${x - 5} ${y - 9} ${x} ${y - 10}Z" fill="#9a8a72" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
-      `<path d="M${x - 4} ${y - 3}q2 -2 3 1q1 3 3 1M${x - 3} ${y + 4}q3 1 4 -1q2 -2 4 0M${x + 2} ${y - 6}q2 1 1 3M${x - 5} ${y + 1}q1 2 0 3" stroke="#3e3022" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>` +
-      `<path d="M${x} ${y - 10}V${y + 10}" stroke="#6d5c45" stroke-width=".9" opacity=".6"/>` +
-      `<ellipse cx="${x - 3}" cy="${y - 4}" rx="1.6" ry="3" fill="#fff" opacity=".45"/></g>`;
-    return shadow(32, 54, 20) + seed(22, 40, -30) + seed(41, 41, 25) + seed(32, 25, 4);
-  },
+  // sobre de semillas lleno: papel kraft, cierre doblado, etiqueta verde y ventana con semillas
+  semilla: () => shadow(32, 58, 18) + seedPacket(false),
+  // sobre vacío: abierto por arriba, arrugado y con la ventana vacía
+  sobre_vacio: () => shadow(32, 58, 18) + seedPacket(true),
   cogollo: () => shadow(32, 52, 22) + bud(23, 41, 11, 4) + bud(41, 41, 11, 7) + bud(32, 28, 12.5, 9) + sparkle(52, 16, 4) + sparkle(12, 20, 3),
   bolsa: () => zipBag(32, 33, 38, 46, true, 6, -6) + sparkle(54, 12, 4),
   tarro: () => shadow(32, 58, 20) + jar(32, 35, 36, 44, true, 4) + sparkle(54, 12, 4) + sparkle(10, 24, 3),

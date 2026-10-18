@@ -42,7 +42,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 #clockbox { position: absolute; left: calc(70px + var(--safe-l)); top: 168px; font-size: 12px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); width: 150px; text-align: center; }
 #h-clock { font-variant-numeric: tabular-nums; font-size: 14px; }
 .curfew { color: #ff9b94; animation: pulse 1.4s infinite; }
-#quest { position: absolute; left: calc(14px + var(--safe-l)); top: 192px; max-width: 250px; background: rgba(14, 18, 24, 0.55); border-radius: 12px; padding: 6px 10px; border-left: 3px solid var(--gold); cursor: pointer; }
+#quest { position: absolute; left: calc(14px + var(--safe-l)); top: 206px; max-width: 250px; background: rgba(14, 18, 24, 0.55); border-radius: 12px; padding: 6px 10px; border-left: 3px solid var(--gold); cursor: pointer; }
 #q-title { font-weight: 800; font-size: 12px; }
 #q-title::before { content: '◆ '; color: var(--gold); }
 #q-desc { font-size: 11.5px; color: #c9d1da; margin-top: 2px; line-height: 1.35; display: none; }
@@ -284,7 +284,7 @@ input[type=range] { width: 100%; accent-color: var(--acc); }
 @media (max-height: 520px) {
   #minimap { width: 112px; height: 112px; }
   #clockbox { top: 128px; left: calc(66px + var(--safe-l)); width: 112px; font-size: 11px; }
-  #quest { top: 150px; max-width: 200px; }
+  #quest { top: 162px; max-width: 200px; }
   #h-money, #h-clean { font-size: 20px; }
   .mpill { min-width: 140px; padding: 5px 14px 5px 10px; gap: 9px; border-radius: 15px; }
   .cash-ic { width: 40px; height: 32px; }
@@ -550,3 +550,16 @@ body.touch .staff button.chip { min-height: 44px; min-width: 44px; }
 .staff .rowsp { flex-wrap: wrap; }
 body.touch .staff .btn.sm { min-height: 44px; }
 
+
+/* sobre de semillas vacío: atenuado en la barra para distinguirlo del lleno */
+#hotbar .slot.vacio .ic { opacity: 0.6; filter: grayscale(0.6); }
+/* segunda línea bajo la hora: toque de queda y próxima entrega (una sola línea, sin
+   montarse sobre el objetivo) */
+.cb-sub { display: flex; justify-content: center; gap: 6px; font-size: 11px; white-space: nowrap; overflow: hidden; min-height: 14px; margin-top: 1px; }
+#h-next { color: #bff5c8; font-size: 12px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+#h-next:empty { display: none; }
+/* app Entregas */
+.dl-sec { font-size: 12px; font-weight: 800; color: var(--muted, #9aa7b4); margin: 10px 2px 4px; text-transform: uppercase; letter-spacing: .5px; }
+.dl-row .when { font-weight: 800; font-size: 15px; }
+.dl-row .night { color: #ffd479; }
+.deal-req.night { color: #ffd479; margin-top: 6px; }

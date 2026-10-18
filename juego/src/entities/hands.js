@@ -206,6 +206,13 @@ export function buildItem(s) {
       const p = new THREE.Group(); seedPile(p, 5, 0.026); p.position.set(0.005, -0.05, 0.01); g.add(p);
       break;
     }
+    case 'sobre_vacio': {
+      // sobre de papel vacío, abierto por arriba
+      const pk = mesh(bx(0.09, 0.12, 0.012, 0.004), M('#cbbd9f', { roughness: 0.9 }), 0, 0, 0, g);
+      pk.rotation.set(-0.3, 0.2, 0.1);
+      mesh(bx(0.092, 0.026, 0.013, 0.003), M('#8aa48a', { roughness: 0.9 }), 0, -0.03, 0.001, pk);
+      break;
+    }
     case 'cogollo': {
       // puñado de cogollos sueltos
       const p = new THREE.Group(); goodsPile(p, productColor(s), 5, 0.07, 0.04, 0.034, 3); p.position.y = -0.03; g.add(p);

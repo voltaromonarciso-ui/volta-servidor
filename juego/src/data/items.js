@@ -2,7 +2,9 @@
 // un identificador de producto `p` en cada hueco del inventario.
 export const ITEMS = {
   // Producto
-  semilla:   { name: 'Semilla de Lumaflor', icon: '🌱', stack: 10, illegal: true, color: '#8a6a3b' },
+  // un hueco de semillas es un sobre con hasta 10; al plantar la última queda el sobre vacío
+  semilla:   { name: 'Sobre de semillas', icon: '🌱', stack: 10, illegal: true, color: '#8a6a3b', desc: 'Sobre con hasta 10 semillas. Al plantar la última te queda el sobre vacío.' },
+  sobre_vacio:{ name: 'Sobre de semillas vacío', icon: '✉️', stack: 10, color: '#b8a888', desc: 'Ya no le quedan semillas: no sirve para plantar. Si recibes semillas de la misma variedad se vuelve a llenar; si no, puedes tirarlo.' },
   cogollo:   { name: 'Cogollos de Lumaflor', icon: '🌿', stack: 30, illegal: true, product: true, units: 1, color: '#5cbf3a', desc: 'Sueltos no los compra nadie: envásalos en sobres o tarros.' },
   bolsa:     { name: 'Sobre', icon: '🛍️', stack: 30, illegal: true, product: true, units: 1, packed: true, form: 'sobres', color: '#7ad06a', desc: 'Bolsita zip con 1 unidad.' },
   tarro:     { name: 'Tarro', icon: '🫙', stack: 10, illegal: true, product: true, units: 5, packed: true, form: 'tarros', color: '#9bd0e6', desc: 'Tarro de cristal con 5 unidades. Los clientes lo pagan mejor.' },
