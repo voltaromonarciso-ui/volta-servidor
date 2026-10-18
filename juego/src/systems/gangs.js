@@ -76,7 +76,13 @@ function spawnPoint() {
     if (G.world.resolve(t, 0.4, 0)) continue;          // dentro de algo sólido
     if (G.world.inProperty(x, z)) continue;
     if (Math.abs(x) > 105 || Math.abs(z) > 100) continue;
-    if (!G.world.nav.path(x, z, p.x, p.z, G.world.los).length) continue;
+    // el camino real hasta el jugador debe ser corto: si rodea edificios y se aleja,
+    // el encuentro acabaría con «los has despistado» sin que el jugador haya hecho nada
+    const path = G.world.nav.path(x, z, p.x, p.z, G.world.los);
+    if (!path.length) continue;
+    let len = 0, px = x, pz = z;
+    for (const q of path) { len += Math.hypot(q.x - px, q.z - pz); px = q.x; pz = q.z; }
+    if (len > GANG.spawnDist * 1.4) continue;
     return { x, z };
   }
   return null;
@@ -131,7 +137,8 @@ export function updateGangs(dt) {
     // se puede escapar: lejos, a cubierto, en vehículo, o con la policía cerca
     const why = dmin > GANG.giveUpDist ? 'lejos' : !outdoors() ? 'refugio' : G.riding && Math.abs(G.riding.speed || 0) > 3 ? 'vehiculo' : copNear() ? 'policia' : crew.t > 75 ? 'tiempo' : null;
     if (why) {
-      G.act.toast?.(why === 'policia' ? `${GANG.name} ven a la policía y se largan.` : `Has despistado a ${GANG.name}.`, '😮‍💨');
+      const msg = { policia: `${GANG.name} ven a la policía y se largan.`, tiempo: `${GANG.name} se cansan de seguirte y se dan la vuelta.` }[why] || `Has despistado a ${GANG.name}.`;
+      G.act.toast?.(msg, '😮‍💨');
       return endCrew(why);
     }
     if (!crew.warned && dmin < 22) {

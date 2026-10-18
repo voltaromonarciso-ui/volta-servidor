@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792343426.7083325,
-    "seen": 1792343452.922809,
+    "mtime": 1792351177.9767933,
+    "seen": 1792351476.470669,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1398,21 +1398,117 @@
     "semantic_hash": ""
   },
   "juego/src/systems/gangs.js": {
-    "mtime": 1792342081.8473835,
-    "seen": 1792343119.3048453,
-    "ast_hash": "413ebadb9cea9cb2f5ef283d3f32a9fe",
+    "mtime": 1792351193.913865,
+    "seen": 1792351476.4700315,
+    "ast_hash": "ce2b9442f3130cdc79bed2eb8aa658cb",
     "semantic_hash": ""
   },
   "juego/tests/events.spec.js": {
-    "mtime": 1792342837.583169,
-    "seen": 1792343119.3059351,
-    "ast_hash": "89b359f9bfb9ac3306c4b0e4677bc83d",
+    "mtime": 1792351193.9142642,
+    "seen": 1792351476.4707446,
+    "ast_hash": "da26ec877bd1e18bafdcc368526a7ee1",
     "semantic_hash": ""
   },
   "juego/tests/perf.spec.js": {
     "mtime": 1792343535.047111,
     "seen": 1792343548.0223908,
     "ast_hash": "93ad2769a836f180b6c4dd3c123fa807",
+    "semantic_hash": ""
+  },
+  "juego/docs/ENCARGO-ROOKTOWN.md": {
+    "mtime": 1792348915.0086586,
+    "seen": 1792351476.4726274,
+    "ast_hash": "bf309f4323fa48c564924ecb78cb5969",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/LEEME.md": {
+    "mtime": 1792348766.0502796,
+    "seen": 1792351476.4726546,
+    "ast_hash": "4b31235724112f1a612265e99c08f5a1",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/01-locales-a.png": {
+    "mtime": 1792346312.6404588,
+    "seen": 1792351476.47369,
+    "ast_hash": "68a10575aa320fc6fa1fa9f3ac7628a4",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/02-locales-b.png": {
+    "mtime": 1792346312.6433907,
+    "seen": 1792351476.4736922,
+    "ast_hash": "a8a954cef583b357e11f7efae820061d",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/03-barrio-alto.png": {
+    "mtime": 1792346312.6461015,
+    "seen": 1792351476.4736938,
+    "ast_hash": "57f0502a43e1f550d00e2c1234f4b157",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/04-vehiculos.jpg": {
+    "mtime": 1792346312.6488023,
+    "seen": 1792351476.4736953,
+    "ast_hash": "0231bbae69db8e20cd8946fa554ae3c5",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/05-armas.jpg": {
+    "mtime": 1792346312.6505241,
+    "seen": 1792351476.4736967,
+    "ast_hash": "8b3f182818c565512ec75025a3f23820",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/06-gasolinera.png": {
+    "mtime": 1792346312.652477,
+    "seen": 1792351476.4736984,
+    "ast_hash": "e268f88d65cab0220ef725e9d7154028",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/07-casino-objetos.png": {
+    "mtime": 1792346312.6550367,
+    "seen": 1792351476.4736996,
+    "ast_hash": "2e4ff4925f76bf70e38a84a4a095de4f",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/08-casino-interior.png": {
+    "mtime": 1792346312.6573677,
+    "seen": 1792351476.4737012,
+    "ast_hash": "06fbca7d1b7f341a13a95b49e80ef60c",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/09-tiendas-calles-objetos.png": {
+    "mtime": 1792346312.6620662,
+    "seen": 1792351476.4737022,
+    "ast_hash": "e5352a2168b78e3e6968e1f6b6da9a8e",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/10-hud-mano-bolsa.png": {
+    "mtime": 1792346312.6647053,
+    "seen": 1792351476.4737034,
+    "ast_hash": "fb30704115d6b98f13d18187c013e455",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/11-mapa.png": {
+    "mtime": 1792346312.6666203,
+    "seen": 1792351476.4737043,
+    "ast_hash": "994287ec992f63adf75efec0fd16269e",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/12-negocios-tapadera.jpg": {
+    "mtime": 1792346312.6694522,
+    "seen": 1792351476.4737055,
+    "ast_hash": "bb11e2ca310ac49078f41c69a45d3e27",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/13-almacen-hud.png": {
+    "mtime": 1792346312.6715546,
+    "seen": 1792351476.4737067,
+    "ast_hash": "67421c45188863a9e67e473459c8cb0d",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/14-pantalla-carga.png": {
+    "mtime": 1792346312.6740744,
+    "seen": 1792351476.4737074,
+    "ast_hash": "7e96c24d82e4c3d459e0cba148128b2a",
     "semantic_hash": ""
   }
 }

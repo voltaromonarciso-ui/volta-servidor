@@ -110,11 +110,15 @@ test.describe.serial('Armería, casino y bandas', () => {
     const r = await mod(page, GG, (m) => {
       __G.paused = true;
       const toasts = []; const t0 = __G.act.toast; __G.act.toast = (t) => toasts.push(t);
-      const started = m.startRobbery();
-      const st0 = m.gangState();
-      // se acercan hasta el aviso
-      let k = 0; while (m.gangState()?.d > 21 && k++ < 2000) m.updateGangs(0.05);
-      const warned = toasts.some((t) => /vienen hacia ti/.test(t));
+      // el punto de aparición es aleatorio: hasta 3 intentos para dar con uno en que lleguen
+      let started, st0, warned = false;
+      for (let a = 0; a < 3 && !warned; a++) {
+        m.clearGangs(); delete __G.state.lastRobbery; toasts.length = 0;
+        started = m.startRobbery();
+        st0 = m.gangState();
+        let k = 0; while (m.gangState()?.phase === 'approach' && m.gangState().d > 21 && k++ < 2000) m.updateGangs(0.05);
+        warned = toasts.some((t) => /vienen hacia ti/.test(t));
+      }
       // huir: el jugador se va lejos
       __G.player.teleport(__G.player.pos.x + 80, __G.player.pos.z, 0);
       m.updateGangs(0.05);
