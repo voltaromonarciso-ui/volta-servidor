@@ -28,3 +28,4 @@ Contradicciones a aclarar antes de implementar (no se decide nada sin preguntar)
 - Armas: 05 tiene machete y no spray de pimienta (hoy: spray, porra, pistola).
 | 15-estaciones.png | Mesa de empaquetado manual, mesa de cristales, mesa de polvos, máquina de pastillas, estación de líquidos, empaquetadora avanzada |
 | 16-formatos-producto.png | Formatos: cogollos sobre/tarro, cristales sobre/tarro, polvo vial/sobre, pastillas blíster/frasco, extracto gotero (+ caja) |
+| 17-logo-rooktown.png | Logotipo de Rooktown (portada del menú: ROOK blanco, TOWN rojo, corona; ciudad de noche) |
