@@ -13,7 +13,10 @@ import { rememberIncident, recognition, RECOG_LEVEL } from './appearance.js';
 export const wanted = { level: 0, unseen: 0, escape: 14, reason: '' };
 
 export function spawnPolice() {
-  const c = (i, j, sx, sz) => ({ x: ROADS[i] + sx * 5.25, z: ROADS[j] + sz * 5.25 });
+  // en la isla de Rooktown las calles vienen del mundo (cuadrícula 8 × 5); si no, las de siempre
+  const RX = G.world.roadsX || ROADS, RZ = G.world.roadsZ || ROADS;
+  const k = RX.length > 4 ? 2 : 0; // desplaza las rutas hacia el centro de la isla
+  const c = (i, j, sx, sz) => ({ x: RX[Math.min(i + k, RX.length - 1)] + sx * 5.25, z: RZ[Math.min(j, RZ.length - 1)] + sz * 5.25 });
   const routes = [
     [c(1, 1, 1, 1), c(2, 1, -1, 1), c(2, 2, -1, -1), c(1, 2, 1, -1)],
     [c(0, 1, 1, -1), c(1, 1, -1, -1), c(1, 0, -1, 1), c(0, 0, 1, 1)],

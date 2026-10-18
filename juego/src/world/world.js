@@ -8,6 +8,12 @@ import * as TX from './textures.js';
 import { buildBike, buildScooter } from '../entities/rideables.js';
 import { PARKING } from '../data/vehicles.js';
 import { Nav } from './nav.js';
+import { buildIsland } from './island.js';
+
+// ¿Isla nueva de Rooktown? (en construcción, se activa a mano)
+export function mapV2() {
+  try { return /[?&]mapa=2\b/.test(location.search) || localStorage.getItem('rooktown_map') === '2'; } catch (e) { return false; }
+}
 
 // ------------------------------------------------------------------
 //  PUERTO LOMAS — ciudad costera con palmeras. 9 manzanas, bahía al norte
@@ -20,7 +26,7 @@ const SWO = 6.5;       // borde exterior de la acera
 const SWC = 5.25;      // línea central de la acera (para la navegación)
 const CELL = 8;
 
-let W, B, scene, TM;
+export let W, B, scene, TM;
 const roofGeoCache = new Map();
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -48,6 +54,15 @@ export function createWorld(sc) {
   B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
   TM = makeTexMats();
 
+  if (mapV2()) {
+    // isla de Rooktown (en construcción): solo con ?mapa=2 o localStorage rooktown_map=2
+    buildIsland();
+    W.static = B.build(scene);
+    buildProps(scene);
+    buildBulbs();
+    buildBoxes();
+    return W;
+  }
   buildGround();
   buildRoads();
   buildNav();
@@ -2353,3 +2368,12 @@ function buildBoxes() {
   im.receiveShadow = true;
   scene.add(im);
 }
+
+// Piezas de construcción reutilizables por la isla de Rooktown (island.js).
+export const K = {
+  RH, SWO, SWC, GEO, TX, rnd, rbox, addBox, hitbox, building, frontPoint, signMesh, glowPlane, plainMat,
+  palm, tree, bush, lamp, bench, parkedCar, van, asphalt, paving, cardBox, pallet, palletJack, forklift, shelving,
+  dumpster, fenceLine, chainFence, utilityPoles, makeDoor, room, walkInShop, storefront, shopInterior, decorKit,
+  interiorKit, house, trashCan, hydrant, busStop, billboard, streetSign, buildSkyline, buildMountains, roofGeo,
+  HOUSE_COLORS, ROOF_COLORS, CAR_COLORS,
+};

@@ -244,6 +244,7 @@ async function startGame(fresh, look) {
   if (s.props.bungalow && G.world.saleSign) G.world.saleSign.visible = false;
   const prop = G.world.props[s.home] || G.world.props.nave;
   if (loaded) G.player.teleport(prop.spawn.x, prop.spawn.z, prop.spawn.yaw);
+  else if (G.world.pois.inicio) { const st = G.world.pois.inicio; G.player.teleport(st.x, st.z, Math.PI); } // isla de Rooktown
   else { G.player.teleport(-62.5, -38.2, 0.32); G.player.pitch = -0.08; }
 
   if (look) { s.look = look; s.name = String(look.name || '').replace(/[<>&"]/g, '').slice(0, 14); }

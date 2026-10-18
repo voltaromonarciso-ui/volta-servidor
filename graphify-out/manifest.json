@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/cars.js": {
-    "mtime": 1792343161.148813,
-    "seen": 1792343452.9219096,
-    "ast_hash": "8c76a00b55b1bfd725f2ce7f9e7eea4e",
+    "mtime": 1792357096.6004224,
+    "seen": 1792357456.7614853,
+    "ast_hash": "0d04fdbec57c3f80d91784629b0f27f7",
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792343535.0465376,
-    "seen": 1792343548.0212827,
-    "ast_hash": "1af5641d71d939413cb4cec989a03efa",
+    "mtime": 1792357132.9201984,
+    "seen": 1792357456.761805,
+    "ast_hash": "f56782869be7e9abab830371663551ff",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792338088.614114,
-    "seen": 1792338098.178925,
-    "ast_hash": "9ab1ae076a72baa545cff14f6ef5ea19",
+    "mtime": 1792357096.5997407,
+    "seen": 1792357456.7620034,
+    "ast_hash": "fa913ece4c4b92e7b7c11c7f0aac01a1",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792341745.7562325,
-    "seen": 1792341770.054538,
-    "ast_hash": "18b5bf0b297deaac09f7f723fe23f2d1",
+    "mtime": 1792357371.6367126,
+    "seen": 1792357456.7621942,
+    "ast_hash": "bea6c76e4e0da7d61cdc180aaea6c2fc",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792343266.61283,
-    "seen": 1792343452.9227512,
-    "ast_hash": "fc599312323c65d5702cba20ae430d60",
+    "mtime": 1792356942.1392322,
+    "seen": 1792357456.7625537,
+    "ast_hash": "f6794d24bdc292831b6276c785b94041",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1236,9 +1236,9 @@
     "semantic_hash": ""
   },
   "juego/docs/MOVIL.md": {
-    "mtime": 1792343504.3965778,
-    "seen": 1792343548.0241904,
-    "ast_hash": "c9ec2a9c1265913a6c0196c5a29cbe9d",
+    "mtime": 1792356332.1545959,
+    "seen": 1792357456.7648425,
+    "ast_hash": "bf648b7a5ff36b94a031402c5ca85455",
     "semantic_hash": ""
   },
   "juego/ios/App/CapApp-SPM/README.md": {
@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792351177.9767933,
-    "seen": 1792351476.470669,
+    "mtime": 1792357436.0331652,
+    "seen": 1792357456.7626235,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1416,15 +1416,15 @@
     "semantic_hash": ""
   },
   "juego/docs/ENCARGO-ROOKTOWN.md": {
-    "mtime": 1792348915.0086586,
-    "seen": 1792351476.4726274,
-    "ast_hash": "bf309f4323fa48c564924ecb78cb5969",
+    "mtime": 1792356803.0131276,
+    "seen": 1792357456.7648401,
+    "ast_hash": "2f0603651de0f7c98d10bf42efa7efe5",
     "semantic_hash": ""
   },
   "juego/docs/referencias/LEEME.md": {
-    "mtime": 1792348766.0502796,
-    "seen": 1792351476.4726546,
-    "ast_hash": "4b31235724112f1a612265e99c08f5a1",
+    "mtime": 1792356652.462799,
+    "seen": 1792357456.7648442,
+    "ast_hash": "432a8f7702a73b9652d68c1bddd394b9",
     "semantic_hash": ""
   },
   "juego/docs/referencias/01-locales-a.png": {
@@ -1509,6 +1509,30 @@
     "mtime": 1792346312.6740744,
     "seen": 1792351476.4737074,
     "ast_hash": "7e96c24d82e4c3d459e0cba148128b2a",
+    "semantic_hash": ""
+  },
+  "juego/src/world/island.js": {
+    "mtime": 1792357132.9207015,
+    "seen": 1792357456.76241,
+    "ast_hash": "472f2a24e3f150057e80ad5a0bf28b8c",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/15-estaciones.png": {
+    "mtime": 1792356316.4442425,
+    "seen": 1792357456.7663305,
+    "ast_hash": "46bd357a42cd261edcf448a1ff6e25f1",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/16-formatos-producto.png": {
+    "mtime": 1792356316.447084,
+    "seen": 1792357456.7663326,
+    "ast_hash": "6fb472d829c9ea302bf3247223981009",
+    "semantic_hash": ""
+  },
+  "juego/docs/referencias/17-logo-rooktown.png": {
+    "mtime": 1792356652.462799,
+    "seen": 1792357456.7663343,
+    "ast_hash": "f61a517544c40568eca0036837ed30be",
     "semantic_hash": ""
   }
 }

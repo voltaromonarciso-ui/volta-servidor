@@ -223,11 +223,12 @@ function drawMinimap() {
     g.fillText(glyph, sx, sz + r * 0.06);
   };
   const W = G.world;
-  icon(W.pois.nave.x, W.pois.nave.z, '#2b3540', '⌂');
-  if (G.state.props.bungalow) icon(W.pois.bungalow.x, W.pois.bungalow.z, '#2e7d4f', '⌂');
-  icon(W.pois.ferreteria.x, W.pois.ferreteria.z, '#b0302a', '⚒', false);
-  icon(W.pois.gasolinera.x, W.pois.gasolinera.z, '#2e86de', '⛽', false);
-  if (G.state.orders.length) icon(W.pois.deadDrop.x, W.pois.deadDrop.z, '#c77d2a', '▣');
+  const P = W.pois, at = (p, ...a) => { if (p) icon(p.x, p.z, ...a); }; // un sitio que no exista no rompe el minimapa
+  at(P.nave, '#2b3540', '⌂');
+  if (G.state.props.bungalow) at(P.bungalow, '#2e7d4f', '⌂');
+  at(P.ferreteria, '#b0302a', '⚒', false);
+  at(P.gasolinera, '#2e86de', '⛽', false);
+  if (G.state.orders.length) at(P.deadDrop, '#c77d2a', '▣');
   for (const d of G.state.deals) {
     if (d.status !== 'accepted') continue;
     const spot = W.spots.find((x) => x.id === d.spot);

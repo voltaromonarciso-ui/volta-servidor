@@ -34,7 +34,11 @@ const LOOK = 16;      // metros que mira por delante
 const CROSS_R = 7;    // medio lado de la zona de un cruce
 // Cruces (uno por cada par de calles): quién lo está atravesando ahora.
 const CROSSES = [];
-for (const x of ROADS) for (const z of ROADS) CROSSES.push({ x, z, owner: null, since: 0 });
+const initCrosses = () => {
+  CROSSES.length = 0;
+  if (G.world?.crosses) for (const c of G.world.crosses) CROSSES.push({ ...c, owner: null });
+  else for (const x of ROADS) for (const z of ROADS) CROSSES.push({ x, z, owner: null });
+};
 // El próximo cruce en la dirección de marcha y su distancia.
 function nextCross(pos, fx, fz) {
   let best = null;
@@ -178,13 +182,14 @@ export const TRAFFIC = { poco: 2, normal: 3, mucho: 4 };
 export function setTraffic(level = 'normal') {
   for (const c of G.cars) c.g.removeFromParent();
   G.cars.length = 0;
-  for (const x of CROSSES) x.owner = null;
   spawnCars(TRAFFIC[level] || 3);
 }
 
 export function spawnCars(perLoop = 3) {
+  initCrosses();
   let k = 0;
-  LOOPS.forEach((loop, li) => {
+  const loops = G.world?.trafficLoops || LOOPS;
+  loops.forEach((loop, li) => {
     for (let j = 0; j < perLoop; j++) {
       // de vez en cuando pasa un taxi
       const model = k === 3 ? 'Taxi' : CAR_MODELS[k % CAR_MODELS.length];
