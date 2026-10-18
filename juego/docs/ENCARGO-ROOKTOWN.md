@@ -138,3 +138,9 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - La tienda de armas (Armería) desaparece: armas y mesas avanzadas se venden en El Cartel.
 - Enviar capturas al usuario a medida que haya avances (cada elemento/zona), para que
   diga si va bien o hay que parar y corregir. No avanzar mucho sin su visto bueno.
+- Descargas bloqueadas (itch.io/Drive): empezar con Kenney como base y modelar el detalle a mano.
+- Primera prueba con captura: cajero, farola y semáforo, bancos/papeleras/contenedores,
+  parada de bus y vallas (barrera, cono, bolardos).
+- Cajeros: en la acera, uno por barrio (~10), pegados a fachadas, con icono en el mapa.
+- Mapa del móvil: usar la imagen 11-mapa.png como fondo, ajustada a la isla real, con la
+  posición, tratos y marcas encima.
