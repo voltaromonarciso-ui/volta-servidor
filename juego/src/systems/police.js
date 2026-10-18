@@ -32,7 +32,7 @@ export function curfew() {
   return m >= 21 * 60 || m < 5 * 60;
 }
 
-let checkT = 0, friskCop = null, friskT = 0, friskStart = 0;
+let checkT = 0, friskCop = null, friskT = 0;
 
 export function updatePolice(dt) {
   for (const cop of G.police) cop.update(dt);
@@ -76,7 +76,7 @@ export function updatePolice(dt) {
       const cop = friskCop;
       friskCop = null;
       startChase(cop, '¡Alto! ¡Bájate de ahí!');
-    } else if (friskT <= 0 || (friskT < 80 && friskCop.distToPlayer() > 25 && friskCop.distToPlayer() > friskStart + 5)) {
+    } else if (friskT <= 0 || friskCop.distToPlayer() > 25) {
       friskCop.mode = 'return'; friskCop.path = []; friskCop = null;
     }
     return;
@@ -95,7 +95,7 @@ export function updatePolice(dt) {
       const known = r >= RECOG_LEVEL;
       if (Math.random() < friskChance(r, !!input.sprint || Math.abs(G.riding?.speed || 0) > 6, illegalCount())) {
         friskCop = cop;
-        friskT = 12; friskStart = 0;
+        friskT = 12;
         cop.mode = 'approach';
         sfx('whistle');
         G.act.toast(known ? `${cop.name}: «¡Eh, tú! Te pareces al que se nos escapó. Quieto ahí.»` : `${cop.name}: «¡Eh, tú! Quieto ahí un momento.»`, '👮');
@@ -103,22 +103,6 @@ export function updatePolice(dt) {
       }
     }
   }
-}
-
-// Aviso externo (p. ej. el banco por un ingreso grande): la patrulla libre más cercana
-// viene a cachearte. Devuelve true si alguien acude.
-export function requestFrisk(reason) {
-  if (friskCop || wanted.level > 0) return false;
-  let best = null, bd = 1e9;
-  for (const cop of G.police) {
-    if (cop.mode !== 'patrol' && cop.mode !== 'return') continue;
-    const d = cop.distToPlayer();
-    if (d < bd) { bd = d; best = cop; }
-  }
-  if (!best) return false;
-  friskCop = best; friskT = 90; friskStart = bd; best.mode = 'approach';
-  G.act.toast(reason + ' Viene una patrulla.', '🏦');
-  return true;
 }
 
 const recognized = () => recognition() >= RECOG_LEVEL;

@@ -148,8 +148,9 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 ## Respuestas del usuario (calle y cajeros)
 
 - **Cajeros**: ingresar efectivo (bolsillo → tarjeta) y sacar efectivo (tarjeta → bolsillo).
-  Ingresar mucho de golpe sube la sospecha policial. Límite de **10.000 $ por semana de juego**
-  (7 días del juego). Sin comisión (no la eligió).
+  Ingresar tiene un tope de **10.000 $ por semana de juego** (7 días) que no se puede pasar
+  «pase lo que pase»; sacar es libre. Sin comisión y **sin avisos a la policía** (aclarado
+  después: «no te buscan ni nada»).
 - **Mobiliario de las aceras**: más lleno que la primera versión.
 - **Vegetación**: mezcla por barrios (palmeras en costa, comercio y ocio; árboles en residencial y parques).
 - **Móvil de referencia**: gama media (Android de 200–400 €): equilibrio entre detalle y fluidez.
