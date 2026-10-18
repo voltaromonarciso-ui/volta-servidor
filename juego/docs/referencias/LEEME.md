@@ -26,3 +26,5 @@ Contradicciones a aclarar antes de implementar (no se decide nada sin preguntar)
 - 10-hud-mano-bolsa muestra el botón de la mano; la referencia anterior del HUD lo quitaba.
 - Casino: 07 dice «solo funcionales: tragaperras»; ahora hay también ruleta.
 - Armas: 05 tiene machete y no spray de pimienta (hoy: spray, porra, pistola).
+| 15-estaciones.png | Mesa de empaquetado manual, mesa de cristales, mesa de polvos, máquina de pastillas, estación de líquidos, empaquetadora avanzada |
+| 16-formatos-producto.png | Formatos: cogollos sobre/tarro, cristales sobre/tarro, polvo vial/sobre, pastillas blíster/frasco, extracto gotero (+ caja) |

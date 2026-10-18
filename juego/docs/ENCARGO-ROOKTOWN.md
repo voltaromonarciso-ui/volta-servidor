@@ -66,3 +66,23 @@ Si una referencia es ambigua o contradictoria, preguntar.
   Volta-5.html): es otra aplicación distinta.
 
 - Al empezar este encargo: hacer al usuario todas las preguntas necesarias para aclararlo bien (instrucción del usuario, 18-10-2026).
+
+## Complemento — Seis estaciones, empaquetado y El Cartel (18-10-2026)
+Referencias: 15-estaciones.png, 16-formatos-producto.png. Mecánicas ficticias: solo
+interacciones abstractas, animaciones y barras de progreso (nada de recetas reales).
+- Interacción: tocar la estación → valida desbloqueo, recursos y que esté libre → pasa
+  los recursos del inventario a la estación solos (sin pantalla de depositar) → se ven en
+  la mesa → animación y progreso → «Lista para recoger» → se recoge una sola vez. Si falta
+  algo, mensaje claro y no se consume nada.
+- Estaciones (exactamente seis): 1 cogollos (existe), 2 cristales (existe: el hornillo),
+  3 polvos (nueva), 4 pastillas (nueva), 5 líquidos/extracto (nueva), 6 empaquetadora
+  avanzada (nueva, lotes, más rápida, valores configurables). Producción y empaquetado son
+  etapas distintas.
+- Mesa de empaquetado manual: aparte, se compra en la tienda de muebles. Formatos:
+  cogollos y cristales sobre/tarro; polvos vial/sobre; pastillas blíster/frasco; extracto
+  gotero (+ caja). Formatos bloqueados no se muestran como disponibles.
+- El Cartel: dos mostradores con un único NPC cada uno (dos NPC en total). A: las tres
+  armas existentes (mismo catálogo). B: polvos, pastillas, líquidos, empaquetadora
+  avanzada, lámparas de cultivo y mejoras (cristales solo si procede).
+- Orden de desbloqueo: cogollos → cristales → polvos → pastillas → extracto, con el
+  sistema de rangos existente. Compras y resultados una sola vez; persistencia al cargar.
