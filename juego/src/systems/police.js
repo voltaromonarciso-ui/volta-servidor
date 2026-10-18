@@ -136,11 +136,14 @@ export function flee(cop) {
   startChase(cop, '¡Alto, policía!');
 }
 
+const JAIL_MIN = 180;
 export function arrest(cop) {
   const s = G.state;
-  // una detención por instante de juego: si llega dos veces la misma, la segunda no hace nada
+  // Una detención no puede repetirse mientras estás en comisaría (las 3 h que se pasan
+  // dentro): una segunda llamada para la misma detención no hace nada; las detenciones
+  // posteriores, sí multan.
   const at = Math.floor(absNow());
-  if (s.lastArrestAt === at) return;
+  if (Number.isFinite(s.lastArrestAt) && at >= s.lastArrestAt && at <= s.lastArrestAt + JAIL_MIN) return;
   s.lastArrestAt = at;
   let lost = 0;
   s.inv.forEach((slot, i) => { if (slot && ITEMS[slot.id].illegal) { lost += slot.q; s.inv[i] = null; } });
@@ -157,7 +160,7 @@ export function arrest(cop) {
   G.act.forceDismount?.(); // el vehículo se queda donde te pararon
   const hq = G.world.policeHQ;
   G.player.teleport(hq.x + rand(-1, 1), hq.z + 2, Math.PI);
-  G.act.advanceTime(180);
+  G.act.advanceTime(JAIL_MIN);
   save();
 }
 
