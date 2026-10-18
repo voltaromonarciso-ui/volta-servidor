@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792359662.7252975,
-    "seen": 1792359673.7365,
+    "mtime": 1792359886.9613109,
+    "seen": 1792359893.0271935,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1536,15 +1536,15 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792359520.0456665,
-    "seen": 1792359608.3806071,
-    "ast_hash": "fedb370123cdf8a7d37c0ca8216f0e68",
+    "mtime": 1792359818.331046,
+    "seen": 1792359893.0269165,
+    "ast_hash": "38eb7624da0af061d6875df47abe5a26",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792359656.3304374,
-    "seen": 1792359673.7363863,
-    "ast_hash": "74618e98fb9596ad0ffbe33b3857b222",
+    "mtime": 1792359879.6300879,
+    "seen": 1792359893.027081,
+    "ast_hash": "2eacfd27a25c1e64cc6760f6bb120d17",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {
@@ -1605,6 +1605,12 @@
     "mtime": 1792359667.9449918,
     "seen": 1792359673.7401323,
     "ast_hash": "23e0bf78e476b68640c0a5fe61aec4b7",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-09-calle5.png": {
+    "mtime": 1792359886.9931858,
+    "seen": 1792359893.0309649,
+    "ast_hash": "30b6fb67d8f1d61897b693d3e56b0c8e",
     "semantic_hash": ""
   }
 }

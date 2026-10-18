@@ -1138,3 +1138,193 @@ export const STREET_KIT_4 = [
   ['Escalera', () => escalera()], ['Cartel publicitario', cartelPublicitario], ['Bolardos', bolardos], ['Parada de metro', paradaMetro],
   ['Fuente de agua', fuenteAgua], ['Fuente decorativa', fuenteDecorativa], ['Puesto de comida', puestoComida], ['Carrito de limpieza', carritoLimpieza],
 ];
+
+// ==================================================================
+//  Quinta tanda: obras, tecnología y verde urbano
+// ==================================================================
+// Contenedor de obra (cuba) amarillo: laterales trapezoidales, testeros inclinados,
+// nervios verticales, borde reforzado, cáncamos de izado y patines
+export function contenedorObra() {
+  const g = new THREE.Group(), y = mat('#c9b417', { r: 0.55, m: 0.25 }), d = mat('#9c8c12', { r: 0.6, m: 0.3 });
+  const Lb = 1.6, Lt = 2.6, H = 0.9, W = 1.4, y0 = 0.12;
+  const side = cache('cubaLateral', () => {
+    const sh = new THREE.Shape(); sh.moveTo(-Lb / 2, 0); sh.lineTo(Lb / 2, 0); sh.lineTo(Lt / 2, H); sh.lineTo(-Lt / 2, H); sh.closePath();
+    const e = new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 1 }); e.translate(0, 0, -0.02); return e;
+  });
+  for (const s2 of [-1, 1]) add(g, side, y, 0, y0, s2 * W / 2);
+  add(g, rbox(Lb, 0.05, W, 0.01), y, 0, y0 + 0.02, 0);
+  const tilt = Math.atan2((Lt - Lb) / 2, H), endL = Math.hypot((Lt - Lb) / 2, H);
+  for (const s2 of [-1, 1]) {
+    add(g, rbox(0.05, endL, W, 0.015), y, s2 * (Lb + Lt) / 4, y0 + H / 2, 0, 0, 0, -s2 * tilt);
+    for (const z of [-W / 2 + 0.25, W / 2 - 0.25]) add(g, rbox(0.06, endL * 0.9, 0.06, 0.01), d, s2 * ((Lb + Lt) / 4 + 0.04), y0 + H / 2, z, 0, 0, -s2 * tilt);
+    // cáncamo de izado en cada testero
+    for (const z of [-0.35, 0.35]) add(g, new THREE.TorusGeometry(0.07, 0.018, 8, 16), d, s2 * ((Lb + Lt) / 4 + 0.1), y0 + H * 0.6, z, 0, Math.PI / 2, 0);
+  }
+  // nervios verticales en los laterales y borde superior
+  for (const s2 of [-1, 1]) {
+    for (let k = -3; k <= 3; k++) { const x = k * 0.32; add(g, rbox(0.05, H, 0.04, 0.01), d, x, y0 + H / 2, s2 * (W / 2 + 0.04)); }
+    add(g, rbox(Lt + 0.05, 0.07, 0.08, 0.02), d, 0, y0 + H, s2 * (W / 2 + 0.02));
+    add(g, rbox(0.08, 0.07, W + 0.1, 0.02), d, s2 * Lt / 2, y0 + H, 0);
+    add(g, rbox(Lb + 0.4, 0.1, 0.12, 0.02), mat('#3a3f45', { r: 0.6, m: 0.5 }), 0, 0.05, s2 * 0.45);
+  }
+  return g;
+}
+
+// Valla móvil de obra: panel de malla electrosoldada con marco tubular sobre bases de hormigón
+export function vallaMovil(len = 2.4) {
+  const g = new THREE.Group(), m = mat('#b5bcc4', { r: 0.3, m: 0.75 }), H = 1.9;
+  for (const x of [-len / 2, len / 2]) add(g, cyl(0.022, 0.022, H, 10), m, x, 0.15 + H / 2, 0);
+  for (const y of [0.15, 0.15 + H]) add(g, cyl(0.022, 0.022, len, 10), m, 0, y, 0, 0, 0, Math.PI / 2);
+  const wire = mat('#c6ccd3', { r: 0.35, m: 0.7 });
+  for (let k = 1; k < 14; k++) add(g, cyl(0.005, 0.005, H, 4), wire, -len / 2 + (k * len) / 14, 0.15 + H / 2, 0);
+  for (let k = 1; k < 9; k++) add(g, cyl(0.005, 0.005, len, 4), wire, 0, 0.15 + (k * H) / 9, 0, 0, 0, Math.PI / 2);
+  for (const x of [-len / 2, len / 2]) {
+    add(g, rbox(0.7, 0.15, 0.22, 0.03), mat('#a7a49c', { r: 0.9 }), x, 0.075, 0);
+    add(g, rbox(0.08, 0.06, 0.08, 0.01), mat('#3a3f45'), x, 0.17, 0);
+  }
+  add(g, rbox(0.06, 0.06, 0.04, 0.01), mat('#3a3f45'), len / 2 - 0.02, 1.2, 0.03);
+  return g;
+}
+
+// Señal de obras: triángulo rojo con operario en un poste con base lastrada
+export function senalObras() {
+  const g = new THREE.Group(), m = mat('#6f767e', { r: 0.35, m: 0.7 });
+  add(g, rbox(0.5, 0.08, 0.35, 0.02), mat('#2b2e33', { r: 0.8 }), 0, 0.04, 0);
+  add(g, cyl(0.03, 0.03, 1.5, 10), m, 0, 0.8, 0);
+  const tex = canvasTex('obras', 256, 232, (c, w, h) => {
+    const tri = (pad, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(w / 2, pad); c.lineTo(w - pad, h - pad * 0.6); c.lineTo(pad, h - pad * 0.6); c.closePath(); c.fill(); };
+    tri(4, '#d4241b'); tri(30, '#ffffff');
+    c.fillStyle = '#111'; c.strokeStyle = '#111'; c.lineCap = 'round';
+    c.beginPath(); c.arc(118, 92, 11, 0, 7); c.fill();
+    c.lineWidth = 12; c.beginPath(); c.moveTo(114, 108); c.lineTo(104, 150); c.lineTo(88, 188); c.moveTo(104, 150); c.lineTo(122, 188); c.moveTo(112, 118); c.lineTo(140, 150); c.stroke();
+    c.lineWidth = 6; c.beginPath(); c.moveTo(140, 150); c.lineTo(160, 180); c.stroke();
+    c.beginPath(); c.moveTo(150, 190); c.lineTo(185, 190); c.lineTo(168, 168); c.closePath(); c.fill();
+  });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.72), mat('#ffffff', { map: tex, alphaTest: 0.1, r: 0.4, side: THREE.DoubleSide }));
+  sign.position.set(0, 1.6, 0.04); g.add(sign);
+  return g;
+}
+
+// Cámara de vigilancia sobre poste: carcasa con visera, lente y soporte articulado
+export function camaraVigilancia() {
+  const g = new THREE.Group(), m = mat('#6f767e', { r: 0.35, m: 0.7 }), w = mat('#d9dde2', { r: 0.4, m: 0.2 });
+  add(g, lathe('camBase', [[0, 0], [0.2, 0], [0.2, 0.05], [0.1, 0.1], [0.08, 0.2], [0, 0.2]], 20), m);
+  add(g, cyl(0.07, 0.08, 1.9, 14), m, 0, 1.05, 0);
+  add(g, rbox(0.2, 0.16, 0.2, 0.03), m, 0, 2.05, 0);
+  add(g, cyl(0.04, 0.04, 0.3, 10), m, 0, 2.2, 0.08, Math.PI / 2 - 0.5);
+  const cam = new THREE.Group(); cam.position.set(0, 2.42, 0.25); cam.rotation.x = 0.25; g.add(cam);
+  add(cam, rbox(0.36, 0.32, 0.8, 0.06), w, 0, 0, 0);
+  add(cam, rbox(0.44, 0.04, 0.9, 0.02), w, 0, 0.19, 0.06);                       // visera
+  add(cam, rbox(0.3, 0.26, 0.04, 0.03), mat('#2b2e33', { r: 0.4 }), 0, -0.01, 0.41);
+  add(cam, cyl(0.1, 0.1, 0.03, 24), mat('#0d1a2a', { r: 0.05, m: 0.6 }), -0.03, -0.01, 0.43, Math.PI / 2);
+  add(cam, sph(0.02, 8, 6), mat('#ff2a1a', { e: '#ff2a1a', ei: 1, glow: 'lamp' }), 0.1, 0.08, 0.43);
+  add(cam, rbox(0.12, 0.08, 0.1, 0.02), m, 0, -0.18, -0.15);
+  return g;
+}
+
+// Panel solar inclinado sobre caballete: células azules con marco de aluminio
+export function panelSolar() {
+  const g = new THREE.Group(), al = mat('#c3c9d0', { r: 0.3, m: 0.75 });
+  const cells = canvasTex('solar', 256, 384, (c, w, h) => {
+    c.fillStyle = '#d9dee4'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 9; j++) {
+      const gr = c.createLinearGradient(0, 0, 40, 40); gr.addColorStop(0, '#2c58b8'); gr.addColorStop(1, '#173a86');
+      c.save(); c.translate(6 + i * 41.5, 6 + j * 41.8); c.fillStyle = gr; c.fillRect(0, 0, 38, 38);
+      c.strokeStyle = 'rgba(200,220,255,0.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(12.6, 0); c.lineTo(12.6, 38); c.moveTo(25.3, 0); c.lineTo(25.3, 38); c.stroke(); c.restore();
+    }
+  });
+  const pan = new THREE.Group(); pan.position.set(0, 0.85, 0); pan.rotation.x = -0.75; g.add(pan);
+  add(pan, rbox(1.0, 1.5, 0.04, 0.01), al, 0, 0, 0);
+  add(pan, rbox(0.96, 1.46, 0.01, 0.003), mat('#ffffff', { map: cells, r: 0.15, m: 0.3 }), 0, 0, 0.022);
+  for (const x of [-0.4, 0.4]) {
+    add(g, rbox(0.04, 0.04, 1.2, 0.01), al, x, 0.03, 0);
+    add(g, rbox(0.04, 0.95, 0.04, 0.01), al, x, 0.47, -0.42, -0.1);
+    add(g, rbox(0.04, 0.4, 0.04, 0.01), al, x, 0.2, 0.35);
+  }
+  return g;
+}
+
+// Torre de iluminación móvil: generador con ruedas, mástil telescópico y dos focos
+export function torreIluminacion() {
+  const g = new THREE.Group(), y = mat('#e0a21a', { r: 0.45, m: 0.3 }), m = mat('#9aa1a9', { r: 0.35, m: 0.7 }), d = mat('#2b2e33', { r: 0.6, m: 0.4 });
+  add(g, rbox(0.9, 0.55, 0.6, 0.05), d, 0, 0.45, 0);
+  add(g, rbox(0.92, 0.12, 0.62, 0.03), y, 0, 0.78, 0);
+  for (let k = 0; k < 5; k++) add(g, rbox(0.3, 0.02, 0.01, 0.005), mat('#555b62'), 0.2, 0.32 + k * 0.05, 0.305);
+  for (const s of [-1, 1]) { add(g, cyl(0.15, 0.15, 0.1, 20), mat('#1d1f22'), s * 0.3, 0.15, 0.32, Math.PI / 2); add(g, cyl(0.07, 0.07, 0.11, 14), m, s * 0.3, 0.15, 0.32, Math.PI / 2); }
+  for (const s of [-1, 1]) add(g, rbox(0.05, 0.05, 0.9, 0.01), y, s * 0.42, 0.25, 0, 0, 0, 0);
+  add(g, cyl(0.07, 0.08, 1.6, 12), m, 0, 1.6, 0);
+  add(g, cyl(0.05, 0.055, 1.4, 12), m, 0, 3.05, 0);
+  add(g, rbox(0.9, 0.05, 0.05, 0.01), m, 0, 3.75, 0);
+  for (const s of [-1, 1]) {
+    add(g, rbox(0.34, 0.26, 0.12, 0.03), d, s * 0.35, 3.92, 0.02);
+    add(g, rbox(0.28, 0.2, 0.01, 0.005), mat('#fff6d8', { e: '#fff3cc', ei: 1, glow: 'lamp' }), s * 0.35, 3.92, 0.085);
+  }
+  return g;
+}
+
+// Jardín urbano: jardinera grande de hormigón con arbustos y hierba
+export function jardinUrbano() {
+  const g = new THREE.Group(), c = mat('#8f9399', { r: 0.85 });
+  add(g, taperBox('jardinUrbano', 2.0, 0.55, 0.9, 0.04, 1.05), c, 0, 0.3, 0);
+  add(g, rbox(2.12, 0.06, 1.0, 0.025), mat('#a3a8ae', { r: 0.8 }), 0, 0.6, 0);
+  add(g, rbox(1.9, 0.04, 0.8, 0.01), mat('#4a3626', { r: 1 }), 0, 0.58, 0);
+  for (const [x, z, r, s] of [[-0.7, 0, 0.32, 31], [-0.2, 0.08, 0.36, 32], [0.3, -0.05, 0.34, 33], [0.75, 0.05, 0.3, 34], [0.05, -0.2, 0.26, 35]]) bush(g, x, 0.72 + r * 0.3, z, r, s);
+  return g;
+}
+
+// Jardinera de madera con plantas de hoja larga
+export function jardineraMadera() {
+  const g = new THREE.Group(), wood = mat('#a86a3c', { r: 0.8 }), dark = mat('#7e4d2a', { r: 0.85 });
+  add(g, rbox(1.6, 0.5, 0.6, 0.02), wood, 0, 0.3, 0);
+  for (let k = 0; k < 3; k++) add(g, rbox(1.62, 0.012, 0.62, 0.004), dark, 0, 0.15 + k * 0.16, 0);
+  for (const x of [-0.8, 0.8]) for (const z of [-0.3, 0.3]) add(g, rbox(0.07, 0.6, 0.07, 0.01), dark, x, 0.3, z);
+  add(g, rbox(1.52, 0.03, 0.52, 0.01), mat('#4a3626', { r: 1 }), 0, 0.53, 0);
+  // helechos: matas de frondas cortas con foliolos que se abren desde el centro
+  const fm = mat('#ffffff', { r: 0.75, map: frondTex(), alphaTest: 0.45, side: THREE.DoubleSide });
+  for (const [px, pz, sc] of [[-0.55, 0.05, 0.19], [-0.05, -0.06, 0.21], [0.48, 0.04, 0.18]]) for (let k = 0; k < 9; k++)
+    add(g, frondGeo2(3.1), fm, px, 0.55, pz, 0, (k / 9) * Math.PI * 2 + px, 0.9 + (k % 3) * 0.2, sc, sc * 1.4, sc);
+  return g;
+}
+
+// Bicicleta pública roja con cesta, guardabarros y anclaje
+export function biciPublica() {
+  const g = new THREE.Group(), red = mat('#d4302a', { r: 0.4, m: 0.3 }), d = mat('#1d1f22', { r: 0.7 }), m = mat('#b5bcc4', { r: 0.3, m: 0.8 });
+  for (const z of [-0.52, 0.52]) {
+    add(g, new THREE.TorusGeometry(0.33, 0.035, 10, 32), d, 0, 0.36, z, 0, Math.PI / 2, 0);
+    add(g, new THREE.TorusGeometry(0.29, 0.012, 6, 32), m, 0, 0.36, z, 0, Math.PI / 2, 0);
+    add(g, cyl(0.04, 0.04, 0.08, 12), m, 0, 0.36, z, 0, 0, Math.PI / 2);
+    for (let k = 0; k < 8; k++) add(g, cyl(0.004, 0.004, 0.58, 4), m, 0, 0.36, z, (k / 8) * Math.PI);
+    add(g, new THREE.TorusGeometry(0.37, 0.03, 6, 20, Math.PI * 0.6), red, 0, 0.36, z, 0, Math.PI / 2, Math.PI * 0.2);
+  }
+  // cuadro de paso bajo
+  add(g, tube('biciCuadro', [[0, 0.36, -0.52], [0, 0.4, -0.15], [0, 0.4, 0.05], [0, 0.55, 0.3], [0, 0.85, 0.42]], 0.03, 20), red);
+  add(g, tube('biciSillin', [[0, 0.4, -0.15], [0, 0.65, -0.2], [0, 0.82, -0.24]], 0.028, 12), red);
+  add(g, tube('biciVaina', [[0, 0.36, -0.52], [0, 0.6, -0.3], [0, 0.72, -0.22]], 0.02, 12), red);
+  add(g, cyl(0.02, 0.02, 0.5, 10), red, 0, 0.6, 0.48, 0.25);
+  add(g, rbox(0.12, 0.05, 0.24, 0.02), d, 0, 0.88, -0.25);
+  add(g, tube('biciManillar', [[-0.28, 0.96, 0.38], [-0.12, 0.92, 0.42], [0.12, 0.92, 0.42], [0.28, 0.96, 0.38]], 0.016, 12), m);
+  for (const s of [-1, 1]) add(g, cyl(0.022, 0.022, 0.1, 10), d, s * 0.31, 0.96, 0.38, 0, 0, Math.PI / 2);
+  // cesta delantera de rejilla
+  add(g, rbox(0.34, 0.2, 0.26, 0.02), mat('#3a3f45', { r: 0.5, m: 0.5 }), 0, 0.88, 0.62);
+  add(g, rbox(0.3, 0.02, 0.22, 0.01), mat('#1d1f22'), 0, 0.98, 0.62);
+  add(g, rbox(0.07, 0.07, 0.1, 0.01), mat('#2b2e33'), 0, 0.4, -0.05);
+  return g;
+}
+
+// Rollo de cable: bobina de plástico con cable verde-amarillo enrollado
+export function rolloCable() {
+  const g = new THREE.Group();
+  const coil = mat('#b5c21a', { r: 0.45 }), core = mat('#2b2e33', { r: 0.6 });
+  for (const z of [-0.12, 0.12]) add(g, cyl(0.32, 0.32, 0.03, 32), mat('#3c444d', { r: 0.5 }), 0, 0.32, z, Math.PI / 2);
+  add(g, cyl(0.12, 0.12, 0.24, 20), core, 0, 0.32, 0, Math.PI / 2);
+  for (let k = 0; k < 4; k++) add(g, new THREE.TorusGeometry(0.2 + k * 0.022, 0.024, 8, 32), coil, 0, 0.32, -0.08 + (k % 3) * 0.08);
+  add(g, cyl(0.25, 0.25, 0.21, 32), coil, 0, 0.32, 0, Math.PI / 2);
+  add(g, tube('cableSuelto', [[0.25, 0.32, 0.05], [0.33, 0.12, 0.1], [0.45, 0.02, 0.25], [0.7, 0.02, 0.3]], 0.016, 16), coil);
+  return g;
+}
+
+export const STREET_KIT_5 = [
+  ['Contenedor de obra', contenedorObra], ['Valla móvil', () => vallaMovil()], ['Señal de obras', senalObras], ['Cámara de vigilancia', camaraVigilancia],
+  ['Panel solar', panelSolar], ['Torre de iluminación', torreIluminacion], ['Jardín urbano', jardinUrbano], ['Jardinera de madera', jardineraMadera],
+  ['Bicicleta pública', biciPublica], ['Rollo de cable', rolloCable],
+];
