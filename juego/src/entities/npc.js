@@ -18,7 +18,7 @@ export const LEO_MODEL = 'Male_Adult_04';
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 const hitGeo = new THREE.BoxGeometry(0.9, 1.9, 0.9);
 
-class Walker {
+export class Walker {
   constructor(look, opts = {}) {
     this.h = opts.real && MODELS[opts.real] ? makeRealHuman(opts.real, opts) : makeHuman(look, opts);
     this.real = !!this.h.real;

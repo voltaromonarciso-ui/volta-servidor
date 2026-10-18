@@ -34,6 +34,10 @@ export const ITEMS = {
   cama:      { name: 'Cama buena', icon: '🛏️', stack: 1, price: 380, place: 'bed', desc: 'Duerme en ella (desde las 18:00) y te despiertas a las 6:00 en vez de a las 7:00: una hora más de día.' },
   armario:   { name: 'Armario de almacenaje', icon: '🚪', stack: 1, price: 320, place: 'locker', desc: 'Guarda 24 huecos de objetos, el doble que una estantería.' },
   caja_fuerte:{ name: 'Caja fuerte', icon: '🔒', stack: 1, price: 450, place: 'safe', desc: 'Guarda dinero en casa. Si te detienen, la multa solo sale de lo que llevas encima.' },
+  // Armería Lomas: sirven para defenderte de los atracos de las bandas (no hay tiroteos)
+  spray:     { name: 'Spray de pimienta', icon: '🧯', stack: 3, price: 60, desc: 'Si te intentan atracar, lo usas y salen corriendo. Se gasta al usarlo.' },
+  porra:     { name: 'Porra extensible', icon: '🦯', stack: 1, price: 220, rank: 1, desc: 'Plantas cara en un atraco: a menudo se echan atrás, y si no, se llevan menos. No se gasta.' },
+  pistola:   { name: 'Pistola', icon: '🔫', stack: 1, price: 1400, rank: 3, illegal: true, desc: 'Nadie te atraca si la enseñas. Ilegal sin licencia: si la policía te cachea, te la quita y la multa es mayor.' },
   humidificador:{ name: 'Humidificador', icon: '💨', stack: 2, price: 220, place: 'humid', desc: 'Las macetas a menos de 2,5 m pierden el agua un 40 % más despacio.' },
 };
 
@@ -57,6 +61,12 @@ export const SHOPS = {
     open: [10, 21],
     stock: ['cama', 'armario', 'caja_fuerte', 'humidificador', 'estante'],
     greet: ['Bienvenido a Muebles Nido. Te lo llevas hoy mismo.', 'Todo lo que ves sirve para algo, nada de adornos.', '¿Amueblando la nave? Mira el catálogo.'],
+  },
+  armeria: {
+    name: 'Armería Lomas',
+    open: [10, 20],
+    stock: ['spray', 'porra', 'pistola'],
+    greet: ['Buenas. Aquí todo con papeles... casi todo.', 'Con lo que se ve por el barrio de noche, mejor ir preparado.', '¿Algo para dormir tranquilo?'],
   },
   gasolinera: {
     name: 'Gas&Go 24h',

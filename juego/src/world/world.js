@@ -1778,8 +1778,8 @@ function interiorKit(seed) {
 function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
   const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2;
   const { rand, L, LM, stockShelf, shelfUnit, counter, register, stool, table, fridge } = interiorKit(seed);
-  const kind = /Súper|24/.test(name) ? 'super' : /Bar/.test(name) ? 'bar' : /Empeñ/.test(name) ? 'pawn' : /Café/.test(name) ? 'cafe' : /Lava/.test(name) ? 'laundry' : /Farmac/.test(name) ? 'pharma' : /Taquer/.test(name) ? 'taco' : 'super';
-  const floor = { super: '#d9d4c8', bar: '#5a3a24', pawn: '#6b5a48', cafe: '#a87a50', laundry: '#e6e9ec', pharma: '#eef1f0', taco: '#c9b28c' }[kind];
+  const kind = /Súper|24/.test(name) ? 'super' : /Bar/.test(name) ? 'bar' : /Empeñ/.test(name) ? 'pawn' : /Armer/.test(name) ? 'gun' : /Casino/.test(name) ? 'casino' : /Café/.test(name) ? 'cafe' : /Lava/.test(name) ? 'laundry' : /Farmac/.test(name) ? 'pharma' : /Taquer/.test(name) ? 'taco' : 'super';
+  const floor = { super: '#d9d4c8', bar: '#5a3a24', pawn: '#6b5a48', gun: '#5b5346', casino: '#7a1022', cafe: '#a87a50', laundry: '#e6e9ec', pharma: '#eef1f0', taco: '#c9b28c' }[kind];
   // suelo (baldosas a cuadros), paredes y techo
   for (let i = 0; i < Math.ceil(w / 0.6); i++) for (let j = 0; j < Math.ceil(d / 0.6); j++) {
     const c = (i + j) % 2 ? floor : new THREE.Color(floor).multiplyScalar(0.86).getStyle();
@@ -1854,6 +1854,35 @@ function shopInterior({ x0, x1, z0, z1, hgt, name, tint, seed }) {
     }
     shelfUnit(x1 - 1.4, z0 + 0.35, 2.2, 4, 0.4, 0, '#5a4636', true, ['glass', 'wine-red', 'wine-white', 'cup-coffee', 'honey']);
     B.box('#16191c', x1 - 1.4, 1.75, z0 + 0.4, 0.8, 0.5, 0.25, 0, LM);
+  } else if (kind === 'gun') {
+    // armero: panel de rifles al fondo, vitrina-mostrador con armas cortas y cajas
+    B.box('#6b5236', cx, 0.9, z0 + 0.12, w - 1.2, 1.9, 0.06, 0, L); // panel de madera
+    for (let i = 0; i < 7; i++) {
+      const gx = x0 + 1.0 + i * ((w - 2) / 6);
+      B.box('#2b2e33', gx, 1.0, z0 + 0.2, 0.07, 1.25, 0.06, 0.06, LM); // cañón
+      B.box('#4a3322', gx, 0.95, z0 + 0.2, 0.12, 0.42, 0.07, 0, L); // culata
+    }
+    B.box('#c9a227', cx, 2.25, z0 + 0.14, 2.2, 0.25, 0.03, 0, { mat: 'glow' }); // rótulo interior
+    counter(cx + 0.6, z1 - 1.4, 3.4, '#3a2a1e', '#2c2f33');
+    B.box('#cfe6f0', cx + 0.6, 0.95, z1 - 1.4, 3.2, 0.3, 0.5, 0, { mat: 'glass', shadow: false, ao: 0 });
+    for (let i = 0; i < 6; i++) B.box('#1d1f22', cx - 0.8 + i * 0.5, 0.9, z1 - 1.4 + (i % 2 ? 0.1 : -0.1), 0.28, 0.05, 0.14, rand() * 0.6, LM);
+    for (let i = 0; i < 4; i++) B.box(['#4b5320', '#6b6b3a', '#3d4136', '#556b2f'][i], x1 - 0.7, i * 0.32, z0 + 0.9 + (i % 2) * 0.1, 0.6, 0.3, 0.45, rand() * 0.3, L); // cajas de munición
+    clerk(cx + 0.6, z1 - 2.1);
+  } else if (kind === 'casino') {
+    // moqueta roja, tragaperras con pantallas encendidas y una mesa de ruleta
+    for (let i = 0; i < Math.floor((w - 1) / 1.05); i++) {
+      const sx = x0 + 0.8 + i * 1.05;
+      B.box('#1c1c22', sx, 0, z0 + 0.45, 0.8, 1.55, 0.6, 0, LM);
+      B.box(['#ff2d95', '#ffd700', '#21d4fd', '#7dff6a'][i % 4], sx, 1.0, z0 + 0.76, 0.6, 0.38, 0.02, 0, { mat: 'glow' });
+      B.box('#d4af37', sx, 1.55, z0 + 0.45, 0.8, 0.12, 0.6, 0, LM);
+      B.box('#2b2b30', sx, 0.55, z0 + 0.8, 0.7, 0.08, 0.2, 0, LM);
+    }
+    B.add(GEO.cyl16, '#5a3a24', cx + 0.4, 0, z1 - 1.3, 1.9, 0.82, 1.2, 0, L);
+    B.add(GEO.cyl16, '#0d6b3a', cx + 0.4, 0.82, z1 - 1.3, 1.8, 0.04, 1.1, 0, L);
+    B.add(GEO.cyl16, '#3a2a1e', cx + 0.9, 0.86, z1 - 1.3, 0.5, 0.06, 0.5, 0, LM);
+    B.add(GEO.cyl16, '#d4af37', cx + 0.9, 0.92, z1 - 1.3, 0.12, 0.08, 0.12, 0, LM);
+    for (let i = 0; i < 3; i++) { B.add(GEO.cyl8, '#2b2b2b', x0 + 1.2 + i * 2.2, hgt - 0.4, (z0 + z1) / 2, 0.02, 0.6, 0.02, 0, LM); B.add(GEO.sphere, '#ffcf7a', x0 + 1.2 + i * 2.2, hgt - 0.75, (z0 + z1) / 2, 0.3, 0.16, 0.3, 0, { mat: 'glow' }); }
+    clerk(cx + 0.4, z1 - 2.2);
   } else if (kind === 'cafe') {
     counter(x1 - 1.8, z0 + 1.2, 2.6, '#6b4226', '#e8e0d4');
     B.box('#b0b5ba', x1 - 2.4, 1.0, z0 + 1.2, 0.5, 0.45, 0.4, 0, LM); // cafetera
@@ -1949,8 +1978,13 @@ function buildCommercial() {
   const zf = -37.2;
   storefront({ x0: 37.5, x1: 46, zf, h: 5.5, wall: '#3b3f45', name: 'Súper 24/7', sign: '24/7', signStyle: 'blade', signColor: '#1f9d55', neon: { text: 'OPEN' }, seed: 11, tint: '#f6f0dc' });
   const bar = storefront({ x0: 46.5, x1: 55, zf, h: 4.8, wall: '#2f4f4f', name: 'Bar', sign: 'BAR EL ANCLA', signColor: '#0f2d2d', signFg: '#f6d78b', awning: '#1f6f5c', seed: 12, tint: '#f0c890' });
-  storefront({ x0: 55.5, x1: 64, zf, h: 6.5, wall: '#5a4a3e', name: 'Empeños', sign: 'CASA DE EMPEÑOS', signStyle: 'letters', seed: 13, tint: '#e6d3a8', upper: true });
-  storefront({ x0: 64.5, x1: 73, zf, h: 4.6, wall: '#efe4d2', name: 'Café', sign: 'CAFÉ LOMAS', signColor: '#8b5a2b', awning: '#c0662a', neon: { text: 'ABIERTO', color: '#7dffb0', glow: '#00ff88', border: '#ff4db8' }, seed: 14, tint: '#f6dcb0' });
+  const gun = storefront({ x0: 55.5, x1: 64, zf, h: 6.5, wall: '#3d4136', name: 'Armería', sign: 'ARMERÍA LOMAS', signStyle: 'letters', awning: '#4b5320', seed: 13, tint: '#d8d2c0', upper: true });
+  const casino = storefront({ x0: 64.5, x1: 73, zf, h: 5.4, wall: '#2a0f2e', name: 'Casino', sign: 'CASINO ROYAL', signColor: '#5b0f5e', signFg: '#ffd700', neon: { text: '777', color: '#ffe066', glow: '#ffb300', border: '#ff2d95' }, seed: 14, tint: '#3a1838' });
+  // se entra tocando la puerta del local (el panel hace de interior)
+  hitbox(gun.x, 1.3, zf + 0.25, 2.4, 2.6, 0.5, { actions: () => [{ label: 'Entrar en la Armería', fn: () => G.act.openShop('armeria') }] });
+  hitbox(casino.x, 1.3, zf + 0.25, 2.4, 2.6, 0.5, { actions: () => [{ label: 'Entrar en el Casino', fn: () => G.act.openCasino() }] });
+  W.pois.armeria = gun;
+  W.pois.casino = casino;
   storefront({ x0: 73.5, x1: 83, zf, h: 5.2, wall: '#d6e6ef', name: 'Lavandería', sign: 'LAVA-YA', signColor: '#2b7bd1', seed: 15, tint: '#e8f2f8' });
   building({ x0: 38, x1: 82, z0: -82, z1: -66, h: 12.8, wall: '#d29b77', trim: '#f2e2d2', roof: '#555', style: 'house', front: '+z', seed: 404, mapColor: '#a7735a' });
   asphalt(36.5, 83.5, -65.5, -50.5);

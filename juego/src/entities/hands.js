@@ -206,6 +206,26 @@ export function buildItem(s) {
       const p = new THREE.Group(); seedPile(p, 5, 0.026); p.position.set(0.005, -0.05, 0.01); g.add(p);
       break;
     }
+    case 'spray': {
+      mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.15, 14), M('#c62828', { roughness: 0.4, metalness: 0.2 }), 0, 0, 0, g);
+      mesh(new THREE.CylinderGeometry(0.029, 0.029, 0.04, 14), M('#ffd54f', { roughness: 0.5 }), 0, -0.01, 0, g);
+      mesh(bx(0.04, 0.035, 0.04, 0.006), M('#222'), 0, 0.093, 0, g);
+      break;
+    }
+    case 'porra': {
+      mesh(new THREE.CylinderGeometry(0.017, 0.019, 0.16, 12), M('#1d1f22', { roughness: 0.9 }), 0, -0.03, 0, g);
+      mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.26, 10), M('#5d636a', { roughness: 0.35, metalness: 0.7 }), 0, 0.17, 0, g);
+      mesh(new THREE.SphereGeometry(0.015, 10, 8), M('#6b7178', { roughness: 0.3, metalness: 0.8 }), 0, 0.3, 0, g);
+      g.rotation.x = -0.5;
+      break;
+    }
+    case 'pistola': {
+      const metal = M('#2b2e33', { roughness: 0.35, metalness: 0.6 });
+      mesh(bx(0.03, 0.035, 0.17, 0.006), metal, 0, 0.02, -0.04, g);
+      const grip = mesh(bx(0.028, 0.09, 0.04, 0.008), M('#3a2a1e', { roughness: 0.8 }), 0, -0.03, 0.03, g);
+      grip.rotation.x = -0.25;
+      break;
+    }
     case 'sobre_vacio': {
       // sobre de papel vacío, abierto por arriba
       const pk = mesh(bx(0.09, 0.12, 0.012, 0.004), M('#cbbd9f', { roughness: 0.9 }), 0, 0, 0, g);

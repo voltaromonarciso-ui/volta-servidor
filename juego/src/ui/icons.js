@@ -206,6 +206,19 @@ function seedPacket(empty) {
 const DRAW = {
   cash: () => banknote(33, 40, 44, 22, -8) + banknote(31, 33, 44, 22, 4) + banknote(32, 27, 44, 22, -3) +
     `<rect x="27" y="16" width="9" height="22" rx="1.5" fill="#f4d35e" stroke="${OL}" stroke-width="1.4" transform="rotate(-3 32 27)"/>`,
+  // spray de pimienta: bote rojo con difusor negro y etiqueta
+  spray: () => shadow(32, 58, 12) + `<g transform="rotate(-8 32 34)"><rect x="23" y="20" width="18" height="36" rx="5" fill="#c62828" stroke="${OL}" stroke-width="${W}"/>` +
+    `<rect x="23.8" y="32" width="16.4" height="12" fill="#ffd54f"/><path d="M27 38h10" stroke="#c62828" stroke-width="2.4" stroke-linecap="round"/>` +
+    `<rect x="26" y="11" width="12" height="10" rx="2" fill="#222" stroke="${OL}" stroke-width="${W}"/><rect x="36" y="13" width="6" height="3.5" rx="1" fill="#222"/>` +
+    `<path d="M45 12l6 -3M45 15h7M45 18l6 3" stroke="#ff8a65" stroke-width="1.6" stroke-linecap="round"/><rect x="26" y="22" width="3" height="30" rx="1.5" fill="#fff" opacity=".35"/></g>`,
+  // porra extensible: tubo telescópico negro con mango de goma
+  porra: () => shadow(32, 56, 20) + `<g transform="rotate(-40 32 32)"><rect x="29.5" y="4" width="5" height="22" rx="2.5" fill="#4a4f55" stroke="${OL}" stroke-width="${W}"/>` +
+    `<rect x="28.8" y="24" width="6.4" height="14" rx="2" fill="#5d636a" stroke="${OL}" stroke-width="${W}"/><rect x="27.5" y="37" width="9" height="20" rx="3.5" fill="#1d1f22" stroke="${OL}" stroke-width="${W}"/>` +
+    `<path d="M28.5 42h7M28.5 46h7M28.5 50h7" stroke="#3a3d42" stroke-width="1.4"/><circle cx="32" cy="4.5" r="3.2" fill="#6b7178" stroke="${OL}" stroke-width="1.2"/></g>`,
+  // pistola de perfil
+  pistola: () => shadow(32, 54, 22) + `<g transform="rotate(-6 32 32)"><path d="M10 20h40a3 3 0 0 1 3 3v6a2 2 0 0 1 -2 2H31l-2 3H24l-1 -3H10z" fill="#2b2e33" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
+    `<path d="M23 31l-5 18a2 2 0 0 0 2 2.5h7a2 2 0 0 0 2 -1.6l3 -10" fill="#3a2a1e" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
+    `<path d="M29 31q0 6 5 6h3" fill="none" stroke="${OL}" stroke-width="1.6"/><path d="M14 23.5h34" stroke="#5b6168" stroke-width="1.4"/><path d="M21 38l5 1.5M20 42l5 1.5M19 46l5 1.5" stroke="#5a4636" stroke-width="1.2"/></g>`,
   // tarjeta bancaria azul (dinero limpio / banco)
   card: () => `<defs><linearGradient id="cardg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fc3ff"/><stop offset="1" stop-color="#1769d6"/></linearGradient></defs>` +
     `<g transform="rotate(-8 32 34)"><rect x="8" y="17" width="48" height="32" rx="5" fill="url(#cardg)" stroke="${OL}" stroke-width="${W}"/>` +

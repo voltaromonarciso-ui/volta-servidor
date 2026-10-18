@@ -9,10 +9,12 @@ import { sfx } from '../core/audio.js';
 import { guardGhostClick, resetTouch } from '../core/input.js';
 import { product, prodValue, completeDeal, spend, canSpend, toSafe, fromSafe, PAY_ACCOUNT, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches, inCurfew, DELIVERY, deliveryBonus } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
+import { GANG, resolveRobbery, robberyDemand } from '../systems/gangs.js';
 import { VEHICLES, PARKING, RECOVER_PRICE, buyVehicle, recoverVehicle, ownsVehicle } from '../systems/riding.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
+import { CASINO, casinoOpen, play as casinoPlay, REEL, rouletteColor } from '../systems/casino.js';
 
 // Envases: qué producto suelto (src) se mete en qué envase, en qué máquina.
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -191,6 +193,71 @@ const VEH_SVG = {
   bike: '<svg viewBox="0 0 64 40" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="27" r="10" stroke="#222" stroke-width="3.2"/><circle cx="50" cy="27" r="10" stroke="#222" stroke-width="3.2"/><path d="M14 27l10-14h16l10 14M24 13l8 14h-18M32 27l8-14M40 13l-2-6h-5M22 10h7" stroke="#c0392b" stroke-width="3"/><path d="M38 7h6" stroke="#222" stroke-width="3"/></svg>',
   scooter: '<svg viewBox="0 0 64 40" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="5.5" stroke="#222" stroke-width="3"/><circle cx="52" cy="32" r="5.5" stroke="#222" stroke-width="3"/><path d="M12 29h32l4-23" stroke="#2e86de" stroke-width="3.6"/><path d="M42 6h12M48 6l4 26" stroke="#222" stroke-width="3"/><circle cx="47" cy="12" r="1.6" fill="#2ecc71" stroke="none"/></svg>',
 };
+// ------------------------------------------------------------------
+//  Casino Royal: tragaperras y ruleta (con el efectivo; las ganancias no se blanquean)
+// ------------------------------------------------------------------
+export function openCasino() {
+  if (!casinoOpen()) return messageDialog('Casino Royal', `Está cerrado. Horario: ${CASINO.open}:00 – ${CASINO.close}:00.`);
+  const p = openPanel({ title: 'Casino Royal', wide: true, cls: 'casino' });
+  let game = 'slots', bet = 10, pickR = 'rojo', busy = false, last = null;
+  const render = () => {
+    p.body.innerHTML = '';
+    p.foot.innerHTML = '';
+    const top = h('div', 'shop-top');
+    top.append(h('div', 'muted', 'Se juega con tu efectivo. Lo que ganes vuelve al efectivo: aquí no se blanquea nada.'), h('div', 'cash', money(G.state.money)));
+    p.body.appendChild(top);
+    const tabs = h('div', 'row cz-tabs');
+    for (const [id, label] of [['slots', '🎰 Tragaperras'], ['roulette', '🎡 Ruleta']]) {
+      const t = h('button', 'btn' + (game === id ? '' : ' ghost'), label);
+      t.onclick = () => { if (busy) return; game = id; last = null; sfx('click'); render(); };
+      tabs.appendChild(t);
+    }
+    p.body.appendChild(tabs);
+    if (game === 'slots') {
+      const r = last && last.game === 'slots' ? last.result : ['❔', '❔', '❔'];
+      p.body.appendChild(h('div', 'cz-reels', r.map((x) => `<span>${x}</span>`).join('')));
+      p.body.appendChild(h('div', 'small muted', '7️⃣7️⃣7️⃣ ×25 · tres iguales ×8 · dos 🍒 ×3 · una 🍒 recuperas la apuesta'));
+    } else {
+      const n = last && last.game === 'roulette' ? last.result : null;
+      p.body.appendChild(h('div', 'cz-wheel ' + (n === null ? '' : rouletteColor(n)), n === null ? '?' : String(n)));
+      const picks = h('div', 'row cz-picks');
+      for (const [id, label] of [['rojo', '🔴 Rojo ×2'], ['negro', '⚫ Negro ×2']]) {
+        const b = h('button', 'btn' + (pickR === id ? '' : ' ghost'), label);
+        b.onclick = () => { pickR = id; sfx('click'); render(); };
+        picks.appendChild(b);
+      }
+      const num = h('div', 'cz-num');
+      const isNum = !(pickR === 'rojo' || pickR === 'negro');
+      num.appendChild(h('span', 'small', 'o un número (×36):'));
+      num.appendChild(stepper(isNum ? Number(pickR) : 17, { min: 0, max: 36, step: () => 1, onChange: (v) => { pickR = String(v); render(); } }));
+      if (isNum) num.appendChild(h('b', '', `Apuestas al ${pickR}`));
+      p.body.append(picks, num);
+    }
+    const bets = h('div', 'row cz-bets');
+    for (const v of CASINO.bets) {
+      const b = h('button', 'btn sm' + (bet === v ? '' : ' ghost') + (v > G.state.money ? ' dim' : ''), money(v));
+      b.onclick = () => { bet = v; sfx('click'); render(); };
+      bets.appendChild(b);
+    }
+    p.body.appendChild(h('div', 'small muted', 'Apuesta:'));
+    p.body.appendChild(bets);
+    if (last) p.body.appendChild(h('div', 'cz-res ' + (last.win > 0 ? 'win' : 'lose'), last.win > 0 ? `¡Ganas ${money(last.win)}! (${last.net >= 0 ? '+' : ''}${money(last.net)})` : `Pierdes ${money(last.bet)}.`));
+    const go = h('button', 'btn', game === 'slots' ? `Tirar · ${money(bet)}` : `Girar · ${money(bet)}`);
+    go.classList.toggle('dim', bet > G.state.money);
+    go.onclick = () => {
+      if (busy) return; // un solo toque por jugada
+      const r = casinoPlay(game, bet, game === 'roulette' ? pickR : null);
+      if (!r.ok) return fail(r.msg);
+      busy = true;
+      go.classList.add('dim');
+      sfx('click');
+      setTimeout(() => { busy = false; last = { ...r, game, bet }; sfx(r.win > 0 ? 'cash' : 'error'); render(); }, 650);
+    };
+    p.foot.appendChild(go);
+  };
+  render();
+}
+
 export function openVehicleShop() {
   const hr = G.state.minute / 60;
   if (hr < 10 || hr >= 20) return messageDialog('Rueda Libre', 'Está cerrado. Horario: 10:00 – 20:00.');
@@ -679,6 +746,33 @@ export function friskDialog(cop) {
   const ok = h('button', 'btn', '🙌 Cooperar');
   ok.onclick = () => { cop.mode = 'return'; closePanel(true); cooperate(cop); };
   row.append(run, ok);
+  p.body.appendChild(row);
+}
+
+// Atraco de una banda: eliges qué hacer. Cerrar el panel equivale a pagar.
+export function robberyDialog() {
+  const want = robberyDemand();
+  let done = false;
+  const finish = (choice) => {
+    if (done) return;
+    const r = resolveRobbery(choice);
+    if (!r.ok) return fail(r.msg);
+    done = true;
+    closePanel(true);
+    sfx(r.lost ? 'error' : 'cash');
+    G.act.toast(r.msg, r.lost ? '💸' : '💪');
+  };
+  const p = openPanel({ title: `🐦‍⬛ ${GANG.name}`, cls: 'robbery', onClose: () => finish('pay') });
+  p.body.appendChild(h('div', 'txt', want
+    ? `«Quieto. Danos <b>${money(want)}</b> y aquí no ha pasado nada.»<div class="small muted">Llevas ${money(G.state.money)} en efectivo. El dinero limpio del banco no te lo pueden quitar.</div>`
+    : '«¿No llevas nada? Pues lárgate.»'));
+  const row = h('div', 'row end wrap');
+  const add = (label, choice, cls = 'btn ghost') => { const b = h('button', cls, label); b.onclick = () => finish(choice); row.appendChild(b); };
+  if (inv.count('pistola')) add('🔫 Enseñar la pistola', 'pistola', 'btn');
+  if (inv.count('spray')) add('🧯 Spray de pimienta', 'spray', 'btn');
+  if (inv.count('porra')) add('🦯 Sacar la porra (60 %)', 'porra');
+  add('🏃 Intentar escapar (45 %)', 'run', 'btn danger');
+  add(want ? `💵 Darles ${money(want)}` : 'Seguir mi camino', 'pay');
   p.body.appendChild(row);
 }
 

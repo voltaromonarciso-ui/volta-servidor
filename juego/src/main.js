@@ -29,6 +29,7 @@ import { spawnObject, placeObject, updateObjects, hideGhost, furnitureModel, pla
 import { updateInteract, runAction } from './systems/interact.js';
 import { updateTime, advanceTime, sleep, checkQuests } from './systems/time.js';
 import { spawnPolice, updatePolice, arrest } from './systems/police.js';
+import { updateGangs, clearGangs } from './systems/gangs.js';
 import { addXP, sendMsg, deadDropActions, unlockStartingCustomers } from './systems/economy.js';
 import { initHUD, updateHUD, toast, bigToast, notify, setWaypoint, clearWaypoint } from './ui/hud.js';
 import * as P from './ui/panels.js';
@@ -128,7 +129,7 @@ initPhone();
 // acciones globales que usan los distintos sistemas
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
-  openShop: P.openShop, openPacker: P.openPacker, startStation, openBarber, openClothes,
+  openShop: P.openShop, openCasino: P.openCasino, openRobbery: P.robberyDialog, openPacker: P.openPacker, startStation, openBarber, openClothes,
   openVehicleShop: P.openVehicleShop, forceDismount, pokeStaff, currentStyle: () => style(),
   // la apariencia ha cambiado: avatar y mangas en primera persona
   lookChanged: () => {
@@ -254,6 +255,7 @@ async function startGame(fresh, look) {
   G.act.lookChanged();
   spawnVehicles();
   clearWorkers();
+  clearGangs();
   validateStaff();
   document.getElementById('menu').classList.add('hide');
   // precompilar lo recién creado (vecinos, coches, objetos) antes de jugar
@@ -425,6 +427,7 @@ function frame() {
   updateDressing(dt);
   for (const n of G.npcs) n.update(dt, gdt);
   updatePolice(dt);
+  updateGangs(dt);
   for (const c of G.cars) c.update(dt);
   updateObjects(dt);
   G.world.update(dt);
