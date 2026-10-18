@@ -41,3 +41,19 @@ Si una referencia es ambigua o contradictoria, preguntar.
 ## Decisiones previas que siguen vigentes
 - Multijugador aplazado. Dinero limpio = saldo del banco (icono de tarjeta).
 - Prompt 2 del dinero (tapaderas, blanqueo, banco) requería aprobación: este encargo lo pide.
+
+## Complemento — Rooktown: red urbana, callejones, NPC y cambio de nombre (18-10-2026)
+- Nombre visible del juego: de «BLOQUE 9 / Block 9» a **Rooktown**. Solo textos visibles
+  (menú, carga, títulos, metadatos de la app). Conservar identificadores técnicos por
+  compatibilidad (clave de guardado `bloque9_save_v3`, id de paquete Capacitor, rutas…)
+  salvo que se compruebe su impacto. Documentar las referencias que se conserven.
+  Logotipo: pedir imagen antes de rediseñarlo.
+- El mapa (11-mapa.png) es la estructura general: añadir calles secundarias,
+  residenciales, accesos, pasajes, calles sin salida y callejones (Barrio Alto, Bungalós
+  y demás), sin cuadrícula idéntica y sin caminos que acaben contra paredes.
+- Callejones y rincones discretos con ambiente propio (según referencias).
+- Clientes que piden encuentro: puntos discretos válidos, repartidos por zona y tipo de
+  cliente, accesibles y con alternativa si el punto está ocupado o no es accesible. El
+  resto de NPC sigue su comportamiento normal.
+- Ampliar la navegación existente (world/nav.js), no crear otra. Verificar conectividad.
+- Pedir imágenes de zonas/callejones que falten antes del diseño visual definitivo.
