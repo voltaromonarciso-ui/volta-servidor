@@ -72,3 +72,10 @@ export const RANKS = [
   { name: 'Capo', xp: 3200 },
   { name: 'Leyenda de Puerto Lomas', xp: 5500 },
 ];
+
+// Envasado: de qué se hace cada forma y en qué mesa (lo usan el jugador y los empleados).
+export const FORMS = [
+  { id: 'bolsa', src: 'cogollo', pack: 'bolsita', per: 1, at: 'packer' },
+  { id: 'shards', src: 'cristal', pack: 'bolsa_ss', per: 1, at: 'packer' },
+  { id: 'tarro', src: 'cogollo', pack: 'tarro_v', per: 5, at: 'jarpacker' },
+];

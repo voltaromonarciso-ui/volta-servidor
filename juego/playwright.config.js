@@ -4,7 +4,7 @@
 // iPhone; no es Safari/WebKit real (WebKit no está instalado en este entorno).
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 5180;
+const PORT = Number(process.env.B9_PORT) || 5180; // B9_PORT permite dos ejecuciones a la vez
 const gl = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
 const landscape = (d) => ({ ...d, viewport: { width: d.viewport.height, height: d.viewport.width } });
 

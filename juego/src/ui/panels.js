@@ -1,5 +1,6 @@
 import { G, money, clamp } from '../game.js';
-import { ITEMS, SHOPS, STRAINS, RANKS } from '../data/items.js';
+import { ITEMS, SHOPS, STRAINS, RANKS, FORMS } from '../data/items.js';
+export { FORMS };
 import { EFFECTS } from '../data/effects.js';
 import { ii } from './icons.js';
 import { wardrobeSection } from './dressing.js';
@@ -14,11 +15,6 @@ import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
 
 // Envases: qué producto suelto (src) se mete en qué envase, en qué máquina.
-export const FORMS = [
-  { id: 'bolsa', src: 'cogollo', pack: 'bolsita', per: 1, at: 'packer' },
-  { id: 'shards', src: 'cristal', pack: 'bolsa_ss', per: 1, at: 'packer' },
-  { id: 'tarro', src: 'cogollo', pack: 'tarro_v', per: 5, at: 'jarpacker' },
-];
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 let current = null;
 
@@ -53,6 +49,7 @@ export function closePanel(silent) {
   G.uiOpen = false;
   if (!silent) sfx('close');
   c.onClose && c.onClose();
+  G.act.pokeStaff?.(); // por si han cambiado las estanterías: los empleados vuelven a mirar
 }
 export const panelOpen = () => !!current;
 

@@ -2,6 +2,7 @@ import { G } from '../game.js';
 import { save, absNow } from '../core/state.js';
 import { onHour, onMinute, addMoney, sendMsg } from './economy.js';
 import { simulateObjects } from './objects.js';
+import { tickStaff } from './staff.js';
 import { resetPolice, wanted } from './police.js';
 import { QUESTS } from '../data/quests.js';
 
@@ -28,6 +29,7 @@ export function advanceTime(min) {
     if (s.minute >= 1440) { s.minute -= 1440; newDay(); }
     if (Math.floor(before / 60) !== Math.floor(s.minute / 60)) onHour(Math.floor(s.minute / 60));
     onMinute();
+    tickStaff(); // empleados y nómina avanzan con el salto (dormir, comisaría)
   }
 }
 
@@ -48,6 +50,7 @@ export function updateTime(dt) {
   if (hour !== prevHour) onHour(hour);
   const m = Math.floor(s.minute);
   if (m !== lastMinute) { lastMinute = m; onMinute(); checkQuests(); }
+  tickStaff();
   // a las 4:00 caes rendido
   if (hour === 4 && !G.sleeping) passOut();
   saveT += dt;

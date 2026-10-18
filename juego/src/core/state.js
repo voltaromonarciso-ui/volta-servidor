@@ -36,6 +36,7 @@ export function newState() {
     wardrobe: { owned: [], worn: {} },                 // ropa comprada y puesta
     policeMemory: null,                                // aspecto que recuerda la policía
     vehicles: [],                                      // bici, patinete… { uid, type, x, z, yaw, battery }
+    employees: [],                                     // personal contratado (systems/staff.js)
     settings: { sens: 1, shadows: true, res: 1, sound: true, quality: 'alta' },
   };
 }
@@ -98,6 +99,7 @@ function migrate(s) {
   const mixers = (s.objects || []).filter((o) => o.type === 'mixer').length;
   if (mixers) { s.objects = s.objects.filter((o) => o.type !== 'mixer'); s.money += mixers * 400; }
   if (!Array.isArray(s.vehicles)) s.vehicles = [];
+  if (!Array.isArray(s.employees)) s.employees = [];
   for (const o of s.orders || []) o.items = (o.items || []).filter((it) => ITEMS[it.id]);
   return s;
 }

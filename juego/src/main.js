@@ -2,6 +2,8 @@ import { startStation, updateStation, exitStation, stationAuto } from './systems
 import { makeAvatar, sleeveFor } from './entities/avatar.js';
 import { style, syncInventory } from './systems/appearance.js';
 import { openBarber, openClothes, updateDressing, closeDressing, dressingOpen } from './ui/dressing.js';
+import { CANDIDATES } from './data/staff.js';
+import { validateStaff, updateWorkers, setWorkerFactory, clearWorkers, pokeStaff } from './systems/staff.js';
 import { spawnVehicles, updateRiding, dismount, forceDismount, brake, riding } from './systems/riding.js';
 import * as THREE from 'three';
 import './style.css';
@@ -127,7 +129,7 @@ initPhone();
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
   openShop: P.openShop, openPacker: P.openPacker, startStation, openBarber, openClothes,
-  openVehicleShop: P.openVehicleShop, forceDismount, currentStyle: () => style(),
+  openVehicleShop: P.openVehicleShop, forceDismount, pokeStaff, currentStyle: () => style(),
   // la apariencia ha cambiado: avatar y mangas en primera persona
   lookChanged: () => {
     const look = G.state.look, st = style();
@@ -250,6 +252,8 @@ async function startGame(fresh, look) {
   }
   G.act.lookChanged();
   spawnVehicles();
+  clearWorkers();
+  validateStaff();
   document.getElementById('menu').classList.add('hide');
   // precompilar lo recién creado (vecinos, coches, objetos) antes de jugar
   const ld = document.getElementById('loading');
@@ -347,6 +351,12 @@ async function boot() {
   try { await loadModels((p) => setLoad(0.35 + p * 0.35)); } catch (e) { console.warn('Modelos no disponibles', e); }
   spawnLeo();
   spawnClerks();
+  // empleados visibles: cada candidato con su propio modelo
+  setWorkerFactory((cid) => {
+    const pool = [...modelNames(true), ...modelNames(false)].filter((n) => n !== LEO_MODEL);
+    const i = CANDIDATES.findIndex((c) => c.id === cid);
+    return pool.length && i >= 0 ? makeRealHuman(pool[(i * 7 + 11) % pool.length]) : null;
+  });
   setLoad(0.75, 'Preparando gráficos…');
   await nextFrame();
   G.state.minute = 18.3 * 60;
@@ -406,6 +416,7 @@ function frame() {
   const gdt = updateTime(dt);
   G.player.update(dt, G.uiOpen || !!riding());
   updateRiding(dt);
+  updateWorkers(dt);
   updateStation(dt);
   updateDressing(dt);
   for (const n of G.npcs) n.update(dt, gdt);

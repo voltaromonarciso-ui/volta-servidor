@@ -14,6 +14,7 @@ import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './p
 import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
+import { employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF } from '../systems/staff.js';
 
 const APPS = [
   { id: 'msgs', name: 'Mensajes', icon: '💬', color: '#27ae60' },
@@ -21,6 +22,7 @@ const APPS = [
   { id: 'products', name: 'Productos', icon: '🏷️', color: '#8e44ad' },
   { id: 'map', name: 'Mapa', icon: '🗺️', color: '#16a085' },
   { id: 'supplier', name: 'Proveedor', icon: '🌱', color: '#2e7d32' },
+  { id: 'staff', name: 'Personal', icon: '👷', color: '#8e6e53' },
   { id: 'quests', name: 'Objetivos', icon: '📋', color: '#e67e22' },
   { id: 'stats', name: 'Perfil', icon: '📊', color: '#34495e' },
   { id: 'settings', name: 'Ajustes', icon: '⚙️', color: '#7f8c8d' },
@@ -93,7 +95,7 @@ function render() {
   screen.scrollTop = 0;
   const app = APPS.find((a) => a.id === view.app);
   title.textContent = view.app === 'chat' ? CONTACTS[view.arg].name : app ? app.name : '';
-  ({ msgs, chat, clients, products, map, supplier, quests, stats, settings }[view.app] || home)();
+  ({ msgs, chat, clients, products, map, supplier, staff, quests, stats, settings }[view.app] || home)();
 }
 
 // ------------------------------------------------------------------
@@ -346,6 +348,102 @@ function supplier() {
   const pending = G.state.orders.length;
   if (pending) box.appendChild(h('div', 'muted small center', `📦 Tienes ${pending} pedido(s) pendiente(s) de recoger.`));
   screen.appendChild(box);
+}
+
+// ------------------------------------------------------------------
+//  Personal: contratar, asignar, pagar y despedir
+// ------------------------------------------------------------------
+const STATUS_COLOR = { trabajando: '#2ecc71', descanso: '#95a5a6', material: '#f39c12', espacio: '#f39c12', sin_tarea: '#95a5a6', sin_pago: '#e74c3c', sin_propiedad: '#e74c3c' };
+const propName = (id) => G.world.props[id]?.name || id;
+const discretion = (l) => (l >= 0.65 ? 'alta' : l >= 0.45 ? 'media' : 'baja');
+let staffConfirm = null;
+function staffAct(r, okSfx = 'click') {
+  if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
+  sfx(okSfx);
+  render();
+}
+function staff() {
+  const s = G.state;
+  const list = h('div', 'ph-list staff');
+  const cost = dailyCost(), debt = totalDebt(), nx = nextPayday();
+  const short = cost + debt > s.money;
+  list.appendChild(h('div', 'ph-card', `<div class="rowsp"><b>Nómina diaria</b><span class="money">${money(cost)}</span></div>
+    <div class="rowsp"><span>Próximo pago</span><span>${dayName(nx.day)} ${String(nx.hour).padStart(2, '0')}:00</span></div>
+    ${debt ? `<div class="rowsp"><span>Deudas con tu personal</span><b class="neg">${money(debt)}</b></div>` : ''}
+    ${employees().length && short ? `<div class="warn">⚠️ Con ${money(s.money)} no te llega para la próxima nómina (${money(cost + debt)}). Quien no cobre deja de trabajar; a los ${STAFF.quitAfterDays} días se va.</div>` : ''}
+    <div class="small muted">Trabajan de ${STAFF.workFrom}:00 a ${STAFF.workTo}:00 con lo que haya en las estanterías y armarios de su propiedad, y dejan ahí lo que hacen.</div>`));
+  // contratados
+  for (const e of employees()) {
+    const c = candidate(e.cid), role = ROLES[e.role];
+    const card = h('div', 'ph-card emp');
+    card.dataset.cid = e.cid;
+    card.innerHTML = `<div class="rowsp"><b>${role.icon} ${c.name}</b><span class="chip" style="--c:${STATUS_COLOR[e.status] || '#95a5a6'}">${statusText(e)}</span></div>
+      <div class="small muted">${role.name} · ${money(c.wage)}/día · ${propName(e.prop)} · Hecho: ${e.made || 0} uds.</div>
+      ${e.reason ? `<div class="small">${e.reason}</div>` : ''}`;
+    const props = ownedProps();
+    if (props.length > 1) {
+      const row = h('div', 'chips big');
+      for (const id of props) {
+        const b = h('button', 'chip' + (id === e.prop ? ' on' : ''), propName(id));
+        b.onclick = () => { if (id !== e.prop) staffAct(assign(e.uid, id)); };
+        row.appendChild(b);
+      }
+      card.appendChild(row);
+    }
+    if (e.role === 'envasado') {
+      const row = h('div', 'chips big');
+      for (const [m, label] of [['auto', 'Lo que haya'], ['bolsa', 'Sobres'], ['tarro', 'Tarros'], ['shards', 'Sweet Shards']]) {
+        const b = h('button', 'chip' + (e.mode === m ? ' on' : ''), label);
+        b.onclick = () => { setMode(e.uid, m); sfx('click'); render(); };
+        row.appendChild(b);
+      }
+      card.appendChild(row);
+    }
+    const row = h('div', 'rowsp');
+    if (e.debt) { const pay = h('button', 'btn sm', `Pagar deuda · ${money(e.debt)}`); pay.onclick = () => staffAct(payDebt(e.uid), 'cash'); row.appendChild(pay); }
+    if (staffConfirm === e.uid) {
+      const no = h('button', 'btn sm ghost', 'No'), yes = h('button', 'btn sm danger', 'Sí, despedir');
+      no.onclick = () => { staffConfirm = null; render(); };
+      yes.onclick = () => { staffConfirm = null; staffAct(fire(e.uid)); };
+      row.append(h('span', 'small', e.debt ? `Se irá sin cobrar ${money(e.debt)} y podría hablar.` : '¿Despedir?'), no, yes);
+    } else {
+      const f = h('button', 'btn sm ghost', 'Despedir');
+      f.onclick = () => { staffConfirm = e.uid; render(); };
+      row.appendChild(f);
+    }
+    card.appendChild(row);
+    list.appendChild(card);
+  }
+  // candidatos
+  const free = CANDIDATES.filter((c) => !hired(c.id));
+  if (free.length) list.appendChild(h('div', 'label', 'Buscan trabajo'));
+  const props = ownedProps();
+  for (const c of free) {
+    const role = ROLES[c.role];
+    const locked = (c.rank || 0) > s.rank;
+    const card = h('div', 'ph-card cand' + (locked ? ' locked' : ''));
+    card.dataset.cid = c.id;
+    card.innerHTML = `<div class="rowsp"><b>${role.icon} ${c.name}</b><span class="small">${role.name}</span></div>
+      <div class="small muted">${c.bio}</div><div class="small">${role.does}</div>
+      <div class="rowsp small"><span>Contratar: <b class="money">${money(c.hire)}</b></span><span>Sueldo: <b class="money">${money(c.wage)}</b>/día</span><span>Discreción: ${discretion(c.loyalty)}</span></div>`;
+    if (locked) card.appendChild(h('div', 'small', `🔒 Requiere rango ${RANKS[c.rank].name}`));
+    else {
+      const row = h('div', 'rowsp');
+      let target = props.includes(s.home) ? s.home : props[0];
+      if (props.length > 1) {
+        const ch = h('div', 'chips big');
+        const draw = () => { ch.innerHTML = ''; for (const id of props) { const b = h('button', 'chip' + (id === target ? ' on' : ''), propName(id)); b.onclick = () => { target = id; draw(); }; ch.appendChild(b); } };
+        draw();
+        card.appendChild(ch);
+      }
+      const b = h('button', 'btn sm' + (s.money < c.hire ? ' dim' : ''), `Contratar · ${money(c.hire)}`);
+      b.onclick = () => staffAct(hire(c.id, target), 'cash');
+      row.append(h('span', 'small muted', props.length > 1 ? '' : `Para: ${propName(target)}`), b);
+      card.appendChild(row);
+    }
+    list.appendChild(card);
+  }
+  screen.appendChild(list);
 }
 
 function quests() {

@@ -20,7 +20,7 @@ const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.
 const SLOTS = { shelf: 12, locker: 24 };
 // Hornillo: receta y tiempo de cada tanda de cristales
 export const RECIPE = { azucar: 2, colorante: 1, catalizador: 1 };
-const COOK_MIN = 120, COOK_OUT = 6;
+export const COOK_MIN = 120, COOK_OUT = 6;
 const GROW_MIN = 14 * 60;     // minutos de juego para crecer del todo
 const DRAIN_MIN = 10 * 60;    // minutos que dura el agua
 
@@ -407,17 +407,28 @@ function water(o) {
   G.act.flag('watered');
 }
 
-function harvest(o) {
+// Cosecha (la usan el jugador y los empleados de cultivo): cuántos cogollos da y vaciar la maceta.
+export function harvestYield(o) {
   const d = o.entry.data;
   const s = STRAINS[d.strain];
   let n = randi(s.yield[0], s.yield[1]);
   if (d.soil === 2) n = Math.round(n * 1.4);
   if (d.fert) n += 3;
+  return n;
+}
+export function emptyPot(o) {
+  Object.assign(o.entry.data, { soil: 0, strain: null, growth: 0, water: 0, fert: 0 });
+  refreshPot(o);
+}
+
+function harvest(o) {
+  const d = o.entry.data;
+  const s = STRAINS[d.strain];
+  const n = harvestYield(o);
   const pid = ensureBaseProduct(d.strain);
   if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} cogollos.`);
   inv.add('cogollo', n, pid);
-  Object.assign(d, { soil: 0, strain: null, growth: 0, water: 0, fert: 0 });
-  refreshPot(o);
+  emptyPot(o);
   G.player.use();
   sfx('harvest');
   G.act.toast(`Has cosechado ${n} cogollos de ${s.name}. Envásalos en la mesa de empaquetado.`, '🌿');
@@ -570,8 +581,8 @@ export function updatePlacement() {
   tintGhost(ok);
   const name = ITEMS[ITEM_OF[type]].name.toLowerCase();
   const place = m
-    ? { label: ok ? 'Dejar aquí' : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); placement.moving = null; settle(m.o, x, z, r); setGhost(null); sfx('pop'); G.player.use(); save(); } }
-    : { label: ok ? `Colocar ${name}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r); sfx('pop'); G.player.use(); save(); } };
+    ? { label: ok ? 'Dejar aquí' : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); placement.moving = null; settle(m.o, x, z, r); setGhost(null); sfx('pop'); G.player.use(); G.act.pokeStaff?.(); save(); } }
+    : { label: ok ? `Colocar ${name}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r); sfx('pop'); G.player.use(); G.act.pokeStaff?.(); save(); } };
   return { actions: [place, rotate] };
 }
 

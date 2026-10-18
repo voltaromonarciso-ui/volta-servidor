@@ -541,3 +541,12 @@ body.touch.placing #btn-alt { display: none !important; }
   #btn-cancel { right: calc(108px + var(--safe-r)); bottom: calc(92px + var(--safe-b)); }
   #btn-store { right: calc(172px + var(--safe-r)); bottom: calc(92px + var(--safe-b)); }
 }
+
+/* --- App Personal (empleados) --- */
+.staff button.chip { --c: #cfd6dd; cursor: pointer; min-height: 34px; padding: 4px 12px; font-size: 12px; }
+.staff button.chip.on { --c: #7ee26a; }
+body.touch .staff button.chip { min-height: 44px; min-width: 44px; }
+.staff .neg { color: #ff7b72; }
+.staff .label { font-weight: 800; margin: 6px 2px 0; color: var(--mut); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+.staff .rowsp { flex-wrap: wrap; }
+body.touch .staff .btn.sm { min-height: 44px; }
