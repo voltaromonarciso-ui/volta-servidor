@@ -755,27 +755,56 @@ export function cilindro() {
   return g;
 }
 
-// Túnel peatonal de obra: arco de chapa ondulada sobre pilares, laterales de malla
-const corrugTex = () => canvasTex('chapa', 256, 64, (c, w, h) => {
-  const gr = c.createLinearGradient(0, 0, 32, 0); gr.addColorStop(0, '#9ea6ae'); gr.addColorStop(0.5, '#cfd5db'); gr.addColorStop(1, '#9ea6ae');
-  for (let x = 0; x < w; x += 32) { c.fillStyle = gr; c.save(); c.translate(x, 0); c.fillRect(0, 0, 32, h); c.restore(); }
+// Túnel peatonal de obra: carcasa de chapa por paneles (paredes y techo curvo de una
+// pieza), marco de tubo claro en las bocas y en el centro, suelo con marcas amarillas
+const panelTex = () => canvasTex('panelTunel', 256, 256, (c, w, h) => {
+  c.fillStyle = '#a8b5c6'; c.fillRect(0, 0, w, h);
+  for (let k = 0; k < 40; k++) { c.fillStyle = `rgba(255,255,255,${0.02 + (k % 3) * 0.015})`; c.fillRect(0, k * 6.4, w, 3); } // ondulado fino
+  c.fillStyle = '#7f8ea2'; c.fillRect(0, 0, w, 4); c.fillRect(0, 0, 4, h);                    // juntas entre paneles
+  c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(4, 4, w, 2); c.fillRect(4, 4, 2, h);
 });
+function tunnelProfile(W, H, R) {
+  // recorrido del perfil: pared izquierda (de abajo arriba), techo con esquinas redondeadas, pared derecha
+  const pts = [];
+  pts.push([-W / 2, 0], [-W / 2, H - R]);
+  for (let k = 1; k <= 8; k++) { const a = Math.PI - (k / 8) * (Math.PI / 2); pts.push([-W / 2 + R + Math.cos(a) * R, H - R + Math.sin(a) * R]); }
+  for (let k = 1; k <= 8; k++) { const a = Math.PI / 2 - (k / 8) * (Math.PI / 2); pts.push([W / 2 - R + Math.cos(a) * R, H - R + Math.sin(a) * R]); }
+  pts.push([W / 2, 0]);
+  return pts;
+}
 export function tunelPeatonal(len = 3) {
-  const g = new THREE.Group(), m = mat('#7d858d', { r: 0.4, m: 0.6 });
-  const t = corrugTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(len * 3, 1);
-  const W = 2.2, H = 2.3, R = 0.5;
-  // techo: perfil con esquinas redondeadas barrido a lo largo
-  const sh = new THREE.Shape();
-  sh.moveTo(-W / 2, H - R); sh.quadraticCurveTo(-W / 2, H, -W / 2 + R, H); sh.lineTo(W / 2 - R, H); sh.quadraticCurveTo(W / 2, H, W / 2, H - R);
-  sh.lineTo(W / 2, H - R - 0.04); sh.quadraticCurveTo(W / 2 - 0.04, H - 0.04, W / 2 - R, H - 0.04); sh.lineTo(-W / 2 + R, H - 0.04); sh.quadraticCurveTo(-W / 2 + 0.04, H - 0.04, -W / 2, H - R - 0.04);
-  const roof = cache('tunelTecho' + len, () => { const e = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: false, curveSegments: 10 }); e.translate(0, 0, -len / 2); return e; });
-  add(g, roof, mat('#ffffff', { map: t, r: 0.4, m: 0.5, side: THREE.DoubleSide }));
-  for (const x of [-W / 2, W / 2]) for (const z of [-len / 2, 0, len / 2]) add(g, rbox(0.08, H - R, 0.08, 0.01), m, x, (H - R) / 2, z);
-  for (const x of [-W / 2, W / 2]) add(g, rbox(0.05, 0.08, len, 0.01), m, x, H - R, 0);
-  const mesh = cache('tunelMalla', () => { const t2 = meshTex().clone(); t2.wrapS = t2.wrapT = THREE.RepeatWrapping; t2.repeat.set(len * 3, 4); t2.needsUpdate = true; return t2; });
-  for (const x of [-W / 2, W / 2]) add(g, rbox(0.01, H - R - 0.15, len, 0.003), mat('#ffffff', { map: mesh, alphaTest: 0.4, side: THREE.DoubleSide }), x, (H - R) / 2 + 0.05, 0);
-  add(g, rbox(W, 0.04, len, 0.01), mat('#8b8f95', { r: 0.9 }), 0, 0.02, 0);
-  for (const z of [-len / 3, len / 3]) add(g, rbox(0.5, 0.01, 0.08, 0.003), mat('#f2c21a'), 0, 0.045, z, 0, 0.6);
+  const g = new THREE.Group(), W = 2.3, H = 2.35, R = 0.55;
+  const prof = tunnelProfile(W, H, R);
+  const shell = cache('tunelCasco' + len, () => {
+    const pos = [], uv = [], idx = [], NZ = 1;
+    let acc = 0; const arc = [0];
+    for (let i = 1; i < prof.length; i++) { acc += Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]); arc.push(acc); }
+    for (let i = 0; i < prof.length; i++) for (let j = 0; j <= NZ; j++) {
+      pos.push(prof[i][0], prof[i][1], -len / 2 + (j / NZ) * len); uv.push(arc[i] / 1.0, (j / NZ) * len / 1.0);
+    }
+    for (let i = 0; i < prof.length - 1; i++) { const a = i * (NZ + 1), b2 = (i + 1) * (NZ + 1); idx.push(a, b2, a + 1, b2, b2 + 1, a + 1); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx); geo.computeVertexNormals();
+    return geo;
+  });
+  const t = panelTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  add(g, shell, mat('#ffffff', { map: t, r: 0.5, m: 0.35, side: THREE.DoubleSide }));
+  // marco de tubo claro: arco en cada boca y en el centro, largueros abajo y en los hombros
+  const fm = mat('#d9dee4', { r: 0.35, m: 0.5 });
+  const arcPts = prof.map(([x, y]) => [x, y, 0]);
+  for (const z of [-len / 2, 0, len / 2]) add(g, tube('tunelArco', arcPts, 0.035, 40), fm, 0, 0, z);
+  for (const x of [-W / 2, W / 2]) {
+    add(g, cyl(0.03, 0.03, len, 10), fm, x, 0.05, 0, Math.PI / 2);
+    add(g, cyl(0.025, 0.025, len, 10), fm, x * (1 - 0.0), H - R, 0, Math.PI / 2);
+    for (const z of [-len / 2, len / 2]) add(g, rbox(0.18, 0.04, 0.3, 0.01), mat('#c9a227', { r: 0.6 }), x, 0.02, z);
+  }
+  // suelo de chapa con rampas en las bocas y señalización amarilla
+  add(g, rbox(W - 0.06, 0.05, len, 0.01), mat('#4a5463', { r: 0.8 }), 0, 0.025, 0);
+  for (const z of [-len / 2 - 0.15, len / 2 + 0.15]) add(g, rbox(W - 0.06, 0.03, 0.3, 0.01), mat('#4a5463', { r: 0.8 }), 0, 0.02, z, z > 0 ? 0.15 : -0.15);
+  const ym = mat('#f2c21a', { r: 0.5 });
+  for (const z of [-len / 3, len / 3]) { add(g, rbox(0.45, 0.01, 0.06, 0.003), ym, -0.2, 0.055, z, 0, 0.5); add(g, rbox(0.45, 0.01, 0.06, 0.003), ym, 0.2, 0.055, z, 0, -0.5); }
   return g;
 }
 
@@ -842,23 +871,55 @@ export function buzon() {
   return g;
 }
 
-// Cabina de vigilancia: caseta gris con techo azul, ventanales, puerta y ruedas
+// Cabina de vigilancia: caseta de paneles gris claro con zócalo oscuro y ruedas; frente con
+// ventanal y puerta con ventanita, ventanal lateral, techo azul volado con canto grueso
+function inset(g, w, h, x, y, z, ry, m, edge) {
+  // panel con marco en relieve
+  const f = new THREE.Group(); f.position.set(x, y, z); f.rotation.y = ry; g.add(f);
+  add(f, rbox(w, h, 0.02, 0.008), m, 0, 0, 0);
+  for (const sy of [-1, 1]) add(f, rbox(w, 0.035, 0.035, 0.01), edge, 0, sy * (h / 2 - 0.017), 0.01);
+  for (const sx of [-1, 1]) add(f, rbox(0.035, h, 0.035, 0.01), edge, sx * (w / 2 - 0.017), 0, 0.01);
+  return f;
+}
 export function cabinaVigilancia() {
-  const g = new THREE.Group(), body = mat('#b4bac1', { r: 0.45, m: 0.35 }), blue = mat('#2c5b9e', { r: 0.45, m: 0.3 }), glass = mat('#9fd0ea', { t: 0.5, r: 0.05 });
-  add(g, rbox(1.5, 0.12, 1.3, 0.03), mat('#6f767e', { r: 0.6, m: 0.4 }), 0, 0.2, 0);
-  for (const x of [-0.6, 0.6]) for (const z of [-0.5, 0.5]) { add(g, cyl(0.08, 0.08, 0.06, 14), mat('#1d1f22'), x, 0.08, z, 0, 0, Math.PI / 2); add(g, rbox(0.06, 0.14, 0.06, 0.01), mat('#6f767e'), x, 0.16, z); }
-  add(g, rbox(1.4, 0.8, 1.2, 0.03), body, 0, 0.66, 0);
-  // parte alta acristalada con montantes
-  add(g, rbox(1.36, 0.85, 1.16, 0.01), glass, 0, 1.48, 0);
-  for (const x of [-0.69, 0, 0.69]) for (const z of [-0.59, 0.59]) add(g, rbox(0.05, 0.85, 0.05, 0.01), body, x, 1.48, z);
-  for (const z of [-0.2, 0.2]) add(g, rbox(0.05, 0.85, 0.05, 0.01), body, 0.69, 1.48, z);
-  add(g, rbox(1.42, 0.06, 1.22, 0.02), body, 0, 1.08, 0);
-  // puerta en el lateral derecho
-  add(g, rbox(0.02, 1.7, 0.5, 0.01), mat('#a3aab2', { r: 0.45, m: 0.35 }), 0.71, 1.05, 0.2);
-  add(g, rbox(0.03, 0.03, 0.1, 0.01), mat('#2b2e33'), 0.73, 1.0, 0.02);
-  add(g, rbox(1.62, 0.12, 1.42, 0.04), blue, 0, 1.97, 0);
-  add(g, rbox(1.4, 0.06, 1.2, 0.03), blue, 0, 2.06, 0);
-  add(g, rbox(0.9, 0.04, 0.4, 0.01), mat('#59626c', { r: 0.4, m: 0.4 }), 0, 1.1, -0.35);
+  const g = new THREE.Group();
+  const body = mat('#c3c8ce', { r: 0.45, m: 0.3 }), edge = mat('#d6dadf', { r: 0.4, m: 0.3 }), post = mat('#aab0b7', { r: 0.4, m: 0.4 });
+  const blue = mat('#2f5c96', { r: 0.4, m: 0.3 }), blueD = mat('#244a7a', { r: 0.45, m: 0.3 }), glass = mat('#7fb6d8', { t: 0.55, r: 0.05, m: 0.1 });
+  const W = 1.3, D = 1.1;
+  // zócalo y ruedas giratorias
+  add(g, rbox(W + 0.06, 0.14, D + 0.06, 0.03), mat('#3c4550', { r: 0.6, m: 0.4 }), 0, 0.2, 0);
+  for (const x of [-W / 2 + 0.1, W / 2 - 0.1]) for (const z of [-D / 2 + 0.1, D / 2 - 0.1]) {
+    add(g, rbox(0.08, 0.06, 0.08, 0.01), mat('#6f767e', { m: 0.6, r: 0.4 }), x, 0.12, z);
+    add(g, cyl(0.065, 0.065, 0.05, 16), mat('#1d1f22', { r: 0.7 }), x, 0.065, z + 0.02, 0, 0, Math.PI / 2);
+  }
+  // esquinas y cuerpo
+  for (const x of [-W / 2, W / 2]) for (const z of [-D / 2, D / 2]) add(g, rbox(0.07, 1.8, 0.07, 0.015), post, x, 1.17, z);
+  add(g, rbox(W - 0.04, 0.8, D - 0.04, 0.02), body, 0, 0.67, 0);
+  add(g, rbox(W - 0.04, 1.0, D - 0.04, 0.02), glass, 0, 1.57, 0);
+  add(g, rbox(W + 0.02, 0.06, D + 0.02, 0.015), post, 0, 1.08, 0);                       // repisa entre panel y cristal
+  // frente: ventanal a la izquierda, puerta a la derecha
+  inset(g, 0.68, 0.72, -0.28, 0.66, D / 2, 0, body, edge);
+  add(g, rbox(0.05, 1.8, 0.05, 0.01), post, 0.08, 1.17, D / 2 + 0.005);
+  const door = inset(g, 0.5, 1.7, 0.36, 1.12, D / 2 + 0.005, 0, body, edge);
+  add(door, rbox(0.3, 0.42, 0.012, 0.005), glass, 0, 0.5, 0.02);
+  for (const sy of [-1, 1]) add(door, rbox(0.33, 0.025, 0.02, 0.005), edge, 0, 0.5 + sy * 0.22, 0.025);
+  add(door, rbox(0.025, 0.12, 0.04, 0.008), mat('#2b2e33', { r: 0.4, m: 0.6 }), -0.18, -0.05, 0.035);
+  add(g, rbox(0.66, 0.035, 0.035, 0.01), edge, -0.28, 2.05, D / 2);
+  // laterales: panel abajo y ventanal arriba con montante
+  for (const s2 of [-1, 1]) {
+    inset(g, D - 0.1, 0.72, s2 * W / 2, 0.66, 0, s2 * Math.PI / 2, body, edge);
+    add(g, rbox(0.035, 0.95, 0.035, 0.01), edge, s2 * (W / 2 + 0.005), 1.57, 0);
+  }
+  inset(g, W - 0.1, 0.72, 0, 0.66, -D / 2, Math.PI, body, edge);
+  // interior visible: mostrador y monitor
+  add(g, rbox(W - 0.15, 0.05, 0.35, 0.01), mat('#5b6470', { r: 0.6 }), 0, 1.1, -D / 2 + 0.25);
+  add(g, rbox(0.3, 0.2, 0.03, 0.01), mat('#1d2228', { e: '#3b6fb0', ei: 0.4 }), -0.2, 1.25, -D / 2 + 0.2);
+  // techo azul volado con canto grueso, tapa superior y foco
+  add(g, rbox(W + 0.2, 0.15, D + 0.2, 0.03), blue, 0, 2.15, 0);
+  add(g, rbox(W + 0.06, 0.05, D + 0.06, 0.03), blueD, 0, 2.25, 0);
+  add(g, rbox(W + 0.22, 0.025, D + 0.22, 0.01), blueD, 0, 2.08, 0);
+  add(g, rbox(0.24, 0.04, 0.1, 0.02), mat('#dfe6ee', { e: '#fff6d8', ei: 0.5, glow: 'lamp' }), 0, 2.09, D / 2 + 0.05);
+  add(g, rbox(0.1, 0.1, 0.14, 0.02), mat('#2b2e33', { r: 0.4, m: 0.5 }), W / 2 + 0.14, 2.15, D / 2 - 0.1);
   return g;
 }
 

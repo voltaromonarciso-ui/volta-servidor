@@ -98,7 +98,7 @@
   "96": "props.js",
   "97": "Walker",
   "98": "sky.js",
-  "99": "building",
+  "99": "palm",
   "100": "three",
   "101": "icons.js",
   "102": "Execution Steps",
@@ -111,7 +111,8 @@
   "109": "audio.js",
   "110": "scripts",
   "111": "benches.js",
-  "112": "entities/vehicles.js",
+  "112": "npc.js",
   "113": "buildShops",
-  "114": "interact.js"
+  "114": "interact.js",
+  "115": "render.js"
 }

@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792359149.905267,
-    "seen": 1792359162.9204648,
+    "mtime": 1792359353.001279,
+    "seen": 1792359369.8857484,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1542,9 +1542,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792359143.6463995,
-    "seen": 1792359162.9203486,
-    "ast_hash": "0fd068a98d68ccc23b791a60389115fc",
+    "mtime": 1792359346.3952053,
+    "seen": 1792359369.8854902,
+    "ast_hash": "779874474d4c75284a51690d14fc2e24",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {
@@ -1584,9 +1584,15 @@
     "semantic_hash": ""
   },
   "juego/docs/avances-05-calle3.png": {
-    "mtime": 1792359157.0434177,
-    "seen": 1792359162.9245417,
-    "ast_hash": "2770f250d11b5db31ed6b427c11481b0",
+    "mtime": 1792359364.1246295,
+    "seen": 1792359369.8901842,
+    "ast_hash": "7a4c65c01a7a96f7affa43a518f94014",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-06-tunel-cabina.png": {
+    "mtime": 1792359364.1268365,
+    "seen": 1792359369.8901877,
+    "ast_hash": "3e1b2ae95e6b29db43cdbc64db81e331",
     "semantic_hash": ""
   }
 }
