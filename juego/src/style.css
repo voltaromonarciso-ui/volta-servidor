@@ -574,3 +574,35 @@ body.touch .staff .btn.sm { min-height: 44px; }
 .cz-num { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
 .cz-res { margin-top: 8px; font-weight: 800; font-size: 16px; }
 .cz-res.win { color: #7dff9a; } .cz-res.lose { color: #ff9b94; }
+
+/* ---------- Cajero (Banco Rooktown): tonos azules ---------- */
+.panel.atm { --acc: #4aa3ff; --acc2: #1f6fd9; background: linear-gradient(180deg, #102a4a, #0b1d36); border-color: #2b5a92; }
+.panel.atm header { background: linear-gradient(90deg, #1f6fd9, #1b4f9e); border-radius: 18px 18px 0 0; border-bottom: none; }
+.panel.atm h2 { color: #fff; letter-spacing: 0.3px; }
+.panel.atm .btn { color: #fff; }
+.atm-screen { display: flex; flex-direction: column; gap: 12px; animation: atmIn 0.18s ease-out; }
+@keyframes atmIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+.atm-hello { font-size: 17px; font-weight: 800; color: #e8f2ff; text-align: center; }
+.atm-hello span { display: block; font-size: 13px; font-weight: 500; color: #9cc3f2; margin-top: 2px; }
+.atm-bal { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.atm-bal div { background: rgba(74,163,255,0.1); border: 1px solid rgba(74,163,255,0.28); border-radius: 12px; padding: 8px 10px; text-align: center; }
+.atm-bal small { display: block; color: #9cc3f2; font-size: 12px; }
+.atm-bal b { color: #fff; font-size: 18px; }
+.atm-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.atm-opt { background: linear-gradient(180deg, #2f86f0, #1b5fc4); color: #fff; border-radius: 16px; padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; box-shadow: 0 6px 16px rgba(15,60,130,0.45), inset 0 1px 0 rgba(255,255,255,0.25); }
+.atm-opt:active { transform: scale(0.97); }
+.atm-opt i { font-style: normal; font-size: 26px; width: 46px; height: 46px; line-height: 46px; border-radius: 50%; background: rgba(255,255,255,0.18); }
+.atm-opt b { font-size: 17px; }
+.atm-opt small { font-size: 11.5px; color: #d6e8ff; }
+.atm-have { text-align: center; color: #9cc3f2; font-size: 13px; }
+.atm-have b { color: #fff; }
+.atm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.atm-amt { background: #e9f3ff; color: #12376b; font-weight: 800; font-size: 16px; border-radius: 12px; padding: 14px 6px; border: 2px solid #9cc8ff; }
+.atm-amt:active { transform: scale(0.96); background: #cfe5ff; }
+.atm-amt.all { grid-column: 1 / -1; background: linear-gradient(180deg, #2f86f0, #1b5fc4); color: #fff; border-color: #6fb0ff; }
+.atm-amt.off { opacity: 0.35; }
+.atm-warn { color: #ffd27a; text-align: center; font-size: 13px; margin: 0; }
+.atm-ok { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #e8f2ff; padding: 6px 0; }
+.atm-ok i { font-style: normal; width: 54px; height: 54px; line-height: 54px; text-align: center; border-radius: 50%; background: #2f86f0; color: #fff; font-size: 28px; box-shadow: 0 0 0 6px rgba(47,134,240,0.22); }
+.atm-ok b { font-size: 18px; }
+.atm-ok span { color: #9cc3f2; }

@@ -14,7 +14,7 @@ import { VEHICLES, PARKING, RECOVER_PRICE, buyVehicle, recoverVehicle, ownsVehic
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
-import { ATM, atmMove, atmLeft } from '../systems/atm.js';
+import { atmMove, atmLeft } from '../systems/atm.js';
 import { CASINO, casinoOpen, play as casinoPlay, REEL, rouletteColor } from '../systems/casino.js';
 
 // Envases: qué producto suelto (src) se mete en qué envase, en qué máquina.
@@ -411,33 +411,59 @@ export function openSafe(obj) {
   render();
 }
 
-// Cajero automático: efectivo encima ↔ tarjeta, con límite semanal
+// Cajero automático (Banco Rooktown): pantallas encadenadas como un cajero de verdad.
+// Inicio (saldos + Ingresar / Retirar) → cantidades → operación hecha (recibo).
+const ATM_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 export function openAtm(atm) {
-  const p = openPanel({ title: '🏧 Cajero · ' + (atm?.name || 'Rooktown'), cls: 'safe' });
-  const render = () => {
-    p.body.innerHTML = '';
-    p.foot.innerHTML = '';
-    p.body.appendChild(h('div', 'sum', `<div><small>Efectivo encima</small><b class="money">${money(G.state.money)}</b></div><div><small>Saldo en la tarjeta</small><b class="money">${money(G.state.clean || 0)}</b></div><div><small>Puedes ingresar esta semana</small><b class="money">${money(atmLeft())}</b></div>`));
-    p.body.appendChild(h('p', 'muted', `Puedes ingresar hasta ${money(ATM.weekLimit)} por semana. Sacar dinero no tiene límite.`));
-    const row = (label, dir, list) => {
-      const r = h('div', 'row safe-row');
-      r.appendChild(h('div', 'label', label));
-      for (const [txt, n] of list) {
-        const b = h('button', 'btn' + (dir === 'out' ? ' ghost' : ''), txt);
-        b.onclick = () => {
-          const res = atmMove(dir, n);
-          if (!res.ok) return fail(res.msg);
-          sfx('cash'); save();
-          render();
-        };
-        r.appendChild(b);
-      }
-      p.body.appendChild(r);
-    };
-    row('Ingresar', 'in', [['100 $', 100], ['500 $', 500], ['1.000 $', 1000], ['Todo', 1e9]]);
-    row('Sacar', 'out', [['100 $', 100], ['500 $', 500], ['1.000 $', 1000], ['Todo', 1e9]]);
+  const p = openPanel({ title: '<span class="atm-logo">🏦</span> Banco Rooktown', cls: 'atm' });
+  const screen = (cls) => { p.body.innerHTML = ''; p.foot.innerHTML = ''; const sc = h('div', 'atm-screen ' + cls); p.body.appendChild(sc); return sc; };
+  const balances = () => h('div', 'atm-bal', `<div><small>Efectivo encima</small><b>${money(G.state.money)}</b></div><div><small>Saldo en tarjeta</small><b>${money(G.state.clean || 0)}</b></div>`);
+  const back = (fn) => { const b = h('button', 'btn ghost', '‹ Volver'); b.onclick = () => { sfx('pop'); fn(); }; p.foot.appendChild(b); };
+  const home = () => {
+    const sc = screen('home');
+    sc.appendChild(h('div', 'atm-hello', `Cajero · ${atm?.name || 'Rooktown'}<br><span>¿Qué operación quieres hacer?</span>`));
+    sc.appendChild(balances());
+    const opts = h('div', 'atm-opts');
+    for (const [dir, ic, label, sub] of [['in', '⬆', 'Ingresar', 'Del bolsillo a la tarjeta'], ['out', '⬇', 'Retirar', 'De la tarjeta al bolsillo']]) {
+      const b = h('button', 'atm-opt', `<i>${ic}</i><b>${label}</b><small>${sub}</small>`);
+      b.onclick = () => { sfx('pop'); amounts(dir); };
+      opts.appendChild(b);
+    }
+    sc.appendChild(opts);
   };
-  render();
+  const amounts = (dir) => {
+    const sc = screen('amounts');
+    const have = dir === 'in' ? G.state.money || 0 : G.state.clean || 0;
+    const cap = dir === 'in' ? Math.min(have, atmLeft()) : have;
+    sc.appendChild(h('div', 'atm-hello', `${dir === 'in' ? 'Ingresar' : 'Retirar'}<br><span>${dir === 'in' ? `Puedes ingresar ${money(atmLeft())} más esta semana` : 'Sin límite de retirada'}</span>`));
+    sc.appendChild(h('div', 'atm-have', `${dir === 'in' ? 'Llevas encima' : 'Tienes en la tarjeta'} <b>${money(have)}</b>`));
+    const grid = h('div', 'atm-grid');
+    for (const n of ATM_AMOUNTS) {
+      const b = h('button', 'atm-amt' + (n > cap ? ' off' : ''), money(n));
+      b.disabled = n > cap;
+      b.onclick = () => run(dir, n);
+      grid.appendChild(b);
+    }
+    const all = h('button', 'atm-amt all' + (cap <= 0 ? ' off' : ''), `Todo · ${money(Math.max(0, cap))}`);
+    all.disabled = cap <= 0;
+    all.onclick = () => run(dir, cap);
+    grid.appendChild(all);
+    sc.appendChild(grid);
+    if (dir === 'in' && atmLeft() <= 0) sc.appendChild(h('p', 'atm-warn', 'Ya has ingresado el máximo de esta semana. Vuelve la semana que viene.'));
+    back(home);
+  };
+  const run = (dir, n) => {
+    const res = atmMove(dir, n);
+    if (!res.ok) return fail(res.msg);
+    sfx('cash'); save();
+    const sc = screen('done');
+    sc.appendChild(h('div', 'atm-ok', `<i>✓</i><b>Operación realizada</b><span>${dir === 'in' ? 'Has ingresado' : 'Has retirado'} ${money(res.amount)}</span>`));
+    sc.appendChild(balances());
+    const again = h('button', 'btn', 'Otra operación'); again.onclick = () => { sfx('pop'); home(); };
+    const out = h('button', 'btn ghost', 'Salir'); out.onclick = () => closePanel();
+    p.foot.append(out, again);
+  };
+  home();
 }
 
 export function openShelf(obj) {
