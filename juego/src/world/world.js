@@ -1233,6 +1233,22 @@ function buildShops() {
     gas.shelfUnit(55, 15.0, 4.5, 4, 0.38, Math.PI, '#f0f0f0', true, SNACKS);
     addBox(52.7, 57.3, 14.4, 15.2, 2);
     gas.shelfUnit(55, 6.4, 6, 4, 0.4, 0, '#2e86de', true, ['soda-bottle', 'bottle-oil', 'carton', 'can', 'bag', 'wine-red']);
+    const D = decorKit(gas.L, gas.LM);
+    // cajero, arcón de hielos, revistero, máquina de café y carteles
+    B.box('#2c3e50', 50.55, 0, 16.9, 0.5, 1.6, 0.7, 0, gas.LM);
+    B.box('#7fc8ff', 50.82, 1.05, 16.9, 0.02, 0.35, 0.5, 0, { mat: 'glow' });
+    addBox(50.25, 50.85, 16.5, 17.3, 1.6);
+    B.box('#ecf0f1', 57.6, 0, 17.4, 1.6, 0.85, 0.7, 0, gas.LM);
+    B.box('#2e86de', 57.6, 0.6, 17.06, 1.5, 0.18, 0.02, 0, { mat: 'glow' });
+    addBox(56.8, 58.4, 17, 17.8, 0.9);
+    B.box('#3a3d42', 50.6, 0, 8.2, 0.5, 1.2, 1.2, 0, gas.L);
+    for (let i = 0; i < 6; i++) B.box(['#c0392b', '#f1c40f', '#2e86de', '#27ae60', '#ecf0f1', '#8e44ad'][i], 50.9, 0.3 + (i % 3) * 0.32, 7.8 + Math.floor(i / 3) * 0.6, 0.02, 0.28, 0.42, 0, { mat: 'glow' });
+    addBox(50.3, 50.9, 7.6, 8.8, 1.2);
+    B.box('#3a3d42', 61.6, 0, 7.2, 0.7, 0.95, 0.6, 0, gas.L); addBox(61.25, 61.95, 6.9, 7.5, 1);
+    B.box('#2a2d31', 61.6, 0.95, 7.2, 0.5, 0.55, 0.5, 0, gas.LM);
+    B.box('#c0392b', 61.35, 1.2, 7.2, 0.02, 0.2, 0.3, 0, { mat: 'glow' });
+    D.poster(56, 2.2, 17.94, Math.PI, 2.0, 0.7, ['#2e86de', '#f1c40f', '#ffffff', '#c0392b']);
+    D.plant(50.7, 15.4, 0.8);
   }
   B.add(GEO.cyl8, '#5a5f66', 37, 4, 21.5, 0.3, 8, 0.3, 0, { mat: 'metal' });
   const pt = TX.signTex('GAS&GO', { bg: '#2e86de', fg: '#fff', border: '#fff', w: 256, h: 256, font: 'bold 64px sans-serif' });
@@ -1298,6 +1314,22 @@ function buildEastShops() {
     for (const x of [99.1, 101.9]) B.box('#2a2d31', x, 0, z1 - 0.6, 0.08, 0.42, 0.45, 0, LM);
     addBox(98.8, 102.2, z1 - 0.9, z1 - 0.3, 0.6);
     sh.shelfUnit(108.6, z0 + 0.35, 2.2, 4, 0.35, 0, '#2a2d31', true);
+    const D = decorKit(L, LM);
+    // lavacabezas en la pared de enfrente, carritos de herramientas, plantas y cuadros
+    B.box('#e8e8e8', 106.4, 0.62, z1 - 0.45, 1.6, 0.28, 0.6, 0, LM);
+    B.box('#3a3d42', 106.4, 0, z1 - 0.45, 1.6, 0.62, 0.55, 0, L);
+    for (const x of [105.9, 106.9]) { B.add(GEO.cyl12, '#f4f4f4', x, 0.86, z1 - 0.45, 0.42, 0.12, 0.34, 0, LM); B.add(GEO.cyl8, '#c8ccd0', x, 1.05, z1 - 0.2, 0.03, 0.3, 0.03, 0, LM); }
+    addBox(105.5, 107.3, z1 - 0.8, z1, 1);
+    for (const x of [102.9, 106.6]) { B.box('#2a2d31', x, 0, z0 + 2.4, 0.4, 0.75, 0.35, 0, LM); for (let i = 0; i < 4; i++) B.box(['#e74c3c', '#ecf0f1', '#3498db', '#f1c40f'][i], x - 0.12 + i * 0.08, 0.75, z0 + 2.4, 0.05, 0.12 + (i % 2) * 0.05, 0.05, 0, L); addBox(x - 0.22, x + 0.22, z0 + 2.2, z0 + 2.6, 1); }
+    D.table(100.5, z1 - 1.5, 1.0, 0.5, 0.42, '#2a2d31');
+    for (let i = 0; i < 3; i++) B.box(['#c0392b', '#2e86de', '#f39c12'][i], 100.2 + i * 0.3, 0.42, z1 - 1.5, 0.22, 0.02, 0.3, 0.2 * i, L);
+    D.plant(98.7, z0 + 0.7); D.plant(109.3, z1 - 0.6, 1.1); D.plant(109.3, z0 + 2.4, 0.9);
+    D.coatRack(98.6, z1 - 2.4);
+    D.tv(100.5, 2.1, z1 - 0.06, Math.PI);
+    D.poster(103.5, 1.6, z1 - 0.06, Math.PI, 0.7, 0.9, ['#2b2b30', '#c0392b', '#e8e2d6']);
+    D.poster(104.5, 1.6, z1 - 0.06, Math.PI, 0.7, 0.9, ['#2b2b30', '#f1c40f', '#e8e2d6']);
+    D.poster(x1 - 0.06, 1.8, -16, -Math.PI / 2, 1.2, 0.8, ['#1f2a44', '#e74c3c', '#ecf0f1', '#f1c40f']);
+    D.rug(101.2, z0 + 1.55, 1.6, 1.6, '#1b1b1e');
   }
 
   // --- Ropa: percheros, mesa con prendas dobladas y probador con espejo
@@ -1335,6 +1367,24 @@ function buildEastShops() {
     addBox(fx1 - 0.15, fx1, fz0, fz1, 2.4);
     addBox(fx0, fx1, fz0, fz0 + 0.12, 2.4);
     W.fitting = { x: 106.4, z: 20.3, yaw: -Math.PI / 2 };
+    const D = decorKit(L, LM);
+    // maniquíes junto al escaparate, mesa redonda, zapatero, puf, plantas y cuadros
+    D.mannequin(99.1, 10.4, -Math.PI / 2, '#a8794a', '#1d1e22');
+    D.mannequin(99.1, 17.6, -Math.PI / 2, '#2f4a73', '#b49a72');
+    D.mannequin(104.6, 17.4, Math.PI, '#b3262b', '#1f2a44');
+    B.add(GEO.cyl16, '#6b4f3a', 104.8, 0.4, 9.8, 1.3, 0.8, 1.3, 0, L);
+    for (let i = 0; i < 6; i++) { const a = i * 1.05; B.box(COLS[(i * 3) % COLS.length], 104.8 + Math.cos(a) * 0.35, 0.8 + (i % 2) * 0.06, 9.8 + Math.sin(a) * 0.35, 0.34, 0.06, 0.28, a, L); }
+    addBox(104.15, 105.45, 9.15, 10.45, 1);
+    // zapatero contra la pared del fondo
+    B.box('#e9e4dc', 108.3, 0, z0 + 0.3, 2.4, 1.6, 0.4, 0, L);
+    for (let l = 0; l < 4; l++) for (let i = 0; i < 6; i++) B.box(['#1d1e22', '#e9e6df', '#a8794a', '#b3262b'][(i + l) % 4], 107.3 + i * 0.38, 0.12 + l * 0.38, z0 + 0.42, 0.26, 0.1, 0.28, 0, L);
+    addBox(107.1, 109.5, z0, z0 + 0.6, 1.6);
+    B.box('#c9a227', 103.6, 0, 20.6, 0.9, 0.42, 0.9, 0, L); addBox(103.15, 104.05, 20.15, 21.05, 0.5);
+    D.plant(109.2, 21.2); D.plant(109.2, 16.4, 0.9);
+    D.rug(102, 14, 3.2, 2.6, '#c9b79c');
+    D.poster(100.6, 2.35, z1 - 0.06, Math.PI, 2.2, 0.8, ['#1d1d1f', '#c9a227', '#e9e4dc']);
+    D.poster(100.6, 2.35, z0 + 0.06, 0, 2.2, 0.8, ['#c9a227', '#1d1d1f', '#e9e4dc']);
+    D.poster(x1 - 0.06, 2.3, 9, -Math.PI / 2, 1.4, 0.9, ['#2f4a73', '#e9e4dc', '#b3262b']);
     hitbox(106.0, 1.1, 20.3, 1.6, 2.2, 2.4, {
       actions: () => [{ label: 'Entrar en el probador', fn: () => G.act.openClothes?.() }],
     });
@@ -1363,6 +1413,27 @@ function buildEastShops() {
     for (let i = 0; i < 6; i++) B.add(GEO.sphere, HC[i], 100 + i * 0.8, 1.9, z0 + 0.3, 0.32, 0.26, 0.34, 0, L);
     // señal de aparcamiento en la acera
     for (const k of ['bici', 'patinete']) { const p = PARKING[k]; B.box('#f2f2f2', p.x, 0.012, p.z, 1.0, 0.01, 1.8, 0, { ao: 0 }); }
+    const D = decorKit(L, LM);
+    // bicis colgadas en la pared, taller de reparación, neumáticos, plantas y carteles
+    for (const [x, col] of [[100.2, '#27ae60'], [102.2, '#f39c12']]) {
+      const b = buildBike(col);
+      b.position.set(x, 0.9, z1 - 0.35); b.rotation.set(0, Math.PI / 2, 0); b.scale.setScalar(0.95);
+      b.userData.display = true; scene.add(b);
+      B.box('#2a2d31', x, 1.95, z1 - 0.1, 0.1, 0.06, 0.4, 0, LM);
+    }
+    addBox(99, 103.4, z1 - 0.7, z1, 2.2);
+    D.toolboard(107.6, 1.25, z0 + 0.06, 0, 2.4);
+    B.box('#5a5f66', 107.6, 0.85, z0 + 0.45, 2.4, 0.06, 0.7, 0, LM);
+    B.box('#3a3d42', 107.6, 0, z0 + 0.45, 2.3, 0.85, 0.6, 0, L);
+    addBox(106.4, 108.8, z0, z0 + 0.8, 1);
+    // soporte de reparación con una bici de verdad
+    B.add(GEO.cyl8, '#c0392b', 105.4, 0.65, z0 + 1.6, 0.05, 1.3, 0.05, 0, LM);
+    { const b = buildBike('#2e86de'); b.position.set(105.4, 0.35, z0 + 1.6); b.rotation.y = Math.PI / 2; b.userData.display = true; scene.add(b); addBox(104.8, 106, z0 + 1, z0 + 2.2, 1.2); }
+    D.tires(109.3, 40.6, 5); D.tires(109.3, 41.4, 3);
+    D.plant(98.7, z0 + 0.7); D.plant(98.7, z1 - 0.7);
+    D.poster(x1 - 0.06, 2.2, 50.5, -Math.PI / 2, 1.6, 1.0, ['#1f6f8b', '#f2c14e', '#ecf0f1', '#2e86de']);
+    D.poster(105.5, 2.4, z1 - 0.06, Math.PI, 1.4, 0.8, ['#f2c14e', '#1f3b4d', '#ecf0f1']);
+    D.rug(103, 46, 3.4, 2.2, '#2a3a46');
   }
 
   // --- Muebles: exposición con un ejemplar de cada mueble (los modelos los pone objects.js)
@@ -1371,7 +1442,7 @@ function buildEastShops() {
     lot(x0, x1, z0, z1);
     const sh = walkInShop({ id: 'muebles', x0, x1, z0, z1, h: 4.8, wall: '#c9b79c', trim: '#3b2f25', sign: 'MUEBLES NIDO', signBg: '#5a3d2b', awning: '#7a9a5a', seed: 208, mapColor: '#9a7a52', label: 'Muebles', tint: '#f3eee6', floor: '#b89a74', counterColor: '#5a3d2b', hours: [10, 21], buyLabel: 'Ver el catálogo' });
     W.pois.muebles = sh;
-    const { L } = sh;
+    const { L, LM } = sh;
     // alfombras bajo cada pieza expuesta
     W.showroom = [
       { type: 'bed', x: 101.6, z: 64.3, r: Math.PI / 2, rug: [2.6, 1.6] },
@@ -1385,6 +1456,23 @@ function buildEastShops() {
       const [fw, fd] = Math.abs(Math.sin(it.r)) > 0.5 ? [d, w] : [w, d];
       addBox(it.x - fw / 2, it.x + fw / 2, it.z - fd / 2, it.z + fd / 2, 1.1);
     }
+    const D = decorKit(L, LM);
+    // salón de exposición: sofá, sillón, mesa baja, lámpara y alfombra
+    D.rug(102, 73.2, 3.4, 2.4, '#b5654a');
+    D.sofa(102, 74.4, Math.PI, '#5b6b7d');
+    D.armchair(99.5, 72.9, -Math.PI / 2, '#8a5a44');
+    D.table(102, 72.7, 1.1, 0.6, 0.42, '#6b4f3a');
+    D.floorLamp(99.3, 74.5);
+    // comedor: mesa y cuatro sillas
+    D.table(105.4, 64.8, 1.6, 0.9, 0.75, '#a57c4d');
+    for (const [dx, dz, r] of [[-0.45, -0.75, 0], [0.45, -0.75, 0], [-0.45, 0.75, Math.PI], [0.45, 0.75, Math.PI]]) D.chair(105.4 + dx, 64.8 + dz, r, '#4a3524');
+    addBox(104.4, 106.4, 63.8, 65.8, 0.9);
+    D.bookcase(108.2, z0 + 0.2, 0, 1.8);
+    D.bookcase(x1 - 0.2, 74.5, -Math.PI / 2, 1.6, 2, '#3a3d42');
+    D.plant(98.7, z0 + 0.7, 1.1); D.plant(109.3, z1 - 0.7); D.plant(98.7, z1 - 2.2, 0.9);
+    D.poster(102, 2.2, z1 - 0.06, Math.PI, 1.6, 0.9, ['#7a9a5a', '#e9e4dc', '#5a3d2b']);
+    D.poster(x1 - 0.06, 2.3, 64.5, -Math.PI / 2, 1.2, 0.8, ['#5a3d2b', '#c9b79c', '#7a9a5a']);
+    D.poster(101.6, 1.9, z0 + 0.06, 0, 1.0, 0.7, ['#e9e4dc', '#3f78c4', '#c0392b']);
   }
 }
 
@@ -1490,6 +1578,102 @@ function storefront({ x0, x1, zf, depth = 12, h = 5, wall = '#3a3d42', name, sig
 const PRODUCT_COLS = ['#d8402f', '#f2c230', '#2f7fd8', '#3fae5a', '#f28c28', '#ffffff', '#8e44ad', '#1abc9c', '#e84393', '#c0392b', '#f5e6c8', '#2c3e50'];
 // Piezas para amueblar interiores de tiendas (estanterías con producto,
 // mostrador, caja registradora, taburetes, mesas, neveras).
+// ------------------------------------------------------------------
+//  Decoración de interiores (muebles hechos con cajas y cilindros del lote estático:
+//  apenas cuestan en el móvil). Giros en múltiplos de 90°; cada pieza grande choca.
+// ------------------------------------------------------------------
+function decorKit(L, LM) {
+  const P = (x, z, ry) => { const c = Math.cos(ry), sn = Math.sin(ry); return (u, v) => [x + u * c + v * sn, z - u * sn + v * c]; };
+  const solid = (x, z, w, d, ry, h = 1.1) => { const sw = Math.abs(Math.sin(ry)) > 0.5; addBox(x - (sw ? d : w) / 2, x + (sw ? d : w) / 2, z - (sw ? w : d) / 2, z + (sw ? w : d) / 2, h); };
+  const k = {
+    // planta grande en maceta
+    plant(x, z, s = 1) {
+      B.add(GEO.cyl12, '#d8d2c6', x, 0.22 * s, z, 0.42 * s, 0.44 * s, 0.42 * s, 0, L);
+      B.add(GEO.cyl12, '#4a3524', x, 0.43 * s, z, 0.38 * s, 0.03, 0.38 * s, 0, L);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; B.add(GEO.sphere, i % 2 ? '#3f7d3a' : '#4f9446', x + Math.cos(a) * 0.12 * s, (0.75 + (i % 3) * 0.22) * s, z + Math.sin(a) * 0.12 * s, 0.42 * s, 0.5 * s, 0.42 * s, a, { mat: 'foliage', ao: 0 }); }
+      solid(x, z, 0.45 * s, 0.45 * s, 0, 1);
+    },
+    // cuadro o póster en una pared (ry = hacia dónde mira)
+    poster(x, y, z, ry, w, h, cols) {
+      const f = P(x, z, ry);
+      B.box('#1d1f22', x, y - 0.03, z, w + 0.06, h + 0.06, 0.03, ry, L);
+      const [a, b] = f(0, 0.02);
+      B.box(cols[0], a, y, b, w, h, 0.02, ry, { mat: 'glow' });
+      for (let i = 1; i < cols.length; i++) { const [cx, cz] = f((i - cols.length / 2) * w / cols.length * 0.9, 0.03); B.box(cols[i], cx, y + h * (0.15 + 0.15 * (i % 3)), cz, w / cols.length * 0.7, h * 0.35, 0.01, ry, { mat: 'glow' }); }
+    },
+    rug(x, z, w, d, col, ry = 0) { B.box(col, x, 0.026, z, w, 0.012, d, ry, { ...L, ao: 0 }); },
+    sofa(x, z, ry, col = '#5b6b7d', seats = 3) {
+      const f = P(x, z, ry), w = 0.75 * seats + 0.3;
+      B.box(col, x, 0.12, z, w, 0.32, 0.9, ry, L);
+      const [bx, bz] = f(0, -0.36); B.box(col, bx, 0.12, bz, w, 0.78, 0.2, ry, L);
+      for (const s of [-1, 1]) { const [ax, az] = f(s * (w / 2 - 0.1), 0); B.box(col, ax, 0.12, az, 0.2, 0.55, 0.9, ry, L); }
+      for (let i = 0; i < seats; i++) { const [cx, cz] = f(-w / 2 + 0.15 + 0.375 + i * 0.75, 0.05); B.box(new THREE.Color(col).offsetHSL(0, 0, 0.06).getStyle(), cx, 0.44, cz, 0.7, 0.12, 0.7, ry, L); }
+      for (const s of [-1, 1]) for (const t of [-1, 1]) { const [lx, lz] = f(s * (w / 2 - 0.1), t * 0.35); B.box('#2a2d31', lx, 0, lz, 0.06, 0.12, 0.06, ry, LM); }
+      solid(x, z, w, 0.9, ry, 0.8);
+    },
+    armchair(x, z, ry, col = '#8a5a44') { k.sofa(x, z, ry, col, 1); },
+    table(x, z, w, d, h = 0.75, col = '#8a6a4a', ry = 0) {
+      const f = P(x, z, ry);
+      B.box(col, x, h - 0.05, z, w, 0.05, d, ry, L);
+      for (const s of [-1, 1]) for (const t of [-1, 1]) { const [lx, lz] = f(s * (w / 2 - 0.06), t * (d / 2 - 0.06)); B.box('#3a3d42', lx, 0, lz, 0.05, h - 0.05, 0.05, ry, LM); }
+      solid(x, z, w, d, ry, h);
+    },
+    chair(x, z, ry, col = '#3a3d42') {
+      const f = P(x, z, ry);
+      B.box(col, x, 0.44, z, 0.44, 0.05, 0.44, ry, L);
+      const [bx, bz] = f(0, -0.2); B.box(col, bx, 0.44, bz, 0.44, 0.5, 0.05, ry, L);
+      for (const s of [-1, 1]) for (const t of [-1, 1]) { const [lx, lz] = f(s * 0.18, t * 0.18); B.box('#2a2d31', lx, 0, lz, 0.04, 0.44, 0.04, ry, LM); }
+    },
+    floorLamp(x, z, shade = '#f3e6c4') {
+      B.add(GEO.cyl12, '#2a2d31', x, 0.02, z, 0.32, 0.04, 0.32, 0, LM);
+      B.add(GEO.cyl8, '#2a2d31', x, 0.8, z, 0.03, 1.6, 0.03, 0, LM);
+      B.add(GEO.cyl12, shade, x, 1.65, z, 0.42, 0.3, 0.42, 0, { mat: 'glow' });
+      solid(x, z, 0.3, 0.3, 0, 1.8);
+    },
+    // estantería de libros/objetos contra una pared
+    bookcase(x, z, ry, w = 1.6, h = 2, col = '#6b4f3a') {
+      const f = P(x, z, ry);
+      B.box(col, x, 0, z, w, h, 0.36, ry, L);
+      const BOOK = ['#c0392b', '#2e86de', '#f1c40f', '#27ae60', '#8e44ad', '#ecf0f1', '#d35400', '#34495e'];
+      for (let l = 0; l < 4; l++) {
+        const y = 0.12 + l * (h / 4);
+        let u = -w / 2 + 0.1, i = l * 3;
+        while (u < w / 2 - 0.12) { const bw = 0.05 + ((i * 37) % 5) * 0.012, bh = 0.22 + ((i * 13) % 4) * 0.03; const [bx, bz] = f(u + bw / 2, 0.19); B.box(BOOK[i % BOOK.length], bx, y, bz, bw, bh, 0.2, ry, L); u += bw + 0.01; i++; if (i % 7 === 0) u += 0.15; }
+      }
+      solid(x, z, w, 0.36, ry, h);
+    },
+    // maniquí con la ropa puesta
+    mannequin(x, z, ry, top = '#b3262b', legs = '#1f2a44') {
+      B.add(GEO.cyl12, '#2a2d31', x, 0.02, z, 0.4, 0.04, 0.4, 0, LM);
+      B.add(GEO.cyl8, '#9aa0a6', x, 0.45, z, 0.03, 0.9, 0.03, 0, LM);
+      for (const s of [-1, 1]) { const [lx, lz] = P(x, z, ry)(s * 0.1, 0); B.add(GEO.cyl8, legs, lx, 0.62, lz, 0.13, 0.8, 0.13, 0, L); }
+      B.add(GEO.cyl12, top, x, 1.28, z, 0.42, 0.62, 0.26, ry, L);
+      for (const s of [-1, 1]) { const [ax, az] = P(x, z, ry)(s * 0.25, 0); B.add(GEO.cyl8, top, ax, 1.22, az, 0.1, 0.55, 0.1, 0, L); }
+      B.add(GEO.sphere, '#e8e2d6', x, 1.78, z, 0.22, 0.26, 0.22, 0, L);
+      solid(x, z, 0.5, 0.5, 0, 1.9);
+    },
+    // perchero de pared con prendas colgadas
+    wallRail(x, z, ry, len, cols) {
+      const f = P(x, z, ry);
+      const [rx, rz] = f(0, 0.3);
+      B.add(GEO.cyl8, '#9aa0a6', rx, 1.55, rz, 0.03, len, 0.03, ry + Math.PI / 2, { ...LM, rz: Math.PI / 2 });
+      let i = 0;
+      for (let u = -len / 2 + 0.12; u < len / 2 - 0.08; u += 0.12) { const [cx, cz] = f(u, 0.3); B.box(cols[(i++ * 5) % cols.length], cx, 0.85, cz, 0.04, 0.68, 0.44, ry + Math.PI / 2, L); }
+      solid(x + (f(0, 0.3)[0] - x), z + (f(0, 0.3)[1] - z), len, 0.5, ry, 1.6);
+    },
+    tv(x, y, z, ry) { B.box('#111316', x, y, z, 1.2, 0.7, 0.05, ry, LM); const [a, b] = P(x, z, ry)(0, 0.03); B.box('#2b5f8a', a, y + 0.04, b, 1.1, 0.62, 0.01, ry, { mat: 'glow' }); },
+    tires(x, z, n = 4) { for (let i = 0; i < n; i++) B.add(GEO.cyl16, '#1b1c1e', x, 0.1 + i * 0.2, z, 0.62, 0.18, 0.62, 0, L); solid(x, z, 0.62, 0.62, 0, n * 0.2); },
+    // tablero de herramientas en una pared
+    toolboard(x, y, z, ry, w = 1.6) {
+      B.box('#c9a477', x, y, z, w, 0.9, 0.03, ry, L);
+      const f = P(x, z, ry);
+      for (let i = 0; i < 7; i++) { const [tx, tz] = f(-w / 2 + 0.18 + i * (w - 0.3) / 6, 0.03); B.box(['#c0392b', '#2c3e50', '#f39c12', '#7f8c8d'][i % 4], tx, y + 0.15 + (i % 3) * 0.12, tz, 0.05, 0.3 + (i % 2) * 0.15, 0.03, ry, LM); }
+    },
+    coatRack(x, z) { B.add(GEO.cyl8, '#4a3524', x, 0.9, z, 0.04, 1.8, 0.04, 0, L); B.add(GEO.cyl12, '#4a3524', x, 0.02, z, 0.36, 0.04, 0.36, 0, L); B.box('#2c3e50', x + 0.08, 1.2, z, 0.08, 0.5, 0.3, 0, L); solid(x, z, 0.36, 0.36, 0, 1.8); },
+  };
+  return k;
+}
+
 function interiorKit(seed) {
   let r = seed * 9301 + 49297;
   const rand = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
