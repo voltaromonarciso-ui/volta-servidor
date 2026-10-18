@@ -1,9 +1,13 @@
 // Vitrina de modelos (solo desarrollo): cada modelo en su casilla, encuadrado y visto en
 // tres cuartos desde arriba, sobre fondo azul como la lámina de referencia.
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { STREET_KIT, STREET_KIT_2, STREET_KIT_3, STREET_KIT_4, STREET_KIT_5 } from './world/streetkit.js';
 import { eclipse } from './world/facades.js';
-const BUILDINGS = [['El Eclipse', () => eclipse().group]];
+import * as SK from './world/streetkit.js';
+// edificio con sus maceteros con palmera, como quedará en la isla
+const withPlanters = (f) => { const r = f(); for (const [x, z] of r.planters || []) { const m = SK.macetero(); m.position.set(x, 0, z); r.group.add(m); const p = SK.palmera(); p.position.set(x, 0.55, z); p.scale.setScalar(1.1); r.group.add(p); } return r.group; };
+const BUILDINGS = [['El Eclipse', () => withPlanters(eclipse)]];
 
 const W = innerWidth, H = innerHeight;
 const r = new THREE.WebGLRenderer({ antialias: true });
@@ -12,6 +16,8 @@ r.setSize(W, H);
 r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
 r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
 r.setScissorTest(true);
+// entorno para los reflejos (en el juego lo pone el cielo)
+const ENV = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
 document.body.appendChild(r.domElement);
 const items = { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
 const cols = items.length === 1 ? 1 : items.length <= 10 ? 5 : 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
@@ -19,6 +25,7 @@ const lab = document.getElementById('lab');
 items.forEach(([name, fn], i) => {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#24507c');
+  scene.environment = ENV; scene.environmentIntensity = 0.45;
   scene.add(new THREE.HemisphereLight(0xe6eeff, 0x2a3a55, 1.5));
   const sun = new THREE.DirectionalLight(0xffffff, 2.3);
   sun.position.set(-4, 9, 6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);

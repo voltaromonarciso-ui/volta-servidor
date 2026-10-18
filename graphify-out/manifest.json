@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792361559.8158827,
-    "seen": 1792361663.8031564,
-    "ast_hash": "b9d773da8df115170ec81406041d2621",
+    "mtime": 1792362509.7774668,
+    "seen": 1792363743.291382,
+    "ast_hash": "fa913ece4c4b92e7b7c11c7f0aac01a1",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792361566.614325,
-    "seen": 1792361663.8034058,
-    "ast_hash": "65475ec5711ba6506c1a376b16615e9f",
+    "mtime": 1792362509.821304,
+    "seen": 1792363743.2916586,
+    "ast_hash": "6947f70ad8b8ec59b9f45886b00f0033",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "juego/docs/ENCARGO-ROOKTOWN.md": {
-    "mtime": 1792361483.9974058,
-    "seen": 1792361663.80631,
-    "ast_hash": "6d47e04b37cf488f8b071eca993a7228",
+    "mtime": 1792363521.3175268,
+    "seen": 1792363743.2941234,
+    "ast_hash": "3e2df46c1b3f99b3e30acee89895df27",
     "semantic_hash": ""
   },
   "juego/docs/referencias/LEEME.md": {
@@ -1530,9 +1530,9 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792360082.3364751,
-    "seen": 1792360137.0278733,
-    "ast_hash": "f2026b60b232a7155c5849d785124a67",
+    "mtime": 1792363669.370711,
+    "seen": 1792363743.2916875,
+    "ast_hash": "683d984661083e40bda764b099801a04",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
@@ -1644,15 +1644,45 @@
     "semantic_hash": ""
   },
   "juego/src/systems/atm.js": {
-    "mtime": 1792361545.7174094,
-    "seen": 1792361663.8029835,
-    "ast_hash": "a7cf8f3dfd1d46f348e12abafe451308",
+    "mtime": 1792362509.7734668,
+    "seen": 1792363743.29121,
+    "ast_hash": "7b070dce3322ecd5051b6b56a52bce87",
     "semantic_hash": ""
   },
   "juego/tests/atm.spec.js": {
-    "mtime": 1792361583.6991692,
-    "seen": 1792361663.8037574,
-    "ast_hash": "1d7ecb15713fb61cadf0b40d1b7c46b0",
+    "mtime": 1792362522.4094675,
+    "seen": 1792363743.292017,
+    "ast_hash": "669e141d574cc2c51d9c3c6943a870be",
+    "semantic_hash": ""
+  },
+  "juego/src/world/facades.js": {
+    "mtime": 1792363695.4157166,
+    "seen": 1792363743.2917466,
+    "ast_hash": "0c9904668ca40cb0e74a4a2b37901010",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-10-eclipse.png": {
+    "mtime": 1792363438.0028977,
+    "seen": 1792363743.2955077,
+    "ast_hash": "91c736446ccb6bd082434cd53cc981f1",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-11-eclipse-v2.png": {
+    "mtime": 1792363732.9348686,
+    "seen": 1792363743.2955098,
+    "ast_hash": "5fcd85a9e4ae9eb995f58755c0fa67db",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-12-android.png": {
+    "mtime": 1792363733.5034564,
+    "seen": 1792363743.295511,
+    "ast_hash": "191975cdd8430069c67e97a7c1d86873",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-13-cajero.png": {
+    "mtime": 1792363733.6775396,
+    "seen": 1792363743.2955124,
+    "ast_hash": "6cdac0850f475e68afdf249fbda834a2",
     "semantic_hash": ""
   }
 }

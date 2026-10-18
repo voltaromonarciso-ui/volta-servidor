@@ -167,3 +167,8 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
   imágenes 01/02 tal cual, con colores de pared normales; **después el piso inicial**.
   Edificios de relleno: **sencillos pero no cajas** (cornisa, zócalo, marcos de ventana…),
   ligeros para el móvil.
+- **Fachadas (tras ver El Eclipse v1, «se ve muy estilo caja»)**: formas no rectas (curvas,
+  esquinas redondeadas, volúmenes escalonados, vuelos), materiales realistas (chapa, hormigón,
+  madera, cristal con reflejo), más detalle y vida (plantas, focos, carteles…) e iluminación
+  (bordes con luz, luz cálida de dentro). **Inspirado en la lámina y más espectacular**, en
+  **estilo render como la lámina** (no realista tipo GTA).

@@ -82,10 +82,14 @@ const interiorTex = (key, glow, accent) => canvasTex('int' + key, 256, 128, (c, 
 });
 
 // ==================================================================
-//  El Eclipse (discoteca) — 02-locales-b, «1. Vista exterior»
-//  Torre lisa a la izquierda con el logo de neón (luna en un aro) y el nombre; cuerpo de
-//  dos plantas con planta baja acristalada, marquesina corrida y ventanales arriba; anexo
-//  bajo a la derecha. Colores: antracita y gris claro (en la lámina es azul/morado).
+//  El Eclipse (discoteca) — inspirado en 02-locales-b, «1. Vista exterior», más espectacular.
+//  - Torre del logo con aristas redondeadas, revestida de chapa grafito nervada, con el aro
+//    de neón, la luna y el nombre.
+//  - Gran «disco de eclipse» de hormigón claro con un portal circular: la entrada se hace
+//    atravesando el aro iluminado (la corona del eclipse).
+//  - Sala principal con esquinas redondeadas y friso de luz; ala derecha de dos plantas con
+//    esquina de cristal curva y terraza VIP con pérgola de madera y plantas.
+//  - Escalinata con luz en los peldaños, alfombra roja, postes, maceteros con palmeras, apliques y carteles luminosos.
 // ==================================================================
 const neonTex = () => canvasTex('neonEclipse2', 1024, 192, (c, w, h) => {
   c.clearRect(0, 0, w, h);
@@ -99,102 +103,203 @@ const moonTex = () => canvasTex('lunaEclipse', 256, 256, (c, w) => {
   gr.addColorStop(0, '#ffe6ff'); gr.addColorStop(0.6, '#d48cff'); gr.addColorStop(1, 'rgba(120,40,200,0)');
   c.fillStyle = gr; c.beginPath(); c.arc(w / 2, w / 2, w * 0.4, 0, Math.PI * 2); c.fill();
   c.globalCompositeOperation = 'destination-out';
-  c.beginPath(); c.arc(w * 0.38, w * 0.44, w * 0.3, 0, Math.PI * 2); c.fill(); // mordida: luna creciente
+  c.beginPath(); c.arc(w * 0.38, w * 0.44, w * 0.3, 0, Math.PI * 2); c.fill(); // luna creciente
 });
+// chapa grafito nervada (nervios verticales con brillo)
+const ribTex = () => canvasTex('chapaNervada', 128, 128, (c, w) => {
+  c.fillStyle = '#34383e'; c.fillRect(0, 0, w, w);
+  for (let x = 0; x < w; x += 16) {
+    const gr = c.createLinearGradient(x, 0, x + 16, 0);
+    gr.addColorStop(0, '#2a2d32'); gr.addColorStop(0.35, '#4a4f56'); gr.addColorStop(0.5, '#565b63'); gr.addColorStop(0.7, '#3a3e44'); gr.addColorStop(1, '#2a2d32');
+    c.fillStyle = gr; c.fillRect(x, 0, 16, w);
+  }
+}, true);
+// hormigón visto claro: paneles con juntas, poros y alguna mancha
+const concreteTex = () => canvasTex('hormigonClaro', 256, 256, (c, w) => {
+  c.fillStyle = '#d8d4cc'; c.fillRect(0, 0, w, w);
+  let s0 = 13; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
+  for (let k = 0; k < 40; k++) { const gr = c.createRadialGradient(rnd() * w, rnd() * w, 2, rnd() * w, rnd() * w, 40 + rnd() * 50); gr.addColorStop(0, `rgba(150,140,128,${0.05 + rnd() * 0.06})`); gr.addColorStop(1, 'rgba(150,140,128,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, w); }
+  for (let k = 0; k < 1500; k++) { c.fillStyle = `rgba(80,75,70,${0.08 + rnd() * 0.12})`; c.fillRect(rnd() * w, rnd() * w, 1, 1); }
+  c.fillStyle = 'rgba(110,105,98,0.55)'; c.fillRect(0, 0, w, 2); c.fillRect(0, 0, 2, w);
+  for (const [x, y] of [[32, 40], [224, 40], [32, 216], [224, 216]]) { c.fillStyle = 'rgba(90,85,80,0.5)'; c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); } // berenjenos
+}, true);
+// lamas de madera para techos y pérgolas
+const slatTex = () => canvasTex('lamasMadera', 256, 64, (c, w, h) => {
+  c.fillStyle = '#2a1c12'; c.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 16) {
+    const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#b47a48'); gr.addColorStop(1, '#8f5c33');
+    c.fillStyle = gr; c.fillRect(x + 2, 0, 12, h);
+    c.strokeStyle = 'rgba(70,40,20,0.3)'; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(x + 3 + k * 3, 0); c.lineTo(x + 4 + k * 3, h); c.stroke(); }
+  }
+}, true);
+// cartel luminoso (caja de luz) con cartel de la sesión
+const posterTex = () => canvasTex('posterEclipse', 256, 384, (c, w, h) => {
+  const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1b0b33'); gr.addColorStop(1, '#5a1a7a');
+  c.fillStyle = gr; c.fillRect(0, 0, w, h);
+  c.strokeStyle = '#ff7bd8'; c.lineWidth = 6; c.beginPath(); c.arc(w / 2, 130, 70, 0, Math.PI * 2); c.stroke();
+  c.fillStyle = '#ffd7f4'; c.beginPath(); c.arc(w / 2 + 14, 122, 52, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#1b0b33'; c.beginPath(); c.arc(w / 2 - 8, 116, 46, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff'; c.font = 'bold 44px sans-serif'; c.textAlign = 'center'; c.fillText('SÁBADO', w / 2, 270);
+  c.fillStyle = '#ffb3ec'; c.font = 'bold 30px sans-serif'; c.fillText('DJ NOCHE', w / 2, 315); c.fillText('23:00', w / 2, 352);
+});
+// textura con repetición propia (clonada) aplicada a una malla cualquiera
+function texMat(tex, rep, o = {}) {
+  const t = tex.clone(); t.needsUpdate = true; t.repeat.set(rep[0], rep[1]);
+  return new THREE.MeshStandardMaterial({ map: t, roughness: o.r ?? 0.7, metalness: o.m ?? 0, ...(o.side ? { side: o.side } : {}) });
+}
+// aro (anillo) extruido: disco con agujero, en el plano XY, grosor d hacia +z
+function ringGeo(key, R, r, d, seg = 64) {
+  return cache('ring' + key, () => {
+    const sh = new THREE.Shape(); sh.absarc(0, 0, R, 0, Math.PI * 2, false);
+    const hole = new THREE.Path(); hole.absarc(0, 0, r, 0, Math.PI * 2, true); sh.holes.push(hole);
+    return new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 2, curveSegments: seg });
+  });
+}
+// placa horizontal con forma en planta (puntos [x, z]) y grosor t, con la cara inferior a y0
+function plateGeo(key, pts, t) {
+  return cache('plate' + key, () => {
+    const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const e = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2, curveSegments: 24 });
+    e.rotateX(-Math.PI / 2);
+    return e;
+  });
+}
+// curva en planta (para marquesinas): devuelve puntos de un arco
+const arcPts = (cx, cz, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / n; return [cx + Math.cos(a) * r, cz + Math.sin(a) * r]; });
 
 export function eclipse() {
   const g = new THREE.Group(), boxes = [];
-  const anth = { r: 0.6, m: 0.15 }, light = { r: 0.85 };
-  const anthT = panelTex('#3b3f45', '#2c2f34'), lightT = renderTex('#d9d6d0');
-  const frame = mat('#24272b', { r: 0.4, m: 0.6 }), glass = mat('#9fb7c9', { t: 0.35, r: 0.05, m: 0.3 });
-  const coping = mat('#c9c6c0', { r: 0.6 }), plinth = mat('#5a5d61', { r: 0.8 });
+  const graphite = texMat(ribTex(), [6, 3], { r: 0.45, m: 0.55 });
+  const concrete = texMat(concreteTex(), [3, 3], { r: 0.85 });
+  const glassM = new THREE.MeshStandardMaterial({ color: '#2c4152', roughness: 0.06, metalness: 0.75, transparent: true, opacity: 0.55, depthWrite: false });
+  const frame = mat('#22252a', { r: 0.35, m: 0.7 });
+  const white = mat('#eeece8', { r: 0.6 });
+  const led = mat('#f4ecff', { e: '#dcc2ff', ei: 1.6, glow: 'sign' });
+  const warm = mat('#fff1d8', { e: '#ffd9a0', ei: 1.4, glow: 'win' });
 
-  // --- torre del logo (x -15..-7) ---
-  const T = { x0: -15, x1: -7, z0: -9, z1: 1.2, h: 11.5 };
-  slab(g, mat('#3b3f45', anth), T.x0, T.x1, 0, T.h, T.z0, T.z1 - 0.02);
-  texPlane(g, anthT, T.x1 - T.x0, T.h, [3, 4], anth, (T.x0 + T.x1) / 2, T.h / 2, T.z1, 0);           // frente con juntas
-  texPlane(g, anthT, T.z1 - T.z0, T.h, [4, 4], anth, T.x0 - 0.01, T.h / 2, (T.z0 + T.z1) / 2, -Math.PI / 2);
-  slab(g, coping, T.x0 - 0.1, T.x1 + 0.1, T.h, T.h + 0.18, T.z0 - 0.1, T.z1 + 0.1);
-  // aro de neón y luna
-  const ring = mat('#e9c4ff', { e: '#c069ff', ei: 2.2, r: 0.3, glow: 'sign' });
-  add(g, cache('aroEclipse', () => new THREE.TorusGeometry(2.0, 0.13, 10, 48)), ring, -11, 7.4, T.z1 + 0.18);
-  add(g, cache('aroBase', () => new THREE.TorusGeometry(2.0, 0.2, 8, 48)), mat('#1f2226', { r: 0.5 }), -11, 7.4, T.z1 + 0.06);
-  const moon = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), mat('#ffffff', { map: moonTex(), alphaTest: 0.05, e: '#d48cff', ei: 1.4, glow: 'sign' }));
-  moon.position.set(-11, 7.4, T.z1 + 0.1); g.add(moon);
-  const name = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.8), mat('#ffffff', { map: neonTex(), alphaTest: 0.5, e: '#e8c8ff', ei: 1.6, glow: 'sign' }));
-  name.position.set(-11, 3.9, T.z1 + 0.06); g.add(name);
-  const strip = mat('#efe2ff', { e: '#d9b8ff', ei: 1.3, glow: 'sign' });
-  for (const x of [T.x0 + 0.05, T.x1 - 0.05]) slab(g, strip, x - 0.05, x + 0.05, 0.4, T.h - 0.2, T.z1, T.z1 + 0.05);
+  // --- sala principal: volumen de esquinas redondeadas (x -9..11, z -14..-2, h 7.5) ---
+  const H = { x0: -9, x1: 11, z0: -14, z1: -2, h: 7.5 };
+  add(g, cache('salaEclipse', () => new RoundedBoxGeometry(H.x1 - H.x0, H.h, H.z1 - H.z0, 4, 0.9)), graphite, (H.x0 + H.x1) / 2, H.h / 2, (H.z0 + H.z1) / 2);
+  add(g, cache('frisoSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.1, 0.12, H.z1 - H.z0 + 0.1, 2, 0.06)), led, (H.x0 + H.x1) / 2, H.h - 0.6, (H.z0 + H.z1) / 2); // friso de luz
+  add(g, cache('remateSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.3, 0.3, H.z1 - H.z0 + 0.3, 2, 0.12)), white, (H.x0 + H.x1) / 2, H.h + 0.1, (H.z0 + H.z1) / 2);
+  boxes.push([H.x0, H.x1, H.z0, H.z1, H.h]);
+
+  // --- torre del logo con aristas redondeadas (x -16..-9) ---
+  const T = { x0: -16, x1: -9.2, z0: -12, z1: 0.6, h: 13 };
+  add(g, cache('torreEclipse', () => new RoundedBoxGeometry(T.x1 - T.x0, T.h, T.z1 - T.z0, 4, 0.6)), texMat(ribTex(), [5, 6], { r: 0.45, m: 0.55 }), (T.x0 + T.x1) / 2, T.h / 2, (T.z0 + T.z1) / 2);
+  add(g, cache('coronaTorre', () => new RoundedBoxGeometry(T.x1 - T.x0 + 0.4, 0.5, T.z1 - T.z0 + 0.4, 2, 0.2)), white, (T.x0 + T.x1) / 2, T.h + 0.1, (T.z0 + T.z1) / 2);
+  for (const x of [T.x0 + 0.25, T.x1 - 0.25]) add(g, cyl(0.06, 0.06, T.h - 1.2, 8), led, x, T.h / 2, T.z1 + 0.02); // aristas de luz
+  const tc = (T.x0 + T.x1) / 2;
+  add(g, cache('aroEclipse', () => new THREE.TorusGeometry(2.1, 0.13, 12, 64)), mat('#e9c4ff', { e: '#c069ff', ei: 2.2, r: 0.3, glow: 'sign' }), tc, 8.6, T.z1 + 0.25);
+  add(g, cache('aroBase', () => new THREE.TorusGeometry(2.1, 0.24, 10, 64)), mat('#1f2226', { r: 0.5, m: 0.5 }), tc, 8.6, T.z1 + 0.1);
+  const moon = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), mat('#ffffff', { map: moonTex(), alphaTest: 0.05, e: '#d48cff', ei: 1.4, glow: 'sign' }));
+  moon.position.set(tc, 8.6, T.z1 + 0.14); g.add(moon);
+  const name = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.2), mat('#ffffff', { map: neonTex(), alphaTest: 0.5, e: '#e8c8ff', ei: 1.6, glow: 'sign' }));
+  name.position.set(tc, 5.2, T.z1 + 0.08); g.add(name);
+  // cajas de luz con el cartel de la sesión, en la base de la torre
+  for (const x of [tc - 1.6, tc + 1.6]) {
+    add(g, rbox(1.3, 2.0, 0.18, 0.05), frame, x, 1.7, T.z1 + 0.09);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.8), mat('#ffffff', { map: posterTex(), e: '#ffffff', ei: 0.6, glow: 'win' }));
+    p.position.set(x, 1.7, T.z1 + 0.19); g.add(p);
+  }
   boxes.push([T.x0, T.x1, T.z0, T.z1, T.h]);
 
-  // --- cuerpo principal de dos plantas (x -7..13) ---
-  // planta baja acristalada y retranqueada; la planta alta vuela 1,2 m y hace de marquesina
-  const M = { x0: -7, x1: 13, z0: -9, z1: 0, h1: 4.4, h: 8.6, fly: 1.2 };
-  const dark = mat('#3b3f45', anth);
-  slab(g, dark, M.x0, M.x1, 0, M.h1, M.z0, M.z1 - 0.9);                                    // fondo de la planta baja
-  texPlane(g, anthT, M.z1 - M.z0, M.h, [4, 3], anth, M.x1 + 0.01, M.h / 2, (M.z0 + M.z1) / 2, Math.PI / 2); // costado
-  slab(g, plinth, M.x0, M.x1, 0, 0.3, M.z1 - 0.3, M.z1 - 0.1);
-  const glowInt = new THREE.Mesh(new THREE.PlaneGeometry(M.x1 - M.x0 - 0.4, M.h1 - 0.5), mat('#ffffff', { map: interiorTex('eclipse', '#c99ae8', '#7a3ccf'), e: '#ffffff', ei: 0.6, glow: 'win' }));
-  glowInt.position.set((M.x0 + M.x1) / 2, M.h1 / 2, M.z1 - 0.88); g.add(glowInt);
-  const dglass = mat('#3d5566', { t: 0.3, r: 0.05, m: 0.4 });
-  slab(g, dglass, M.x0 + 0.1, M.x1 - 0.1, 0.3, M.h1, M.z1 - 0.22, M.z1 - 0.2);
-  for (let x = M.x0 + 0.1; x <= M.x1 - 0.05; x += 2.5) slab(g, frame, x - 0.05, x + 0.05, 0.3, M.h1, M.z1 - 0.26, M.z1 - 0.14);
-  slab(g, frame, M.x0, M.x1, 2.9, 3.0, M.z1 - 0.26, M.z1 - 0.14);                          // travesaño de los cristales
-  // puerta doble con tiradores; alfombra roja con postes y cordón (es una discoteca)
-  const dx = 4.6, dz = M.z1 - 0.14;
-  slab(g, frame, dx - 1.35, dx + 1.35, 0.3, 3.0, dz - 0.04, dz + 0.04);
-  slab(g, mat('#15171a', { r: 0.2, m: 0.3 }), dx - 1.2, dx + 1.2, 0.32, 2.88, dz + 0.04, dz + 0.06);
-  for (const s2 of [-1, 1]) slab(g, mat('#c9cfd6', { m: 0.8, r: 0.25 }), dx + s2 * 0.18 - 0.03, dx + s2 * 0.18 + 0.03, 1.0, 2.2, dz + 0.06, dz + 0.1);
-  slab(g, mat('#8e1b1b', { r: 0.9 }), dx - 1.1, dx + 1.1, 0.01, 0.04, dz, M.z1 + 3.4);
+  // --- el disco del eclipse: hormigón claro con portal circular (centro x 1, y 4.6) ---
+  const D = { x: 1, y: 4.6, R: 5.4, r: 3.1, z: -2.2, d: 1.4 };
+  const disc = add(g, ringGeo('discoEclipse', D.R, D.r, D.d), texMat(concreteTex(), [0.25, 0.25], { r: 0.85 }), D.x, D.y, D.z);
+  disc.scale.set(1, 1, 1);
+  add(g, cache('coronaPortal', () => new THREE.TorusGeometry(D.r + 0.05, 0.11, 12, 72)), led, D.x, D.y, D.z + D.d + 0.12);      // corona de luz
+  add(g, cache('coronaExterior', () => new THREE.TorusGeometry(D.R + 0.02, 0.06, 8, 96)), mat('#d9b8ff', { e: '#b98cff', ei: 0.9, glow: 'sign' }), D.x, D.y, D.z + D.d + 0.1);
+  // el disco se apoya en un zócalo (corta la parte que quedaría bajo el suelo)
+  slab(g, mat('#5a5d61', { r: 0.8 }), D.x - 4.4, D.x + 4.4, -0.8, 0.35, D.z - 0.1, D.z + D.d + 0.2);
+  // dentro del portal: vestíbulo iluminado con puertas de cristal
+  const lobby = new THREE.Mesh(new THREE.CircleGeometry(D.r, 48), mat('#ffffff', { map: interiorTex('eclipseHall', '#d7a6ff', '#7a3ccf'), e: '#ffffff', ei: 0.7, glow: 'win' }));
+  lobby.position.set(D.x, D.y, D.z - 0.3); g.add(lobby);
+  add(g, cache('cristalPortal', () => new THREE.CircleGeometry(D.r, 48)), glassM, D.x, D.y, D.z + 0.4);
+  for (const s2 of [-1, 1]) slab(g, frame, D.x + s2 * 1.25 - 0.05, D.x + s2 * 1.25 + 0.05, 0.35, 3.3, D.z + 0.38, D.z + 0.46);
+  slab(g, frame, D.x - 1.3, D.x + 1.3, 3.25, 3.35, D.z + 0.38, D.z + 0.46);
+  for (const s2 of [-1, 1]) slab(g, mat('#c9cfd6', { m: 0.8, r: 0.25 }), D.x + s2 * 0.18 - 0.03, D.x + s2 * 0.18 + 0.03, 1.1, 2.3, D.z + 0.46, D.z + 0.52);
+  boxes.push([D.x - D.R, D.x - D.r + 0.3, D.z, D.z + D.d, 9], [D.x + D.r - 0.3, D.x + D.R, D.z, D.z + D.d, 9]);
+
+  // --- ala derecha de dos plantas con esquina de cristal curva (x 11..20, z -12..1) ---
+  const Wg = { x0: 11, x1: 20, z0: -12, z1: 1, h1: 3.8, h: 7.4, rc: 3 };
+  // planta en forma de L con la esquina delantera derecha en cuarto de círculo
+  const plan = [[Wg.x0, Wg.z0], [Wg.x1, Wg.z0], [Wg.x1, Wg.z1 - Wg.rc], ...arcPts(Wg.x1 - Wg.rc, Wg.z1 - Wg.rc, Wg.rc, 0, Math.PI / 2, 16), [Wg.x0, Wg.z1]];
+  add(g, plateGeo('alaSuelo', plan, 0.25), concrete, 0, 0, 0);
+  add(g, plateGeo('alaForjado', plan, 0.35), white, 0, Wg.h1, 0);
+  add(g, plateGeo('alaCubierta', plan.map(([x, z]) => [x, Math.min(z, Wg.z1 - 3)]), 0.4), white, 0, Wg.h, 0);
+  // planta baja: muro curvo de cristal (tubo abierto) con montantes, sobre el interior cálido
+  const curve = cache('alaCurva', () => {
+    const cpts = [[Wg.x0, Wg.z1], [Wg.x1 - Wg.rc, Wg.z1], ...arcPts(Wg.x1 - Wg.rc, Wg.z1 - Wg.rc, Wg.rc, Math.PI / 2, 0, 16).slice(1), [Wg.x1, Wg.z0]];
+    const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.lineTo(0.06, 0); shape.lineTo(0.06, Wg.h1 - 0.25); shape.lineTo(0, Wg.h1 - 0.25);
+    const path = new THREE.CurvePath();
+    for (let i = 0; i < cpts.length - 1; i++) path.add(new THREE.LineCurve3(new THREE.Vector3(cpts[i][0], 0, cpts[i][1]), new THREE.Vector3(cpts[i + 1][0], 0, cpts[i + 1][1])));
+    return { cpts, path };
+  });
+  const wallPts = curve.cpts;
+  for (let i = 0; i < wallPts.length - 1; i++) {
+    const [ax, az] = wallPts[i], [bx, bz] = wallPts[i + 1], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(-(bz - az), bx - ax);
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    add(g, box(len + 0.02, Wg.h1 - 0.25, 0.05), glassM, mx, 0.25 + (Wg.h1 - 0.25) / 2, mz, 0, ang, 0);
+    const inner = add(g, cache('intAla' + i, () => new THREE.PlaneGeometry(len + 0.02, Wg.h1 - 0.4)), mat('#ffffff', { map: interiorTex('eclipseBar', '#f2c79a', '#b0602a'), e: '#ffffff', ei: 0.55, glow: 'win' }), mx + ((bz - az) / len) * 0.6, 0.25 + (Wg.h1 - 0.4) / 2, mz - ((bx - ax) / len) * 0.6, 0, ang, 0);
+    inner.userData.noShadow = true;
+    add(g, box(0.07, Wg.h1 - 0.25, 0.09), frame, ax, 0.25 + (Wg.h1 - 0.25) / 2, az, 0, ang, 0);
+  }
+  slab(g, graphite, Wg.x0, Wg.x1 - 0.2, 0.25, Wg.h1, Wg.z0, Wg.z1 - 1.6); // núcleo interior
+  // planta alta: volumen retranqueado de hormigón con ventanal corrido y terraza VIP delante
+  const up = { z1: Wg.z1 - 3 };
+  slab(g, concrete, Wg.x0, Wg.x1, Wg.h1 + 0.35, Wg.h, Wg.z0, up.z1 - 0.6);
+  for (let k = 0; k < 3; k++) {
+    const cx = Wg.x0 + 1.6 + k * 2.9;
+    const w2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.3), mat('#ffffff', { map: interiorTex('eclipseVip', '#e9b7ff', '#7a3ccf'), e: '#ffffff', ei: 0.5, glow: 'win' }));
+    w2.position.set(cx, Wg.h1 + 1.85, up.z1 - 0.58); g.add(w2);
+    frameRing(g, frame, cx, Wg.h1 + 1.85, 2.6, 2.5, up.z1 - 0.62, 0.08, 0.14);
+  }
+  // barandilla de cristal de la terraza siguiendo la curva, con pasamanos
+  for (let i = 0; i < wallPts.length - 1; i++) {
+    const [ax, az] = wallPts[i], [bx, bz] = wallPts[i + 1], len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(-(bz - az), bx - ax);
+    if (az < up.z1 - 0.1 && bz < up.z1 - 0.1) continue;
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    add(g, box(len, 1.0, 0.04), mat('#cfe6f2', { t: 0.3, r: 0.05 }), mx, Wg.h1 + 0.35 + 0.5, mz, 0, ang, 0);
+    add(g, box(len + 0.04, 0.06, 0.08), mat('#c9cfd6', { m: 0.8, r: 0.25 }), mx, Wg.h1 + 0.35 + 1.03, mz, 0, ang, 0);
+  }
+  // pérgola de madera sobre la terraza
+  for (const x of [Wg.x0 + 0.4, Wg.x1 - 1.6]) add(g, cyl(0.08, 0.08, 2.8, 10), frame, x, Wg.h1 + 0.35 + 1.4, Wg.z1 - 0.6);
+  const perg = add(g, box(Wg.x1 - Wg.x0 - 0.6, 0.12, 3.2), texMat(slatTex(), [4, 1], { r: 0.7 }), (Wg.x0 + Wg.x1) / 2 - 0.5, Wg.h1 + 0.35 + 2.85, Wg.z1 - 1.9);
+  perg.userData.noMerge = false;
+  // muebles de la terraza: sofás bajos y plantas
+  for (const [x, z] of [[Wg.x0 + 1.5, Wg.z1 - 1.0], [Wg.x0 + 4.5, Wg.z1 - 1.0]]) {
+    add(g, rbox(1.8, 0.4, 0.8, 0.15), mat('#e9e4dc', { r: 0.9 }), x, Wg.h1 + 0.35 + 0.2, z);
+    add(g, rbox(1.8, 0.5, 0.2, 0.08), mat('#e9e4dc', { r: 0.9 }), x, Wg.h1 + 0.35 + 0.5, z - 0.35);
+  }
+  boxes.push([Wg.x0, Wg.x1, Wg.z0, Wg.z1, Wg.h]);
+
+  // --- escalinata con luz en los peldaños, alfombra roja, postes y cordón ---
+  for (let k = 0; k < 3; k++) {
+    const z0 = D.z + D.d + 0.2 + k * 0.45, y = 0.35 - k * 0.12;
+    slab(g, concrete, D.x - 3.2, D.x + 3.2, 0, y, z0, z0 + 0.45);
+    slab(g, warm, D.x - 3.1, D.x + 3.1, y - 0.04, y - 0.01, z0 + 0.44, z0 + 0.46);
+  }
+  slab(g, mat('#8e1b1b', { r: 0.9 }), D.x - 1.0, D.x + 1.0, 0.36, 0.38, D.z + D.d + 0.2, D.z + D.d + 0.55);
+  slab(g, mat('#8e1b1b', { r: 0.9 }), D.x - 1.0, D.x + 1.0, 0.01, 0.04, D.z + D.d + 1.5, D.z + D.d + 5);
   const gold = mat('#c9a54a', { r: 0.3, m: 0.8 });
   for (const s2 of [-1, 1]) for (let k = 0; k < 3; k++) {
-    const px = dx + s2 * 1.5, pz = M.z1 + 0.6 + k * 1.3;
+    const px = D.x + s2 * 1.4, pz = D.z + D.d + 2 + k * 1.2;
     add(g, cyl(0.05, 0.05, 1.0, 10), gold, px, 0.5, pz); add(g, cyl(0.16, 0.18, 0.05, 14), gold, px, 0.03, pz);
     add(g, cache('bolaPoste', () => new THREE.SphereGeometry(0.07, 10, 8)), gold, px, 1.03, pz);
-    if (k < 2) add(g, cyl(0.025, 0.025, 1.3, 6), mat('#8e1b1b', { r: 0.8 }), px, 0.85, pz + 0.65, Math.PI / 2);
+    if (k < 2) add(g, cyl(0.025, 0.025, 1.2, 6), mat('#8e1b1b', { r: 0.8 }), px, 0.85, pz + 0.6, Math.PI / 2);
   }
-  // planta alta en voladizo: banda oscura abajo (con focos), paño claro con ventanales, banda oscura arriba
-  const zf = M.z1 + M.fly;
-  slab(g, dark, M.x0, M.x1, M.h1, M.h1 + 0.7, M.z0, zf);                                   // canto inferior / techo de la entrada
-  slab(g, dark, M.x0, M.x1, M.h - 0.6, M.h, M.z0, zf + 0.05);                               // banda superior
-  slab(g, mat('#3b3f45', anth), M.x0, M.x1, M.h1 + 0.7, M.h - 0.6, M.z0, zf - 0.3);        // macizo
-  texPlane(g, lightT, M.x1 - M.x0, M.h - M.h1 - 1.3, [5, 1], light, (M.x0 + M.x1) / 2, (M.h + M.h1 + 0.1) / 2, zf - 0.29, 0);
-  const down = mat('#fff3dc', { e: '#ffe6b8', ei: 1.5, glow: 'win' });
-  for (let x = M.x0 + 1; x < M.x1; x += 2) add(g, cyl(0.12, 0.12, 0.03, 12), down, x, M.h1 - 0.01, zf - 0.5);
-  for (let k = 0; k < 4; k++) {
-    const cx = M.x0 + 2.5 + k * 5, cy = (M.h + M.h1 + 0.1) / 2, ww = 3.6, wh = M.h - M.h1 - 2.0;
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(ww - 0.2, wh - 0.2), mat('#ffffff', { map: interiorTex('eclipseAlta', '#e8c9a8', '#6b4a3a'), e: '#ffffff', ei: 0.45, glow: 'win' }));
-    win.position.set(cx, cy, zf - 0.27); g.add(win);
-    slab(g, mat('#a9c1d1', { t: 0.22, r: 0.05, m: 0.3 }), cx - ww / 2, cx + ww / 2, cy - wh / 2, cy + wh / 2, zf - 0.22, zf - 0.21);
-    frameRing(g, mat('#2f3338', { r: 0.4, m: 0.6 }), cx, cy, ww + 0.2, wh + 0.2, zf - 0.32, 0.1, 0.18);
-    slab(g, frame, cx - 0.03, cx + 0.03, cy - wh / 2, cy + wh / 2, zf - 0.25, zf - 0.19);   // montante
-    slab(g, coping, cx - ww / 2 - 0.2, cx + ww / 2 + 0.2, cy - wh / 2 - 0.22, cy - wh / 2 - 0.12, zf - 0.3, zf - 0.05); // vierteaguas
-    if (k < 3) slab(g, dark, cx + 2.42, cx + 2.58, M.h1 + 0.7, M.h - 0.6, zf - 0.3, zf + 0.15); // lama vertical
+  // apliques de pared a los lados del disco (luz hacia arriba y abajo)
+  for (const x of [D.x - 4.6, D.x + 4.6]) {
+    add(g, rbox(0.25, 0.5, 0.2, 0.05), frame, x, 2.6, D.z + D.d + 0.12);
+    add(g, cyl(0.1, 0.1, 0.02, 10), warm, x, 2.34, D.z + D.d + 0.12);
+    add(g, cyl(0.1, 0.1, 0.02, 10), warm, x, 2.86, D.z + D.d + 0.12);
   }
-  slab(g, coping, M.x0 - 0.05, M.x1 + 0.05, M.h, M.h + 0.45, M.z0 - 0.05, zf + 0.1);         // peto
-  slab(g, mat('#e3e0da', { r: 0.6 }), M.x0 - 0.1, M.x1 + 0.1, M.h + 0.45, M.h + 0.55, M.z0 - 0.1, zf + 0.15);
-  boxes.push([M.x0, M.x1, M.z0, M.z1 - 0.1, M.h]);
+  // cubierta: máquinas y caseta
+  add(g, rbox(2.4, 1.2, 1.8, 0.1), mat('#a7adb3', { r: 0.4, m: 0.5 }), 3, H.h + 0.85, -10);
+  add(g, rbox(1.6, 0.9, 1.3, 0.1), mat('#a7adb3', { r: 0.4, m: 0.5 }), 7, H.h + 0.7, -11);
 
-  // --- anexo bajo a la derecha (x 13..19): piedra clara, ventana y puerta de servicio ---
-  const A = { x0: 13, x1: 19, z0: -8, z1: -0.6, h: 4.6 };
-  slab(g, mat('#cfc8bb', { r: 0.9 }), A.x0, A.x1, 0, A.h, A.z0, A.z1);
-  for (let y = 0.6; y < A.h; y += 0.6) slab(g, mat('#bdb5a7', { r: 0.9 }), A.x0, A.x1 + 0.01, y, y + 0.03, A.z1, A.z1 + 0.01); // hiladas
-  slab(g, frame, A.x0 + 0.8, A.x0 + 3.4, 1.4, 3.2, A.z1, A.z1 + 0.08);
-  const w2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6), mat('#ffffff', { map: interiorTex('eclipseAnexo', '#f2d7a8', '#7a5a3a'), e: '#ffffff', ei: 0.35, glow: 'win' }));
-  w2.position.set(A.x0 + 2.1, 2.3, A.z1 + 0.09); g.add(w2);
-  slab(g, mat('#4a4f55', { r: 0.5, m: 0.5 }), A.x1 - 2.0, A.x1 - 0.8, 0, 2.3, A.z1, A.z1 + 0.06);                // puerta de servicio
-  slab(g, coping, A.x0, A.x1 + 0.08, A.h, A.h + 0.25, A.z0, A.z1 + 0.08);
-  add(g, rbox(0.9, 0.6, 0.5, 0.05), mat('#9aa1a9', { r: 0.4, m: 0.5 }), A.x1 - 1.4, 3.6, A.z1 + 0.3);           // aire acondicionado
-  boxes.push([A.x0, A.x1, A.z0, A.z1, A.h]);
-
-  // --- cubierta: máquinas, caseta de escalera y antena ---
-  add(g, rbox(2.2, 1.2, 1.6, 0.06), mat('#a7adb3', { r: 0.4, m: 0.5 }), 2, M.h + 0.55 + 0.6, -5);
-  add(g, rbox(1.4, 0.9, 1.2, 0.06), mat('#a7adb3', { r: 0.4, m: 0.5 }), 8, M.h + 0.6 + 0.45, -6);
-  slab(g, mat('#c9c6c0', { r: 0.7 }), -5, -2, M.h + 0.6, M.h + 2.8, -8, -5.5);
-  add(g, cyl(0.03, 0.03, 2.5, 6), frame, 10, M.h + 1.85, -7.5);
-
-  // --- palmera y jardinera junto a la entrada (como en la lámina) se ponen desde la isla ---
-  return { group: g, boxes, door: { x: dx, z: M.z1 + 0.8 } };
+  return { group: g, boxes, door: { x: D.x, z: D.z + D.d + 1.4 }, planters: [[-18, 1.5], [9.2, 3.2]] };
 }
 
 export const FACADES = { eclipse };
