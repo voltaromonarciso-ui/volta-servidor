@@ -270,6 +270,7 @@ async function startGame(fresh, look) {
   document.getElementById('hud').classList.remove('hide');
   applyLayout();
   clock.getDelta();
+  G.started = true;
   G.paused = false;
   if (!loaded) intro();
   else toast('Partida cargada. ¡Bienvenido de nuevo!', '💾');
@@ -402,11 +403,14 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   G.time += dt;
   if (G.paused) {
-    // cámara orbitando sobre el pueblo en el menú
-    menuAng += dt * 0.05;
-    G.state.minute = 18.3 * 60;
-    camera.position.set(-50 + Math.cos(menuAng) * 6, 2.2, -33 + Math.sin(menuAng) * 3);
-    camera.lookAt(-140, 6, 40);
+    // menú principal: cámara orbitando sobre el pueblo a la hora del atardecer.
+    // Con una partida en marcha (editor de controles) no se toca ni el reloj ni la cámara.
+    if (!G.started) {
+      menuAng += dt * 0.05;
+      G.state.minute = 18.3 * 60;
+      camera.position.set(-50 + Math.cos(menuAng) * 6, 2.2, -33 + Math.sin(menuAng) * 3);
+      camera.lookAt(-140, 6, 40);
+    }
     G.world.update(dt);
     sky.update(dt);
     renderFrame(false);
