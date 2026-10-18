@@ -133,3 +133,8 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - Prioridad: primero todos los elementos de la lámina «Calles y ciudad»
   (09-tiendas-calles-objetos.png) y ~10 cajeros repartidos por la isla; después
   edificios e interiores (gasolinera 06, casino 07/08, tiendas…).
+
+## Más indicaciones del usuario
+- La tienda de armas (Armería) desaparece: armas y mesas avanzadas se venden en El Cartel.
+- Enviar capturas al usuario a medida que haya avances (cada elemento/zona), para que
+  diga si va bien o hay que parar y corregir. No avanzar mucho sin su visto bueno.
