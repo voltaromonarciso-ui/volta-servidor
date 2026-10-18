@@ -2,6 +2,8 @@
 // tres cuartos desde arriba, sobre fondo azul como la lámina de referencia.
 import * as THREE from 'three';
 import { STREET_KIT, STREET_KIT_2, STREET_KIT_3, STREET_KIT_4, STREET_KIT_5 } from './world/streetkit.js';
+import { eclipse } from './world/facades.js';
+const BUILDINGS = [['El Eclipse', () => eclipse().group]];
 
 const W = innerWidth, H = innerHeight;
 const r = new THREE.WebGLRenderer({ antialias: true });
@@ -11,8 +13,8 @@ r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
 r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
 r.setScissorTest(true);
 document.body.appendChild(r.domElement);
-const items = { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5 }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
-const cols = items.length <= 10 ? 5 : 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
+const items = { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
+const cols = items.length === 1 ? 1 : items.length <= 10 ? 5 : 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
 const lab = document.getElementById('lab');
 items.forEach(([name, fn], i) => {
   const scene = new THREE.Scene();

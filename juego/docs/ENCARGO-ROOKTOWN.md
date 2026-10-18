@@ -160,3 +160,10 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - **Siguiente local**: el **piso inicial en Apartamentos**, como **estudio pequeño** (una
   habitación con cama, cocina básica, baño y hueco para las primeras mesas).
 - Indicación general: preguntar siempre lo que no esté claro antes de decidirlo.
+- **Colores de edificios**: nada de colores raros (p. ej. el morado de El Eclipse); solo lo
+  común: blancos, cremas, beige, arena, piedra, gris claro, ladrillo.
+- **Edificios**: «no una caja con 20 ventanas». Orden: **primero las fachadas de los locales**
+  (El Eclipse, Las Palmeras, Taller, Motel, Casino, El Cartel…) copiando forma y detalles de las
+  imágenes 01/02 tal cual, con colores de pared normales; **después el piso inicial**.
+  Edificios de relleno: **sencillos pero no cajas** (cornisa, zócalo, marcos de ventana…),
+  ligeros para el móvil.
