@@ -1,7 +1,7 @@
 import { G, clamp } from '../game.js';
 import { CLOTHES, HAIR_COLORS, BEARDS, SLOTS, RECOG_WEIGHTS, RECOG_MINUTES } from '../data/style.js';
 import { INV_SIZE, absNow, save } from '../core/state.js';
-import { addMoney } from './economy.js';
+import { spend } from './economy.js';
 
 // Reglas centrales de apariencia: qué llevas, qué cuesta cambiarlo, cómo te
 // reconoce la policía y qué efectos tienen las prendas. Peluquería, tienda de
@@ -38,10 +38,10 @@ export function barberApply(next) {
   if (next.beard !== 'none' && !canBeard()) return { ok: false, msg: 'Ese servicio no está disponible para ti.' };
   const price = barberQuote(next);
   if (price === 0) return { ok: false, msg: 'No has cambiado nada.' };
-  if (G.state.money < price) return { ok: false, msg: 'No tienes suficiente dinero.' };
+  const r = spend('dirty', price, 'peluquería');
+  if (!r.ok) return { ok: false, msg: r.msg };
   G.state.style.hair = next.hair;
   G.state.style.beard = next.beard;
-  addMoney(-price);
   changed();
   return { ok: true, price };
 }
@@ -53,10 +53,10 @@ export function buyClothes(id) {
   const it = CLOTHES[id];
   if (!it) return { ok: false, msg: 'Esa prenda no existe.' };
   if (owns(id)) return { ok: false, msg: 'Ya la tienes.' };
-  if (G.state.money < it.price) return { ok: false, msg: 'No tienes suficiente dinero.' };
+  const r = spend('dirty', it.price, `ropa: ${it.name}`, { key: `ropa:${id}` });
+  if (!r.ok) return { ok: false, msg: r.msg };
   style();
   G.state.wardrobe.owned.push(id);
-  addMoney(-it.price);
   save();
   return { ok: true };
 }

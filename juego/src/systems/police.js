@@ -2,11 +2,11 @@ import { G, rand, pick } from '../game.js';
 import { Cop } from '../entities/npc.js';
 import { OFFICERS } from '../data/people.js';
 import { ITEMS } from '../data/items.js';
-import { illegalCount, save } from '../core/state.js';
+import { illegalCount, save, absNow } from '../core/state.js';
 import { sfx, setSiren } from '../core/audio.js';
 import { input } from '../core/input.js';
 import { ROADS } from '../world/world.js';
-import { addMoney, addRep } from './economy.js';
+import { spend, addRep } from './economy.js';
 import { rememberIncident, recognition, RECOG_LEVEL } from './appearance.js';
 
 // Patrullas, toque de queda (21:00–05:00), cacheos y persecuciones.
@@ -138,10 +138,15 @@ export function flee(cop) {
 
 export function arrest(cop) {
   const s = G.state;
+  // una detención por instante de juego: si llega dos veces la misma, la segunda no hace nada
+  const at = Math.floor(absNow());
+  if (s.lastArrestAt === at) return;
+  s.lastArrestAt = at;
   let lost = 0;
   s.inv.forEach((slot, i) => { if (slot && ITEMS[slot.id].illegal) { lost += slot.q; s.inv[i] = null; } });
-  const fine = Math.min(Math.max(0, s.money), 150 + s.rank * 75 + lost * 5);
-  addMoney(-fine);
+  // la multa sale solo del efectivo que llevas (nunca del dinero limpio ni de la caja fuerte)
+  const fine = Math.floor(Math.min(Math.max(0, s.money), 150 + s.rank * 75 + lost * 5));
+  if (fine > 0) spend('dirty', fine, 'multa', { key: `arrest:${at}` });
   addRep(-4); // que te detengan se sabe en el barrio
   rememberIncident();
   wanted.level = 0; wanted.unseen = 0;

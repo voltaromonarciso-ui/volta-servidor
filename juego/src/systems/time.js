@@ -1,6 +1,6 @@
 import { G } from '../game.js';
 import { save, absNow } from '../core/state.js';
-import { onHour, onMinute, addMoney, sendMsg } from './economy.js';
+import { onHour, onMinute, spend, sendMsg } from './economy.js';
 import { simulateObjects } from './objects.js';
 import { tickStaff } from './staff.js';
 import { resetPolice, wanted } from './police.js';
@@ -91,7 +91,12 @@ function passOut() {
   const s = G.state;
   const outside = !G.world.inProperty(G.player.pos.x, G.player.pos.z);
   let lost = 0;
-  if (outside && s.money > 0) { lost = Math.round(s.money * 0.1); addMoney(-lost); }
+  // pierdes el 10 % del efectivo (no el dinero limpio ni la caja fuerte); una vez por noche
+  if (outside && s.money > 0 && s.lastFaintDay !== s.day) {
+    s.lastFaintDay = s.day;
+    lost = Math.round(s.money * 0.1);
+    if (!(lost > 0 && spend('dirty', lost, 'desmayo', { key: `faint:${s.day}` }).ok)) lost = 0;
+  }
   sleep(s.home || 'nave', true);
   if (lost) setTimeout(() => sendMsg('leo', `Primo, te encontraron dormido en la calle. Te faltan ${lost}$... Vete a casa antes de las 4:00.`), 2500);
 }

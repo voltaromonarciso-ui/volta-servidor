@@ -6,7 +6,7 @@ import { absNow, save } from '../core/state.js';
 import { VEHICLES, PARKING, RECOVER_PRICE } from '../data/vehicles.js';
 import { buildBike, buildScooter } from '../entities/rideables.js';
 import { bendPose, clearPose } from '../entities/avatar.js';
-import { addMoney } from './economy.js';
+import { spend } from './economy.js';
 
 // Conducción de vehículos ligeros (bici, patinete; preparado para más).
 // - A pie todo sigue en primera persona; al montar, la cámara pasa suavemente a
@@ -33,11 +33,11 @@ export function buyVehicle(type) {
   const def = VEHICLES[type];
   if (!def) return { ok: false, msg: 'Ese vehículo no existe.' };
   if (ownsVehicle(type)) return { ok: false, msg: 'Ya tienes uno.' };
-  if (G.state.money < def.price) return { ok: false, msg: 'No tienes suficiente dinero.' };
+  const r = spend('dirty', def.price, `vehículo: ${def.name}`);
+  if (!r.ok) return { ok: false, msg: r.msg };
   const p = PARKING[type];
   const entry = { uid: G.state.nextUid++, type, x: p.x, z: p.z, yaw: p.yaw, battery: def.battery ? 1 : null, t: absNow() };
   (G.state.vehicles ||= []).push(entry);
-  addMoney(-def.price);
   spawnVehicle(entry);
   save();
   return { ok: true };
@@ -48,8 +48,8 @@ export function recoverVehicle(type) {
   const e = (G.state.vehicles || []).find((v) => v.type === type);
   if (!e) return { ok: false, msg: 'No tienes ese vehículo.' };
   if (R && R.v.entry === e) return { ok: false, msg: 'Lo estás usando.' };
-  if (G.state.money < RECOVER_PRICE) return { ok: false, msg: 'No tienes suficiente dinero.' };
-  addMoney(-RECOVER_PRICE);
+  const r = spend('dirty', RECOVER_PRICE, 'grúa');
+  if (!r.ok) return { ok: false, msg: r.msg };
   park(e, PARKING[type]);
   save();
   return { ok: true };

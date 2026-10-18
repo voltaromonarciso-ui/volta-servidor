@@ -3,6 +3,7 @@ import { ITEMS, STRAINS, RANKS } from '../data/items.js';
 import { EFFECTS, productValue } from '../data/effects.js';
 import { PEOPLE, STARTING_CUSTOMERS } from '../data/people.js';
 import { inv, absNow, save } from '../core/state.js';
+import { apply as applyTx, check as checkTx, transfer as transferTx, keyUsed } from '../core/money.js';
 import { sfx } from '../core/audio.js';
 import { styleBonus } from './appearance.js';
 
@@ -27,10 +28,36 @@ export function unitsOf(slot) { return slot.q * (ITEMS[slot.id].units || 1); }
 // ------------------------------------------------------------------
 //  Dinero, experiencia, rangos
 // ------------------------------------------------------------------
-export function addMoney(n) {
-  G.state.money += n;
-  if (n > 0) { G.state.stats.earned += n; G.state.today.earned += n; }
-  emit('money', n);
+// Cuenta con la que se paga cada cosa que puede cambiar de cuenta en el futuro
+// (decisión A1: en esta etapa el bungalow sigue pagándose con efectivo sucio).
+export const PAY_ACCOUNT = { bungalow: 'dirty' };
+
+const EVENT = { dirty: 'money', clean: 'clean' };
+function done(r, acc) {
+  if (r.ok) emit(EVENT[acc], r.signed);
+  return r;
+}
+// Ingreso. `sale`: es una venta (cuenta para «Ganado» y el objetivo de 10.000 $).
+export function earn(acc, amount, reason, { key, sale = false } = {}) {
+  const r = applyTx(G.state, { acc, amount, kind: 'ingreso', reason, key }, absNow());
+  if (r.ok && sale) { G.state.stats.earned += r.amount; G.state.today.earned += r.amount; }
+  return done(r, acc);
+}
+// Gasto. Nunca deja saldo negativo, salvo el alquiler (allowNegative + reason 'alquiler').
+export function spend(acc, amount, reason, { key, allowNegative = false } = {}) {
+  return done(applyTx(G.state, { acc, amount, kind: 'gasto', reason, key, allowNegative }, absNow()), acc);
+}
+export const canSpend = (acc, amount, reason = 'comprobación') => checkTx(G.state, { acc, amount, kind: 'gasto', reason }).ok;
+export const balance = (acc) => (acc === 'clean' ? G.state.clean : G.state.money) || 0;
+// Caja fuerte: transferencias del efectivo sucio a la caja y al revés (no son ingreso ni gasto).
+export function toSafe(box, amount) { const r = transferTx(G.state, box, amount, 1, 'caja fuerte: guardar', absNow()); if (r.ok) emit('money', -r.amount); return r; }
+export function fromSafe(box, amount) { const r = transferTx(G.state, box, amount, -1, 'caja fuerte: sacar', absNow()); if (r.ok) emit('money', r.amount); return r; }
+
+// Compatibilidad: código antiguo que mueva efectivo sucio sin motivo. Positivo = venta
+// (como antes: contaba para «Ganado»), negativo = gasto que no puede dejar saldo negativo.
+// Todo el código actual usa ya earn/spend; esto queda solo por si algo externo lo llama.
+export function addMoney(n, reason = 'sin motivo') {
+  return n >= 0 ? earn('dirty', n, reason, { sale: true }) : spend('dirty', -n, reason);
 }
 
 export function addXP(n) {
@@ -262,19 +289,29 @@ export function negotiateDeal(deal, total) {
 }
 
 // Entrega del pedido: `given` = [{id, p, q}] que salen del inventario.
+// Un trato se cobra UNA vez: solo si está «aceptado»; se comprueba todo antes de tocar
+// nada (mercancía real en el inventario, importe y clave deal:<id>); después se retira la
+// mercancía, se cierra el trato y se cobra. Si el cobro fallara, se deshace lo anterior.
 export function completeDeal(deal, given) {
+  if (!deal || deal.status !== 'accepted') return { ok: false, msg: 'Este trato ya no está pendiente.' };
+  const key = `deal:${deal.id}`;
+  if (keyUsed(G.state, key)) return { ok: false, msg: 'Este trato ya está cobrado.' };
   const person = personOf(deal.npc);
   const c = customer(deal.npc);
   let units = 0, rightUnits = 0, likes = 0;
+  const need = {};
   for (const g of given) {
+    if (!ITEMS[g.id] || !(g.q > 0)) return { ok: false, msg: 'Entrega no válida.' };
     const u = g.q * (ITEMS[g.id].units || 1);
     units += u;
     if (g.p === deal.product) rightUnits += u;
     likes = Math.max(likes, prefMatches(person, product(g.p)));
+    const k = g.id + '|' + (g.p || '');
+    need[k] = (need[k] || 0) + g.q;
   }
   if (units < deal.qty) return { ok: false, msg: `Faltan ${deal.qty - units} unidades.` };
   if (rightUnits < deal.qty && likes === 0) return { ok: false, msg: 'Esto no es lo que pedí.' };
-  for (const g of given) inv.remove(g.id, g.q, g.p);
+  for (const [k, q] of Object.entries(need)) { const [id, p] = k.split('|'); if (inv.count(id, p || undefined) < q) return { ok: false, msg: 'No llevas lo que ibas a entregar.' }; }
   const formOk = deal.form && given.every((g) => g.id === deal.form);
   let pay = rightUnits >= deal.qty ? deal.price : Math.round(deal.price * 0.85);
   const jars = given.filter((g) => g.id === 'tarro').reduce((a, g) => a + g.q * 5, 0);
@@ -284,8 +321,14 @@ export function completeDeal(deal, given) {
   const p = product(deal.product);
   const unit = deal.price / deal.qty;
   const satisfaction = clamp((rightUnits >= deal.qty ? 1 : 0.6) + prefMatches(person, p) * 0.15 + (prodValue(p) / unit - 1) * 0.5, 0, 2);
+  const pre = checkTx(G.state, { acc: 'dirty', amount: pay, kind: 'ingreso', reason: 'trato', key });
+  if (!pre.ok) return { ok: false, msg: pre.msg };
+  // a partir de aquí todo está comprobado
+  const before = G.state.inv.map((x) => (x ? { ...x } : null));
+  for (const g of given) inv.remove(g.id, g.q, g.p);
   deal.status = 'done';
-  addMoney(pay);
+  const paid = earn('dirty', pay, 'trato', { key, sale: true });
+  if (!paid.ok) { G.state.inv = before; deal.status = 'accepted'; return { ok: false, msg: paid.msg }; }
   c.affinity = clamp(c.affinity + Math.round(3 + satisfaction * 5 + (formOk ? 3 : 0)), 0, 100);
   addAddiction(c, units, p);
   c.lastBuy = G.state.day;
@@ -379,13 +422,15 @@ export function directSale(npc, slot, qty, unit) {
   const units = qty * (ITEMS[slot.id].units || 1);
   const total = Math.round(units * unit);
   if (total > saleBudget(npc)) return { ok: false, msg: `${first}: «No llevo tanto dinero encima. Como mucho ${money(saleBudget(npc))}.»` };
+  const pre = checkTx(G.state, { acc: 'dirty', amount: total, kind: 'ingreso', reason: 'venta en mano' });
+  if (!pre.ok) return { ok: false, msg: pre.msg };
   c.walkDay = G.state.day;
   if (Math.random() >= saleChance(npc, slot, unit)) {
     c.affinity = Math.max(0, c.affinity - 1);
     return { ok: true, accepted: false, msg: `${first}: «${pick(['Uf, a ese precio no.', 'Hoy paso, gracias.', 'Demasiado caro para mí.'])}»` };
   }
   inv.remove(slot.id, qty, slot.p);
-  addMoney(total);
+  earn('dirty', total, 'venta en mano', { sale: true });
   c.affinity = clamp(c.affinity + 2 + prefMatches(npc.person, p), 0, 100);
   addAddiction(c, units, p);
   c.lastBuy = G.state.day;
@@ -424,9 +469,10 @@ export function onHour(hour) {
       if (!busy && days >= 2 && c.addiction > 0.5 && Math.random() < c.addiction && Object.keys(s.products).length) makeDeal(person, c, true);
     }
   }
+  // alquiler semanal de la nave: única operación que puede dejar el efectivo en negativo
   if (hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day) {
     s.rentPaidWeek = s.day;
-    addMoney(-100);
+    spend('dirty', 100, 'alquiler', { key: `rent:${s.day}`, allowNegative: true });
     sendMsg('motel', 'Te he cobrado el alquiler semanal de la nave: $100. Que vaya bien el negocio.');
   }
 }
@@ -461,8 +507,8 @@ export function orderSeeds(strain, qty) {
   const cost = st.seed * qty;
   const h = G.state.minute / 60;
   if (h < 7 || h >= 23) return { ok: false, msg: 'Rubio no contesta a estas horas (de 7:00 a 23:00).' };
-  if (G.state.money < cost) return { ok: false, msg: 'No tienes suficiente dinero.' };
-  addMoney(-cost);
+  const paid = spend('dirty', cost, 'semillas');
+  if (!paid.ok) return { ok: false, msg: paid.msg };
   G.state.orders.push({ items: [{ id: 'semilla', p: strain, q: qty }], ready: absNow() + 45 });
   myMsg('rubio', `Quiero ${qty} semillas de ${st.name}.`);
   setTimeout(() => sendMsg('rubio', `Hecho. ${money(cost)} cobrados. En menos de una hora lo tienes en el contenedor verde del polígono.`), 800);

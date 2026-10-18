@@ -2,7 +2,7 @@ import { G } from '../game.js';
 import { ITEMS, STRAINS, FORMS } from '../data/items.js';
 import { CANDIDATES, ROLES, STAFF } from '../data/staff.js';
 import { absNow, save, slotsAdd, slotsRemove, slotsRoom, slotsCount } from '../core/state.js';
-import { addMoney, ensureBaseProduct, sendMsg, CONTACTS } from './economy.js';
+import { spend, ensureBaseProduct, sendMsg, CONTACTS } from './economy.js';
 import { RECIPE, COOK_MIN, COOK_OUT, harvestYield, emptyPot, refreshPot } from './objects.js';
 import { rememberIncident } from './appearance.js';
 
@@ -85,8 +85,8 @@ export function hire(cid, prop) {
   if (staff().length >= maxStaff()) return { ok: false, msg: maxStaff() ? `Con tu rango puedes tener ${maxStaff()} empleado${maxStaff() > 1 ? 's' : ''} como mucho.` : 'Todavía nadie quiere trabajar para un novato: sube de rango.' };
   if (!G.state.props[prop] || !G.world.props[prop]) return { ok: false, msg: 'Esa propiedad no es tuya.' };
   if (inProp(prop).length >= STAFF.maxPerProperty) return { ok: false, msg: `Ya hay ${STAFF.maxPerProperty} empleados en esa propiedad.` };
-  if (G.state.money < c.hire) return { ok: false, msg: 'No tienes suficiente dinero.' };
-  addMoney(-c.hire);
+  const r = spend('dirty', c.hire, `contratación: ${c.name}`);
+  if (!r.ok) return { ok: false, msg: r.msg };
   const now = absNow();
   staff().push({ uid: G.state.nextUid++, cid, role: c.role, prop, hiredAt: now, paidDay: G.state.day, owed: 0, debt: 0, status: 'sin_tarea', reason: '', clock: now, task: null, mode: 'auto', made: 0 });
   save();
@@ -137,8 +137,8 @@ export function setMode(uid, mode) {
 export function payDebt(uid) {
   const e = staff().find((x) => x.uid === uid);
   if (!e || !e.debt) return { ok: false, msg: 'No le debes nada.' };
-  if (G.state.money < e.debt) return { ok: false, msg: 'No tienes suficiente dinero.' };
-  addMoney(-e.debt);
+  const r = spend('dirty', e.debt, `deuda: ${byId[e.cid].name}`);
+  if (!r.ok) return { ok: false, msg: r.msg };
   e.debt = 0; e.owed = 0;
   e.clock = Math.max(e.clock, absNow());
   save();
@@ -166,8 +166,8 @@ function payroll() {
       e.paidDay++;
       changed = true;
       const bill = c.wage + (e.debt || 0);
-      if (s.money >= bill) {
-        addMoney(-bill);
+      // todo o nada, solo con efectivo (el dinero limpio nunca paga nóminas)
+      if (spend('dirty', bill, `nómina: ${c.name}`, { key: `wage:${e.uid}:${e.paidDay}` }).ok) {
         e.debt = 0; e.owed = 0;
       } else {
         e.debt = (e.debt || 0) + c.wage;
