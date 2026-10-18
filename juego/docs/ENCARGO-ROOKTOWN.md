@@ -86,3 +86,10 @@ interacciones abstractas, animaciones y barras de progreso (nada de recetas real
   avanzada, lámparas de cultivo y mejoras (cristales solo si procede).
 - Orden de desbloqueo: cogollos → cristales → polvos → pastillas → extracto, con el
   sistema de rangos existente. Compras y resultados una sola vez; persistencia al cargar.
+
+## Respuestas del usuario (18-10-2026, 1.ª tanda)
+- Armas: machete en lugar del spray → exactamente pistola, machete y porra.
+- Locales: manda la segunda imagen (02-locales-b.png): La Esquina = cafetería con tienda,
+  Corte Fino = tienda de ropa; incluye El Eclipse, Apartamentos, Muebles, Almacén Delta, El Cartel.
+- HUD: sin botón de la mano (se interactúa tocando la etiqueta).
+- Casino: solo tragaperras jugables; la ruleta queda como decoración.
