@@ -1,6 +1,6 @@
 # Referencias visuales del usuario (fuente de verdad visual)
 
-Recibidas el 18-10-2026 junto con el encargo «Volta, partes 1–4». Todo elemento visual
+Recibidas el 18-10-2026 junto con el encargo «Rooktown, partes 1–4». Todo elemento visual
 nuevo o rediseñado debe basarse en estas imágenes; si falta una, se pide antes de diseñar.
 
 | Archivo | Contenido |

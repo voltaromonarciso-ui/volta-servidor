@@ -1,4 +1,4 @@
-# Encargo «Volta» (partes 1–4), recibido el 18-10-2026 — PENDIENTE
+# Encargo «Rooktown» (partes 1–4), recibido el 18-10-2026 — PENDIENTE
 
 Se empieza cuando termine la regresión del encargo anterior. Orden: auditoría y plan →
 pedir imágenes que falten (agrupadas) → implementar en pasos pequeños → pruebas → informe.
@@ -57,3 +57,10 @@ Si una referencia es ambigua o contradictoria, preguntar.
   resto de NPC sigue su comportamiento normal.
 - Ampliar la navegación existente (world/nav.js), no crear otra. Verificar conectividad.
 - Pedir imágenes de zonas/callejones que falten antes del diseño visual definitivo.
+- El juego no tiene nada que ver con «Volta» (el usuario, 18-10-2026). Donde el juego diga
+  volta, pasa a rooktown: id de la app `com.volta.bloque9` (capacitor.config.json,
+  android/app/build.gradle, strings.xml, carpeta java com/volta/bloque9, proyecto iOS,
+  README y docs/MOVIL.md). La app no está publicada, así que cambiar el id no rompe
+  instalaciones; se hace junto al cambio de nombre y se comprueba que compila la parte web.
+- NO tocar el backend social «VOLTA» de la raíz del repositorio (src/, sql/, client/,
+  Volta-5.html): es otra aplicación distinta.
