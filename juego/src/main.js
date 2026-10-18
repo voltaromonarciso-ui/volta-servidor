@@ -220,6 +220,7 @@ function pauseMenu() {
 async function startGame(fresh, look) {
   const loaded = !fresh && load();
   G.state = loaded || newState();
+  G.started = true; // desde aquí el bucle del menú ya no toca la hora (la partida cargada conserva la suya)
   const s = G.state;
   setQuality(s.settings.quality || 'alta');
   setShadows(s.settings.quality !== 'baja' && s.settings.shadows);
@@ -270,7 +271,6 @@ async function startGame(fresh, look) {
   document.getElementById('hud').classList.remove('hide');
   applyLayout();
   clock.getDelta();
-  G.started = true;
   G.paused = false;
   if (!loaded) intro();
   else toast('Partida cargada. ¡Bienvenido de nuevo!', '💾');
