@@ -86,6 +86,20 @@ test('interfaz en pantallas de móvil', async ({ browser }, testInfo) => {
       if (r.length) issues[k] = r;
     };
     await shot('hud', HUD);
+    // dinero limpio (solo se ve si hay): dentro de la pantalla y sin tapar ningún control
+    await ev(page, () => { __G.state.clean = 123456; });
+    await frames(page, 3);
+    const cl = await page.evaluate((sel) => {
+      const e = document.getElementById('h-clean'); const r = e.getBoundingClientRect();
+      if (getComputedStyle(e).display === 'none') return ['oculto'];
+      const out = [];
+      if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) out.push('fuera de pantalla');
+      for (const o of document.querySelectorAll(sel)) { const q = o.getBoundingClientRect(); if (q.width && Math.min(r.right, q.right) - Math.max(r.left, q.left) > 2 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 2) out.push('solape con ' + (o.id || o.className)); }
+      return out;
+    }, HUD + ', #rank, #clockbox, #quest');
+    await page.screenshot({ path: `${dir}/${sc.name}-hud-limpio.png` });
+    if (cl.length) issues['hud-limpio'] = cl;
+    await ev(page, () => { __G.state.clean = 0; });
     await ev(page, () => __debug.panels.openBag()); await shot('mochila', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openShop('ferreteria')); await shot('tienda', PANEL); await ev(page, () => __debug.panels.closePanel(true));
     await ev(page, () => __G.act.openPhone()); await shot('movil', PANEL); await page.evaluate(async () => (await import('/src/ui/phone.js')).closePhone());
