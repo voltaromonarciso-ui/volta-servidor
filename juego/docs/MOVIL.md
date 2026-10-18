@@ -113,6 +113,9 @@ Código: `src/data/staff.js` (candidatos y números, todo ajustable en un sitio)
   las estanterías), envasado (sobres y Sweet Shards en la mesa, tarros en la envasadora;
   mismas recetas que el jugador), cocina (hornillo: 2 azúcar + 1 colorante + 1 catalizador,
   120 min, 6 cristales, igual que a mano). No plantan ni compran: eso sigue siendo tuyo.
+- **Contratar:** la plantilla máxima depende del rango (Novato 0, Buscavidas 1,
+  Trapichero 2, Distribuidor o más 3). Contratar cuesta 550–2.500 $ y el sueldo es de
+  120–400 $/día (un trato típico deja 100–250 $). Trabajan más despacio que el jugador.
 - **Horario:** de 8:00 a 20:00 de juego. Cada tarea dura unos minutos de juego
   (`STAFF.minutes`). Al terminarla se vuelve a comprobar todo y se consume y produce de
   una vez; si falta material o hueco no se produce nada (sin duplicados ni pérdidas).
