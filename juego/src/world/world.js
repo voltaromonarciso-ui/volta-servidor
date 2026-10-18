@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { G } from '../game.js';
 import { StaticBatch, GEO, MAT } from './batch.js';
 import { makeCar, vehiclesReady, CAR_MODELS } from '../entities/vehicles.js';
-import { propsReady, propSize, addProp, buildProps } from './props.js';
+import { propsReady, propSize, addProp, buildProps, setPropOffset } from './props.js';
 import * as TX from './textures.js';
 import { buildBike, buildScooter } from '../entities/rideables.js';
 import { PARKING } from '../data/vehicles.js';
@@ -101,6 +101,7 @@ function cellKeys(x0, x1, z0, z1) {
 }
 
 function addBox(x0, x1, z0, z1, h = 4, tag = null) {
+  x0 += OX; x1 += OX; z0 += OZ; z1 += OZ; // piezas recolocadas (relocated)
   const c = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), h, on: true, tag };
   c.keys = cellKeys(c.x0, c.x1, c.z0, c.z1);
   for (const k of c.keys) {
@@ -2367,6 +2368,38 @@ function buildBoxes() {
   im.castShadow = true;
   im.receiveShadow = true;
   scene.add(im);
+}
+
+// ------------------------------------------------------------------
+//  Construir una pieza del mapa antiguo desplazada (dx, dz) para colocarla en la isla:
+//  todo lo que crea —bloques, colisiones, objetos de la escena, atrezo, puntos de interés,
+//  propiedades, tiendas…— acaba trasladado. Solo traslación (sin giro).
+// ------------------------------------------------------------------
+let OX = 0, OZ = 0;
+const XZ_KEYS = [['x', 'z'], ['x0', 'z0'], ['x1', 'z1']];
+function shiftXZ(o, dx, dz) {
+  if (!o || typeof o !== 'object') return;
+  if (Array.isArray(o)) { if (typeof o[0] === 'number') { if (o.length === 3) { o[0] += dx; o[2] += dz; } else { o[0] += dx; o[1] += dz; } } return; }
+  for (const [kx, kz] of XZ_KEYS) { if (typeof o[kx] === 'number') o[kx] += dx; if (typeof o[kz] === 'number') o[kz] += dz; }
+  if (o.spawn) shiftXZ(o.spawn, dx, dz);
+}
+export function relocated(dx, dz, fn) {
+  const realB = B, realScene = scene, added = [];
+  const lists = ['spots', 'wander', 'mapRects', 'mapLabels', 'clerks', 'autoDoors', 'boxes', 'bulbPositions', 'lampPools', 'lots', 'showroom', 'homes'];
+  const len = Object.fromEntries(lists.map((k) => [k, (W[k] || []).length]));
+  const poiKeys = new Set(Object.keys(W.pois)), propKeys = new Set(Object.keys(W.props));
+  const scalars = {}; for (const k of ['worker', 'policeHQ']) scalars[k] = W[k];
+  B = { add: (geo, c, x, y, z, ...r) => realB.add(geo, c, x + dx, y, z + dz, ...r), box: (c, x, y0, z, ...r) => realB.box(c, x + dx, y0, z + dz, ...r) };
+  scene = { add: (...objs) => { added.push(...objs); realScene.add(...objs); }, remove: (...o) => realScene.remove(...o), traverse: (f) => realScene.traverse(f) };
+  OX = dx; OZ = dz; setPropOffset(dx, dz);
+  try { fn(); } finally {
+    B = realB; scene = realScene; OX = 0; OZ = 0; setPropOffset(0, 0);
+    for (const o of added) { o.position.x += dx; o.position.z += dz; o.updateMatrixWorld(true); }
+    for (const k of lists) for (const it of (W[k] || []).slice(len[k])) shiftXZ(it, dx, dz);
+    for (const [k, v] of Object.entries(W.pois)) if (!poiKeys.has(k)) shiftXZ(v, dx, dz);
+    for (const [k, v] of Object.entries(W.props)) if (!propKeys.has(k)) shiftXZ(v, dx, dz);
+    for (const k of Object.keys(scalars)) if (W[k] && W[k] !== scalars[k]) shiftXZ(W[k], dx, dz);
+  }
 }
 
 // Piezas de construcción reutilizables por la isla de Rooktown (island.js).

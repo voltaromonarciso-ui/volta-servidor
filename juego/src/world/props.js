@@ -61,8 +61,13 @@ export const hasProp = (name) => !!GEO[name];
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _y = new THREE.Vector3(0, 1, 0);
 // Coloca un producto (la base en y). Se acumulan y se crean al final con buildProps().
+// desplazamiento para las piezas del mapa antiguo recolocadas en la isla (world.relocated)
+let OX = 0, OZ = 0;
+export function setPropOffset(x, z) { OX = x; OZ = z; }
+
 export function addProp(name, x, y, z, ry = 0, s = 1) {
   if (!GEO[name]) return false;
+  x += OX; z += OZ;
   _q.setFromAxisAngle(_y, ry);
   _s.setScalar(s);
   _m.compose(_p.set(x, y, z), _q, _s);
