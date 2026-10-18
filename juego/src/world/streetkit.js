@@ -60,9 +60,9 @@ export function farola() {
   for (const y of [0.72, 4.62]) add(g, cyl(0.11, 0.11, 0.08, 16), m, 0, y, 0);
   add(g, tube('farolaBrazo', [[0, 4.6, 0], [0, 4.95, 0], [0.14, 5.16, 0], [0.48, 5.24, 0], [0.86, 5.18, 0]], 0.055, 28), m);
   // luminaria: carcasa abombada + difusor que brilla de noche
-  const head = new THREE.Group(); head.position.set(0.98, 5.12, 0); head.rotation.z = -0.1; g.add(head); head.scale.setScalar(1.35);
+  const head = new THREE.Group(); head.position.set(1.02, 5.12, 0); head.rotation.z = -0.1; g.add(head); head.scale.setScalar(1.6);
   add(head, lathe('farolaCab', [[0, 0.13], [0.12, 0.12], [0.25, 0.06], [0.3, 0.0], [0.3, -0.03], [0, -0.03]], 28), m);
-  add(head, cyl(0.26, 0.2, 0.06, 24), mat('#fff1c8', { r: 0.3, e: '#ffd98a', ei: 1.2, glow: 'lamp' }), 0, -0.06, 0);
+  add(head, cyl(0.27, 0.21, 0.08, 24), mat('#ffe9b0', { r: 0.25, e: '#ffcc66', ei: 0.9, glow: 'lamp' }), 0, -0.07, 0);
   return g;
 }
 
@@ -81,7 +81,7 @@ export function semaforo(lit = 'r') {
   [['r', 0.3], ['y', 0], ['g', -0.3]].forEach(([c, y]) => {
     add(h, cyl(0.115, 0.115, 0.03, 24), mat('#111315', { r: 0.6 }), 0, y, 0.175, Math.PI / 2);
     const on = c === lit;
-    add(h, sph(0.1, 20, 12), mat(col[c], { r: 0.2, e: col[c], ei: lit === 'all' || on ? 1.4 : 0.25 }), 0, y, 0.17, 0, 0, 0, 1, 1, 0.45);
+    add(h, sph(0.1, 20, 12), mat(col[c], { r: 0.2, e: col[c], ei: lit === 'all' || on ? 0.75 : 0.15 }), 0, y, 0.17, 0, 0, 0, 1, 1, 0.45);
     add(h, cyl(0.125, 0.125, 0.16, 20, true, -Math.PI / 2, Math.PI), m, 0, y + 0.03, 0.26, Math.PI / 2, 0, 0); // visera
   });
   return g;
@@ -119,9 +119,9 @@ export function banco(len = 1.8) {
 //  Papelera: cubo cilíndrico con base, aros de refuerzo y boca abierta
 // ------------------------------------------------------------------
 export function papelera() {
-  const g = new THREE.Group(), m = mat('#4a5361', { r: 0.32, m: 0.5 });
+  const g = new THREE.Group(), m = mat('#5f6b7b', { r: 0.38, m: 0.2 });
   add(g, lathe('papelera', [[0, 0.04], [0.27, 0.04], [0.29, 0], [0.31, 0.02], [0.31, 0.07], [0.28, 0.1], [0.28, 0.82], [0.31, 0.84], [0.31, 0.9], [0.27, 0.92], [0.25, 0.9], [0.25, 0.12], [0, 0.12]], 32), m);
-  for (const y of [0.35, 0.6]) add(g, cyl(0.29, 0.29, 0.025, 32), m, 0, y, 0);
+  for (const y of [0.35, 0.6]) add(g, cyl(0.29, 0.29, 0.03, 32), mat('#6f7b8c', { r: 0.35, m: 0.2 }), 0, y, 0);
   add(g, cyl(0.245, 0.245, 0.01, 24), mat('#15181b', { r: 1 }), 0, 0.7, 0); // fondo oscuro (bolsa)
   return g;
 }
@@ -138,14 +138,15 @@ function taperBox(key, w, h, d, r, top = 1.12) {
     return geo;
   });
 }
-const recycleTex = () => canvasTex('recycle', 128, 128, (c, w) => {
-  c.clearRect(0, 0, w, w); c.strokeStyle = '#ffffff'; c.fillStyle = '#ffffff'; c.lineWidth = 11; c.lineJoin = 'round';
+const recycleTex = () => canvasTex('recycle2', 128, 128, (c, w) => {
+  c.clearRect(0, 0, w, w); c.strokeStyle = '#ffffff'; c.fillStyle = '#ffffff'; c.lineWidth = 12; c.lineCap = 'butt';
+  const R = 34, cx = 64, cy = 66;
   for (let k = 0; k < 3; k++) {
-    c.save(); c.translate(64, 70); c.rotate((k * Math.PI * 2) / 3);
-    // lado del triángulo con punta de flecha (gira en sentido horario)
-    c.beginPath(); c.moveTo(-30, -26); c.lineTo(4, -26); c.stroke();
-    c.beginPath(); c.moveTo(18, -26); c.lineTo(2, -38); c.lineTo(2, -14); c.closePath(); c.fill();
-    c.restore();
+    const a0 = -Math.PI / 2 + (k * Math.PI * 2) / 3 + 0.22, a1 = a0 + 1.55;
+    c.beginPath(); c.arc(cx, cy, R, a0, a1); c.stroke();
+    // punta de flecha al final del arco, en la dirección del giro
+    const px = cx + Math.cos(a1) * R, py = cy + Math.sin(a1) * R, tx = -Math.sin(a1), ty = Math.cos(a1), nx = Math.cos(a1), ny = Math.sin(a1);
+    c.beginPath(); c.moveTo(px + tx * 18, py + ty * 18); c.lineTo(px + nx * 14, py + ny * 14); c.lineTo(px - nx * 14, py - ny * 14); c.closePath(); c.fill();
   }
 });
 export function cuboReciclaje(color = '#2f9a3d') {
@@ -251,8 +252,14 @@ const stripeTex = () => canvasTex('stripes', 256, 64, (c, w, h) => {
 });
 export function barrera() {
   const g = new THREE.Group(), m = mat('#6f7780', { r: 0.4, m: 0.6 });
-  for (const x of [-0.62, 0.62]) for (const s of [-1, 1]) add(g, cyl(0.022, 0.022, 1.0, 8), m, x, 0.47, s * 0.12, s * 0.27);
-  for (const x of [-0.62, 0.62]) add(g, cyl(0.018, 0.018, 0.5, 8), m, x, 0.3, 0, Math.PI / 2);
+  const lean = Math.atan2(0.3, 0.95), legL = Math.hypot(0.3, 0.95);
+  for (const x of [-0.62, 0.62]) {
+    for (const sz of [-1, 1]) add(g, cyl(0.024, 0.024, legL, 10), m, x, 0.475, sz * 0.15, -sz * lean);   // patas en A
+    add(g, cyl(0.02, 0.02, 0.62, 8), m, x, 0.03, 0, Math.PI / 2);                                       // pie
+    add(g, cyl(0.016, 0.016, 0.36, 8), m, x, 0.35, 0, Math.PI / 2);                                     // travesaño
+    add(g, rbox(0.07, 0.07, 0.07, 0.015), m, x, 0.95, 0);                                               // cabeza
+  }
+  add(g, cyl(0.016, 0.016, 1.24, 8), m, 0, 0.35, 0.0, 0, 0, Math.PI / 2);                                // travesaño largo
   add(g, rbox(1.5, 0.24, 0.04, 0.015), mat('#ffffff', { map: stripeTex(), r: 0.5 }), 0, 0.85, 0.02);
   for (const x of [-0.45, 0.45]) {
     add(g, rbox(0.14, 0.08, 0.08, 0.02), mat('#2b2e33'), x, 1.0, 0.02);

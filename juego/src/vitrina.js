@@ -23,7 +23,7 @@ items.forEach(([name, fn], i) => {
   scene.add(sun);
   const g = fn(); g.rotation.y = -0.55; scene.add(g);
   const box = new THREE.Box3().setFromObject(g), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-  const R = Math.max(size.x, size.y, size.z) * 0.62 + 0.05;
+  const R = Math.max(Math.max(size.x, size.z) * 0.6, size.y * 0.6) + 0.05; // que quepa entero, también lo alto
   Object.assign(sun.shadow.camera, { left: -R * 2, right: R * 2, top: R * 2, bottom: -R * 2 }); sun.target.position.copy(c); scene.add(sun.target);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(R * 8, R * 8), new THREE.ShadowMaterial({ opacity: 0.35 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
