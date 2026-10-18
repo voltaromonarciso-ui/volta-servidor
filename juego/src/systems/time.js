@@ -87,7 +87,8 @@ export function sleep(propId, forced = false, opts = {}) {
   });
 }
 
-function passOut() {
+// Exportada también para las pruebas automáticas (tests/money.spec.js).
+export function passOut() {
   const s = G.state;
   const outside = !G.world.inProperty(G.player.pos.x, G.player.pos.z);
   let lost = 0;
