@@ -550,3 +550,8 @@ body.touch .staff button.chip { min-height: 44px; min-width: 44px; }
 .staff .label { font-weight: 800; margin: 6px 2px 0; color: var(--mut); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
 .staff .rowsp { flex-wrap: wrap; }
 body.touch .staff .btn.sm { min-height: 44px; }
+
+/* --- Dinero limpio: solo aparece si hay (a la izquierda del efectivo, sin mover nada) --- */
+#cash { position: relative; }
+#h-clean { display: none; position: absolute; right: calc(100% + 6px); top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 13px; font-weight: 800; color: #bfe9ff; background: rgba(14, 18, 24, 0.68); border: 1.5px solid rgba(127, 200, 255, 0.45); border-radius: 10px; padding: 3px 9px; pointer-events: none; }
+#h-clean.on { display: block; }

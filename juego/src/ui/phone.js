@@ -464,7 +464,7 @@ function stats() {
   screen.appendChild(h('div', 'ph-list', `<div class="ph-card"><div class="rowsp"><b>Reputación</b><span>${REP_TIERS[rt].name}</span></div>${meter('En Puerto Lomas', (s.rep || 0) / 100, repTxt, '#9b59b6')}
     <div class="small muted">Sube cerrando tratos, cumpliendo y regalando muestras. Baja si fallas un pedido o te detienen. Con más reputación, más vecinos aceptan tus muestras y te llegan más pedidos.</div></div>
     <div class="ph-card"><div class="rowsp"><b>Rango</b><span>${r.name}</span></div><div class="rowsp"><b>Experiencia</b><span>${s.xp} XP</span></div>
-    <div class="rowsp"><b>Efectivo</b><span class="money">${money(s.money)}</span></div><div class="rowsp"><b>Ganado en total</b><span>${money(s.stats.earned)}</span></div>
+    <div class="rowsp"><b>Efectivo (sucio)</b><span class="money">${money(s.money)}</span></div><div class="rowsp"><b>Dinero limpio</b><span class="money">${money(s.clean || 0)}</span></div><div class="rowsp"><b>Ganado en total</b><span>${money(s.stats.earned)}</span></div>
     <div class="rowsp"><b>Tratos cerrados</b><span>${s.stats.deals}</span></div><div class="rowsp"><b>Mejor trato</b><span>${money(s.stats.best)}</span></div>
     <div class="rowsp"><b>Clientes</b><span>${PEOPLE.filter((p) => customer(p.id).unlocked).length}/${PEOPLE.length}</span></div>
     <div class="rowsp"><b>Productos</b><span>${Object.keys(s.products).length}</span></div><div class="rowsp"><b>Días en Puerto Lomas</b><span>${s.day}</span></div></div>`));

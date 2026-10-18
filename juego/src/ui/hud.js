@@ -23,7 +23,7 @@ const txt = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent
 export function initHUD() {
   document.querySelector('#cash .cash-ic').innerHTML = svgIcon('cash');
   els = {
-    money: $('h-money'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'),
+    money: $('h-money'), clean: $('h-clean'), clock: $('h-clock'), day: $('h-day'), curfew: $('h-curfew'),
     qTitle: $('q-title'), qDesc: $('q-desc'), quest: $('quest'),
     rankName: $('rank-name'), rankBar: $('rank-bar'), rankXp: $('rank-xp'),
     prompt: $('prompt'), info: $('info'), use: $('btn-use'), alt: $('btn-alt'), altLabel: $('alt-label'),
@@ -79,6 +79,10 @@ export function updateHUD(target, dt = 0.016) {
   const s = G.state;
   txt(els.money, Math.round(s.money).toLocaleString('es-ES'));
   $('cash').classList.toggle('neg', s.money < 0);
+  // dinero limpio: solo si hay (no es un banco; solo el saldo)
+  const cl = Math.floor(s.clean || 0);
+  els.clean.classList.toggle('on', cl > 0);
+  if (cl > 0) txt(els.clean, `Limpio ${cl.toLocaleString('es-ES')} $`);
   txt(els.clock, clock(s.minute));
   txt(els.day, `${dayName(s.day).slice(0, 3)} · Día ${s.day}`);
   els.curfew.style.display = curfew() ? '' : 'none';

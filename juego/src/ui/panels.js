@@ -7,7 +7,7 @@ import { wardrobeSection } from './dressing.js';
 import { inv, slotsAdd, slotsRemove, illegalCount, save } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { guardGhostClick, resetTouch } from '../core/input.js';
-import { product, prodValue, completeDeal, addMoney, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
+import { product, prodValue, completeDeal, spend, canSpend, toSafe, fromSafe, PAY_ACCOUNT, addXP, customer, giveSample, GIFTABLE, canGift, directSale, saleChance, saleBudget, priceLabel, trustLabel, addictionLabel, prefMatches } from '../systems/economy.js';
 import { cooperate, flee } from '../systems/police.js';
 import { VEHICLES, PARKING, RECOVER_PRICE, buyVehicle, recoverVehicle, ownsVehicle } from '../systems/riding.js';
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
@@ -159,15 +159,19 @@ export function openShop(id) {
   pay.onclick = () => {
     if (!cart.size) return fail('Elige algo del catálogo.');
     const t = total();
-    if (G.state.money < t) return fail('No tienes suficiente dinero.');
+    if (!canSpend('dirty', t)) return fail('No tienes suficiente dinero.');
     let refund = 0;
-    const bought = [];
+    const bought = [], added = [];
     for (const [k, q] of cart) {
       const left = inv.add(k, q);
       refund += left * ITEMS[k].price;
-      if (q - left > 0) bought.push(`${q - left}× ${ITEMS[k].name}`);
+      if (q - left > 0) { bought.push(`${q - left}× ${ITEMS[k].name}`); added.push([k, q - left]); }
     }
-    addMoney(-(t - refund));
+    // solo se cobra lo que de verdad te llevas; si el cobro fallara, se devuelve la mercancía
+    if (t - refund > 0) {
+      const r = spend('dirty', t - refund, `tienda: ${shop.name}`);
+      if (!r.ok) { for (const [k, q] of added) inv.remove(k, q); return fail(r.msg); }
+    }
     sfx('cash');
     if (refund) G.act.toast(`No te cabía todo en la mochila: te devuelven ${money(refund)}.`, '🎒');
     if (bought.length) G.act.toast(`Comprado: ${bought.join(', ')}`, '🛍️');
@@ -301,15 +305,17 @@ function productStacks(id) {
 // ------------------------------------------------------------------
 //  Caja fuerte: el dinero de dentro no se pierde si te detienen
 // ------------------------------------------------------------------
+// Mueve efectivo entre lo que llevas y la caja (transferencia: no es ingreso ni gasto).
+// «Todo» y las cantidades mayores que lo disponible se ajustan a lo que hay.
 export function moveCash(obj, n) {
   const d = obj.entry.data;
   d.cash ||= 0;
   n = Math.round(n);
   if (n > 0) n = Math.min(n, Math.max(0, Math.floor(G.state.money)));
-  else n = -Math.min(-n, d.cash);
+  else n = -Math.min(-n, Math.floor(d.cash));
   if (!n) return 0;
-  d.cash += n;
-  G.state.money -= n;
+  const r = n > 0 ? toSafe(d, n) : fromSafe(d, -n);
+  if (!r.ok) return 0;
   save();
   return n;
 }
@@ -319,8 +325,8 @@ export function openSafe(obj) {
     const d = obj.entry.data;
     p.body.innerHTML = '';
     p.foot.innerHTML = '';
-    p.body.appendChild(h('div', 'sum', `<div><small>Llevas encima</small><b class="money">${money(G.state.money)}</b></div><div><small>En la caja</small><b class="money">${money(d.cash || 0)}</b></div>`));
-    p.body.appendChild(h('p', 'muted', 'Si te detienen, la multa solo sale del dinero que llevas encima.'));
+    p.body.appendChild(h('div', 'sum', `<div><small>Efectivo encima</small><b class="money">${money(G.state.money)}</b></div><div><small>Efectivo guardado en la caja</small><b class="money">${money(d.cash || 0)}</b></div>`));
+    p.body.appendChild(h('p', 'muted', 'Si te detienen, la multa solo sale del efectivo que llevas encima. En la caja solo se guarda efectivo.'));
     const row = (label, list) => {
       const r = h('div', 'row safe-row');
       r.appendChild(h('div', 'label', label));
@@ -686,7 +692,7 @@ export function daySummary(sum, forced) {
   const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   messageDialog(forced ? '😵 Caíste rendido' : `🌙 Fin del día ${sum.day}`, `
     ${forced ? '<p>Eran las 4:00 y no pudiste más. Despiertas en casa.</p>' : ''}
-    <div class="sum"><div><small>Ganado hoy</small><b class="money">${money(sum.earned)}</b></div><div><small>Tratos</small><b>${sum.deals}</b></div><div><small>Efectivo</small><b>${money(G.state.money)}</b></div></div>
+    <div class="sum"><div><small>Ganado hoy</small><b class="money">${money(sum.earned)}</b></div><div><small>Tratos</small><b>${sum.deals}</b></div><div><small>Efectivo</small><b>${money(G.state.money)}</b></div><div><small>Limpio</small><b>${money(G.state.clean || 0)}</b></div></div>
     <p class="muted">Amanece el ${DAYS[(G.state.day - 1) % 7]} (día ${G.state.day}). Las plantas han seguido creciendo mientras dormías.</p>`, 'Empezar el día');
 }
 
@@ -696,16 +702,19 @@ export function daySummary(sum, forced) {
 export function bungalowActions() {
   if (G.state.props.bungalow) return [{ label: 'Tu bungalow', fn: () => G.act.toast('Es tuyo. Puedes cultivar y dormir aquí.') }];
   const price = G.world.props.bungalow.price;
+  const acc = PAY_ACCOUNT.bungalow;
+  const accName = acc === 'clean' ? 'dinero limpio' : 'efectivo';
   return [{
     label: `Comprar bungalow (${money(price)})`,
-    fn: () => confirmDialog('Bungalow en venta', `<p>Bungalow con jardín en el Barrio Alto. Casi el triple de espacio que tu habitación del motel y sin alquiler.</p><p>Precio: <b>${money(price)}</b></p>`, 'Comprar', () => {
-      if (G.state.money < price) return fail('No tienes suficiente dinero.');
-      addMoney(-price);
+    fn: () => confirmDialog('Bungalow en venta', `<p>Bungalow con jardín en el Barrio Alto, sin alquiler: es tuyo para siempre. La nave la sigues teniendo alquilada.</p><p>Precio: <b>${money(price)}</b> · se paga con ${accName}.</p>`, 'Comprar', () => {
+      if (G.state.props.bungalow) return;
+      const r = spend(acc, price, 'bungalow', { key: 'bungalow' });
+      if (!r.ok) return fail(r.msg);
       G.state.props.bungalow = true;
       G.state.home = 'bungalow';
       if (G.world.saleSign) G.world.saleSign.visible = false;
       sfx('level');
-      G.act.bigToast('¡Bungalow comprado!', 'Ahora es tu casa. Ya no pagas alquiler en el motel.');
+      G.act.bigToast('¡Bungalow comprado!', 'Ahora es tu casa: puedes cultivar y dormir aquí. La nave sigue alquilada.');
       save();
     }),
   }];
