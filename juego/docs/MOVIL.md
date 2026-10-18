@@ -99,6 +99,37 @@ Problemas reales encontrados por estas pruebas y corregidos:
 - En iPhone con muesca, joystick, correr y bordes de paneles caían bajo la muesca o
   la barra de gestos; los paneles anchos se salían de la pantalla y ocultaban «Pagar».
 
+## Fase 4 · Empleados (bloque A): reglas
+
+Código: `src/data/staff.js` (candidatos y números, todo ajustable en un sitio) y
+`src/systems/staff.js` (trabajo, nómina, guardado). App «Personal» en el móvil del juego.
+
+- **Dónde trabajan:** solo en la propiedad asignada (nave o bungalow si es tuyo), con
+  los objetos colocados dentro de ella. Cogen materiales de sus estanterías y armarios y
+  dejan ahí el resultado. Nunca usan tu inventario ni crean nada de la nada.
+- **Puestos:** cultivo (riega cuando el agua baja del 30 % y cosecha; los cogollos van a
+  las estanterías), envasado (sobres y Sweet Shards en la mesa, tarros en la envasadora;
+  mismas recetas que el jugador), cocina (hornillo: 2 azúcar + 1 colorante + 1 catalizador,
+  120 min, 6 cristales, igual que a mano). No plantan ni compran: eso sigue siendo tuyo.
+- **Horario:** de 8:00 a 20:00 de juego. Cada tarea dura unos minutos de juego
+  (`STAFF.minutes`). Al terminarla se vuelve a comprobar todo y se consume y produce de
+  una vez; si falta material o hueco no se produce nada (sin duplicados ni pérdidas).
+- **Tiempo:** avanzan con el reloj del juego, jugando o a saltos (dormir, comisaría).
+  Con la partida cerrada el reloj no avanza, así que tampoco trabajan ni cobran.
+- **Nómina:** cada día a las 7:00 (también si las 7:00 pasan mientras duermes). Se cobra
+  el sueldo más lo que se deba, todo o nada. `paidDay` guarda el último día liquidado, así
+  que un día nunca se cobra dos veces, ni al recargar. Si no llega el dinero: el empleado
+  deja de trabajar y apunta la deuda; se puede pagar desde el móvil; a los 2 días sin
+  cobrar se va. Al contratar se paga la contratación y ese día ya está cubierto.
+- **Filtraciones:** quien se va (despedido o por impago) **con deudas pendientes** tiene
+  una probabilidad `0,8 − lealtad` de dar tu descripción a la policía: usa la memoria
+  policial existente (te reconocen y te cachean más hasta que cambies de ropa o pelo, o
+  pasen 3 días). En el móvil se ve la «discreción» de cada candidato.
+- **Guardado:** `state.employees` (sin cambiar la versión del formato). Al cargar se quitan
+  duplicados y candidatos inexistentes; los asignados a una propiedad que ya no tienes
+  quedan «Sin propiedad válida» hasta que les asignes otra. Las partidas antiguas cargan
+  con la lista vacía.
+
 ## 4. Compilación
 
 ### Android — estado: proyecto listo, compilación BLOQUEADA en este entorno
