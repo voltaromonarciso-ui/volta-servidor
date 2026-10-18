@@ -172,3 +172,10 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
   madera, cristal con reflejo), más detalle y vida (plantas, focos, carteles…) e iluminación
   (bordes con luz, luz cálida de dentro). **Inspirado en la lámina y más espectacular**, en
   **estilo render como la lámina** (no realista tipo GTA).
+- **Cajero**: por pasos (Ingresar / Retirar → cantidades → recibo) y en azules de banco. Hecho.
+- **Menús en general**: no todo verde; **cada sitio con los colores de su rótulo** (casino dorado
+  y rojo, El Cartel rojo y negro, gasolinera roja, policía azul marino…) y **por pasos donde
+  tenga sentido** (tiendas: categorías → productos → cantidad; tratos: oferta → precio → resultado…).
+- **El Eclipse**: se tiene que poder entrar, con interior completo (pista, zona VIP, barra).
+- **Modelos**: el usuario va a abrir las descargas (poly.pizza, sketchfab, itch.io, polyhaven,
+  Google Drive) para usar edificios y objetos libres de calidad en vez de modelarlos por código.
