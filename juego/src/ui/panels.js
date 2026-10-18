@@ -14,6 +14,7 @@ import { VEHICLES, PARKING, RECOVER_PRICE, buyVehicle, recoverVehicle, ownsVehic
 import { CUSTOMER_LINES, GREETINGS } from '../data/people.js';
 import { itemLabel } from './hud.js';
 import { pick } from '../game.js';
+import { ATM, atmMove, atmLeft, suspicionChance } from '../systems/atm.js';
 import { CASINO, casinoOpen, play as casinoPlay, REEL, rouletteColor } from '../systems/casino.js';
 
 // Envases: qué producto suelto (src) se mete en qué envase, en qué máquina.
@@ -406,6 +407,37 @@ export function openSafe(obj) {
     };
     row('Guardar', [['100 $', 100], ['500 $', 500], ['Todo', 1e9]]);
     row('Sacar', [['100 $', -100], ['500 $', -500], ['Todo', -1e9]]);
+  };
+  render();
+}
+
+// Cajero automático: efectivo encima ↔ tarjeta, con límite semanal
+export function openAtm(atm) {
+  const p = openPanel({ title: '🏧 Cajero · ' + (atm?.name || 'Rooktown'), cls: 'safe' });
+  const render = () => {
+    p.body.innerHTML = '';
+    p.foot.innerHTML = '';
+    p.body.appendChild(h('div', 'sum', `<div><small>Efectivo encima</small><b class="money">${money(G.state.money)}</b></div><div><small>Saldo en la tarjeta</small><b class="money">${money(G.state.clean || 0)}</b></div><div><small>Te queda esta semana</small><b class="money">${money(atmLeft())}</b></div>`));
+    p.body.appendChild(h('p', 'muted', `Límite de ${money(ATM.weekLimit)} por semana entre ingresos y retiradas. Ingresar más de ${money(ATM.suspectFrom)} de golpe puede hacer que el banco avise a la policía.`));
+    const row = (label, dir, list) => {
+      const r = h('div', 'row safe-row');
+      r.appendChild(h('div', 'label', label));
+      for (const [txt, n] of list) {
+        const b = h('button', 'btn' + (dir === 'out' ? ' ghost' : ''), txt);
+        if (dir === 'in' && n >= ATM.suspectFrom && n < 1e9) b.title = `Riesgo de aviso: ${Math.round(suspicionChance(n) * 100)} %`;
+        b.onclick = () => {
+          const res = atmMove(dir, n);
+          if (!res.ok) return fail(res.msg);
+          sfx('cash'); save();
+          if (res.alert) { closePanel(); return; }
+          render();
+        };
+        r.appendChild(b);
+      }
+      p.body.appendChild(r);
+    };
+    row('Ingresar', 'in', [['100 $', 100], ['500 $', 500], ['1.000 $', 1000], ['Todo', 1e9]]);
+    row('Sacar', 'out', [['100 $', 100], ['500 $', 500], ['1.000 $', 1000], ['Todo', 1e9]]);
   };
   render();
 }

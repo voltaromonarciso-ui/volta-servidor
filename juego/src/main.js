@@ -142,7 +142,7 @@ Object.assign(G.act, {
   arrested: (r) => P.arrestedDialog(r),
   openPhone: (app, arg) => { P.closePanel(true); openPhone(app, arg); },
   sleep: (prop, opts) => sleep(prop, false, opts),
-  openSafe: P.openSafe,
+  openSafe: P.openSafe, openAtm: P.openAtm,
   refill: () => {
     if (!inv.count('regadera')) return toast('No llevas regadera.');
     G.state.water = 6; sfx('water'); toast('Regadera llena (6 usos).', '💧');

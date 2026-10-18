@@ -144,3 +144,12 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - Cajeros: en la acera, uno por barrio (~10), pegados a fachadas, con icono en el mapa.
 - Mapa del móvil: usar la imagen 11-mapa.png como fondo, ajustada a la isla real, con la
   posición, tratos y marcas encima.
+
+## Respuestas del usuario (calle y cajeros)
+
+- **Cajeros**: ingresar efectivo (bolsillo → tarjeta) y sacar efectivo (tarjeta → bolsillo).
+  Ingresar mucho de golpe sube la sospecha policial. Límite de **10.000 $ por semana de juego**
+  (7 días del juego). Sin comisión (no la eligió).
+- **Mobiliario de las aceras**: más lleno que la primera versión.
+- **Vegetación**: mezcla por barrios (palmeras en costa, comercio y ocio; árboles en residencial y parques).
+- **Móvil de referencia**: gama media (Android de 200–400 €): equilibrio entre detalle y fluidez.

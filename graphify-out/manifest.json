@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792357132.9201984,
-    "seen": 1792357456.761805,
-    "ast_hash": "f56782869be7e9abab830371663551ff",
+    "mtime": 1792361559.8177657,
+    "seen": 1792361663.8029263,
+    "ast_hash": "687f7436b50536eceba28ead506c6149",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792357096.5997407,
-    "seen": 1792357456.7620034,
-    "ast_hash": "fa913ece4c4b92e7b7c11c7f0aac01a1",
+    "mtime": 1792361559.8158827,
+    "seen": 1792361663.8031564,
+    "ast_hash": "b9d773da8df115170ec81406041d2621",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792342028.34417,
-    "seen": 1792343119.3053377,
-    "ast_hash": "363c2cf57c1dc0da26f465699fff5e64",
+    "mtime": 1792361566.614325,
+    "seen": 1792361663.8034058,
+    "ast_hash": "65475ec5711ba6506c1a376b16615e9f",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "juego/docs/ENCARGO-ROOKTOWN.md": {
-    "mtime": 1792357921.389194,
-    "seen": 1792358921.9204922,
-    "ast_hash": "e0af382a29c07bb12079de03b7a1c8a3",
+    "mtime": 1792361483.9974058,
+    "seen": 1792361663.80631,
+    "ast_hash": "6d47e04b37cf488f8b071eca993a7228",
     "semantic_hash": ""
   },
   "juego/docs/referencias/LEEME.md": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792361094.043036,
-    "seen": 1792361142.5426393,
-    "ast_hash": "3b9295650d5d22729f4526b42112d9de",
+    "mtime": 1792361566.6148508,
+    "seen": 1792361663.8035152,
+    "ast_hash": "336b3c11b0d344322c9100c553041bd8",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1641,6 +1641,18 @@
     "mtime": 1792360357.938513,
     "seen": 1792361034.3136156,
     "ast_hash": "599450c7341afee330df1b044e279187",
+    "semantic_hash": ""
+  },
+  "juego/src/systems/atm.js": {
+    "mtime": 1792361545.7174094,
+    "seen": 1792361663.8029835,
+    "ast_hash": "a7cf8f3dfd1d46f348e12abafe451308",
+    "semantic_hash": ""
+  },
+  "juego/tests/atm.spec.js": {
+    "mtime": 1792361583.6991692,
+    "seen": 1792361663.8037574,
+    "ast_hash": "1d7ecb15713fb61cadf0b40d1b7c46b0",
     "semantic_hash": ""
   }
 }

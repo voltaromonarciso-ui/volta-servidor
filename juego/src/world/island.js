@@ -325,16 +325,18 @@ function buildStreetFurniture() {
     const x = b.cx + 14, z = zN - WALLSIDE;
     F.place('cajero', SK.cajero, x, z, 0);
     W.atms.push({ x, z, zone, name: ZONE_NAMES[zone], face: { x, z: z + 1.1 } });
+    const atm = W.atms.at(-1);
+    K.hitbox(x, 1.1, z + 0.1, 0.9, 2.0, 0.7, { actions: () => [{ label: 'Usar el cajero', fn: () => G.act.openAtm(atm) }], info: () => 'Cajero automático' });
     reserved.push([x, z]);
   }
   // una calle: tramo entre dos cruces; lado s = -1/+1; (along, across) → mundo
   const segment = (kind, at, faceRy, seed, lampRy) => {
-    const len = 46, n = 9, step = len / (n - 1);
+    const len = 46, n = 13, step = len / (n - 1); // un hueco cada ~3,8 m
     const rec = RECIPE[kind];
     let r = seed;
     for (let k = 0; k < n; k++) {
       const t = k * step;
-      if (k % 4 === (seed % 2 ? 2 : 0)) { // farola cada ~23 m, al tresbolillo entre aceras
+      if (k % 6 === (seed % 2 ? 3 : 0)) { // farola cada ~23 m, al tresbolillo entre aceras
         const [x, z] = at(t, CURB - 0.2);
         F.place('farola', SK.farola, x, z, lampRy, { hit: 0.4 });
         const [lx, lz] = at(t, CURB - 0.2 - 1.6);
@@ -344,7 +346,8 @@ function buildStreetFurniture() {
       const [name, side] = rec[r++ % rec.length];
       const [x, z] = at(t, side === 'c' ? CURB : WALLSIDE);
       if (reserved.some(([qx, qz]) => Math.hypot(qx - x, qz - z) < 3.5)) continue;
-      put(name, x, z, side === 'c' && (name === 'arbol' || name === 'palmera') ? r * 1.7 : faceRy, name === 'palmera' ? { s: rr(1.3, 1.8) } : name === 'arbol' ? { s: rr(1.1, 1.4) } : {});
+      const ry = name === 'arbol' || name === 'palmera' ? r * 1.7 : name === 'bici' ? faceRy + Math.PI / 2 : faceRy; // la bici, paralela a la calle
+      put(name, x, z, ry, name === 'palmera' ? { s: rr(1.3, 1.8) } : name === 'arbol' ? { s: rr(1.1, 1.4) } : {});
     }
   };
   // calles norte-sur
