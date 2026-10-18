@@ -1,13 +1,20 @@
 import { G } from '../game.js';
 import { ITEMS } from '../data/items.js';
+import { apply as applyTx, repairBalances } from './money.js';
 
+// La clave no cambia aunque el formato vaya por la versión 4 (así no se pierde ninguna partida).
 const KEY = 'bloque9_save_v3';
+export const SAVE_VERSION = 4;
 export const INV_SIZE = 10;
 
 export function newState() {
   return {
-    version: 3,
-    money: 350,
+    version: SAVE_VERSION,
+    money: 350,         // efectivo «sucio» (ventas y gastos de siempre)
+    clean: 0,           // dinero limpio (nada lo genera todavía)
+    ledger: [],         // últimas operaciones de dinero (core/money.js)
+    txKeys: {},         // acciones ya cobradas/pagadas, contra duplicados
+    txSeq: 1,
     day: 1,
     minute: 17.5 * 60,
     rank: 0,
@@ -77,7 +84,7 @@ export function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.version !== 3) return null;
+    if (!s || (s.version !== 3 && s.version !== SAVE_VERSION)) return null;
     return migrate(Object.assign(newState(), s));
   } catch (e) {
     return null;
@@ -85,7 +92,20 @@ export function load() {
 }
 
 // Partidas antiguas: las gominolas pasan a sobres (3 por bolsa) y los moldes a sobres vacíos.
-function migrate(s) {
+// v3 → v4: el dinero de siempre sigue siendo el efectivo (sucio) tal cual; el limpio empieza
+// en 0. Se ejecuta una vez: después la partida ya es v4. No se inventa historial.
+export function migrate(s) {
+  const t = ((s.day || 1) - 1) * 1440 + (s.minute || 0);
+  if (s.version === 3) {
+    s.clean = 0;
+    s.ledger = [];
+    s.txKeys = {};
+    s.txSeq = 1;
+    s.migratedV4 = { from: 3, money: s.money, t };
+    s.version = SAVE_VERSION;
+  }
+  const repaired = repairBalances(s, t);
+  if (repaired.length) console.warn('[partida] saldos dañados reparados a 0:', repaired);
   const fix = (slots) => slots.forEach((x, i) => {
     if (!x) return;
     if (x.id === 'gomi') slots[i] = { id: 'bolsa', q: Math.min(30, x.q * 3), p: x.p };
@@ -97,7 +117,10 @@ function migrate(s) {
   for (const d of s.deals || []) if (d.form === 'gomi') d.form = 'bolsa';
   // la mezcladora ya no existe: se devuelve su precio
   const mixers = (s.objects || []).filter((o) => o.type === 'mixer').length;
-  if (mixers) { s.objects = s.objects.filter((o) => o.type !== 'mixer'); s.money += mixers * 400; }
+  if (mixers) {
+    s.objects = s.objects.filter((o) => o.type !== 'mixer');
+    applyTx(s, { acc: 'dirty', amount: mixers * 400, kind: 'ingreso', reason: 'reembolso mezcladora' }, t);
+  }
   if (!Array.isArray(s.vehicles)) s.vehicles = [];
   if (!Array.isArray(s.employees)) s.employees = [];
   for (const o of s.orders || []) o.items = (o.items || []).filter((it) => ITEMS[it.id]);
