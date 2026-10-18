@@ -1144,8 +1144,14 @@ export const STREET_KIT_4 = [
 // ==================================================================
 // Contenedor de obra (cuba) amarillo: laterales trapezoidales, testeros inclinados,
 // nervios verticales, borde reforzado, cáncamos de izado y patines
+const skipTex = () => canvasTex('cubaChapa', 256, 128, (c, w, h) => {
+  c.fillStyle = '#d2bd1c'; c.fillRect(0, 0, w, h);
+  let s0 = 11; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
+  for (let k = 0; k < 60; k++) { c.fillStyle = `rgba(90,70,20,${0.05 + rnd() * 0.1})`; c.fillRect(rnd() * w, rnd() * h * 0.6, 2 + rnd() * 3, 10 + rnd() * 50); } // chorretones
+  for (let k = 0; k < 25; k++) { c.fillStyle = `rgba(140,70,25,${0.25 + rnd() * 0.3})`; c.beginPath(); c.arc(rnd() * w, rnd() * h, 1 + rnd() * 4, 0, 7); c.fill(); } // óxido
+});
 export function contenedorObra() {
-  const g = new THREE.Group(), y = mat('#c9b417', { r: 0.55, m: 0.25 }), d = mat('#9c8c12', { r: 0.6, m: 0.3 });
+  const g = new THREE.Group(), y = mat('#ffffff', { r: 0.6, m: 0.2, map: skipTex() }), d = mat('#9c8c12', { r: 0.6, m: 0.3 });
   const Lb = 1.6, Lt = 2.6, H = 0.9, W = 1.4, y0 = 0.12;
   const side = cache('cubaLateral', () => {
     const sh = new THREE.Shape(); sh.moveTo(-Lb / 2, 0); sh.lineTo(Lb / 2, 0); sh.lineTo(Lt / 2, H); sh.lineTo(-Lt / 2, H); sh.closePath();
@@ -1167,6 +1173,9 @@ export function contenedorObra() {
     add(g, rbox(0.08, 0.07, W + 0.1, 0.02), d, s2 * Lt / 2, y0 + H, 0);
     add(g, rbox(Lb + 0.4, 0.1, 0.12, 0.02), mat('#3a3f45', { r: 0.6, m: 0.5 }), 0, 0.05, s2 * 0.45);
   }
+  // interior más oscuro (sucio) y un poco de escombro en el fondo
+  add(g, rbox(Lb - 0.05, 0.02, W - 0.05, 0.005), mat('#6e6420', { r: 0.9 }), 0, y0 + 0.05, 0);
+  for (let k = 0; k < 7; k++) add(g, rbox(0.18 + (k % 3) * 0.08, 0.1, 0.14, 0.03), mat(['#9a958c', '#7d6a55', '#b0aba2'][k % 3], { r: 0.95 }), -0.6 + k * 0.2, y0 + 0.1, ((k * 37) % 9) / 10 - 0.4, 0, k, 0);
   return g;
 }
 
@@ -1183,6 +1192,11 @@ export function vallaMovil(len = 2.4) {
     add(g, rbox(0.08, 0.06, 0.08, 0.01), mat('#3a3f45'), x, 0.17, 0);
   }
   add(g, rbox(0.06, 0.06, 0.04, 0.01), mat('#3a3f45'), len / 2 - 0.02, 1.2, 0.03);
+  const clamp = mat('#6f767e', { r: 0.4, m: 0.7 });
+  for (const x of [-len / 2, len / 2]) for (const yy of [0.5, 1.7]) add(g, cyl(0.04, 0.04, 0.09, 12), clamp, x, yy, 0);
+  const plate = canvasTex('vallaPlaca', 128, 64, (c, w, h) => { c.fillStyle = '#f2b705'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText('PROHIBIDO', w / 2, 26); c.fillText('EL PASO', w / 2, 48); });
+  add(g, rbox(0.42, 0.21, 0.01, 0.004), mat('#ffffff', { map: plate, r: 0.5 }), 0, 1.25, 0.03);
+  for (const x of [-len / 2 + 0.3, len / 2 - 0.3]) add(g, cyl(0.018, 0.018, 0.75, 8), mat('#b5bcc4', { r: 0.3, m: 0.75 }), x, 0.4, 0.12, 0.55);
   return g;
 }
 
@@ -1194,14 +1208,22 @@ export function senalObras() {
   const tex = canvasTex('obras', 256, 232, (c, w, h) => {
     const tri = (pad, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(w / 2, pad); c.lineTo(w - pad, h - pad * 0.6); c.lineTo(pad, h - pad * 0.6); c.closePath(); c.fill(); };
     tri(4, '#d4241b'); tri(30, '#ffffff');
-    c.fillStyle = '#111'; c.strokeStyle = '#111'; c.lineCap = 'round';
-    c.beginPath(); c.arc(118, 92, 11, 0, 7); c.fill();
-    c.lineWidth = 12; c.beginPath(); c.moveTo(114, 108); c.lineTo(104, 150); c.lineTo(88, 188); c.moveTo(104, 150); c.lineTo(122, 188); c.moveTo(112, 118); c.lineTo(140, 150); c.stroke();
-    c.lineWidth = 6; c.beginPath(); c.moveTo(140, 150); c.lineTo(160, 180); c.stroke();
-    c.beginPath(); c.moveTo(150, 190); c.lineTo(185, 190); c.lineTo(168, 168); c.closePath(); c.fill();
+    // operario cavando: cabeza, tronco inclinado, piernas abiertas, brazos a la pala y montón de tierra
+    c.fillStyle = '#111'; c.strokeStyle = '#111'; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.arc(104, 88, 12, 0, 7); c.fill();
+    c.lineWidth = 15; c.beginPath(); c.moveTo(108, 104); c.lineTo(124, 146); c.stroke();
+    c.lineWidth = 12; c.beginPath(); c.moveTo(124, 146); c.lineTo(106, 172); c.lineTo(100, 194); c.moveTo(124, 146); c.lineTo(140, 194); c.stroke();
+    c.lineWidth = 9; c.beginPath(); c.moveTo(112, 112); c.lineTo(138, 128); c.lineTo(150, 138); c.stroke();
+    c.lineWidth = 6; c.beginPath(); c.moveTo(126, 112); c.lineTo(162, 168); c.stroke();
+    c.beginPath(); c.moveTo(156, 166); c.lineTo(176, 160); c.lineTo(172, 180); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(160, 196); c.quadraticCurveTo(185, 158, 205, 196); c.closePath(); c.fill();
   });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.72), mat('#ffffff', { map: tex, alphaTest: 0.1, r: 0.4, side: THREE.DoubleSide }));
   sign.position.set(0, 1.6, 0.04); g.add(sign);
+  const back = new THREE.Mesh(cache('triSenal', () => { const t = new THREE.CircleGeometry(0.46, 3); t.rotateZ(Math.PI / 2); t.translate(0, -0.08, 0); return t; }), mat('#8d949c', { r: 0.5, m: 0.5 }));
+  back.position.set(0, 1.6 + 0.04, 0.03); back.rotation.y = Math.PI; g.add(back);
+  for (const yy of [1.42, 1.78]) add(g, rbox(0.1, 0.05, 0.08, 0.01), m, 0, yy, 0.0);
+  add(g, rbox(0.5, 0.14, 0.32, 0.07), mat('#b08a55', { r: 0.95 }), 0, 0.14, 0);
   return g;
 }
 
@@ -1219,6 +1241,9 @@ export function camaraVigilancia() {
   add(cam, cyl(0.1, 0.1, 0.03, 24), mat('#0d1a2a', { r: 0.05, m: 0.6 }), -0.03, -0.01, 0.43, Math.PI / 2);
   add(cam, sph(0.02, 8, 6), mat('#ff2a1a', { e: '#ff2a1a', ei: 1, glow: 'lamp' }), 0.1, 0.08, 0.43);
   add(cam, rbox(0.12, 0.08, 0.1, 0.02), m, 0, -0.18, -0.15);
+  add(g, rbox(0.18, 0.26, 0.1, 0.02), mat('#9aa1a9', { r: 0.4, m: 0.5 }), 0, 1.2, 0.1);
+  add(g, rbox(0.12, 0.05, 0.005, 0.002), mat('#f2b705'), 0, 1.25, 0.152);
+  add(g, tube('camCable', [[0, 1.35, 0.1], [0.02, 1.7, 0.08], [0.03, 2.1, 0.1], [0, 2.3, 0.05]], 0.012, 12), mat('#1d1f22'));
   return g;
 }
 
@@ -1241,6 +1266,9 @@ export function panelSolar() {
     add(g, rbox(0.04, 0.95, 0.04, 0.01), al, x, 0.47, -0.42, -0.1);
     add(g, rbox(0.04, 0.4, 0.04, 0.01), al, x, 0.2, 0.35);
   }
+  add(pan, rbox(0.18, 0.12, 0.05, 0.01), mat('#2b2e33', { r: 0.6 }), 0, 0.5, -0.05);
+  add(g, tube('solarCable', [[0, 1.05, -0.35], [0.05, 0.6, -0.5], [0.1, 0.03, -0.55], [0.5, 0.02, -0.6]], 0.012, 12), mat('#1d1f22'));
+  for (const x of [-0.4, 0.4]) for (const z of [-0.55, 0.55]) add(g, rbox(0.12, 0.03, 0.12, 0.01), mat('#8b9096', { r: 0.9 }), x, 0.015, z);
   return g;
 }
 
@@ -1259,16 +1287,29 @@ export function torreIluminacion() {
     add(g, rbox(0.34, 0.26, 0.12, 0.03), d, s * 0.35, 3.92, 0.02);
     add(g, rbox(0.28, 0.2, 0.01, 0.005), mat('#fff6d8', { e: '#fff3cc', ei: 1, glow: 'lamp' }), s * 0.35, 3.92, 0.085);
   }
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    add(g, rbox(0.55, 0.05, 0.05, 0.01), y, sx * 0.55, 0.28, sz * 0.32, 0, sz * sx * 0.6, 0);
+    add(g, cyl(0.02, 0.02, 0.26, 8), m, sx * 0.78, 0.15, sz * 0.47);
+    add(g, cyl(0.07, 0.07, 0.02, 12), d, sx * 0.78, 0.02, sz * 0.47);
+  }
+  add(g, cyl(0.03, 0.03, 0.2, 10), m, -0.32, 0.92, -0.18);
+  add(g, rbox(0.4, 0.38, 0.01, 0.005), mat('#3a3f45', { r: 0.5, m: 0.4 }), -0.18, 0.47, 0.305);
+  add(g, rbox(0.03, 0.08, 0.02, 0.005), mat('#9aa1a9', { m: 0.7 }), -0.02, 0.47, 0.315);
+  for (const s3 of [-1, 1]) for (let k = 0; k < 3; k++) add(g, rbox(0.3, 0.008, 0.01, 0.002), d, s3 * 0.35, 3.86 + k * 0.06, 0.095);
+  add(g, tube('torreCable', [[0.09, 0.85, 0], [0.09, 2.0, 0.02], [0.07, 3.0, 0.02], [0.05, 3.7, 0]], 0.012, 16), mat('#1d1f22'));
   return g;
 }
 
 // Jardín urbano: jardinera grande de hormigón con arbustos y hierba
 export function jardinUrbano() {
-  const g = new THREE.Group(), c = mat('#8f9399', { r: 0.85 });
+  const concrete = canvasTex('hormigon', 128, 128, (c, w) => { c.fillStyle = '#9a9ea4'; c.fillRect(0, 0, w, w); let s0 = 3; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; }; for (let k = 0; k < 400; k++) { c.fillStyle = `rgba(${rnd() < 0.5 ? '60,60,60' : '230,230,230'},${0.06 + rnd() * 0.08})`; c.fillRect(rnd() * w, rnd() * w, 1 + rnd() * 2, 1 + rnd() * 2); } });
+  const g = new THREE.Group(), c = mat('#ffffff', { r: 0.9, map: concrete });
   add(g, taperBox('jardinUrbano', 2.0, 0.55, 0.9, 0.04, 1.05), c, 0, 0.3, 0);
   add(g, rbox(2.12, 0.06, 1.0, 0.025), mat('#a3a8ae', { r: 0.8 }), 0, 0.6, 0);
   add(g, rbox(1.9, 0.04, 0.8, 0.01), mat('#4a3626', { r: 1 }), 0, 0.58, 0);
-  for (const [x, z, r, s] of [[-0.7, 0, 0.32, 31], [-0.2, 0.08, 0.36, 32], [0.3, -0.05, 0.34, 33], [0.75, 0.05, 0.3, 34], [0.05, -0.2, 0.26, 35]]) bush(g, x, 0.72 + r * 0.3, z, r, s);
+  for (const [x, z, r, s] of [[-0.68, 0.02, 0.27, 31], [-0.22, 0.06, 0.3, 32], [0.25, -0.04, 0.29, 33], [0.68, 0.04, 0.26, 34], [0.0, -0.18, 0.22, 35]]) bush(g, x, 0.66 + r * 0.45, z, r, s);
+  const pet = [mat('#e8463a', { r: 0.6 }), mat('#f2c21a', { r: 0.6 }), mat('#f5f5f5', { r: 0.6 })];
+  for (let k = 0; k < 14; k++) add(g, sph(0.035, 8, 6), pet[k % 3], -0.85 + k * 0.13, 0.66 + (k % 2) * 0.05, 0.33 - (k % 3) * 0.02);
   return g;
 }
 
@@ -1281,8 +1322,9 @@ export function jardineraMadera() {
   add(g, rbox(1.52, 0.03, 0.52, 0.01), mat('#4a3626', { r: 1 }), 0, 0.53, 0);
   // helechos: matas de frondas cortas con foliolos que se abren desde el centro
   const fm = mat('#ffffff', { r: 0.75, map: frondTex(), alphaTest: 0.45, side: THREE.DoubleSide });
-  for (const [px, pz, sc] of [[-0.55, 0.05, 0.19], [-0.05, -0.06, 0.21], [0.48, 0.04, 0.18]]) for (let k = 0; k < 9; k++)
+  for (const [px, pz, sc] of [[-0.58, 0.08, 0.17], [-0.2, -0.1, 0.2], [0.18, 0.1, 0.19], [0.56, -0.05, 0.17]]) for (let k = 0; k < 9; k++)
     add(g, frondGeo2(3.1), fm, px, 0.55, pz, 0, (k / 9) * Math.PI * 2 + px, 0.9 + (k % 3) * 0.2, sc, sc * 1.4, sc);
+  for (let k = 0; k < 10; k++) add(g, sph(0.04, 6, 5), mat('#5a4030', { r: 1 }), -0.65 + k * 0.145, 0.545, ((k * 7) % 5) / 10 - 0.2, 0, 0, 0, 1, 0.4, 1);
   return g;
 }
 
@@ -1308,6 +1350,21 @@ export function biciPublica() {
   add(g, rbox(0.34, 0.2, 0.26, 0.02), mat('#3a3f45', { r: 0.5, m: 0.5 }), 0, 0.88, 0.62);
   add(g, rbox(0.3, 0.02, 0.22, 0.01), mat('#1d1f22'), 0, 0.98, 0.62);
   add(g, rbox(0.07, 0.07, 0.1, 0.01), mat('#2b2e33'), 0, 0.4, -0.05);
+  const crank = new THREE.Group(); crank.position.set(0, 0.4, -0.05); g.add(crank);
+  add(crank, new THREE.TorusGeometry(0.1, 0.012, 6, 24), m, 0.05, 0, 0, 0, Math.PI / 2, 0);
+  add(crank, cyl(0.1, 0.1, 0.01, 24), mat('#3a3f45', { m: 0.6, r: 0.4 }), 0.05, 0, 0, 0, 0, Math.PI / 2);
+  for (const s3 of [-1, 1]) {
+    add(crank, rbox(0.02, 0.17, 0.03, 0.008), m, s3 * 0.09, s3 * 0.07, 0.02 * s3, 0.3, 0, 0);
+    add(crank, rbox(0.1, 0.025, 0.06, 0.008), d, s3 * 0.15, s3 * 0.15, 0.05 * s3);
+  }
+  for (const yy of [0.3, 0.5]) add(g, cyl(0.006, 0.006, 0.48, 4), mat('#4a4f55', { m: 0.7 }), 0.05, yy, -0.29, Math.PI / 2 + (yy - 0.4) * 0.5);
+  add(g, rbox(0.3, 0.025, 0.3, 0.01), d, 0, 0.66, -0.5);
+  add(g, cyl(0.012, 0.012, 0.33, 6), d, 0, 0.5, -0.62, 0.5);
+  add(g, cyl(0.035, 0.03, 0.06, 12), mat('#f5f5f0', { e: '#fff3cc', ei: 0.8, glow: 'lamp' }), 0, 0.82, 0.76, Math.PI / 2);
+  add(g, rbox(0.06, 0.03, 0.02, 0.005), mat('#ff2a1a', { e: '#ff2a1a', ei: 0.5 }), 0, 0.64, -0.66);
+  add(g, cyl(0.01, 0.01, 0.32, 6), d, 0.06, 0.2, -0.12, 0, 0, 0.35);
+  const num = canvasTex('biciNum', 64, 32, (c, w, h) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#d4302a'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.fillText('042', w / 2, 24); });
+  add(g, rbox(0.002, 0.07, 0.14, 0.001), mat('#ffffff', { map: num }), 0.032, 0.48, 0.15, 0, 0, 0);
   return g;
 }
 
@@ -1320,6 +1377,10 @@ export function rolloCable() {
   for (let k = 0; k < 4; k++) add(g, new THREE.TorusGeometry(0.2 + k * 0.022, 0.024, 8, 32), coil, 0, 0.32, -0.08 + (k % 3) * 0.08);
   add(g, cyl(0.25, 0.25, 0.21, 32), coil, 0, 0.32, 0, Math.PI / 2);
   add(g, tube('cableSuelto', [[0.25, 0.32, 0.05], [0.33, 0.12, 0.1], [0.45, 0.02, 0.25], [0.7, 0.02, 0.3]], 0.016, 16), coil);
+  for (const z of [-0.14, 0.14]) for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2 + 0.4; add(g, cyl(0.045, 0.045, 0.012, 14), mat('#1d2228'), Math.cos(a) * 0.2, 0.32 + Math.sin(a) * 0.2, z, Math.PI / 2); }
+  add(g, cyl(0.03, 0.03, 0.36, 12), mat('#c7a516', { r: 0.5 }), 0, 0.32, 0, Math.PI / 2);
+  add(g, rbox(0.06, 0.04, 0.09, 0.012), mat('#2b2e33', { r: 0.5 }), 0.74, 0.03, 0.31, 0, 0.2, 0);
+  for (const s3 of [-1, 1]) add(g, cyl(0.004, 0.004, 0.04, 6), mat('#c9cfd6', { m: 0.8 }), 0.78 + 0.0, 0.03, 0.31 + s3 * 0.015, 0, 0, Math.PI / 2);
   return g;
 }
 

@@ -30,7 +30,7 @@
   "28": "Three.js Skills for Claude Code",
   "29": "mock-server.js",
   "30": "panels.js",
-  "31": "hands.js",
+  "31": "entities/vehicles.js",
   "32": "routes/auth.js",
   "33": "common.sh",
   "34": "db.js",
@@ -103,8 +103,8 @@
   "101": "icons.js",
   "102": "Execution Steps",
   "103": "dependencies",
-  "104": "phone.js",
-  "105": "casino.js",
+  "104": "palm",
+  "105": "buildMotel",
   "106": "benches.js",
   "107": "game.js",
   "108": "police.js",
@@ -112,9 +112,8 @@
   "110": "scripts",
   "111": "money.js",
   "112": "state.js",
-  "113": "models.js",
+  "113": "StaticBatch",
   "114": "batch.js",
-  "115": "rideables.js",
-  "116": "interact.js",
-  "117": "h"
+  "115": "buildPlaza",
+  "116": "interact.js"
 }

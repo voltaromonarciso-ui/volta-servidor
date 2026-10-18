@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792359886.9613109,
-    "seen": 1792359893.0271935,
+    "mtime": 1792360117.1893246,
+    "seen": 1792360137.0282068,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1536,15 +1536,15 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792359818.331046,
-    "seen": 1792359893.0269165,
-    "ast_hash": "38eb7624da0af061d6875df47abe5a26",
+    "mtime": 1792360082.3364751,
+    "seen": 1792360137.0278733,
+    "ast_hash": "f2026b60b232a7155c5849d785124a67",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792359879.6300879,
-    "seen": 1792359893.027081,
-    "ast_hash": "2eacfd27a25c1e64cc6760f6bb120d17",
+    "mtime": 1792360063.9669328,
+    "seen": 1792360137.0280716,
+    "ast_hash": "af2119ca4a509bd58398eaca930961a8",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {
@@ -1608,9 +1608,39 @@
     "semantic_hash": ""
   },
   "juego/docs/avances-09-calle5.png": {
-    "mtime": 1792359886.9931858,
-    "seen": 1792359893.0309649,
-    "ast_hash": "30b6fb67d8f1d61897b693d3e56b0c8e",
+    "mtime": 1792360131.1735327,
+    "seen": 1792360137.0324554,
+    "ast_hash": "15b5739f9f7be909af5edd70f9a7cfc6",
+    "semantic_hash": ""
+  },
+  "juego/docs/vitrina-calle-1.png": {
+    "mtime": 1792360131.1625998,
+    "seen": 1792360137.0330412,
+    "ast_hash": "2f9e770c006ee14d4c4e0c752e547dcf",
+    "semantic_hash": ""
+  },
+  "juego/docs/vitrina-calle-2.png": {
+    "mtime": 1792360131.1645327,
+    "seen": 1792360137.0330439,
+    "ast_hash": "4e87c7c02329daa8766e72e005fc1187",
+    "semantic_hash": ""
+  },
+  "juego/docs/vitrina-calle-3.png": {
+    "mtime": 1792360131.1668594,
+    "seen": 1792360137.0330458,
+    "ast_hash": "299bdd54793c15061d13cbbdf2775423",
+    "semantic_hash": ""
+  },
+  "juego/docs/vitrina-calle-4.png": {
+    "mtime": 1792360131.1688814,
+    "seen": 1792360137.0330474,
+    "ast_hash": "d39b6eaae67debac593ab048aa53fca2",
+    "semantic_hash": ""
+  },
+  "juego/docs/vitrina-calle-5.png": {
+    "mtime": 1792360131.1709685,
+    "seen": 1792360137.0330496,
+    "ast_hash": "15b5739f9f7be909af5edd70f9a7cfc6",
     "semantic_hash": ""
   }
 }
