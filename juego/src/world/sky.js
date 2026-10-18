@@ -214,6 +214,7 @@ function updateSky(dt) {
   lampLevel += clamp(want - lampLevel, -dt * 0.8, dt * 0.8);
   if (Math.abs(want - lampLevel) < 0.002) lampLevel = want;
   G.world.bulbMat.color.setHex(0xd8d8d8).lerp(LAMP_C, lampLevel).multiplyScalar(1 + lampLevel * 1.2);
+  for (const m of G.world.glowMats || []) m.emissiveIntensity = m.userData.ei0 * (0.06 + lampLevel * 0.94);
   const pools = G.world.lampPoolMesh;
   if (pools) {
     pools.material.opacity = lampLevel * (0.55 + nightFactor * 0.35);

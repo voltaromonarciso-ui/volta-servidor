@@ -334,6 +334,7 @@ function drawMap() {
     g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
     if (txt) { g.fillStyle = '#fff'; g.font = `bold ${Math.round(r * 1.2)}px sans-serif`; g.fillText(txt, X(x), Y(z) + r * 0.45); }
   };
+  for (const a of G.world.atms || []) dot(a.x, a.z, '#1e6fd9', W / 70, '$'); // cajeros
   for (const d of G.state.deals.filter((x) => x.status === 'accepted')) {
     const s = G.world.spots.find((x) => x.id === d.spot);
     dot(s.x, s.z, '#27ae60', W / 50, '$');

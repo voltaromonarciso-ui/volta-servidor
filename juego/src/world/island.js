@@ -10,6 +10,8 @@
 import * as THREE from 'three';
 import { G } from '../game.js';
 import { W, B, TM, scene, K } from './world.js';
+import * as SK from './streetkit.js';
+import { createFurniture } from './streetfurniture.js';
 
 // líneas de calle (centro de la calzada)
 export const XL = [-210, -150, -90, -30, 30, 90, 150, 210];
@@ -60,8 +62,17 @@ let seedN = 1;
 const R = () => { seedN = (seedN * 9301 + 49297) % 233280; return seedN / 233280; };
 const rr = (a, b) => a + R() * (b - a);
 
+// Mobiliario urbano nuevo (streetkit): se acumula durante la construcción y se funde al final
+let F = null;
+const palm = (x, z, h = rr(8, 11)) => F.place('palmera', () => SK.palmera(), x, z, R() * 6.28, { s: h / 6, hit: 0.6 });
+const tree = (x, z, s = 1) => F.place('arbol', SK.arbol, x, z, R() * 6.28, { s: s * 1.25, hit: 0.5 });
+const bench = (x, z, ry = 0) => F.place('banco', () => SK.banco(), x, z, ry);
+const trashCan = (x, z) => F.place('papelera', SK.papelera, x, z, 0);
+
 export function buildIsland() {
   seedN = 7;
+  F = createFurniture({ addBox: K.addBox });
+  W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
   W.bounds = N;
   W.zones = [];
@@ -72,6 +83,10 @@ export function buildIsland() {
   buildLightsAndSigns();
   for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) buildBlock(block(i, j));
   buildCoast();
+  buildStreetFurniture();
+  const res = F.build(scene);
+  W.glowMats = res.glowMats;
+  W.furnitureStats = res;
   K.buildSkyline();
   K.buildMountains();
   tempProps();
@@ -268,20 +283,6 @@ function buildLightsAndSigns() {
       K.streetSign(STREET_X[i], px, 3.35, pz, Math.PI / 2);
     }
   }));
-  // farolas cada 20 m alternando acera; palmeras entre medias
-  const near = (t, arr) => arr.some((q) => Math.abs(t - q) < 9);
-  for (const x of XL) for (let t = ZL[0] + 10; t <= ZL[ROWS] - 10; t += 20) {
-    if (near(t, ZL)) continue;
-    const s = Math.round(t / 20) % 2 ? 1 : -1;
-    K.lamp(x + s * 5.9, t, s > 0 ? Math.PI : 0);
-    if (R() < 0.7) K.palm(x - s * 5.9, t + 10, rr(8, 12));
-  }
-  for (const z of ZL) for (let t = XL[0] + 10; t <= XL[COLS] - 10; t += 20) {
-    if (near(t, XL)) continue;
-    const s = Math.round(t / 20) % 2 ? 1 : -1;
-    K.lamp(t, z - s * 5.9, s > 0 ? Math.PI / 2 : -Math.PI / 2);
-    if (R() < 0.7) K.palm(t + 10, z + s * 5.9, rr(8, 12));
-  }
 }
 
 // ------------------------------------------------------------------
@@ -289,6 +290,75 @@ function buildLightsAndSigns() {
 //  edificios secundarios, un callejón de servicio y algo de verde. Cada manzana deja un
 //  rincón discreto (W.spots con discreet: true) para los encuentros con clientes.
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+//  Mobiliario de las aceras: farolas alternas y, entre medias, lo propio de cada barrio
+// ------------------------------------------------------------------
+const CURB = 4.75, WALLSIDE = 5.95; // línea de farolas/árboles (junto al bordillo) y de bancos/cabinas (junto a fachada)
+// Un cajero por barrio, en la acera norte de la manzana (la de la entrada principal)
+const ATM_ZONES = ['esquina', 'corteFino', 'oficinas', 'casino', 'apartamentos', 'barrioAlto', 'mercado', 'bungalos', 'motel', 'eclipse'];
+// Qué se pone en cada barrio, por orden; [modelo, lado ('c' bordillo / 'w' fachada)]
+const RECIPE = {
+  residencial: [['arbol', 'c'], ['banco', 'w'], ['buzon', 'w'], ['arbol', 'c'], ['reciclaje', 'w'], ['hidrante', 'c'], ['macetero', 'w'], ['arbol', 'c']],
+  comercio: [['palmera', 'c'], ['banco', 'w'], ['aparcabicis', 'w'], ['papelera', 'c'], ['cabina', 'w'], ['palmera', 'c'], ['cartel', 'w'], ['hidrante', 'c'], ['bici', 'w'], ['macetero', 'w']],
+  ocio: [['palmera', 'c'], ['taxi', 'w'], ['papelera', 'c'], ['cartel', 'w'], ['palmera', 'c'], ['bolardos', 'c'], ['banco', 'w']],
+  industrial: [['cajaElectrica', 'w'], ['cono', 'c'], ['vallaObra', 'w'], ['cilindro', 'c'], ['poste', 'c'], ['hidrante', 'c'], ['papelera', 'c']],
+  verde: [['arbol', 'c'], ['bancoParque', 'w'], ['papelera', 'c'], ['arbol', 'c'], ['fuenteAgua', 'w'], ['seto', 'w'], ['arbol', 'c'], ['jardin', 'w']],
+  servicio: [['palmera', 'c'], ['papelera', 'c'], ['cajaElectrica', 'w'], ['hidrante', 'c'], ['banco', 'w'], ['bolardos', 'c']],
+  costa: [['palmera', 'c'], ['bancoParque', 'w'], ['palmera', 'c'], ['papelera', 'c']],
+};
+const MODEL = {
+  arbol: [SK.arbol, { hit: 0.5 }], palmera: [() => SK.palmera(), { hit: 0.6 }], banco: [() => SK.banco()], bancoParque: [() => SK.bancoParque()],
+  buzon: [SK.buzon], reciclaje: [() => SK.cuboReciclaje()], hidrante: [SK.hidrante], macetero: [SK.macetero], aparcabicis: [() => SK.aparcabicis()],
+  papelera: [SK.papelera], cabina: [SK.cabinaTelefono], cartel: [SK.cartelPublicitario], bici: [SK.biciPublica], taxi: [SK.paradaTaxi],
+  bolardos: [SK.bolardos], cajaElectrica: [SK.cajaElectrica], cono: [SK.cono], vallaObra: [SK.vallaObra], cilindro: [SK.cilindro],
+  poste: [SK.poste, { hit: 0.4 }], fuenteAgua: [SK.fuenteAgua], seto: [() => SK.seto()], jardin: [SK.jardinUrbano],
+};
+function buildStreetFurniture() {
+  const kindAt = (i, j) => (i < 0 || i >= COLS || j < 0 || j >= ROWS ? 'costa' : ZONE_KIND[ZONES[j][i]]);
+  const put = (name, x, z, ry, extra = {}) => { const [fn, o] = MODEL[name]; F.place(name, fn, x, z, ry, { ...o, ...extra }); };
+  // cajeros primero: reservan su hueco
+  const reserved = [];
+  for (const zone of ATM_ZONES) {
+    const b = blockOf(zone), zN = ZL[ROWS - b.j];
+    const x = b.cx + 14, z = zN - WALLSIDE;
+    F.place('cajero', SK.cajero, x, z, 0);
+    W.atms.push({ x, z, zone, name: ZONE_NAMES[zone], face: { x, z: z + 1.1 } });
+    reserved.push([x, z]);
+  }
+  // una calle: tramo entre dos cruces; lado s = -1/+1; (along, across) → mundo
+  const segment = (kind, at, faceRy, seed, lampRy) => {
+    const len = 46, n = 9, step = len / (n - 1);
+    const rec = RECIPE[kind];
+    let r = seed;
+    for (let k = 0; k < n; k++) {
+      const t = k * step;
+      if (k % 4 === (seed % 2 ? 2 : 0)) { // farola cada ~23 m, al tresbolillo entre aceras
+        const [x, z] = at(t, CURB - 0.2);
+        F.place('farola', SK.farola, x, z, lampRy, { hit: 0.4 });
+        const [lx, lz] = at(t, CURB - 0.2 - 1.6);
+        W.lampPools.push([lx, lz]);
+        continue;
+      }
+      const [name, side] = rec[r++ % rec.length];
+      const [x, z] = at(t, side === 'c' ? CURB : WALLSIDE);
+      if (reserved.some(([qx, qz]) => Math.hypot(qx - x, qz - z) < 3.5)) continue;
+      put(name, x, z, side === 'c' && (name === 'arbol' || name === 'palmera') ? r * 1.7 : faceRy, name === 'palmera' ? { s: rr(1.3, 1.8) } : name === 'arbol' ? { s: rr(1.1, 1.4) } : {});
+    }
+  };
+  // calles norte-sur
+  XL.forEach((x, i) => { for (let j = 0; j < ROWS; j++) for (const s of [-1, 1]) {
+    const za = ZL[j] + K.RH + 3, bi = s > 0 ? i : i - 1, bj = ROWS - 1 - j;
+    segment(kindAt(bi, bj), (t, d) => [x + s * d, za + t], -s * Math.PI / 2, i * 7 + j * 3 + (s > 0 ? 1 : 0), s > 0 ? Math.PI : 0);
+  } });
+  // calles este-oeste
+  ZL.forEach((z, j) => { for (let i = 0; i < COLS; i++) for (const s of [-1, 1]) {
+    const xa = XL[i] + K.RH + 3, bj = s > 0 ? ROWS - 1 - j : ROWS - j;
+    segment(kindAt(i, bj), (t, d) => [xa + t, z + s * d], s > 0 ? Math.PI : 0, i * 5 + j * 11 + (s > 0 ? 1 : 0), s > 0 ? Math.PI / 2 : -Math.PI / 2);
+  } });
+  // paradas de autobús en la acera de algunas avenidas
+  for (const [x, z, ry] of [[XL[3] + WALLSIDE - 0.3, -30, -Math.PI / 2], [XL[4] - WALLSIDE + 0.3, 30, Math.PI / 2], [-120, ZL[2] + WALLSIDE - 0.3, Math.PI], [120, ZL[2] - WALLSIDE + 0.3, 0]]) F.place('paradaBus', SK.paradaBus, x, z, ry);
+}
+
 function buildBlock(b) {
   const kind = ZONE_KIND[b.zone];
   W.zones.push({ id: b.zone, name: ZONE_NAMES[b.zone], kind, ...b });
@@ -325,7 +395,7 @@ const FILL = {
       K.building({ x0: b.cx - 13, x1: b.cx + 13, z0: b.cz - 4, z1: b.cz + 10, h: 9, wall: '#f2e6cf', trim: '#ffffff', roof: '#8c4a32', style: 'house', front: '+z', roofType: 'gable', seed: 951, mapColor: '#d8c8a8', label: 'Mansión' });
       K.asphalt(b.cx - 2.5, b.cx + 2.5, b.cz + 10, b.z1, '#c9c2b4');
       B.box('#2f8fc9', b.cx, 0, b.cz - 11, 12, 0.08, 6, 0, { mat: 'glass', ao: 0 }); // piscina
-      for (const x of [-16, 16]) K.palm(b.cx + x, b.cz + 13, 9);
+      for (const x of [-16, 16]) palm(b.cx + x, b.cz + 13, 9);
       return;
     }
     if (b.zone === 'apartamentos' || b.zone === 'barrioAlto') {
@@ -347,14 +417,14 @@ const FILL = {
       K.building({ x0, x1, z0: b.z1 - 14, z1: b.z1 - 2, h: rr(6.5, 10), wall: K.HOUSE_COLORS[Math.floor(R() * 10)], trim: '#f4eee2', roof: '#4d4d4d', style: R() < 0.5 ? 'brick' : 'office', front: '+z', seed: 400 + Math.floor(R() * 999), mapColor: '#b9a68a' });
     }
     K.building({ x0: b.x0 + 2, x1: b.x1 - 2, z0: b.z0 + 7, z1: b.z0 + 20, h: rr(7, 11), wall: K.HOUSE_COLORS[Math.floor(R() * 10)], trim: '#f4eee2', roof: '#4d4d4d', style: 'brick', front: '-z', seed: 500 + Math.floor(R() * 999), mapColor: '#b9a68a' });
-    K.bench(b.cx - 6, b.z1 - 0.5); K.trashCan(b.cx + 6, b.z1 - 0.5);
+    bench(b.cx - 6, b.z1 - 0.5); trashCan(b.cx + 6, b.z1 - 0.5);
   },
   ocio(b) {
     const s = SIGN[b.zone] || {};
     K.building({ x0: b.cx - 15, x1: b.cx + 15, z0: b.cz - 8, z1: b.cz + 12, h: s.h || 9, wall: s.wall || '#3a2a4a', trim: s.trim || '#ffd34d', roof: '#2b2b30', style: 'shop', front: '+z', sign: s.text, signBg: s.bg, awning: s.awning, seed: 800 + b.i, mapColor: '#9b6bc9', label: ZONE_NAMES[b.zone] });
     K.asphalt(b.x0 + 2, b.x1 - 2, b.cz + 12, b.z1 - 1, '#45484d');
     for (let k = 0; k < 4; k++) K.parkedCar(b.x0 + 8 + k * 9, b.z1 - 5, Math.PI / 2);
-    for (const x of [b.x0 + 3, b.x1 - 3]) K.palm(x, b.cz, rr(8, 11));
+    for (const x of [b.x0 + 3, b.x1 - 3]) palm(x, b.cz, rr(8, 11));
   },
   industrial(b) {
     K.building({ x0: b.x0 + 4, x1: b.x1 - 4, z0: b.cz - 8, z1: b.cz + 14, h: 9, wall: '#8a949e', trim: '#d0d6dc', roof: '#4d4d4d', style: 'warehouse', front: '+z', sign: ZONE_NAMES[b.zone].toUpperCase(), signBg: '#34495e', seed: 900 + b.i, mapColor: '#8a9aa6', label: ZONE_NAMES[b.zone] });
@@ -366,7 +436,7 @@ const FILL = {
   },
   verde(b) {
     if (b.zone === 'bosque') {
-      for (let k = 0; k < 70; k++) K.tree(rr(b.x0 + 2, b.x1 - 2), rr(b.z0 + 2, b.z1 - 2), rr(0.9, 1.6));
+      for (let k = 0; k < 70; k++) tree(rr(b.x0 + 2, b.x1 - 2), rr(b.z0 + 2, b.z1 - 2), rr(0.9, 1.6));
       return;
     }
     // Parque Central: paseos en cruz, fuente y bancos
@@ -375,11 +445,11 @@ const FILL = {
     B.add(K.GEO.cyl16, '#cfd6dc', b.cx, 0.35, b.cz, 7, 0.7, 7);
     B.add(K.GEO.cyl16, '#3a8fc0', b.cx, 0.72, b.cz, 6.2, 0.06, 6.2, 0, { mat: 'glass', ao: 0 });
     K.addBox(b.cx - 3.4, b.cx + 3.4, b.cz - 3.4, b.cz + 3.4, 0.8);
-    for (const [x, z, r] of [[-6, 4, 0], [6, -4, Math.PI], [4, 6, Math.PI / 2], [-4, -6, -Math.PI / 2]]) K.bench(b.cx + x, b.cz + z, r);
+    for (const [x, z, r] of [[-6, 4, 0], [6, -4, Math.PI], [4, 6, Math.PI / 2], [-4, -6, -Math.PI / 2]]) bench(b.cx + x, b.cz + z, r);
     for (let k = 0; k < 22; k++) {
       const x = rr(b.x0 + 2, b.x1 - 2), z = rr(b.z0 + 2, b.z1 - 2);
       if (Math.abs(x - b.cx) < 4 || Math.abs(z - b.cz) < 4) continue;
-      R() < 0.5 ? K.palm(x, z) : K.tree(x, z, rr(0.9, 1.3));
+      R() < 0.5 ? palm(x, z) : tree(x, z, rr(0.9, 1.3));
     }
     W.spots.push({ id: 'parque', name: 'Banco del Parque Central', x: b.cx + 6, z: b.cz - 6 });
   },
@@ -462,7 +532,7 @@ function buildCoast() {
     B.add(K.GEO.cone8, c, bx + x, 2.5, zN + z, 3, 0.7, 3, 0, { ao: 0 });
     B.box('#ffffff', bx + x + 1.2, 0, zN + z + 1, 0.7, 0.3, 1.8);
   }
-  for (let k = 0; k < 14; k++) K.palm(bx + rr(-38, 38), zN + rr(6, 34), rr(8, 12));
+  for (let k = 0; k < 14; k++) palm(bx + rr(-38, 38), zN + rr(6, 34), rr(8, 12));
   W.spots.push({ id: 'playa', name: 'Chiringuito de la playa', x: bx - 30, z: zN + 30 });
   W.mapLabels.push({ x: bx, z: zN + 22, t: 'Playa' });
   // Urbanización (sur): fila de casas frente al mar

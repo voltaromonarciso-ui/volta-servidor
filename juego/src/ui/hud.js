@@ -229,6 +229,7 @@ function drawMinimap() {
   at(P.ferreteria, '#b0302a', '⚒', false);
   at(P.gasolinera, '#2e86de', '⛽', false);
   if (G.state.orders.length) at(P.deadDrop, '#c77d2a', '▣');
+  for (const a of W.atms || []) icon(a.x, a.z, '#1e6fd9', '$', false); // cajeros (solo los que caen dentro)
   for (const d of G.state.deals) {
     if (d.status !== 'accepted') continue;
     const spot = W.spots.find((x) => x.id === d.spot);

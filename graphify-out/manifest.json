@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792357371.6367126,
-    "seen": 1792357456.7621942,
-    "ast_hash": "bea6c76e4e0da7d61cdc180aaea6c2fc",
+    "mtime": 1792361012.7602012,
+    "seen": 1792361034.3133276,
+    "ast_hash": "ea3f60dcafa32702c598ba6cbb5ce6a4",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792343172.40295,
-    "seen": 1792343452.9226177,
-    "ast_hash": "22ab6f34df3ae9e39aeea8b138c514f0",
+    "mtime": 1792361012.7589476,
+    "seen": 1792361034.313431,
+    "ast_hash": "fd7724b8c1fb22f234e0c65c31eee309",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/sky.js": {
-    "mtime": 1792343172.4003174,
-    "seen": 1792343452.9227242,
-    "ast_hash": "27ff594d08c7d384bb32db942ae2e93f",
+    "mtime": 1792360357.9392297,
+    "seen": 1792361034.3136125,
+    "ast_hash": "23c28fd96f85bc0aea29a4b540595390",
     "semantic_hash": ""
   },
   "juego/src/world/textures.js": {
@@ -1373,12 +1373,6 @@
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
-  "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792360117.1893246,
-    "seen": 1792360137.0282068,
-    "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
-    "semantic_hash": ""
-  },
   "juego/tests/city.spec.js": {
     "mtime": 1792341754.532233,
     "seen": 1792341770.0547047,
@@ -1512,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792357132.9207015,
-    "seen": 1792357456.76241,
-    "ast_hash": "472f2a24e3f150057e80ad5a0bf28b8c",
+    "mtime": 1792360371.7201557,
+    "seen": 1792361034.3135154,
+    "ast_hash": "a631f477b870172543938aa07f0e658a",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1641,6 +1635,12 @@
     "mtime": 1792360131.1709685,
     "seen": 1792360137.0330496,
     "ast_hash": "15b5739f9f7be909af5edd70f9a7cfc6",
+    "semantic_hash": ""
+  },
+  "juego/src/world/streetfurniture.js": {
+    "mtime": 1792360357.938513,
+    "seen": 1792361034.3136156,
+    "ast_hash": "599450c7341afee330df1b044e279187",
     "semantic_hash": ""
   }
 }
