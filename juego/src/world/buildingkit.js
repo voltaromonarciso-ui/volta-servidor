@@ -13,7 +13,7 @@ const FIT = {
   h_house1: { w: 13 }, h_house2: { w: 11 }, h_house3: { w: 11 }, h_house4: { w: 10 }, h_house5: { w: 10 }, h_house6: { w: 10 },
   q_House: { h: 7.5 }, q_House2: { h: 7 }, q_House3: { h: 9 }, q_House4: { h: 7 }, q_House5: { h: 7 },
   q_Flat: { h: 15 }, q_Flat2: { h: 15 }, q_Shop: { w: 12 }, q_Bank: { w: 12 },
-  cb_Building_1_A: { w: 12.4 }, cb_Building_1_D: { w: 12.4 }, cb_Building_2_A: { w: 12.3 }, cb_Building_2_C: { w: 12.3 },
+  cb_Building_1_A: { w: 12.4 }, cb_Building_1_D: { w: 12.4 }, cb_Building_2_A: { w: 12.3 },
   cb_Building_3_A: { w: 30 }, cb_Building_5_A: { w: 24 },
 };
 const MODELS = {};

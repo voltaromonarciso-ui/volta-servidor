@@ -429,7 +429,7 @@ const FILL = {
       return;
     }
     if (b.zone === 'apartamentos' || b.zone === 'barrioAlto') {
-      const pair = b.zone === 'apartamentos' ? [['cb_Building_5_A', 22], ['cb_Building_2_C', 14]] : [['q_Flat', 16], ['q_Flat2', 16]];
+      const pair = b.zone === 'apartamentos' ? [['cb_Building_5_A', 22], ['cb_Building_2_A', 14]] : [['q_Flat', 16], ['q_Flat2', 16]];
       let x = b.x0 + 3, ok = true;
       for (const [nm, w] of pair) { if (!modelBuilding(nm, x + w / 2, b.cz + 3, 0, { w, mapColor: '#b9a68a', label: x === b.x0 + 3 ? ZONE_NAMES[b.zone] : undefined })) ok = false; x += w + 4; }
       if (ok) return;
@@ -447,7 +447,7 @@ const FILL = {
     // el local principal da a la calle norte; a los lados, edificios de 2–3 plantas
     const main = { x0: b.cx - 11, x1: b.cx + 11, z0: b.z1 - 16, z1: b.z1 - 2, h: 6.5, front: '+z' };
     K.building({ ...main, wall: SIGN[b.zone]?.wall || '#d6c3a5', trim: '#ffffff', roof: '#5a5a5a', style: 'shop', sign: SIGN[b.zone]?.text || ZONE_NAMES[b.zone].toUpperCase(), signBg: SIGN[b.zone]?.bg || '#1e2a33', awning: SIGN[b.zone]?.awning, seed: 300 + b.i * 11 + b.j, mapColor: '#c98a6b', label: ZONE_NAMES[b.zone] });
-    const SIDE = ['q_Flat', 'cb_Building_2_A', 'q_Flat2', 'cb_Building_1_D', 'q_Shop', 'cb_Building_2_C'];
+    const SIDE = ['q_Flat', 'cb_Building_2_A', 'q_Flat2', 'cb_Building_1_D', 'q_Shop', 'cb_Building_1_A'];
     for (const [x0, x1] of [[b.x0 + 1, b.cx - 13], [b.cx + 13, b.x1 - 1]]) {
       if (modelBuilding(SIDE[Math.floor(R() * SIDE.length)], (x0 + x1) / 2, b.z1 - 8, 0, { w: x1 - x0 - 0.5 })) continue;
       K.building({ x0, x1, z0: b.z1 - 14, z1: b.z1 - 2, h: rr(6.5, 10), wall: K.HOUSE_COLORS[Math.floor(R() * 10)], trim: '#f4eee2', roof: '#4d4d4d', style: R() < 0.5 ? 'brick' : 'office', front: '+z', seed: 400 + Math.floor(R() * 999), mapColor: '#b9a68a' });

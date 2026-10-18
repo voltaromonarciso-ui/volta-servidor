@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792365330.883412,
-    "seen": 1792365345.216242,
-    "ast_hash": "5b40add2d7ba5d4e959b511dbd3b4309",
+    "mtime": 1792366571.8512352,
+    "seen": 1792366583.3982637,
+    "ast_hash": "516f4ebe89a446d0bb44ee18791ae99f",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1692,9 +1692,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792365279.1596944,
-    "seen": 1792365345.216213,
-    "ast_hash": "259f48d4e009999c993c8d87e0e84661",
+    "mtime": 1792366571.8626082,
+    "seen": 1792366583.398229,
+    "ast_hash": "fc65d9d7e81c25a0e75a9a270d0f462f",
     "semantic_hash": ""
   },
   "juego/tools/blend_list.py": {
@@ -1731,6 +1731,24 @@
     "mtime": 1792365175.2653685,
     "seen": 1792365345.2204378,
     "ast_hash": "340468796805755e94d89b74d03f21f0",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-16-apart.png": {
+    "mtime": 1792366572.2817082,
+    "seen": 1792366583.4021256,
+    "ast_hash": "1dbd25caf9eba4c7aed18924c90c1f6c",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-16-bungalos.png": {
+    "mtime": 1792366572.1817083,
+    "seen": 1792366583.4021275,
+    "ast_hash": "d12c95b1f999f6afcb8de43d45bd2be9",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-16-esquina.png": {
+    "mtime": 1792366572.3897083,
+    "seen": 1792366583.402129,
+    "ast_hash": "5d88a5c1e0c689fae266ff95d5d66ddc",
     "semantic_hash": ""
   }
 }
