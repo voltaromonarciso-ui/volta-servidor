@@ -41,7 +41,7 @@ export function createWorld(sc) {
   W = {
     colliders: [], grid: new Map(), nav: new Nav(),
     pois: {}, homes: [], spots: [], wander: [], floors: [], mapRects: [], mapLabels: [],
-    props: {}, winMats: [], doors: [], shutters: [], bulbPositions: [], water: null, boxes: [], lights: [],
+    props: {}, winMats: [], doors: [], shutters: [], bulbPositions: [], lampPools: [], water: null, boxes: [], lights: [],
     resolve, los, addBox, inProperty, update, groundAt: () => 0,
   };
   B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
@@ -353,6 +353,7 @@ function lamp(x, z, dir = 0) {
   B.add(GEO.box, '#5a5f66', x + ax * 0.9, 6.75, z + az * 0.9, Math.abs(ax) * 1.8 + 0.1, 0.09, Math.abs(az) * 1.8 + 0.1, 0, { mat: 'metal', ao: 0 });
   B.add(GEO.box, '#3a3e43', x + ax * 1.9, 6.68, z + az * 1.9, Math.abs(ax) * 0.7 + 0.3, 0.16, Math.abs(az) * 0.7 + 0.3, 0, { mat: 'metal', ao: 0 });
   W.bulbPositions.push([x + ax * 1.9, 6.56, z + az * 1.9]);
+  W.lampPools.push([x + ax * 1.9, z + az * 1.9]);
   addBox(x - 0.15, x + 0.15, z - 0.15, z + 0.15, 7);
 }
 
@@ -2256,6 +2257,28 @@ function buildBulbs() {
   W.bulbPositions.forEach((p, i) => { m.makeTranslation(p[0], p[1], p[2]); im.setMatrixAt(i, m); });
   scene.add(im);
   W.bulbMat = mat;
+  // charco de luz bajo cada farola: una sola malla instanciada, sin luces dinámicas
+  // (la opacidad la mueve el ciclo de día y noche; de día queda en 0 y no se dibuja)
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const g = cv.getContext('2d');
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, 'rgba(255,214,150,0.9)');
+  grd.addColorStop(0.35, 'rgba(255,200,130,0.45)');
+  grd.addColorStop(0.7, 'rgba(255,190,120,0.12)');
+  grd.addColorStop(1, 'rgba(255,190,120,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const pg = new THREE.PlaneGeometry(9, 9);
+  pg.rotateX(-Math.PI / 2);
+  const pm = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const pools = new THREE.InstancedMesh(pg, pm, W.lampPools.length);
+  W.lampPools.forEach((p, i) => { m.makeTranslation(p[0], 0.16, p[1]); pools.setMatrixAt(i, m); });
+  pools.renderOrder = 2;
+  pools.visible = false;
+  scene.add(pools);
+  W.lampPoolMesh = pools;
 }
 
 function buildBoxes() {

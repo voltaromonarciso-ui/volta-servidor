@@ -133,6 +133,13 @@ function sample(hour) {
 }
 
 export let nightFactor = 0;
+// Farolas: se encienden a las 19:45 y se apagan a las 6:45 según el reloj del juego.
+// Con horas fijas no pueden parpadear (no dependen de un umbral de luz que oscile);
+// el encendido y el apagado son un fundido corto.
+export const LAMPS_ON = 19.75, LAMPS_OFF = 6.75;
+export const lampsShouldBeOn = (hour) => hour >= LAMPS_ON || hour < LAMPS_OFF;
+export let lampLevel = 0;
+const LAMP_C = C('#ffd88a');
 let shadowN = 0;
 let envHour = -99;
 const _dir = new THREE.Vector3();
@@ -188,7 +195,15 @@ function updateSky(dt) {
   setCarLights(Math.max(nightFactor, (dusk - 0.5) * 2));
   for (const m of G.world.winMats) m.emissiveIntensity = m.userData.shop ? 0.45 + dusk * 0.4 + nightFactor * 0.3 : 0.06 + dusk * 0.25 + nightFactor * 0.5;
   for (const m of G.world.signMats || []) m.emissiveIntensity = 0.5 + dusk * 0.5 + nightFactor * 0.4;
-  G.world.bulbMat.color.setHex(dusk > 0.6 || nightFactor > 0.2 ? 0xffd88a : 0xd8d8d8).multiplyScalar(dusk > 0.6 || nightFactor > 0.2 ? 2.2 : 1);
+  const want = lampsShouldBeOn(hour) ? 1 : 0;
+  lampLevel += clamp(want - lampLevel, -dt * 0.8, dt * 0.8);
+  if (Math.abs(want - lampLevel) < 0.002) lampLevel = want;
+  G.world.bulbMat.color.setHex(0xd8d8d8).lerp(LAMP_C, lampLevel).multiplyScalar(1 + lampLevel * 1.2);
+  const pools = G.world.lampPoolMesh;
+  if (pools) {
+    pools.material.opacity = lampLevel * (0.55 + nightFactor * 0.35);
+    pools.visible = lampLevel > 0.01 && G.gfx?.lampPools !== false;
+  }
   clouds.children.forEach((c) => { c.position.x += dt * 1.5; if (c.position.x > 420) c.position.x = -420; });
   const cmat = clouds.children[0].children[0].material;
   cmat.emissive.copy(k.bot).lerp(k.top, 0.5).multiplyScalar(0.3 + k.hemiI * 0.45);
