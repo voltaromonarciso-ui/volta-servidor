@@ -154,3 +154,9 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - **Mobiliario de las aceras**: más lleno que la primera versión.
 - **Vegetación**: mezcla por barrios (palmeras en costa, comercio y ocio; árboles en residencial y parques).
 - **Móvil de referencia**: gama media (Android de 200–400 €): equilibrio entre detalle y fluidez.
+- **Tarjeta (dinero limpio)**: sirve para **comprar propiedades** (almacenes, negocios tapadera…).
+- **Cajeros**: dentro de una **sucursal pequeña «BANCO ROOKTOWN» en cada barrio**, con el
+  cajero empotrado en su fachada (sustituye al cajero suelto en la acera).
+- **Siguiente local**: el **piso inicial en Apartamentos**, como **estudio pequeño** (una
+  habitación con cama, cocina básica, baño y hueco para las primeras mesas).
+- Indicación general: preguntar siempre lo que no esté claro antes de decidirlo.
