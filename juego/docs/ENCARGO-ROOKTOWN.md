@@ -93,3 +93,10 @@ interacciones abstractas, animaciones y barras de progreso (nada de recetas real
   Corte Fino = tienda de ropa; incluye El Eclipse, Apartamentos, Muebles, Almacén Delta, El Cartel.
 - HUD: sin botón de la mano (se interactúa tocando la etiqueta).
 - Casino: solo tragaperras jugables; la ruleta queda como decoración.
+
+## Respuestas del usuario (2.ª tanda)
+- Orden: PRIMERO EL MAPA (isla de 11-mapa.png con barrios y calles), después los sistemas.
+- Inicio: piso pequeño en Apartamentos.
+- Progresión de productos por rango: cogollos 0 (Novato) · cristales 2 (Trapichero) ·
+  polvos 3 (Distribuidor) · pastillas 4 (Mayorista) · extracto 5 (Capo).
+- Logotipo de Rooktown: lo pasa el usuario; mientras, solo texto.
