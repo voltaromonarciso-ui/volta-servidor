@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792356942.1392322,
-    "seen": 1792357456.7625537,
-    "ast_hash": "f6794d24bdc292831b6276c785b94041",
+    "mtime": 1792357570.7783954,
+    "seen": 1792358921.91836,
+    "ast_hash": "e32b6ef5e35b2627d0402e716119b296",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -780,9 +780,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/props.js": {
-    "mtime": 1792188200.380857,
-    "seen": 1792188643.7339878,
-    "ast_hash": "a42615abdaf70dff00076e86f689b236",
+    "mtime": 1792357570.7760968,
+    "seen": 1792358921.9183033,
+    "ast_hash": "5910432ab30418c3d76cb619a1ad4052",
     "semantic_hash": ""
   },
   ".claude/skills/algorithmic-art/LICENSE.txt": {
@@ -1374,8 +1374,8 @@
     "semantic_hash": ""
   },
   "juego/tests/.results-shot/.last-run.json": {
-    "mtime": 1792357436.0331652,
-    "seen": 1792357456.7626235,
+    "mtime": 1792358907.5412526,
+    "seen": 1792358921.9184206,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "juego/docs/ENCARGO-ROOKTOWN.md": {
-    "mtime": 1792356803.0131276,
-    "seen": 1792357456.7648401,
-    "ast_hash": "2f0603651de0f7c98d10bf42efa7efe5",
+    "mtime": 1792357921.389194,
+    "seen": 1792358921.9204922,
+    "ast_hash": "e0af382a29c07bb12079de03b7a1c8a3",
     "semantic_hash": ""
   },
   "juego/docs/referencias/LEEME.md": {
@@ -1533,6 +1533,48 @@
     "mtime": 1792356652.462799,
     "seen": 1792357456.7663343,
     "ast_hash": "f61a517544c40568eca0036837ed30be",
+    "semantic_hash": ""
+  },
+  "juego/src/vitrina.js": {
+    "mtime": 1792358450.0864208,
+    "seen": 1792358921.918191,
+    "ast_hash": "94f1d1d2df9009dc145892b32a027237",
+    "semantic_hash": ""
+  },
+  "juego/src/world/streetkit.js": {
+    "mtime": 1792358899.7749586,
+    "seen": 1792358921.9183314,
+    "ast_hash": "94ea9e2c1288ae69270f99921758508e",
+    "semantic_hash": ""
+  },
+  "juego/vitrina.html": {
+    "mtime": 1792358067.3092027,
+    "seen": 1792358921.9206352,
+    "ast_hash": "567b7d076e5c8faa610558d5d109e117",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-01-calle.png": {
+    "mtime": 1792358167.5617723,
+    "seen": 1792358921.9216902,
+    "ast_hash": "bcab7cc4e4279ce7ab98bffe76de8a50",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-01-referencia.png": {
+    "mtime": 1792358167.5652757,
+    "seen": 1792358921.9216924,
+    "ast_hash": "8eb516fca0569a8756837d4a8477a672",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-02-calle.png": {
+    "mtime": 1792358328.0224297,
+    "seen": 1792358921.9216945,
+    "ast_hash": "c42b4e1aeae158ab7eb3fd8e05234d21",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-03-calle2.png": {
+    "mtime": 1792358915.9624436,
+    "seen": 1792358921.9216962,
+    "ast_hash": "eef611fea4153c8b750eb407025737ed",
     "semantic_hash": ""
   }
 }
