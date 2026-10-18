@@ -6,3 +6,4 @@ graphify-out/graph.html
 # bancos de pruebas visuales locales
 juego/dev/
 juego/tests/zz-*.spec.js
+juego/tests/.results-shot/
