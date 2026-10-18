@@ -943,3 +943,187 @@ export const STREET_KIT_3 = [
   ['Paso de peatones', () => pasoPeatones()], ['Valla de obra', vallaObra], ['Cilindro', cilindro], ['Túnel peatonal', () => tunelPeatonal()],
   ['Banco de parque', () => bancoParque()], ['Farol decorativo', farolDecorativo], ['Buzón', buzon], ['Cabina de vigilancia', cabinaVigilancia], ['Extintor', extintor],
 ];
+
+// ==================================================================
+//  Cuarta tanda: equipamiento y comercio en la calle
+// ==================================================================
+// Escalera de tijera de aluminio
+export function escalera(h = 1.9) {
+  const g = new THREE.Group(), al = mat('#aeb4bb', { r: 0.3, m: 0.75 }), d = mat('#2b2e33', { r: 0.7 });
+  const spread = 0.38, ang = Math.atan2(spread, h), L = Math.hypot(spread, h);
+  for (const sz of [-1, 1]) {
+    for (const x of [-0.24, 0.24]) {
+      add(g, rbox(0.045, L, 0.025, 0.008), al, x, h / 2, sz * spread / 2, -sz * ang);
+      add(g, rbox(0.06, 0.04, 0.05, 0.01), d, x, 0.02, sz * spread);
+    }
+    if (sz > 0) for (let k = 1; k <= 5; k++) { const t = k / 6; add(g, rbox(0.48, 0.025, 0.07, 0.006), al, 0, t * h, spread * (1 - t)); }
+    else for (let k = 1; k <= 2; k++) { const t = k / 3; add(g, cyl(0.012, 0.012, 0.48, 6), al, 0, t * h, -spread * (1 - t), 0, 0, Math.PI / 2); }
+  }
+  add(g, rbox(0.56, 0.06, 0.16, 0.015), mat('#e0a21a', { r: 0.5 }), 0, h + 0.02, 0);
+  for (const x of [-0.24, 0.24]) add(g, cyl(0.006, 0.006, spread * 1.05, 6), d, x, h * 0.45, 0, Math.PI / 2);
+  return g;
+}
+
+// Cartel publicitario sobre dos patas, marco negro y póster ilustrado
+const posterTex = () => canvasTex('poster', 384, 256, (c, w, h) => {
+  c.fillStyle = '#dfe7ef'; c.fillRect(0, 0, w, h);
+  const gr = c.createRadialGradient(w * 0.6, h * 0.5, 10, w * 0.6, h * 0.5, 110); gr.addColorStop(0, '#5fb2ff'); gr.addColorStop(1, '#1d5fb0');
+  c.fillStyle = gr; c.beginPath(); c.arc(w * 0.62, h * 0.48, 90, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff'; c.font = 'bold 120px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('6', w * 0.62, h * 0.5);
+  c.fillStyle = '#e8463a'; c.font = 'bold 54px sans-serif'; c.fillText('7', 40, 46);
+  c.fillStyle = '#1d5fb0'; c.font = 'bold 26px sans-serif'; c.textAlign = 'left'; c.fillText('ROOKTOWN', 18, h - 26);
+  c.fillStyle = '#f2b705'; c.fillRect(18, h - 70, 90, 18); c.fillStyle = '#e8463a'; c.fillRect(w - 120, h - 52, 100, 30);
+  c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.fillText('OFERTA', w - 112, h - 37);
+});
+export function cartelPublicitario() {
+  const g = new THREE.Group(), m = mat('#1f2226', { r: 0.45, m: 0.5 });
+  for (const x of [-0.75, 0.75]) { add(g, rbox(0.06, 1.0, 0.06, 0.01), m, x, 0.5, 0); add(g, rbox(0.06, 0.04, 0.4, 0.01), m, x, 0.02, 0); }
+  add(g, rbox(1.75, 1.15, 0.1, 0.03), m, 0, 1.55, 0);
+  add(g, rbox(1.62, 1.02, 0.02, 0.005), mat('#ffffff', { map: posterTex(), r: 0.4, e: '#ffffff', ei: 0.08 }), 0, 1.55, 0.046);
+  add(g, rbox(1.62, 1.02, 0.01, 0.003), mat('#cfe6f5', { t: 0.18, r: 0.02 }), 0, 1.55, 0.06);
+  return g;
+}
+
+// Bolardos de fundición con cabeza esférica (pareja)
+export function bolardos() {
+  const g = new THREE.Group(), m = mat('#22262b', { r: 0.35, m: 0.6 });
+  for (const x of [-0.35, 0.35]) {
+    add(g, lathe('bolardoClasico', [[0, 0], [0.11, 0], [0.11, 0.03], [0.09, 0.05], [0.085, 0.75], [0.084, 0.8], [0.075, 0.86], [0.055, 0.9], [0.03, 0.92], [0, 0.925]], 24), m, x, 0, 0);
+    for (const y of [0.62, 0.7]) add(g, cyl(0.09, 0.09, 0.03, 24), mat('#a0a7ae', { m: 0.6, r: 0.3 }), x, y, 0);
+    add(g, cyl(0.1, 0.11, 0.05, 24), m, x, 0.06, 0);
+  }
+  return g;
+}
+
+// Boca de metro: escalera descendente con barandilla, pórtico negro y rombo rojo METRO
+export function paradaMetro() {
+  const g = new THREE.Group(), m = mat('#1f2226', { r: 0.45, m: 0.55 }), st = mat('#6c737b', { r: 0.8 }), glass = mat('#9fd0ea', { t: 0.35, r: 0.05 });
+  const W = 1.8, L = 2.6;
+  const curb = mat('#8b9096', { r: 0.9 });
+  // trozo de acera alrededor de la boca (tapa la caja de la escalera, que queda bajo el suelo)
+  for (const x of [-1, 1]) add(g, rbox(0.8, 0.12, L + 1.4, 0.02), curb, x * (W / 2 + 0.4), 0.06, 0.1);
+  add(g, rbox(W + 1.6, 0.12, 0.6, 0.02), curb, 0, 0.06, -L / 2 - 0.3);
+  add(g, rbox(W + 1.6, 0.12, 0.8, 0.02), curb, 0, 0.06, L / 2 + 0.4);
+  // escalones que bajan hacia el andén (la boca se abre por delante, +z)
+  for (let k = 0; k < 9; k++) add(g, rbox(W - 0.08, 0.17, 0.3, 0.01), st, 0, 0.12 - k * 0.17 - 0.085, L / 2 - 0.15 - k * 0.3);
+  for (const x of [-1, 1]) add(g, rbox(0.06, 1.6, L, 0.01), mat('#5a6068', { r: 0.8 }), x * (W / 2 - 0.03), -0.7, 0);
+  // barandillas laterales y trasera
+  for (const x of [-W / 2, W / 2]) {
+    add(g, rbox(0.05, 0.05, L, 0.01), m, x, 1.0, 0);
+    add(g, rbox(0.04, 0.04, L, 0.01), m, x, 0.5, 0);
+    for (let k = 0; k <= 4; k++) add(g, rbox(0.05, 1.0, 0.05, 0.01), m, x, 0.55, -L / 2 + (k * L) / 4);
+    add(g, rbox(0.01, 0.42, L - 0.05, 0.003), glass, x, 0.75, 0);
+  }
+  add(g, rbox(W, 0.05, 0.05, 0.01), m, 0, 1.0, -L / 2);
+  // pórtico de entrada con panel de mapa
+  for (const x of [-W / 2, W / 2]) add(g, rbox(0.1, 2.5, 0.1, 0.02), m, x, 1.25, -L / 2);
+  add(g, rbox(W + 0.3, 0.32, 0.18, 0.03), m, 0, 2.55, -L / 2);
+  const map = canvasTex('metroMapa', 256, 256, (c, w) => {
+    c.fillStyle = '#1e5fd6'; c.fillRect(0, 0, w, w); c.lineWidth = 8;
+    for (const [col, pts] of [['#ffd400', [[20, 60], [120, 60], [200, 160], [240, 160]]], ['#e8463a', [[40, 230], [100, 120], [230, 40]]], ['#2fbf5a', [[10, 140], [240, 200]]]]) {
+      c.strokeStyle = col; c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    }
+    c.fillStyle = '#fff'; for (const [x, y] of [[120, 60], [100, 120], [200, 160], [160, 172]]) { c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); }
+  });
+  add(g, rbox(W - 0.2, 1.3, 0.04, 0.01), mat('#ffffff', { map, r: 0.4, e: '#ffffff', ei: 0.12 }), 0, 1.55, -L / 2 - 0.02);
+  // rombo METRO luminoso
+  const sign = canvasTex('metroRombo', 256, 256, (c, w) => {
+    c.translate(w / 2, w / 2); c.rotate(Math.PI / 4); c.fillStyle = '#ffffff'; c.fillRect(-88, -88, 176, 176); c.fillStyle = '#d4241b'; c.fillRect(-78, -78, 156, 156);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#1e3f8a'; c.fillRect(20, 100, w - 40, 56); c.fillStyle = '#fff'; c.font = 'bold 44px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('METRO', w / 2, 130);
+  });
+  const sp = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), mat('#ffffff', { map: sign, alphaTest: 0.3, e: '#ffffff', ei: 0.3, glow: 'lamp' }));
+  sp.position.set(0, 2.85, -L / 2 + 0.1); g.add(sp);
+  return g;
+}
+
+// Fuente de agua potable: pilar de acero con pileta, pulsador y rejilla
+export function fuenteAgua() {
+  const g = new THREE.Group(), m = mat('#9aa2ab', { r: 0.4, m: 0.25 }), d = mat('#5a6068', { r: 0.45, m: 0.3 });
+  add(g, rbox(0.42, 0.06, 0.42, 0.02), d, 0, 0.03, 0);
+  add(g, rbox(0.34, 0.95, 0.3, 0.03), m, 0, 0.53, 0);
+  add(g, rbox(0.38, 0.05, 0.34, 0.02), d, 0, 1.02, 0);
+  add(g, lathe('pileta', [[0, 0], [0.12, 0.0], [0.14, 0.05], [0.13, 0.06], [0.1, 0.02], [0, 0.02]], 20), mat('#c2c8ce', { r: 0.2, m: 0.85 }), 0, 1.045, 0.02);
+  add(g, cyl(0.015, 0.02, 0.07, 10), mat('#c2c8ce', { m: 0.85, r: 0.2 }), 0, 1.1, -0.06, -0.5);
+  add(g, rbox(0.08, 0.1, 0.03, 0.01), mat('#f2b705', { r: 0.4 }), 0.1, 0.85, 0.155);
+  add(g, cyl(0.025, 0.025, 0.02, 12), d, 0.1, 0.85, 0.172, Math.PI / 2);
+  for (let k = 0; k < 4; k++) add(g, rbox(0.2, 0.012, 0.01, 0.003), d, 0, 0.2 + k * 0.03, 0.152);
+  return g;
+}
+
+// Fuente decorativa de tres pisos sobre pileta ancha con borde moldurado
+export function fuenteDecorativa() {
+  const g = new THREE.Group(), st = mat('#cfd3d8', { r: 0.55 }), water = mat('#4fa8d8', { t: 0.8, r: 0.05, m: 0.1 });
+  add(g, lathe('fdBase', [[0, 0], [1.55, 0], [1.6, 0.06], [1.6, 0.42], [1.66, 0.48], [1.62, 0.56], [1.45, 0.56], [1.42, 0.48], [1.4, 0.15], [0, 0.15]], 48), st);
+  add(g, cyl(1.41, 1.41, 0.02, 48), water, 0, 0.44, 0);
+  add(g, lathe('fdPie', [[0, 0], [0.3, 0], [0.26, 0.1], [0.16, 0.3], [0.14, 0.75], [0.22, 0.85], [0, 0.85]], 24), st, 0, 0.15, 0);
+  add(g, lathe('fdPlato1', [[0, 0], [0.85, 0.15], [0.9, 0.24], [0.82, 0.27], [0, 0.14]], 40), st, 0, 0.98, 0);
+  add(g, cyl(0.8, 0.8, 0.02, 40), water, 0, 1.22, 0);
+  add(g, lathe('fdPie2', [[0, 0], [0.14, 0], [0.1, 0.15], [0.09, 0.45], [0.14, 0.5], [0, 0.5]], 20), st, 0, 1.22, 0);
+  add(g, lathe('fdPlato2', [[0, 0], [0.5, 0.1], [0.54, 0.17], [0.48, 0.19], [0, 0.1]], 32), st, 0, 1.7, 0);
+  add(g, cyl(0.47, 0.47, 0.02, 32), water, 0, 1.87, 0);
+  add(g, lathe('fdPie3', [[0, 0], [0.08, 0], [0.06, 0.3], [0.1, 0.34], [0, 0.34]], 16), st, 0, 1.87, 0);
+  add(g, lathe('fdPlato3', [[0, 0], [0.26, 0.06], [0.28, 0.12], [0.24, 0.13], [0, 0.07]], 24), st, 0, 2.2, 0);
+  add(g, lathe('fdRemate', [[0, 0], [0.06, 0], [0.09, 0.08], [0.05, 0.18], [0.02, 0.28], [0, 0.3]], 16), st, 0, 2.3, 0);
+  const jet = mat('#bfe6ff', { t: 0.55 });
+  for (const [r, y, n] of [[0.8, 1.0, 12], [0.48, 1.68, 8], [0.26, 2.2, 6]]) for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; add(g, cyl(0.012, 0.03, 0.28, 6), jet, Math.cos(a) * r, y + 0.02, Math.sin(a) * r); }
+  return g;
+}
+
+// Puesto de comida: carro rojo con toldo a rayas, mostrador con bandejas y ruedas
+const awningTex = () => canvasTex('toldo', 256, 64, (c, w, h) => { for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? '#ffffff' : '#e23b2e'; c.fillRect(k * 32, 0, 32, h); } });
+export function puestoComida() {
+  const g = new THREE.Group(), red = mat('#d8402f', { r: 0.45, m: 0.2 }), m = mat('#9aa1a9', { r: 0.35, m: 0.7 });
+  const W = 1.8, D = 0.8;
+  add(g, rbox(W, 0.75, D, 0.04), red, 0, 0.7, 0);
+  add(g, rbox(W + 0.06, 0.05, D + 0.06, 0.02), mat('#b8bec5', { r: 0.3, m: 0.7 }), 0, 1.1, 0);
+  const lab = canvasTex('puesto', 256, 96, (c, w, h) => { c.fillStyle = '#f2b705'; c.fillRect(0, 0, w, h); c.fillStyle = '#c4170f'; c.font = 'bold 44px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('COMIDA', w / 2, h / 2 + 2); });
+  add(g, rbox(0.8, 0.28, 0.01, 0.005), mat('#ffffff', { map: lab, r: 0.5 }), 0.35, 0.78, D / 2 + 0.005);
+  add(g, rbox(0.4, 0.4, 0.01, 0.005), mat('#b8332a', { r: 0.45 }), -0.55, 0.7, D / 2 + 0.005);
+  // ruedas grandes y patas
+  for (const x of [-W / 2 + 0.3, W / 2 - 0.3]) for (const z of [-D / 2 - 0.02, D / 2 + 0.02]) {
+    add(g, cyl(0.2, 0.2, 0.07, 22), mat('#1d1f22', { r: 0.8 }), x, 0.2, z, Math.PI / 2);
+    add(g, cyl(0.1, 0.1, 0.08, 16), mat('#c9cfd6', { m: 0.7, r: 0.3 }), x, 0.2, z, Math.PI / 2);
+  }
+  // bandejas con comida
+  const food = ['#c97a2e', '#e8b44a', '#8a4a1f'];
+  for (let k = 0; k < 3; k++) {
+    const x = -0.55 + k * 0.55;
+    add(g, rbox(0.46, 0.05, 0.4, 0.01), mat('#d6dadf', { r: 0.25, m: 0.8 }), x, 1.15, 0);
+    for (let j = 0; j < 6; j++) add(g, rbox(0.11, 0.05, 0.07, 0.025), mat(food[k], { r: 0.7 }), x - 0.14 + (j % 3) * 0.14, 1.19, -0.09 + Math.floor(j / 3) * 0.18);
+  }
+  add(g, rbox(W - 0.1, 0.35, 0.01, 0.003), mat('#d8eef8', { t: 0.3, r: 0.05 }), 0, 1.32, D / 2 - 0.03);
+  // postes y toldo inclinado con faldón ondulado
+  for (const x of [-W / 2 + 0.05, W / 2 - 0.05]) for (const z of [-D / 2 + 0.05, D / 2 - 0.05]) add(g, cyl(0.022, 0.022, 1.05, 8), m, x, 1.6, z);
+  const at = awningTex();
+  add(g, rbox(W + 0.3, 0.05, D + 0.4, 0.02), mat('#ffffff', { map: at, r: 0.7 }), 0, 2.15, 0.05, 0.12);
+  for (let k = 0; k < 8; k++) add(g, cyl(0.12, 0.12, 0.04, 16, false, 0, Math.PI), mat(k % 2 ? '#ffffff' : '#e23b2e', { r: 0.7 }), -W / 2 - 0.08 + (k + 0.5) * (W + 0.16) / 8, 2.05, D / 2 + 0.26, Math.PI / 2, 0, 0);
+  return g;
+}
+
+// Carrito de limpieza: estructura azul, bolsa amarilla, cubo naranja, fregona y escoba
+export function carritoLimpieza() {
+  const g = new THREE.Group(), blue = mat('#2e63c4', { r: 0.45, m: 0.2 }), m = mat('#9aa1a9', { r: 0.35, m: 0.7 });
+  add(g, rbox(0.9, 0.06, 0.5, 0.02), blue, 0, 0.16, 0);
+  add(g, rbox(0.9, 0.06, 0.5, 0.02), blue, 0, 0.62, 0);
+  add(g, rbox(0.5, 0.05, 0.45, 0.02), blue, -0.2, 1.0, 0);
+  for (const x of [-0.42, 0.42]) for (const z of [-0.22, 0.22]) { add(g, cyl(0.018, 0.018, 0.9, 8), m, x, 0.6, z); add(g, cyl(0.05, 0.05, 0.04, 14), mat('#1d1f22'), x, 0.06, z, Math.PI / 2); }
+  add(g, tube('asaCarro', [[-0.42, 0.9, -0.22], [-0.52, 1.05, -0.2], [-0.52, 1.05, 0.2], [-0.42, 0.9, 0.22]], 0.018, 16), m);
+  // bolsa amarilla colgada
+  add(g, lathe('bolsaCarro', [[0, 0], [0.16, 0.0], [0.2, 0.08], [0.21, 0.5], [0.23, 0.56], [0, 0.56]], 20), mat('#f2c21a', { r: 0.75 }), 0.22, 0.2, 0);
+  add(g, rbox(0.46, 0.05, 0.46, 0.015), m, 0.22, 0.78, 0);
+  // cubo naranja y rojo con escurridor
+  add(g, lathe('cuboLimp', [[0, 0], [0.15, 0], [0.18, 0.28], [0.17, 0.3], [0, 0.3]], 20), mat('#ec7a1c', { r: 0.5 }), -0.2, 0.19, 0);
+  add(g, rbox(0.25, 0.22, 0.2, 0.03), mat('#d4241b', { r: 0.5 }), -0.2, 0.76, 0);
+  for (const [x, c] of [[-0.3, '#3fa34d'], [-0.1, '#4aa3e0']]) { add(g, cyl(0.045, 0.05, 0.2, 12), mat(c, { r: 0.4 }), x, 1.13, 0); add(g, rbox(0.04, 0.06, 0.07, 0.01), mat('#f2f2f2'), x, 1.26, 0.02); }
+  // fregona y escoba apoyadas
+  add(g, cyl(0.014, 0.014, 1.4, 8), mat('#3a7dd8', { r: 0.4 }), -0.38, 0.85, 0.24, 0.12);
+  add(g, rbox(0.12, 0.08, 0.12, 0.04), mat('#efefe6', { r: 0.9 }), -0.38, 0.12, 0.17);
+  add(g, cyl(0.014, 0.014, 1.4, 8), mat('#d4241b', { r: 0.4 }), -0.38, 0.85, -0.24, -0.12);
+  add(g, rbox(0.3, 0.08, 0.06, 0.02), mat('#2b2e33'), -0.38, 0.12, -0.17);
+  return g;
+}
+
+export const STREET_KIT_4 = [
+  ['Escalera', () => escalera()], ['Cartel publicitario', cartelPublicitario], ['Bolardos', bolardos], ['Parada de metro', paradaMetro],
+  ['Fuente de agua', fuenteAgua], ['Fuente decorativa', fuenteDecorativa], ['Puesto de comida', puestoComida], ['Carrito de limpieza', carritoLimpieza],
+];
