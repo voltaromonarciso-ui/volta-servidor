@@ -18,13 +18,19 @@ export function mat(color, o = {}) {
   return mats.get(k);
 }
 const geos = new Map();
-const cache = (k, f) => { if (!geos.has(k)) geos.set(k, f()); return geos.get(k); };
-const rbox = (w, h, d, r, s = 3) => cache(`rb${w},${h},${d},${r},${s}`, () => new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2, h / 2, d / 2) * 0.999));
-const cyl = (rt, rb, h, s = 16, open = false, t0 = 0, tl = Math.PI * 2) => cache(`cy${rt},${rb},${h},${s},${open},${t0},${tl}`, () => new THREE.CylinderGeometry(rt, rb, h, s, 1, open, t0, tl));
-const sph = (r, ws = 16, hs = 12) => cache(`sp${r},${ws},${hs}`, () => new THREE.SphereGeometry(r, ws, hs));
+// Nivel de detalle: 1 en la vitrina; en el mapa se baja (setDetail) para que cientos de copias
+// quepan en el móvil. Afecta a los segmentos de curvas y redondeos, no a las formas.
+let D = 1;
+export function setDetail(f) { D = f; }
+const seg = (n, min = 6) => Math.max(min, Math.round(n * D));
+const cache = (k, f) => { k = D + ':' + k; if (!geos.has(k)) geos.set(k, f()); return geos.get(k); };
+const rbox = (w, h, d, r, s = 3) => cache(`rb${w},${h},${d},${r},${s}`, () => (D < 1 && r < 0.03 ? new THREE.BoxGeometry(w, h, d) : new RoundedBoxGeometry(w, h, d, Math.max(1, Math.round(s * D)), Math.min(r, w / 2, h / 2, d / 2) * 0.999)));
+const cyl = (rt, rb, h, s = 16, open = false, t0 = 0, tl = Math.PI * 2) => cache(`cy${rt},${rb},${h},${s},${open},${t0},${tl}`, () => new THREE.CylinderGeometry(rt, rb, h, seg(s, Math.min(s, 6)), 1, open, t0, tl));
+const sph = (r, ws = 16, hs = 12) => cache(`sp${r},${ws},${hs}`, () => new THREE.SphereGeometry(r, seg(ws), seg(hs, 4)));
 // perfil torneado: puntos [radio, altura]
-const lathe = (key, pts, s = 24) => cache('la' + key, () => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), s));
-const tube = (key, pts, r, s = 24) => cache('tu' + key, () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), s, r, 10, false));
+const lathe = (key, pts, s = 24) => cache('la' + key, () => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg(s, 8)));
+const tube = (key, pts, r, s = 24) => cache('tu' + key, () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), seg(s), r, seg(10, 5), false));
+const torus = (r, t, rs, ts, arc = Math.PI * 2) => cache(`to${r},${t},${rs},${ts},${arc}`, () => new THREE.TorusGeometry(r, t, seg(rs, 4), seg(ts, 8), arc));
 
 function add(g, geo, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
   const o = new THREE.Mesh(geo, m);
@@ -100,7 +106,7 @@ function benchFrameGeo() {
     s.quadraticCurveTo(0.33, 0.5, 0.3, 0.64); s.lineTo(0.24, 0.66); s.quadraticCurveTo(0.08, 0.66, -0.14, 0.62);
     s.lineTo(-0.2, 0.86); s.lineTo(-0.24, 0.85); s.lineTo(-0.2, 0.42); s.lineTo(-0.26, 0); s.lineTo(-0.2, 0);
     s.lineTo(-0.15, 0.36); s.lineTo(0.2, 0.38); s.lineTo(0.24, 0);
-    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2, curveSegments: 10 });
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: D < 1 ? 1 : 2, curveSegments: seg(10, 3) });
     geo.translate(0, 0, -0.025);
     geo.rotateY(-Math.PI / 2);
     return geo;
@@ -357,7 +363,7 @@ const hash3 = (x, y, z) => { const h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7
 // Copa vegetal: esfera con bultos (vértices soldados, sin grietas) y textura de hojas
 function foliageGeo(key, r, seed) {
   return cache('fo' + key, () => {
-    let geo = new THREE.IcosahedronGeometry(r, 4);
+    let geo = new THREE.IcosahedronGeometry(r, D < 1 ? 2 : 4);
     geo.deleteAttribute('normal'); geo.deleteAttribute('uv');
     geo = mergeVertices(geo);
     const p = geo.attributes.position, col = [], uv = [];
@@ -414,7 +420,7 @@ function cardsGeo(key, items) {
 }
 function bushCards(r, seed) {
   let s0 = seed * 131 + 7; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
-  const items = [], N = Math.round(60 + r * 50);
+  const items = [], N = Math.round((60 + r * 50) * (D < 1 ? 0.6 : 1));
   for (let k = 0; k < N; k++) {
     const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 0.75, rnd() * 2 - 1).normalize();
     const d = r * (0.78 + rnd() * 0.22);
@@ -463,7 +469,7 @@ const frondTex = () => canvasTex('fronda2', 1024, 256, (c, w, h) => {
 function frondGeo2(L = 3.1) {
   return cache('frond4' + L, () => {
     const pos = [], uv = [], idx = [], S = [-1, -0.5, 0, 0.5, 1], C = S.length;
-    const N = 20;
+    const N = seg(20, 8);
     for (let i = 0; i <= N; i++) {
       const t = i / N, x = t * L, y = 0.7 * Math.sin(t * Math.PI * 0.7) - t * t * 1.35;
       const w = 0.85 * (0.55 + 0.45 * Math.sin(Math.min(1, t * 1.25 + 0.08) * Math.PI));
@@ -518,7 +524,7 @@ export function arbol() {
 export function seto(len = 2) {
   const g = new THREE.Group();
   const geo = cache('seto' + len, () => {
-    let b = new RoundedBoxGeometry(len, 0.9, 0.7, 8, 0.2);
+    let b = new RoundedBoxGeometry(len, 0.9, 0.7, D < 1 ? 3 : 8, 0.2);
     b.deleteAttribute('normal'); b.deleteAttribute('uv');
     b = mergeVertices(b, 1e-4);
     const p = b.attributes.position, uv = [], col = [];
@@ -538,7 +544,7 @@ export function seto(len = 2) {
   const cards = cardsGeo('seto' + len, (() => {
     let s0 = 41; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
     const items = [], hw = len / 2, hd = 0.35;
-    for (let k = 0; k < Math.round(len * 70); k++) {
+    for (let k = 0; k < Math.round(len * 70 * (D < 1 ? 0.6 : 1)); k++) {
       // cara al azar ponderada por superficie: arriba, delante/detrás, laterales
       const f = rnd(), pos = new THREE.Vector3(), dir = new THREE.Vector3();
       if (f < 0.4) { pos.set((rnd() * 2 - 1) * hw * 0.95, 0.9, (rnd() * 2 - 1) * hd * 0.9); dir.set((rnd() - 0.5) * 0.4, 1, (rnd() - 0.5) * 0.4); }
@@ -817,7 +823,7 @@ function parkFrameGeo() {
     s.quadraticCurveTo(0.2, 0.46, 0.0, 0.44); s.lineTo(-0.16, 0.44); s.quadraticCurveTo(-0.22, 0.62, -0.26, 0.92);
     s.lineTo(-0.31, 0.91); s.quadraticCurveTo(-0.27, 0.6, -0.24, 0.42); s.quadraticCurveTo(-0.3, 0.2, -0.3, 0); s.lineTo(-0.24, 0);
     s.quadraticCurveTo(-0.2, 0.25, -0.12, 0.38); s.lineTo(0.18, 0.38); s.quadraticCurveTo(0.24, 0.2, 0.26, 0);
-    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.045, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2, curveSegments: 12 });
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.045, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: D < 1 ? 1 : 2, curveSegments: seg(12, 3) });
     geo.translate(0, 0, -0.022); geo.rotateY(-Math.PI / 2);
     return geo;
   });
@@ -1164,7 +1170,7 @@ export function contenedorObra() {
     add(g, rbox(0.05, endL, W, 0.015), y, s2 * (Lb + Lt) / 4, y0 + H / 2, 0, 0, 0, -s2 * tilt);
     for (const z of [-W / 2 + 0.25, W / 2 - 0.25]) add(g, rbox(0.06, endL * 0.9, 0.06, 0.01), d, s2 * ((Lb + Lt) / 4 + 0.04), y0 + H / 2, z, 0, 0, -s2 * tilt);
     // cáncamo de izado en cada testero
-    for (const z of [-0.35, 0.35]) add(g, new THREE.TorusGeometry(0.07, 0.018, 8, 16), d, s2 * ((Lb + Lt) / 4 + 0.1), y0 + H * 0.6, z, 0, Math.PI / 2, 0);
+    for (const z of [-0.35, 0.35]) add(g, torus(0.07, 0.018, 8, 16), d, s2 * ((Lb + Lt) / 4 + 0.1), y0 + H * 0.6, z, 0, Math.PI / 2, 0);
   }
   // nervios verticales en los laterales y borde superior
   for (const s2 of [-1, 1]) {
@@ -1332,11 +1338,11 @@ export function jardineraMadera() {
 export function biciPublica() {
   const g = new THREE.Group(), red = mat('#d4302a', { r: 0.4, m: 0.3 }), d = mat('#1d1f22', { r: 0.7 }), m = mat('#b5bcc4', { r: 0.3, m: 0.8 });
   for (const z of [-0.52, 0.52]) {
-    add(g, new THREE.TorusGeometry(0.33, 0.035, 10, 32), d, 0, 0.36, z, 0, Math.PI / 2, 0);
-    add(g, new THREE.TorusGeometry(0.29, 0.012, 6, 32), m, 0, 0.36, z, 0, Math.PI / 2, 0);
+    add(g, torus(0.33, 0.035, 10, 32), d, 0, 0.36, z, 0, Math.PI / 2, 0);
+    add(g, torus(0.29, 0.012, 6, 32), m, 0, 0.36, z, 0, Math.PI / 2, 0);
     add(g, cyl(0.04, 0.04, 0.08, 12), m, 0, 0.36, z, 0, 0, Math.PI / 2);
     for (let k = 0; k < 8; k++) add(g, cyl(0.004, 0.004, 0.58, 4), m, 0, 0.36, z, (k / 8) * Math.PI);
-    add(g, new THREE.TorusGeometry(0.37, 0.03, 6, 20, Math.PI * 0.6), red, 0, 0.36, z, 0, Math.PI / 2, Math.PI * 0.2);
+    add(g, torus(0.37, 0.03, 6, 20, Math.PI * 0.6), red, 0, 0.36, z, 0, Math.PI / 2, Math.PI * 0.2);
   }
   // cuadro de paso bajo
   add(g, tube('biciCuadro', [[0, 0.36, -0.52], [0, 0.4, -0.15], [0, 0.4, 0.05], [0, 0.55, 0.3], [0, 0.85, 0.42]], 0.03, 20), red);
@@ -1351,7 +1357,7 @@ export function biciPublica() {
   add(g, rbox(0.3, 0.02, 0.22, 0.01), mat('#1d1f22'), 0, 0.98, 0.62);
   add(g, rbox(0.07, 0.07, 0.1, 0.01), mat('#2b2e33'), 0, 0.4, -0.05);
   const crank = new THREE.Group(); crank.position.set(0, 0.4, -0.05); g.add(crank);
-  add(crank, new THREE.TorusGeometry(0.1, 0.012, 6, 24), m, 0.05, 0, 0, 0, Math.PI / 2, 0);
+  add(crank, torus(0.1, 0.012, 6, 24), m, 0.05, 0, 0, 0, Math.PI / 2, 0);
   add(crank, cyl(0.1, 0.1, 0.01, 24), mat('#3a3f45', { m: 0.6, r: 0.4 }), 0.05, 0, 0, 0, 0, Math.PI / 2);
   for (const s3 of [-1, 1]) {
     add(crank, rbox(0.02, 0.17, 0.03, 0.008), m, s3 * 0.09, s3 * 0.07, 0.02 * s3, 0.3, 0, 0);
@@ -1374,7 +1380,7 @@ export function rolloCable() {
   const coil = mat('#b5c21a', { r: 0.45 }), core = mat('#2b2e33', { r: 0.6 });
   for (const z of [-0.12, 0.12]) add(g, cyl(0.32, 0.32, 0.03, 32), mat('#3c444d', { r: 0.5 }), 0, 0.32, z, Math.PI / 2);
   add(g, cyl(0.12, 0.12, 0.24, 20), core, 0, 0.32, 0, Math.PI / 2);
-  for (let k = 0; k < 4; k++) add(g, new THREE.TorusGeometry(0.2 + k * 0.022, 0.024, 8, 32), coil, 0, 0.32, -0.08 + (k % 3) * 0.08);
+  for (let k = 0; k < 4; k++) add(g, torus(0.2 + k * 0.022, 0.024, 8, 32), coil, 0, 0.32, -0.08 + (k % 3) * 0.08);
   add(g, cyl(0.25, 0.25, 0.21, 32), coil, 0, 0.32, 0, Math.PI / 2);
   add(g, tube('cableSuelto', [[0.25, 0.32, 0.05], [0.33, 0.12, 0.1], [0.45, 0.02, 0.25], [0.7, 0.02, 0.3]], 0.016, 16), coil);
   for (const z of [-0.14, 0.14]) for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2 + 0.4; add(g, cyl(0.045, 0.045, 0.012, 14), mat('#1d2228'), Math.cos(a) * 0.2, 0.32 + Math.sin(a) * 0.2, z, Math.PI / 2); }

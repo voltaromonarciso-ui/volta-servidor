@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792360371.7201557,
-    "seen": 1792361034.3135154,
-    "ast_hash": "a631f477b870172543938aa07f0e658a",
+    "mtime": 1792361094.043036,
+    "seen": 1792361142.5426393,
+    "ast_hash": "3b9295650d5d22729f4526b42112d9de",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1536,9 +1536,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792360063.9669328,
-    "seen": 1792360137.0280716,
-    "ast_hash": "af2119ca4a509bd58398eaca930961a8",
+    "mtime": 1792361118.254456,
+    "seen": 1792361142.5428066,
+    "ast_hash": "c67426df271915049055360ad60a2649",
     "semantic_hash": ""
   },
   "juego/vitrina.html": {

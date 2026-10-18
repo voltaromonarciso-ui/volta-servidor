@@ -72,6 +72,7 @@ const trashCan = (x, z) => F.place('papelera', SK.papelera, x, z, 0);
 export function buildIsland() {
   seedN = 7;
   F = createFurniture({ addBox: K.addBox });
+  SK.setDetail(0.4); // versión ligera de los modelos para el mapa
   W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
   W.bounds = N;
@@ -87,6 +88,7 @@ export function buildIsland() {
   const res = F.build(scene);
   W.glowMats = res.glowMats;
   W.furnitureStats = res;
+  SK.setDetail(1);
   K.buildSkyline();
   K.buildMountains();
   tempProps();
@@ -436,7 +438,7 @@ const FILL = {
   },
   verde(b) {
     if (b.zone === 'bosque') {
-      for (let k = 0; k < 70; k++) tree(rr(b.x0 + 2, b.x1 - 2), rr(b.z0 + 2, b.z1 - 2), rr(0.9, 1.6));
+      for (let k = 0; k < 40; k++) tree(rr(b.x0 + 2, b.x1 - 2), rr(b.z0 + 2, b.z1 - 2), rr(0.9, 1.6));
       return;
     }
     // Parque Central: paseos en cruz, fuente y bancos
