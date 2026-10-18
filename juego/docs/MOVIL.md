@@ -19,12 +19,18 @@ La lógica de negocio (economía, inventario, cultivo, envasado, ventas, guardad
 sabe en qué dispositivo corre; los controles táctiles y de escritorio llaman a las
 mismas acciones (`runAction`, `G.act.*`).
 
-## 2. Controles táctiles (ya existían; se conservan)
+## 2. Controles táctiles
 
 - Joystick fijo abajo a la izquierda (se acerca al dedo si tocas lejos), arrastre en la
-  mitad derecha para mirar.
-- Botones: usar (✋), acción secundaria con su texto (recoger, girar…), correr,
-  agacharse, saltar, mochila, móvil, pausa, minimapa.
+  mitad derecha para mirar. Joystick y botones solo aparecen con la partida en marcha
+  (nunca en el menú principal ni en el creador de personaje).
+- HUD según la referencia del usuario (18-10-2026): arriba a la derecha dos pastillas de
+  dinero (billetes = efectivo/sucio; tarjeta = limpio/banco) y el móvil debajo; abajo a la
+  derecha correr, agacharse y saltar.
+- Se quitaron los botones de mano (usar), acción secundaria y mochila: se interactúa
+  tocando la etiqueta de acción del centro (principal o secundaria, ≥ 46 px de alto) y la
+  mochila se abre tocando el objeto que llevas en la barra.
+- Pausa y minimapa arriba a la izquierda.
 - Barra de objetos arriba (tocar una casilla la selecciona; tocar la que ya llevas abre
   la mochila).
 - Editor de controles (Ajustes → Colocar controles): mover, escalar, opacidad.
@@ -215,9 +221,40 @@ firma → ejecutar en el iPhone.
 Pendiente para App Store (no verificado): iconos (1024 px y conjunto), pantalla de
 inicio, firma, privacidad (`PrivacyInfo.xcprivacy`), revisión de contenido.
 
+## Encargo maestro (18-10-2026): reglas nuevas
+
+- **Sobres de semillas**: cada hueco «semilla» es un sobre de hasta 10. Al plantar la
+  última, el hueco pasa a «Sobre de semillas vacío» (misma variedad), que no planta y se
+  rellena si llegan semillas de esa variedad; si no, se tira desde la mochila.
+- **Entregas programadas**: cada trato trae hora acordada (1–6 h después; urgentes en
+  45 min; de noche, con rango ≥ 1, a veces entre 21:30 y 1:30). Margen de 1 h. El
+  cliente acude a partir de 30 min antes y avisa; antes de eso no se puede entregar.
+  Si la entrega se hace en toque de queda (21:00–5:00) se paga un 25 % más (mín. 10 $)
+  dentro del mismo cobro (clave deal:<id>). App «Entregas» y próxima cita en el HUD.
+- **Compradores**: piden 1 (30 %), 2–3 (30 %), más (28 %) o muchas (12 %), con tope según
+  rango, confianza y adicción, y nunca más de lo que les permite su presupuesto.
+- **Muestras**: un desconocido puede rechazarla sin gastarla (18 % + formalidad −
+  reputación); frases variadas sin repetir la última.
+- **Farolas**: encendidas de 19:45 a 6:45 (horas fijas: sin parpadeo), luz en el suelo con
+  una malla instanciada aditiva (sin luces dinámicas).
+- **Tráfico**: siguen la línea del carril, frenan antes de las curvas y según el hueco,
+  paran ante jugador, peatones, vehículos aparcados y patrullas; cruces de uno en uno con
+  seguro de 9 s de juego. Simulado 25 min sin acercamientos < 2,6 m entre coches.
+- **Armería Lomas**: spray (60 $, se gasta), porra (220 $, rango 1), pistola (1.400 $,
+  rango 3, ilegal). No hay disparos: sirven contra los atracos.
+- **Casino Royal** (16:00–4:00): tragaperras (~90 % de retorno) y ruleta europea;
+  apuestas 5–250 $ del efectivo; claves casino:<n> y casino-win:<n>. No blanquea.
+- **Los Cuervos**: máx. un intento cada 2 días, nunca días 1–2, ni de 5:00 a 19:00, ni con
+  < 60 $, ni con policía a < 45 m. Aparecen a ~30 m a tu espalda, avisan a 22 m y se
+  puede huir (> 50 m, entrar en una propiedad, vehículo, policía a < 28 m, 75 s).
+  Piden el 35 % del efectivo (20–500 $); clave rob:<id>.
+
 ## 5. Rendimiento en móvil (lo que ya hace el juego)
 
-- Calidad Alta/Media/Baja con bajada automática si los fps caen < 24 durante 5 s.
+- Ajustes: calidad, sombras, resolución, distancia de dibujo (corta 260 m / media 520 m /
+  larga 1100 m, con niebla y cielo ajustados) y tráfico (8 / 12 / 16 coches).
+- Calidad Alta/Media/Baja con bajada automática si los fps caen < 24 durante 5 s; ya en
+  baja, también acorta la distancia de dibujo.
 - Geometría estática fusionada, sombras que se actualizan cada 2–3 fotogramas,
   modelos con compresión meshopt y texturas webp, personajes fusionados por material.
 - La resolución interna se limita según la calidad.

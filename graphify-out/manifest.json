@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792343180.2527049,
-    "seen": 1792343452.922175,
-    "ast_hash": "100e337c4483d005437f4d72e80a4fc8",
+    "mtime": 1792343535.0465376,
+    "seen": 1792343548.0212827,
+    "ast_hash": "1af5641d71d939413cb4cec989a03efa",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -1236,9 +1236,9 @@
     "semantic_hash": ""
   },
   "juego/docs/MOVIL.md": {
-    "mtime": 1792338088.608015,
-    "seen": 1792338098.1812825,
-    "ast_hash": "a8692da8eb5644ab386026dc2bb1c9dd",
+    "mtime": 1792343504.3965778,
+    "seen": 1792343548.0241904,
+    "ast_hash": "c9ec2a9c1265913a6c0196c5a29cbe9d",
     "semantic_hash": ""
   },
   "juego/ios/App/CapApp-SPM/README.md": {
@@ -1407,6 +1407,12 @@
     "mtime": 1792342837.583169,
     "seen": 1792343119.3059351,
     "ast_hash": "89b359f9bfb9ac3306c4b0e4677bc83d",
+    "semantic_hash": ""
+  },
+  "juego/tests/perf.spec.js": {
+    "mtime": 1792343535.047111,
+    "seen": 1792343548.0223908,
+    "ast_hash": "93ad2769a836f180b6c4dd3c123fa807",
     "semantic_hash": ""
   }
 }

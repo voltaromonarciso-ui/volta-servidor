@@ -474,6 +474,7 @@ window.addEventListener('beforeunload', () => { if (!G.paused) save(); });
 
 // exponer para depuración
 window.__G = G;
+window.__R = R; // para medir llamadas de dibujo en las pruebas
 window.__debug = { stationAuto, layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
   arrest, advanceTime, econ: ECON, panels: P, R, spawn: (e) => { if (!G.objects.has(e.uid)) spawnObject(e); },
   // ejecuta la acción del centro de la pantalla al instante (para pruebas automáticas)
