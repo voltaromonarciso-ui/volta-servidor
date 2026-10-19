@@ -100,7 +100,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     await act(page, testInfo);
     await expect(page.locator('.vshop')).toBeVisible();
     await press(page, testInfo, '.vshop .card:has-text("Bicicleta") .btn');
-    await expect.poll(() => money(page)).toBe(820);
+    await expect.poll(() => money(page)).toBe(500);
     await expect(page.locator('.vshop .card:has-text("Bicicleta")')).toContainText('Ya es tuyo');
     await shot(page, testInfo, 'tienda');
     const again = await mod(page, RD, (m) => m.buyVehicle('bici'));
@@ -185,7 +185,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
   });
 
   test('patinete: comprar, gastar batería hasta quedarse sin ella', async ({}, testInfo) => {
-    await ev(page, () => { __G.state.money = 600; __G.state.minute = 12 * 60; });
+    await ev(page, () => { __G.state.money = 1080; __G.state.minute = 12 * 60; });
     await lookAt(page, 105.6, 45.1, -Math.PI / 2, -0.25);
     await act(page, testInfo);
     await press(page, testInfo, '.vshop .card:has-text("Patinete") .btn');
