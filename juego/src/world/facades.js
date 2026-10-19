@@ -5,6 +5,7 @@
 // de colisión [x0, x1, z0, z1, alto] en coordenadas locales.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { pbrMat } from './buildingkit.js';
 
 const mats = new Map();
 function mat(color, o = {}) {
@@ -21,7 +22,24 @@ const cache = (k, f) => { if (!geos.has(k)) geos.set(k, f()); return geos.get(k)
 const box = (w, h, d) => cache(`b${w},${h},${d}`, () => new THREE.BoxGeometry(w, h, d));
 const rbox = (w, h, d, r) => cache(`r${w},${h},${d},${r}`, () => new RoundedBoxGeometry(w, h, d, 1, Math.min(r, w / 2, h / 2, d / 2) * 0.999));
 const cyl = (rt, rb, h, s = 12) => cache(`c${rt},${rb},${h},${s}`, () => new THREE.CylinderGeometry(rt, rb, h, s));
+// Con los materiales realistas (pbrMat, userData.tile) las UV se recalculan en metros a partir
+// de la posición de cada vértice, para que el ladrillo tenga el mismo tamaño en todo el edificio
+function meterUV(geo, ox, oy, oz, tile) {
+  const g2 = geo.clone(), P = g2.attributes.position, N = g2.attributes.normal;
+  if (!N) g2.computeVertexNormals();
+  const uv = new Float32Array(P.count * 2);
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i) + ox, y = P.getY(i) + oy, z = P.getZ(i) + oz;
+    const nx = Math.abs(g2.attributes.normal.getX(i)), ny = Math.abs(g2.attributes.normal.getY(i)), nz = Math.abs(g2.attributes.normal.getZ(i));
+    if (ny >= nx && ny >= nz) { uv[i * 2] = x / tile; uv[i * 2 + 1] = z / tile; }
+    else if (nx >= nz) { uv[i * 2] = z / tile; uv[i * 2 + 1] = y / tile; }
+    else { uv[i * 2] = x / tile; uv[i * 2 + 1] = y / tile; }
+  }
+  g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return g2;
+}
 function add(g, geo, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
+  if (m.userData?.tile && !rx && !ry && !rz) geo = meterUV(geo, x, y, z, m.userData.tile);
   const o = new THREE.Mesh(geo, m);
   o.position.set(x, y, z); o.rotation.set(rx, ry, rz);
   g.add(o);
@@ -169,11 +187,12 @@ const arcPts = (cx, cz, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, 
 
 export function eclipse() {
   const g = new THREE.Group(), boxes = [];
-  const graphite = texMat(ribTex(), [6, 3], { r: 0.45, m: 0.55 });
-  const concrete = texMat(concreteTex(), [3, 3], { r: 0.85 });
+  // materiales realistas, los mismos que el resto de la ciudad (texturas Poly Haven)
+  const graphite = pbrMat('ladrilloOscuro');
+  const concrete = pbrMat('hormigon', '#e4e1da');
   const glassM = new THREE.MeshStandardMaterial({ color: '#2c4152', roughness: 0.06, metalness: 0.75, transparent: true, opacity: 0.55, depthWrite: false });
   const frame = mat('#22252a', { r: 0.35, m: 0.7 });
-  const white = mat('#eeece8', { r: 0.6 });
+  const white = pbrMat('blanco'); // remates de piedra clara, igual que las cornisas de los locales
   const led = mat('#f4ecff', { e: '#dcc2ff', ei: 1.6, glow: 'sign' });
   const warm = mat('#fff1d8', { e: '#ffd9a0', ei: 1.4, glow: 'win' });
 
@@ -186,7 +205,7 @@ export function eclipse() {
 
   // --- torre del logo con aristas redondeadas (x -16..-9) ---
   const T = { x0: -16, x1: -9.2, z0: -12, z1: 0.6, h: 13 };
-  add(g, cache('torreEclipse', () => new RoundedBoxGeometry(T.x1 - T.x0, T.h, T.z1 - T.z0, 4, 0.6)), texMat(ribTex(), [5, 6], { r: 0.45, m: 0.55 }), (T.x0 + T.x1) / 2, T.h / 2, (T.z0 + T.z1) / 2);
+  add(g, cache('torreEclipse', () => new RoundedBoxGeometry(T.x1 - T.x0, T.h, T.z1 - T.z0, 4, 0.6)), pbrMat('ladrilloOscuro'), (T.x0 + T.x1) / 2, T.h / 2, (T.z0 + T.z1) / 2);
   add(g, cache('coronaTorre', () => new RoundedBoxGeometry(T.x1 - T.x0 + 0.4, 0.5, T.z1 - T.z0 + 0.4, 2, 0.2)), white, (T.x0 + T.x1) / 2, T.h + 0.1, (T.z0 + T.z1) / 2);
   for (const x of [T.x0 + 0.25, T.x1 - 0.25]) add(g, cyl(0.06, 0.06, T.h - 1.2, 8), led, x, T.h / 2, T.z1 + 0.02); // aristas de luz
   const tc = (T.x0 + T.x1) / 2;
@@ -206,7 +225,7 @@ export function eclipse() {
 
   // --- el disco del eclipse: hormigón claro con portal circular (centro x 1, y 4.6) ---
   const D = { x: 1, y: 4.6, R: 5.4, r: 3.1, z: -2.2, d: 1.4 };
-  const disc = add(g, ringGeo('discoEclipse', D.R, D.r, D.d), texMat(concreteTex(), [0.25, 0.25], { r: 0.85 }), D.x, D.y, D.z);
+  const disc = add(g, ringGeo('discoEclipse', D.R, D.r, D.d), pbrMat('hormigon', '#ece9e2'), D.x, D.y, D.z);
   disc.scale.set(1, 1, 1);
   add(g, cache('coronaPortal', () => new THREE.TorusGeometry(D.r + 0.05, 0.11, 12, 72)), led, D.x, D.y, D.z + D.d + 0.12);      // corona de luz
   add(g, cache('coronaExterior', () => new THREE.TorusGeometry(D.R + 0.02, 0.06, 8, 96)), mat('#d9b8ff', { e: '#b98cff', ei: 0.9, glow: 'sign' }), D.x, D.y, D.z + D.d + 0.1);

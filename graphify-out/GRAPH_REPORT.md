@@ -1,17 +1,17 @@
 # Graph Report - volta-servidor  (2026-10-19)
 
 ## Corpus Check
-- 181 files · ~1,890,530 words
+- 182 files · ~1,943,779 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 75 file(s) not represented in the graph (top: .glb 42, (none) 10, .xml 10)
 
 ## Summary
-- 2327 nodes · 5532 edges · 114 communities (95 shown, 19 thin omitted)
+- 2345 nodes · 5615 edges · 117 communities (99 shown, 18 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 157 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ac00c774`
+- Built from commit: `34347713`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -40,7 +40,7 @@
 - forum.js
 - CapApp-SPM/README.md
 - juego/package.json
-- buildIsland
+- avatar.js
 - npc.js
 - cars.js
 - Three.js Skills for Claude Code
@@ -55,7 +55,7 @@
 - volta-api.js
 - economy.js
 - friends.js
-- Player
+- G
 - with_server.py
 - Web Application Testing
 - Bloque 9 en Android e iPhone: estado real
@@ -63,7 +63,7 @@
 - Frontend Design
 - Tasks: [FEATURE NAME]
 - VOLTA · Backend social (Node.js + Express + PostgreSQL)
-- Walker
+- human.js
 - moderation.js
 - palm
 - com.getcapacitor.BridgeActivity
@@ -105,26 +105,29 @@
 - find-polluter.sh
 - test-academic.md
 - props.js
-- money.js
+- state.js
 - sky.js
-- render.js
+- absNow
 - hud.js
 - icons.js
 - Execution Steps
 - dependencies
 - addBox
 - streetfurniture.js
-- buildCoast
+- police.js
 - game.js
-- layout.js
+- realbuilding.js
+- money.js
 - scripts
 - audio.js
+- simulate
 - three
-- npc.js
+- actionsFor
 - Modelos 3D libres: fuentes, licencias y conversión
+- three
 
 ## God Nodes (most connected - your core abstractions)
-1. `three` - 227 edges
+1. `three` - 235 edges
 2. `sfx` - 80 edges
 3. `add()` - 61 edges
 4. `mat()` - 58 edges
@@ -150,43 +153,43 @@
 ## Import Cycles
 - None detected.
 
-## Communities (114 total, 19 thin omitted)
+## Communities (117 total, 18 thin omitted)
 
 ### Community 0 - "building"
-Cohesion: 0.19
-Nodes (19): asphalt(), buildEastShops(), buildIndustrial(), building(), buildMotel(), buildPolice(), buildShops(), carAdd() (+11 more)
+Cohesion: 0.20
+Nodes (16): asphalt(), billboard(), buildCommercial(), buildIndustrial(), building(), buildPolice(), buildShops(), busStop() (+8 more)
 
 ### Community 1 - "main.js"
-Cohesion: 0.08
-Nodes (42): pollInput(), hasSave(), load(), newState(), setTraffic(), autoQuality(), boot(), camera (+34 more)
+Cohesion: 0.07
+Nodes (48): pollInput(), hasSave(), load(), migrate(), newState(), autoQuality(), boot(), buildWorld() (+40 more)
 
 ### Community 2 - "Three.js Textures"
 Cohesion: 0.04
 Nodes (44): Accessing UVs, Background Options, Basic Loading, Canvas Texture, Color Space, Compressed Textures, Cube Textures, CubeCamera (+36 more)
 
 ### Community 3 - "island.js"
-Cohesion: 0.09
-Nodes (22): buildingModel(), buildingSize(), hasBuilding(), ATM_ZONES, FILL, houseAt(), HOUSES, MODEL (+14 more)
+Cohesion: 0.08
+Nodes (45): buildingModel(), buildingSize(), hasBuilding(), alley(), ATM_ZONES, block(), blockOf(), buildBlock() (+37 more)
 
 ### Community 4 - "Three.js Shaders"
 Cohesion: 0.06
 Nodes (33): Common Injection Points, Common Material Properties, Common Shader Patterns, Debugging Shaders, Dissolve Effect, Extending Built-in Materials, External Shader Files, Fresnel Effect (+25 more)
 
 ### Community 5 - "objects.js"
-Cohesion: 0.06
-Nodes (57): ray, target, updateInteract(), _v, actionsFor(), BUILD, bx, cancelMove() (+49 more)
+Cohesion: 0.08
+Nodes (39): BUILD, bx, cancelMove(), cancelPlacement(), canPlace(), cyl, cylH, cylTaper (+31 more)
 
 ### Community 6 - "Three.js Loaders"
 Cohesion: 0.06
 Nodes (32): ArrayBuffer, Async/Promise Loading, Blob URL, Built-in Cache, Caching, CubeTextureLoader, Custom Asset Manager, Custom Path/URL (+24 more)
 
 ### Community 7 - "gangs.js"
-Cohesion: 0.10
-Nodes (26): initInput(), input, keys, moveJoy(), resetJoyEl(), resetTouch(), hitGeo, hitMat (+18 more)
+Cohesion: 0.20
+Nodes (17): canStart(), clearGangs(), copNear(), demand(), dist2(), endCrew(), GANG, gangState() (+9 more)
 
 ### Community 8 - "textures.js"
-Cohesion: 0.18
-Nodes (30): asphaltTex(), billboardTex(), blotches(), cardboardTex(), carpetTex(), chainTex(), clipboardTex(), concreteTex() (+22 more)
+Cohesion: 0.08
+Nodes (37): markerSprite(), randomLook(), Cop, NPC, prop(), Walker, spawnPolice(), asphaltTex() (+29 more)
 
 ### Community 9 - "Three.js Interaction"
 Cohesion: 0.07
@@ -205,8 +208,8 @@ Cohesion: 0.07
 Nodes (27): AmbientLight, Common Lighting Setups, Contact Shadows (Fake, Fast), Cube Texture Environment, DirectionalLight, DirectionalLight Shadows, Enable Shadows, Environment Lighting (IBL) (+19 more)
 
 ### Community 13 - "dressing.js"
-Cohesion: 0.07
-Nodes (61): guardGhostClick(), INV_SIZE, BEARDS, CLOTHES, HAIR_COLORS, RECOG_MINUTES, RECOG_WEIGHTS, SLOTS (+53 more)
+Cohesion: 0.15
+Nodes (34): guardGhostClick(), BEARDS, CLOTHES, HAIR_COLORS, RECOG_MINUTES, RECOG_WEIGHTS, SLOTS, barberApply() (+26 more)
 
 ### Community 14 - "Three.js Animation"
 Cohesion: 0.07
@@ -230,7 +233,7 @@ Nodes (24): description, engines, node, main, name, private, version, bcrypt (+1
 
 ### Community 20 - "streetkit.js"
 Cohesion: 0.08
-Nodes (108): three, BUILDINGS, loadGlbItems(), glbParam, lab, r, rows, add() (+100 more)
+Nodes (112): three, makeHand(), seg(), BUILDINGS, loadGlbItems(), loadKitItems(), loadLocalItems(), glbParam (+104 more)
 
 ### Community 21 - "forum.js"
 Cohesion: 0.13
@@ -240,17 +243,17 @@ Nodes (18): query(), tx(), config, { HttpError }, { pool }, postCooldown(), seco
 Cohesion: 0.08
 Nodes (22): dependencies, @capacitor/android, @capacitor/core, @capacitor/ios, @capacitor/preferences, devDependencies, @capacitor/cli, @playwright/test (+14 more)
 
-### Community 24 - "buildIsland"
-Cohesion: 0.21
-Nodes (16): alley(), block(), blockOf(), buildBlock(), buildIsland(), buildLandAndSea(), buildLightsAndSigns(), buildNavNet() (+8 more)
+### Community 24 - "avatar.js"
+Cohesion: 0.11
+Nodes (26): accMat(), analyze(), an, BEARD_BONES, bendPose(), buildAccessory(), clearPose(), frame() (+18 more)
 
 ### Community 26 - "npc.js"
-Cohesion: 0.13
-Nodes (15): BONE, CLIPS, clipsFor(), files, findSkin(), loadModels(), makeRealHuman(), h (+7 more)
+Cohesion: 0.10
+Nodes (27): BONE, CLIPS, clipsFor(), files, findSkin(), loadModels(), makeRealHuman(), h (+19 more)
 
 ### Community 27 - "cars.js"
 Cohesion: 0.07
-Nodes (34): box, Car, carMat(), carMats, CROSSES, glassMat, glowMat(), glowMats (+26 more)
+Nodes (37): box, Car, carMat(), carMats, CROSSES, glassMat, glowMat(), glowMats (+29 more)
 
 ### Community 28 - "Three.js Skills for Claude Code"
 Cohesion: 0.12
@@ -261,12 +264,12 @@ Cohesion: 0.16
 Nodes (13): crypto, frame(), friends, hb, http, lastPost, posts, pub() (+5 more)
 
 ### Community 30 - "panels.js"
-Cohesion: 0.20
-Nodes (36): sfx, FORMS, money(), PAY_ACCOUNT, ownsVehicle(), itemLabel(), ii(), arrestedDialog() (+28 more)
+Cohesion: 0.17
+Nodes (40): sfx, illegalCount(), save(), FORMS, money(), casinoOpen(), deadDropActions(), deliveryBonus() (+32 more)
 
 ### Community 31 - "phone.js"
 Cohesion: 0.10
-Nodes (48): QUESTS, addictionLabel(), dealAt(), dealDue(), DELIVERY, priceLabel(), REP_TIERS, repTier() (+40 more)
+Nodes (51): wipe(), PEOPLE, QUESTS, addictionLabel(), dealAt(), dealDue(), marketChance(), priceLabel() (+43 more)
 
 ### Community 32 - "routes/auth.js"
 Cohesion: 0.14
@@ -289,12 +292,16 @@ Cohesion: 0.27
 Nodes (6): http(), login(), logout(), register(), respondFriend(), setToken()
 
 ### Community 38 - "economy.js"
-Cohesion: 0.13
-Nodes (46): productValue(), PEOPLE, clamp(), emit(), pick(), acceptChance(), acceptDeal(), addAddiction() (+38 more)
+Cohesion: 0.14
+Nodes (39): check(), keyUsed(), productValue(), clamp(), pick(), styleBonus(), acceptChance(), addAddiction() (+31 more)
 
 ### Community 39 - "friends.js"
 Cohesion: 0.10
 Nodes (24): jsonwebtoken, zod, ah(), HttpError, config, { HttpError }, jwt, requireAuth() (+16 more)
+
+### Community 40 - "G"
+Cohesion: 0.15
+Nodes (15): initInput(), input, keys, moveJoy(), resetJoyEl(), resetTouch(), applyHandLook(), Player (+7 more)
 
 ### Community 41 - "with_server.py"
 Cohesion: 0.14
@@ -305,8 +312,8 @@ Cohesion: 0.25
 Nodes (7): Best Practices, Common Pitfall, Decision Tree: Choosing Your Approach, Example: Using with_server.py, Reconnaissance-Then-Action Pattern, Reference Files, Web Application Testing
 
 ### Community 43 - "Bloque 9 en Android e iPhone: estado real"
-Cohesion: 0.08
-Nodes (22): 1. Motor y arquitectura, 2. Controles táctiles, 3. Pruebas automáticas (referencia del comportamiento actual), 4. Compilación, 5. Rendimiento en móvil (lo que ya hace el juego), Android — estado: proyecto listo, compilación BLOQUEADA en este entorno, Bloque 9 en Android e iPhone: estado real, Encargo maestro (18-10-2026): reglas nuevas (+14 more)
+Cohesion: 0.09
+Nodes (20): 2. Controles táctiles, 3. Pruebas automáticas (referencia del comportamiento actual), 4. Compilación, 5. Rendimiento en móvil (lo que ya hace el juego), Android — estado: proyecto listo, compilación BLOQUEADA en este entorno, Bloque 9 en Android e iPhone: estado real, Encargo maestro (18-10-2026): reglas nuevas, Fase 4 · Empleados (bloque A): reglas (+12 more)
 
 ### Community 44 - "Encargo «Rooktown» (partes 1–4), recibido el 18-10-2026 — PENDIENTE"
 Cohesion: 0.12
@@ -324,17 +331,17 @@ Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Descripti
 Cohesion: 0.29
 Nodes (6): 1. Puesta en marcha, 2. Endpoints, 3. Integración desde `index.html`, 4. Seguridad: lo que hay y lo que debes saber, 5. Integración ya hecha en `Volta-5.html`, VOLTA · Backend social (Node.js + Express + PostgreSQL)
 
-### Community 48 - "Walker"
-Cohesion: 0.07
-Nodes (23): G_, HAIRS, makeHuman(), h, markerSprite(), markerTex, mat(), matCache (+15 more)
+### Community 48 - "human.js"
+Cohesion: 0.14
+Nodes (17): G_, HAIRS, makeHuman(), h, markerTex, mat(), matCache, mesh() (+9 more)
 
 ### Community 49 - "moderation.js"
 Cohesion: 0.70
 Nodes (4): base(), hit(), username(), variants()
 
 ### Community 51 - "palm"
-Cohesion: 0.17
-Nodes (16): bench(), buildBeach(), buildMountains(), buildPlaza(), buildSkyline(), buildStreetFurniture(), bush(), frondGeo() (+8 more)
+Cohesion: 0.19
+Nodes (13): bench(), buildBeach(), buildMountains(), buildPlaza(), buildSkyline(), buildStreetFurniture(), bush(), frondGeo() (+5 more)
 
 ### Community 61 - "speckit-analyze/SKILL.md"
 Cohesion: 0.08
@@ -353,12 +360,12 @@ Cohesion: 0.11
 Nodes (18): ALGORITHMIC PHILOSOPHY CREATION, CRAFTSMANSHIP REQUIREMENTS, CRITICAL: WHAT'S FIXED VS VARIABLE, DEDUCING THE CONCEPTUAL SEED, ESSENTIAL PRINCIPLES, HOW TO GENERATE AN ALGORITHMIC PHILOSOPHY, INTERACTIVE ARTIFACT CREATION, OUTPUT FORMAT (+10 more)
 
 ### Community 65 - "riding.js"
-Cohesion: 0.11
-Nodes (34): PARKING, RECOVER_PRICE, VEHICLES, bendPose(), clearPose(), buildBike(), buildScooter(), chrome() (+26 more)
+Cohesion: 0.13
+Nodes (28): PARKING, RECOVER_PRICE, VEHICLES, buildBike(), buildScooter(), chrome(), M(), mats (+20 more)
 
 ### Community 67 - "station.js"
 Cohesion: 0.05
-Nodes (93): BAG, bud(), budGeometry(), budMat(), budPile(), cache, cashStack(), corkTex() (+85 more)
+Nodes (92): BAG, bud(), budGeometry(), budMat(), budPile(), cache, cashStack(), corkTex() (+84 more)
 
 ### Community 68 - "Root Cause Tracing"
 Cohesion: 0.12
@@ -370,15 +377,15 @@ Nodes (15): Common Rationalizations, Overview, Phase 1: Root Cause Investigation
 
 ### Community 70 - "world.js"
 Cohesion: 0.08
-Nodes (39): setPropOffset(), buildBoxes(), buildBulbs(), buildGround(), buildNav(), buildRoadDetails(), buildRoads(), buildTrafficLights() (+31 more)
+Nodes (38): setPropOffset(), buildBoxes(), buildBulbs(), buildGround(), buildNav(), buildRoadDetails(), buildRoads(), buildTrafficLights() (+30 more)
 
 ### Community 71 - "core.spec.js"
 Cohesion: 0.10
 Nodes (47): gl, _e, atm(), count(), slotOf(), advance(), at(), emp() (+39 more)
 
 ### Community 72 - "systems/staff.js"
-Cohesion: 0.09
-Nodes (54): absNow(), save(), CANDIDATES, ROLES, STAFF, deadDropActions(), onHour(), spend() (+46 more)
+Cohesion: 0.12
+Nodes (33): CANDIDATES, ROLES, STAFF, COOK_MIN, COOK_OUT, RECIPE, assign(), bodies (+25 more)
 
 ### Community 73 - "Feature Specification: [FEATURE NAME]"
 Cohesion: 0.15
@@ -413,8 +420,8 @@ Cohesion: 0.20
 Nodes (9): Common Failures, Key Patterns, Overview, Rationalization Prevention, Red Flags - STOP, The Gate Function, The Iron Law, Verification Before Completion (+1 more)
 
 ### Community 81 - "facades.js"
-Cohesion: 0.16
-Nodes (28): add(), arcPts(), box(), cache(), canvasTex(), concreteTex(), cyl(), eclipse() (+20 more)
+Cohesion: 0.15
+Nodes (29): add(), arcPts(), box(), cache(), canvasTex(), concreteTex(), cyl(), eclipse() (+21 more)
 
 ### Community 82 - "Implementation Plan: [FEATURE]"
 Cohesion: 0.22
@@ -461,24 +468,24 @@ Cohesion: 0.40
 Nodes (4): [Category 1], [Category 2], [CHECKLIST TYPE] Checklist: [FEATURE NAME], Notes
 
 ### Community 96 - "props.js"
-Cohesion: 0.13
-Nodes (16): addProp(), bake(), buildProps(), GEO, loadProps(), _m, _p, placed (+8 more)
+Cohesion: 0.14
+Nodes (14): addProp(), buildProps(), GEO, _m, _p, placed, propSize(), propsReady() (+6 more)
 
-### Community 97 - "money.js"
-Cohesion: 0.10
-Nodes (36): Dinero sucio y limpio (Bloque B, etapa 1): reglas, ACCOUNTS, apply(), check(), ensure(), fail(), KEY_DAYS, KEY_MAX (+28 more)
+### Community 97 - "state.js"
+Cohesion: 0.19
+Nodes (15): backup(), inv, INV_SIZE, native(), restoreBackup(), same(), SAVE_VERSION, slotsAdd() (+7 more)
 
 ### Community 98 - "sky.js"
 Cohesion: 0.09
 Nodes (26): setCarLights(), _c, GEO, LIT, _m, MAT, _p, _q (+18 more)
 
-### Community 99 - "render.js"
-Cohesion: 0.18
-Nodes (13): buildWorld(), resize(), applyQuality(), buildComposer(), GradeShader, initRender(), _q, R (+5 more)
+### Community 99 - "absNow"
+Cohesion: 0.17
+Nodes (26): Dinero sucio y limpio (Bloque B, etapa 1): reglas, absNow(), emit(), acceptDeal(), fromSafe(), makeDeal(), myMsg(), onHour() (+18 more)
 
 ### Community 100 - "hud.js"
-Cohesion: 0.10
-Nodes (36): setSiren(), illegalCount(), EFFECTS, ITEMS, RANKS, SHOPS, STRAINS, CUSTOMER_LINES (+28 more)
+Cohesion: 0.13
+Nodes (23): EFFECTS, ITEMS, RANKS, SHOPS, STRAINS, on(), dayMin(), hhmm() (+15 more)
 
 ### Community 101 - "icons.js"
 Cohesion: 0.19
@@ -493,24 +500,28 @@ Cohesion: 0.18
 Nodes (11): dependencies, bcrypt, cors, dotenv, express, express-rate-limit, helmet, jsonwebtoken (+3 more)
 
 ### Community 104 - "addBox"
-Cohesion: 0.20
-Nodes (21): addBox(), billboard(), buildCommercial(), buildNave(), buildOutskirts(), buildResidential(), busStop(), cardBox() (+13 more)
+Cohesion: 0.15
+Nodes (27): addBox(), buildEastShops(), buildMotel(), buildNave(), buildOutskirts(), buildResidential(), cardBox(), chainFence() (+19 more)
 
 ### Community 105 - "streetfurniture.js"
 Cohesion: 0.38
 Nodes (6): createFurniture(), isPlain(), mergeAll(), plain, proto(), protos
 
-### Community 106 - "buildCoast"
-Cohesion: 0.60
-Nodes (5): buildCoast(), palm(), R(), rr(), tree()
+### Community 106 - "police.js"
+Cohesion: 0.17
+Nodes (19): setSiren(), CUSTOMER_LINES, GREETINGS, OFFICERS, STARTING_CUSTOMERS, RECOG_LEVEL, recognition(), rememberIncident() (+11 more)
 
 ### Community 107 - "game.js"
-Cohesion: 0.16
-Nodes (20): randi(), ATM, atmLeft(), atmMove(), usage(), weekOf(), CASINO, casinoOpen() (+12 more)
+Cohesion: 0.11
+Nodes (24): listeners, rand(), randi(), ATM, atmLeft(), atmMove(), usage(), weekOf() (+16 more)
 
-### Community 109 - "layout.js"
-Cohesion: 0.62
-Nodes (6): applyLayout(), CONTROLS, el(), fitHud(), openLayoutEditor(), settings()
+### Community 108 - "realbuilding.js"
+Cohesion: 0.37
+Nodes (16): FRAME(), pbrMat(), plainMat(), awningMat(), bankBranch(), canvasTex(), GLASS(), interiorMat() (+8 more)
+
+### Community 109 - "money.js"
+Cohesion: 0.24
+Nodes (14): ACCOUNTS, apply(), ensure(), fail(), KEY_DAYS, KEY_MAX, LEDGER_MAX, log() (+6 more)
 
 ### Community 110 - "scripts"
 Cohesion: 0.50
@@ -520,37 +531,45 @@ Nodes (4): scripts, dev, migrate, start
 Cohesion: 0.16
 Nodes (13): amb, audioStatus(), BUF, files, initAudio(), loadSounds(), loopSrc(), play() (+5 more)
 
-### Community 113 - "three"
-Cohesion: 0.15
-Nodes (21): loadKitItems(), classify(), files, FIT, FRAME(), GLASS(), loadBuildings(), matCache (+13 more)
+### Community 112 - "simulate"
+Cohesion: 0.27
+Nodes (10): busyTargets(), hhmm(), minuteOfDay(), objsIn(), packOptions(), planCocina(), planCultivo(), planEnvasado() (+2 more)
 
-### Community 114 - "npc.js"
-Cohesion: 0.26
-Nodes (11): modelNames(), LEO_MODEL, spawnClerks(), model(), choices(), FEMALE_NAMES, lookFor(), MALE_NAMES (+3 more)
+### Community 113 - "three"
+Cohesion: 0.18
+Nodes (16): classify(), files, FIT, GLASS(), loadBuildings(), matCache, MODELS, paletteReader() (+8 more)
+
+### Community 114 - "actionsFor"
+Cohesion: 0.33
+Nodes (9): actionsFor(), collect(), cook(), emptyPot(), harvest(), harvestYield(), refreshPot(), water() (+1 more)
 
 ### Community 115 - "Modelos 3D libres: fuentes, licencias y conversión"
 Cohesion: 0.33
 Nodes (5): Acceso a las fuentes, Conversión a GLB, Modelos 3D libres: fuentes, licencias y conversión, Paquetes descargados y verificados (todos CC0, dominio público: uso comercial sin atribución), Texturas realistas (Poly Haven, CC0)
 
+### Community 116 - "three"
+Cohesion: 0.25
+Nodes (7): 1. Motor y arquitectura, ray, runAction(), target, _v, placement, three
+
 ## Knowledge Gaps
 - **12 isolated node(s):** `UIKit`, `Capacitor`, `PackageDescription`, `@capacitor/android`, `@capacitor/core` (+7 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 989 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 992 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `three` connect `three` to `main.js`, `island.js`, `objects.js`, `gangs.js`, `textures.js`, `dressing.js`, `streetkit.js`, `juego/package.json`, `npc.js`, `cars.js`, `Walker`, `riding.js`, `station.js`, `world.js`, `facades.js`, `props.js`, `sky.js`, `render.js`, `streetfurniture.js`, `npc.js`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+- **Why does `three` connect `streetkit.js` to `building`, `main.js`, `island.js`, `objects.js`, `textures.js`, `juego/package.json`, `avatar.js`, `npc.js`, `cars.js`, `panels.js`, `G`, `human.js`, `palm`, `riding.js`, `station.js`, `world.js`, `facades.js`, `props.js`, `sky.js`, `addBox`, `streetfurniture.js`, `realbuilding.js`, `three`, `actionsFor`?**
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
 - **What connects `UIKit`, `Capacitor`, `PackageDescription` to the rest of the system?**
   _12 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `main.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.08080808080808081 - nodes in this community are weakly interconnected._
-- **Why does `three` connect `streetkit.js` to `building`, `main.js`, `objects.js`, `textures.js`, `dressing.js`, `juego/package.json`, `buildIsland`, `npc.js`, `cars.js`, `Player`, `Walker`, `palm`, `riding.js`, `station.js`, `world.js`, `facades.js`, `props.js`, `sky.js`, `render.js`, `addBox`, `streetfurniture.js`, `three`, `npc.js`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+  _Cohesion score 0.07315233785822021 - nodes in this community are weakly interconnected._
+- **Why does `three` connect `three` to `main.js`, `island.js`, `objects.js`, `textures.js`, `dressing.js`, `streetkit.js`, `juego/package.json`, `avatar.js`, `npc.js`, `cars.js`, `G`, `human.js`, `riding.js`, `station.js`, `world.js`, `facades.js`, `props.js`, `sky.js`, `streetfurniture.js`, `realbuilding.js`, `three`?**
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
 - **Should `Three.js Textures` be split into smaller, more focused modules?**
   _Cohesion score 0.044444444444444446 - nodes in this community are weakly interconnected._
 - **Why does `@playwright/test` connect `core.spec.js` to `juego/package.json`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Should `island.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.09333333333333334 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07890070921985816 - nodes in this community are weakly interconnected._

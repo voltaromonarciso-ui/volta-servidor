@@ -36,13 +36,13 @@ function tex(n, srgb) {
   return texCache.get(n);
 }
 // material realista; `tile` = metros que ocupa una repetición de la textura
-const PBR = {
+export const PBR = {
   ladrilloRojo: ['red_brick_03', 2.2], ladrilloViejo: ['brick_wall_02', 2.2], ladrilloOscuro: ['brick_wall_10', 2.2],
   enfoscado: ['plastered_wall_02', 3], blanco: ['white_plaster_02', 3], beige: ['beige_wall_001', 3], claro: ['painted_plaster_wall', 3],
   hormigon: ['concrete_wall_008', 3], tejas: ['clay_roof_tiles_02', 2.5], pizarra: ['roof_slates_02', 2.5], chapa: ['corrugated_iron_02', 2],
   madera: ['wood_planks', 2], metal: ['metal_plate', 1.5],
 };
-function pbrMat(key, tint) {
+export function pbrMat(key, tint) {
   const k = key + (tint || '');
   if (!matCache.has(k)) {
     const [n, tile] = PBR[key];
@@ -52,9 +52,9 @@ function pbrMat(key, tint) {
   }
   return matCache.get(k);
 }
-const plainMat = (k, o) => { if (!matCache.has(k)) matCache.set(k, new THREE.MeshStandardMaterial(o)); return matCache.get(k); };
-const GLASS = () => plainMat('vidrio', { color: '#5f7d93', roughness: 0.12, metalness: 0.6 });
-const FRAME = () => plainMat('marco', { color: '#3a3d42', roughness: 0.5, metalness: 0.4 });
+export const plainMat = (k, o) => { if (!matCache.has(k)) matCache.set(k, new THREE.MeshStandardMaterial(o)); return matCache.get(k); };
+export const GLASS = () => plainMat('vidrio', { color: '#5f7d93', roughness: 0.12, metalness: 0.6 });
+export const FRAME = () => plainMat('marco', { color: '#3a3d42', roughness: 0.5, metalness: 0.4 });
 
 // píxeles de la paleta (las texturas de estos paquetes son de 32×32)
 function paletteReader(map) {

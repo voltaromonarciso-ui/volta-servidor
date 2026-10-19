@@ -19,9 +19,9 @@ r.setScissorTest(true);
 // entorno para los reflejos (en el juego lo pone el cielo)
 const ENV = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
 document.body.appendChild(r.domElement);
-import { loadGlbItems, loadKitItems } from './vitrina-glb.js';
+import { loadGlbItems, loadKitItems, loadLocalItems } from './vitrina-glb.js';
 const glbParam = new URLSearchParams(location.search).get('glb');
-const items = new URLSearchParams(location.search).has('bk') ? await loadKitItems() : glbParam ? await loadGlbItems(glbParam.split(',')) : { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
+const items = new URLSearchParams(location.search).get('kit') === 'locales' ? await loadLocalItems() : new URLSearchParams(location.search).has('bk') ? await loadKitItems() : glbParam ? await loadGlbItems(glbParam.split(',')) : { 2: STREET_KIT_2, 3: STREET_KIT_3, 4: STREET_KIT_4, 5: STREET_KIT_5, edificios: BUILDINGS }[new URLSearchParams(location.search).get('kit')] || STREET_KIT;
 const cols = items.length === 1 ? 1 : items.length <= 10 ? 5 : 6, rows = Math.ceil(items.length / cols), cw = W / cols, ch = H / rows;
 const lab = document.getElementById('lab');
 items.forEach(([name, fn], i) => {
@@ -32,7 +32,7 @@ items.forEach(([name, fn], i) => {
   const sun = new THREE.DirectionalLight(0xffffff, 2.3);
   sun.position.set(-4, 9, 6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
   scene.add(sun);
-  const g = fn(); g.rotation.y = -0.55; scene.add(g);
+  const g = fn(); g.rotation.y = -0.55; scene.add(g); g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(g), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
   const R = size.length() / 2 * 1.04; // esfera que envuelve la caja: cabe entero mire desde donde mire
   Object.assign(sun.shadow.camera, { left: -R * 2, right: R * 2, top: R * 2, bottom: -R * 2 }); sun.target.position.copy(c); scene.add(sun.target);

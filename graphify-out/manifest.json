@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792366571.8512352,
-    "seen": 1792366583.3982637,
-    "ast_hash": "516f4ebe89a446d0bb44ee18791ae99f",
+    "mtime": 1792388841.1764944,
+    "seen": 1792388904.7821627,
+    "ast_hash": "cf56f45a595e7d7224ae2342e5e020ec",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1530,9 +1530,9 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792366770.324165,
-    "seen": 1792385423.6992517,
-    "ast_hash": "d28503d2cac84a2e2bc67ec62f0fc826",
+    "mtime": 1792388546.760004,
+    "seen": 1792388904.782102,
+    "ast_hash": "0cb81dfa9d835d632bb58acd3c43c887",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
@@ -1656,9 +1656,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/facades.js": {
-    "mtime": 1792363695.4157166,
-    "seen": 1792363743.2917466,
-    "ast_hash": "0c9904668ca40cb0e74a4a2b37901010",
+    "mtime": 1792388771.2287624,
+    "seen": 1792388904.7821608,
+    "ast_hash": "26c5698c140c63b806c172c4b61ac6f5",
     "semantic_hash": ""
   },
   "juego/docs/avances-10-eclipse.png": {
@@ -1686,15 +1686,15 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina-glb.js": {
-    "mtime": 1792385388.2959027,
-    "seen": 1792385423.6992455,
-    "ast_hash": "4bd1e075a91ad4f382f1da68e0c9696c",
+    "mtime": 1792388850.0679178,
+    "seen": 1792388904.7820983,
+    "ast_hash": "142325652cd3099f79fec737d8ce5f23",
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792385388.2955267,
-    "seen": 1792385423.6993482,
-    "ast_hash": "10b489fb51d63f1694b5024754f1c42c",
+    "mtime": 1792388416.7165353,
+    "seen": 1792388904.7821581,
+    "ast_hash": "68d4aa44863165adf194406dae23fa9e",
     "semantic_hash": ""
   },
   "juego/tools/blend_list.py": {
@@ -1911,6 +1911,30 @@
     "mtime": 1792366708.1457164,
     "seen": 1792385423.7077532,
     "ast_hash": "62b70faa89154d0af4199f231c618a61",
+    "semantic_hash": ""
+  },
+  "juego/src/world/realbuilding.js": {
+    "mtime": 1792388874.1017904,
+    "seen": 1792388904.7822156,
+    "ast_hash": "d8850f92008b7888454d264d00d70e74",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-18-apart.png": {
+    "mtime": 1792386511.681371,
+    "seen": 1792388904.7862475,
+    "ast_hash": "2ca318e4ad663f5c4d0a90716a44f71d",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-18-bungalos.png": {
+    "mtime": 1792386512.165371,
+    "seen": 1792388904.7862494,
+    "ast_hash": "892505113eb06fdd2d487673d87b5573",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-18-esquina.png": {
+    "mtime": 1792386511.905371,
+    "seen": 1792388904.786251,
+    "ast_hash": "a8b3a252ce5dd976e20538b251733fb0",
     "semantic_hash": ""
   }
 }
