@@ -1530,9 +1530,9 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792365043.077458,
-    "seen": 1792365345.2161553,
-    "ast_hash": "2efb2bd3dc9c51a041d1f2504366089d",
+    "mtime": 1792366770.324165,
+    "seen": 1792385423.6992517,
+    "ast_hash": "d28503d2cac84a2e2bc67ec62f0fc826",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
@@ -1686,15 +1686,15 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina-glb.js": {
-    "mtime": 1792365043.0618567,
-    "seen": 1792365345.216152,
-    "ast_hash": "76983a75d204d83c5c3bf7df5290238c",
+    "mtime": 1792385388.2959027,
+    "seen": 1792385423.6992455,
+    "ast_hash": "4bd1e075a91ad4f382f1da68e0c9696c",
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792366571.8626082,
-    "seen": 1792366583.398229,
-    "ast_hash": "fc65d9d7e81c25a0e75a9a270d0f462f",
+    "mtime": 1792385388.2955267,
+    "seen": 1792385423.6993482,
+    "ast_hash": "10b489fb51d63f1694b5024754f1c42c",
     "semantic_hash": ""
   },
   "juego/tools/blend_list.py": {
@@ -1710,9 +1710,9 @@
     "semantic_hash": ""
   },
   "juego/docs/MODELOS-LIBRES.md": {
-    "mtime": 1792365175.2610095,
-    "seen": 1792365345.2186813,
-    "ast_hash": "c149ae2dd2a514a990c87e09b03dee78",
+    "mtime": 1792385409.6632447,
+    "seen": 1792385423.7034032,
+    "ast_hash": "8c9e84d7b3e5a446347363ad5543be77",
     "semantic_hash": ""
   },
   "juego/docs/avances-14-cajero-inicio.png": {
@@ -1749,6 +1749,168 @@
     "mtime": 1792366572.3897083,
     "seen": 1792366583.402129,
     "ast_hash": "5d88a5c1e0c689fae266ff95d5d66ddc",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-17-edificios-realistas.png": {
+    "mtime": 1792385409.6632447,
+    "seen": 1792385423.7060914,
+    "ast_hash": "434a96461fee84bbe2eb8ad9d46ed20a",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/beige_wall_001_c.jpg": {
+    "mtime": 1792366707.5159593,
+    "seen": 1792385423.7076879,
+    "ast_hash": "cd866b04b2fa50ac42e43b33c38fff72",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/beige_wall_001_n.jpg": {
+    "mtime": 1792366707.5391243,
+    "seen": 1792385423.7076924,
+    "ast_hash": "d8bd452e40c4ba41cc6e40133979d38b",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/brick_wall_02_c.jpg": {
+    "mtime": 1792366707.5672038,
+    "seen": 1792385423.7076952,
+    "ast_hash": "43c64ab97aae6e300182473c3008bfe0",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/brick_wall_02_n.jpg": {
+    "mtime": 1792366707.5968876,
+    "seen": 1792385423.7076979,
+    "ast_hash": "d48df3e03ea2dc5cd314a416ada6b0c5",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/brick_wall_10_c.jpg": {
+    "mtime": 1792366707.6217163,
+    "seen": 1792385423.7077005,
+    "ast_hash": "91d71569e9fd2a21835f61c7f8c16a8f",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/brick_wall_10_n.jpg": {
+    "mtime": 1792366707.6531284,
+    "seen": 1792385423.707703,
+    "ast_hash": "6125c4b0c2f89ff1c89f462e197ff1f5",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/clay_roof_tiles_02_c.jpg": {
+    "mtime": 1792366707.7442055,
+    "seen": 1792385423.7077062,
+    "ast_hash": "9ccfcceb922f35dfd7e70f1259b3585b",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/clay_roof_tiles_02_n.jpg": {
+    "mtime": 1792366707.7750134,
+    "seen": 1792385423.7077088,
+    "ast_hash": "f704c1f8a5e9966474763221fef2fc23",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/concrete_wall_008_c.jpg": {
+    "mtime": 1792366707.7996924,
+    "seen": 1792385423.7077117,
+    "ast_hash": "0529cb66a7c5b7f7ec4b07ce5519a1ac",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/concrete_wall_008_n.jpg": {
+    "mtime": 1792366707.8242674,
+    "seen": 1792385423.707715,
+    "ast_hash": "da5498408d55a9a8cd697735773d8cb4",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/corrugated_iron_02_c.jpg": {
+    "mtime": 1792366707.8510716,
+    "seen": 1792385423.707718,
+    "ast_hash": "a6c5007ddd36544c14af66a2d6a0f667",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/corrugated_iron_02_n.jpg": {
+    "mtime": 1792366707.8746767,
+    "seen": 1792385423.7077203,
+    "ast_hash": "dddb21a0f96015a3f4188688e3990693",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/metal_plate_c.jpg": {
+    "mtime": 1792366708.1758935,
+    "seen": 1792385423.7077224,
+    "ast_hash": "cab88846938b95c23ff416a3b9d2ce81",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/metal_plate_n.jpg": {
+    "mtime": 1792366708.204965,
+    "seen": 1792385423.7077253,
+    "ast_hash": "fb41b0c7d03f7ba29743eca192e545d8",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/painted_plaster_wall_c.jpg": {
+    "mtime": 1792366708.0665514,
+    "seen": 1792385423.707728,
+    "ast_hash": "46c628fa03e620c31448c903430c17de",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/painted_plaster_wall_n.jpg": {
+    "mtime": 1792366708.0966568,
+    "seen": 1792385423.7077305,
+    "ast_hash": "33bcff40dc483da5a5973be693b2259e",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/plastered_wall_02_c.jpg": {
+    "mtime": 1792366707.955121,
+    "seen": 1792385423.7077327,
+    "ast_hash": "abff9fe065e73f6cc03ce33cf4963729",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/plastered_wall_02_n.jpg": {
+    "mtime": 1792366707.9817164,
+    "seen": 1792385423.7077353,
+    "ast_hash": "4916f4c6d29c79f2281138a149e9d7b6",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/red_brick_03_c.jpg": {
+    "mtime": 1792366707.6830285,
+    "seen": 1792385423.7077382,
+    "ast_hash": "46226bc2b0b7d5a9cd10174b449ce5ec",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/red_brick_03_n.jpg": {
+    "mtime": 1792366707.7159703,
+    "seen": 1792385423.70774,
+    "ast_hash": "ba2fb8e4d91b0b2d20a0b232ea764a84",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/roof_slates_02_c.jpg": {
+    "mtime": 1792366707.901469,
+    "seen": 1792385423.7077425,
+    "ast_hash": "c91f9f44cfcd28411c5c3d50b13138cd",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/roof_slates_02_n.jpg": {
+    "mtime": 1792366707.930639,
+    "seen": 1792385423.7077446,
+    "ast_hash": "1445064ae208a2f7813b499584d325a1",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/white_plaster_02_c.jpg": {
+    "mtime": 1792366708.0117204,
+    "seen": 1792385423.7077467,
+    "ast_hash": "128b32d9b5ade7eca9d3bbaf7f4d4ecc",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/white_plaster_02_n.jpg": {
+    "mtime": 1792366708.0405614,
+    "seen": 1792385423.7077487,
+    "ast_hash": "96b0acc277c8be4ccb4b0edfb9384dff",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/wood_planks_c.jpg": {
+    "mtime": 1792366708.1177163,
+    "seen": 1792385423.7077513,
+    "ast_hash": "e0f21400d3898d70b137747554b09ce6",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/wood_planks_n.jpg": {
+    "mtime": 1792366708.1457164,
+    "seen": 1792385423.7077532,
+    "ast_hash": "62b70faa89154d0af4199f231c618a61",
     "semantic_hash": ""
   }
 }

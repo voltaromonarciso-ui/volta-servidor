@@ -38,3 +38,15 @@ Comprobado el 18-10-2026 desde el entorno de la nube (con los dominios nuevos pe
 
 Verificado en three.js 0.170 (vitrina `vitrina.html?glb=...`): todos cargan y se ven con su
 textura salvo el banco de Quaternius (blanco, como su vista previa original).
+
+## Texturas realistas (Poly Haven, CC0)
+
+`dl.polyhaven.org` sí deja descargar archivos (la API no). Texturas usadas, reducidas a 512 px
+(color + normal, JPEG) en `src/assets/textures/pbr/` (1,3 MB): red_brick_03, brick_wall_02,
+brick_wall_10, plastered_wall_02, white_plaster_02, beige_wall_001, painted_plaster_wall,
+concrete_wall_008, clay_roof_tiles_02, roof_slates_02, corrugated_iron_02, wood_planks, metal_plate.
+
+`world/buildingkit.js` re-texturiza los modelos de estilo dibujo (q_*, cb_*): clasifica cada cara
+por su color de paleta y su inclinación (pared, remate, cristal, marco, madera, tejado plano o
+inclinado) y le pone un material realista con UV proyectadas en metros. Las texturas se cargan
+antes de dar los edificios por listos (si no, lo dibujado antes sale negro un instante).

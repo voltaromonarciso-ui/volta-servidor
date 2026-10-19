@@ -17,3 +17,10 @@ export async function loadGlbItems(names) {
   }
   return out;
 }
+// Edificios tal como los prepara el juego (buildingkit: escala, re-texturizado…)
+export async function loadKitItems() {
+  const bk = await import('./world/buildingkit.js');
+  await bk.loadBuildings();
+  const names = Object.keys(import.meta.glob('./assets/buildings/*.glb')).map((p) => p.split('/').pop().replace('.glb', '')).sort();
+  return names.map((n) => [n, bk.buildingModel(n)]);
+}
