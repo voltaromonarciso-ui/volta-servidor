@@ -15,6 +15,7 @@ import { createFurniture } from './streetfurniture.js';
 import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
 import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
+import { grassReady, islandLawn, lawnRects, tuft } from './grass.js';
 import * as SKP from './streetkit.js';
 
 // líneas de calle (centro de la calzada)
@@ -124,9 +125,39 @@ const LOOK = {
   comisaria: { wall: 'enfoscado', stone: 'blanco', floors: 3, kind: 'oficina', upKind: 'oficina', shopFront: false },
 };
 
+// ------------------------------------------------------------------
+//  Césped: solares de las manzanas y matas de hierba por toda la isla
+// ------------------------------------------------------------------
+const LAWNS = [], HARD = [];
+let restoreK = () => {};
+function scatterTufts() {
+  const inRect = (x, z, r, m = 0) => x > r.x0 - m && x < r.x1 + m && z > r.z0 - m && z < r.z1 + m;
+  const solid = W.mapRects.filter((r) => !r.road && !r.zone && (r.x1 - r.x0) * (r.z1 - r.z0) < 4000);
+  const hard = HARD.map(([x0, x1, z0, z1]) => ({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }));
+  const shape = islandShape(-3).getPoints(24);
+  const inside = (x, z) => { let c = false; for (let i = 0, j = shape.length - 1; i < shape.length; j = i++) { const a = shape[i], b = shape[j]; if ((a.y > z) !== (b.y > z) && x < ((b.x - a.x) * (z - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
+  const nearRoad = (x, z) => XL.some((rx) => Math.abs(x - rx) < K.SWO + 0.6 && z > ZL[0] - K.SWO - 1 && z < ZL[ROWS] + K.SWO + 1) || ZL.some((rz) => Math.abs(z - rz) < K.SWO + 0.6 && x > XL[0] - K.SWO - 1 && x < XL[COLS] + K.SWO + 1);
+  const industrial = (x, z) => W.zones.some((zn) => zn.kind === 'industrial' && inRect(x, z, zn, 0.5));
+  let n = 0;
+  for (let x = N.x0; x < N.x1; x += 2.6) for (let z = N.z0; z < N.z1; z += 2.6) {
+    const px = x + R() * 2.4, pz = z + R() * 2.4;
+    if (R() < 0.35 || !inside(px, pz) || nearRoad(px, pz) || industrial(px, pz)) continue;
+    if (solid.some((r) => inRect(px, pz, r, 0.6)) || hard.some((r) => inRect(px, pz, r, 0.4))) continue;
+    F.place('mata', tuft, px, pz, R() * 6.28, { solid: false, s: 0.7 + R() * 0.7 });
+    n++;
+  }
+  W.tuftCount = n;
+}
+
 export function buildIsland() {
   seedN = 7;
   F = createFurniture({ addBox: K.addBox });
+  LAWNS.length = 0; HARD.length = 0;
+  // apunta el asfalto y las baldosas que se pintan sobre la hierba (ahí no van matas)
+  const A = K.asphalt, Pv = K.paving;
+  K.asphalt = (...a) => { HARD.push(a.slice(0, 4)); return A(...a); };
+  K.paving = (...a) => { HARD.push(a.slice(0, 4)); return Pv(...a); };
+  restoreK = () => { K.asphalt = A; K.paving = Pv; };
   SK.setDetail(0.4); // versión ligera de los modelos para el mapa
   W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
@@ -140,6 +171,8 @@ export function buildIsland() {
   for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) buildBlock(block(i, j));
   buildCoast();
   buildStreetFurniture();
+  restoreK();
+  if (grassReady()) { lawnRects(scene, LAWNS, 0.012); scatterTufts(); }
   const res = F.build(scene);
   W.glowMats = res.glowMats;
   W.furnitureStats = res;
@@ -187,10 +220,13 @@ function buildLandAndSea() {
   };
   // arena (borde de toda la isla) y hierba encima
   flat(islandShape(10), 0xe2cf9a, -0.06);
-  const gt = K.TX.groundTex('#7d9a4c', 3);
-  gt.repeat.set(0.18, 0.18);
-  gt.wrapS = gt.wrapT = THREE.RepeatWrapping;
-  flat(islandShape(0), 0xffffff, -0.01, gt);
+  if (grassReady()) islandLawn(scene, islandShape(0), -0.01); // césped realista en toda la isla
+  else {
+    const gt = K.TX.groundTex('#7d9a4c', 3);
+    gt.repeat.set(0.18, 0.18);
+    gt.wrapS = gt.wrapT = THREE.RepeatWrapping;
+    flat(islandShape(0), 0xffffff, -0.01, gt);
+  }
   const water = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshStandardMaterial({ color: 0x24688f, roughness: 0.12, metalness: 0.35, transparent: true, opacity: 0.94 }));
   water.rotation.x = -Math.PI / 2;
   water.position.y = -0.35;
@@ -436,7 +472,8 @@ function buildBlock(b) {
   W.mapRects.push({ x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, c: ZONE_COLOR[kind], zone: true });
   // césped / suelo del solar
   const ground = kind === 'industrial' ? '#8d8f8c' : kind === 'verde' ? '#6e9a4d' : '#86a35a';
-  B.box(ground, b.cx, 0, b.cz, b.x1 - b.x0, 0.06, b.z1 - b.z0, 0, { shadow: false, ao: 0 });
+  if (kind !== 'industrial' && grassReady()) LAWNS.push({ x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1 }); // césped (se monta junto al final)
+  else B.box(ground, b.cx, 0, b.cz, b.x1 - b.x0, 0.06, b.z1 - b.z0, 0, { shadow: false, ao: 0 });
   const fn = FILL[kind] || FILL.comercio;
   fn(b);
   // callejón de servicio por detrás (lado sur de la manzana) con contenedores: rincón

@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792365318.414706,
-    "seen": 1792365345.2155306,
-    "ast_hash": "135cebeb03625a653fdf122fa37de531",
+    "mtime": 1792391479.331251,
+    "seen": 1792391558.6375577,
+    "ast_hash": "d6dce651490cb57ef7ccf251349f4d9a",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792389273.9649596,
-    "seen": 1792389402.0048854,
-    "ast_hash": "5135c924acf47e1066d27d847a814b8c",
+    "mtime": 1792391494.8648622,
+    "seen": 1792391558.6383512,
+    "ast_hash": "191eaffd8e16e346e07f2eb7b225585e",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1656,9 +1656,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/facades.js": {
-    "mtime": 1792389351.211271,
-    "seen": 1792389402.0048492,
-    "ast_hash": "445ae5b4087c181e815118e43f631e63",
+    "mtime": 1792391479.3290813,
+    "seen": 1792391558.6383445,
+    "ast_hash": "8b8c16cc7944ec1beb7c09925e85ad48",
     "semantic_hash": ""
   },
   "juego/docs/avances-10-eclipse.png": {
@@ -1941,6 +1941,24 @@
     "mtime": 1792389351.2117481,
     "seen": 1792389402.0048208,
     "ast_hash": "3abaf51ee28af5253b0e90aff7fa19fa",
+    "semantic_hash": ""
+  },
+  "juego/src/world/grass.js": {
+    "mtime": 1792389678.0288162,
+    "seen": 1792391558.6383479,
+    "ast_hash": "f49785a34191e86f9a6e62ac100ce6c3",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/grass/cesped_c.jpg": {
+    "mtime": 1792391479.3099632,
+    "seen": 1792391558.6438699,
+    "ast_hash": "5593ab5a4245e9a0b606b0feaf95b00a",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/grass/cesped_n.jpg": {
+    "mtime": 1792391479.3100455,
+    "seen": 1792391558.6438725,
+    "ast_hash": "4da874bde484eb7f15e8d2844dae2d2a",
     "semantic_hash": ""
   }
 }

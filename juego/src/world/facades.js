@@ -211,7 +211,11 @@ export function eclipse() {
   for (const [cx, cz] of [[H.x0, H.z0], [H.x1, H.z0], [H.x0, H.z1], [H.x1, H.z1]]) add(g, cache('esquinaSala', () => new THREE.CylinderGeometry(0.45, 0.45, H.h, 16)), graphite, cx, H.h / 2, cz); // esquinas redondeadas
   const inside = eclipseInterior(H);
   g.add(inside.group);
-  add(g, cache('frisoSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.1, 0.12, H.z1 - H.z0 + 0.1, 2, 0.06)), led, (H.x0 + H.x1) / 2, H.h - 0.6, (H.z0 + H.z1) / 2); // friso de luz
+  // friso de luz por fuera (tiras en las caras, no una placa: la sala es hueca)
+  slab(g, led, H.x0 - 0.06, H.x1 + 0.06, H.h - 0.66, H.h - 0.54, H.z1, H.z1 + 0.06);
+  slab(g, led, H.x0 - 0.06, H.x1 + 0.06, H.h - 0.66, H.h - 0.54, H.z0 - 0.06, H.z0);
+  slab(g, led, H.x0 - 0.06, H.x0, H.h - 0.66, H.h - 0.54, H.z0, H.z1);
+  slab(g, led, H.x1, H.x1 + 0.06, H.h - 0.66, H.h - 0.54, H.z0, H.z1);
   add(g, cache('remateSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.3, 0.3, H.z1 - H.z0 + 0.3, 2, 0.12)), white, (H.x0 + H.x1) / 2, H.h + 0.1, (H.z0 + H.z1) / 2);
   boxes.push([H.x0, H.x1, H.z0, H.z0 + T0, H.h], [H.x0, H.x0 + T0, H.z0, H.z1, H.h], [H.x1 - T0, H.x1, H.z0, H.z1, H.h], [H.x0, DX - DW, H.z1 - T0, H.z1, H.h], [DX + DW, H.x1, H.z1 - T0, H.z1, H.h], ...inside.boxes);
 
