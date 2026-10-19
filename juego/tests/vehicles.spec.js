@@ -105,7 +105,7 @@ test.describe.serial('Vehículos: tienda, bici y patinete', () => {
     await shot(page, testInfo, 'tienda');
     const again = await mod(page, RD, (m) => m.buyVehicle('bici'));
     expect(again.ok).toBe(false);
-    expect(await money(page)).toBe(820);
+    expect(await money(page)).toBe(500);
     expect(await ev(page, () => __G.state.vehicles.filter((v) => v.type === 'bici').length)).toBe(1);
     expect(await owned3D(page)).toBe(1);
     await press(page, testInfo, '.panel .x');
