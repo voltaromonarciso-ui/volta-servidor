@@ -117,49 +117,137 @@ export function meter(label, v01, text, color = 'var(--acc)') {
 // ------------------------------------------------------------------
 //  Tienda
 // ------------------------------------------------------------------
+// Categorías de las tiendas (el orden es el de la pantalla de inicio)
+const SHOP_CATS = [
+  { id: 'cultivo', name: 'Cultivo', ic: '🌱', items: ['maceta', 'tierra', 'tierra_plus', 'fertil', 'regadera', 'lampara', 'humidificador'] },
+  { id: 'envasado', name: 'Envasado', ic: '📦', items: ['bolsita', 'bolsa_ss', 'tarro_v', 'mesa_emp', 'envasadora'] },
+  { id: 'quimica', name: 'Química', ic: '⚗️', items: ['catalizador', 'hornillo', 'azucar', 'colorante'] },
+  { id: 'muebles', name: 'Muebles', ic: '🛋️', items: ['cama', 'armario', 'caja_fuerte', 'estante'] },
+  { id: 'defensa', name: 'Defensa', ic: '🛡️', items: ['spray', 'porra', 'pistola', 'machete'] },
+];
+const SHOP_THEME = { ferreteria: 't-ferreteria', gasolinera: 't-gasolinera', muebles: 't-muebles', armeria: 't-armeria', cartel: 't-cartel' };
+const SHOP_HELLO = {
+  ferreteria: ['Buenas. ¿Qué necesitas para tu huerto?', '¿Qué te pongo? Tenemos de todo.', 'Hola de nuevo. Mira el catálogo.'],
+  gasolinera: ['¿Algo más con la gasolina?', 'Bienvenido a Gas&Go. ¿Qué te llevas?', 'Buenas. Todo lo que ves está a la venta.'],
+};
+
+// Tienda por pasos: categorías → productos → cantidad → carrito → recibo. El carrito y el
+// botón de pagar están siempre abajo; se paga todo junto al dependiente.
 export function openShop(id) {
   const shop = SHOPS[id];
   const hr = G.state.minute / 60;
   if (hr < shop.open[0] || hr >= shop.open[1]) {
     return messageDialog(shop.name, `Está cerrado. Horario: ${shop.open[0]}:00 – ${shop.open[1]}:00.`);
   }
-  // catálogo con carrito: eliges cantidades y pagas todo junto al dependiente
-  const p = openPanel({ title: shop.name, wide: true, cls: 'shop' });
+  const p = openPanel({ title: shop.name, wide: true, cls: 'shop ' + (SHOP_THEME[id] || '') });
+  const greet = pick(shop.greet || SHOP_HELLO[id] || SHOP_HELLO.gasolinera);
   const cart = new Map();
-  const top = h('div', 'shop-top');
-  const cash = h('div', 'cash', money(G.state.money));
-  top.append(h('div', 'muted', `Dependiente: «${pick(shop.greet || (id === 'ferreteria' ? ['Buenas. ¿Qué necesitas para tu huerto?', '¿Qué te pongo? Tenemos de todo.', 'Hola de nuevo. Mira el catálogo.'] : ['¿Algo más con la gasolina?', 'Bienvenido a Gas&Go. ¿Qué te llevas?', 'Buenas. Todo lo que ves está a la venta.']))}»`), cash);
-  p.body.appendChild(top);
-  const grid = h('div', 'shop-grid');
-  p.body.appendChild(grid);
-  const sum = h('div', 'cart-sum');
-  const clear = h('button', 'btn ghost', 'Vaciar');
-  const pay = h('button', 'btn', 'Pagar');
-  p.foot.append(sum, clear, pay);
-  const steppers = [];
+  // categorías con stock en esta tienda (lo que no encaja en ninguna va a «Otros»)
+  const cats = SHOP_CATS.map((c) => ({ ...c, items: c.items.filter((k) => shop.stock.includes(k)) })).filter((c) => c.items.length);
+  const rest = shop.stock.filter((k) => !cats.some((c) => c.items.includes(k)));
+  if (rest.length) cats.push({ id: 'otros', name: 'Otros', ic: '🧰', items: rest });
   const total = () => [...cart].reduce((a, [k, q]) => a + ITEMS[k].price * q, 0);
-  const upd = () => {
-    const n = [...cart.values()].reduce((a, q) => a + q, 0);
-    const t = total();
-    sum.innerHTML = n ? `🛒 ${n} artículo${n > 1 ? 's' : ''} · <b class="money">${money(t)}</b>` : '<span class="muted">El carrito está vacío</span>';
-    pay.textContent = n ? `Pagar ${money(t)}` : 'Pagar';
-    pay.classList.toggle('dim', !n || t > G.state.money);
-    cash.textContent = money(G.state.money);
+  const count = () => [...cart.values()].reduce((a, q) => a + q, 0);
+  // pie fijo: resumen del carrito, ver carrito y pagar
+  const foot = () => {
+    p.foot.innerHTML = '';
+    const n = count(), t = total();
+    const sum = h('div', 'cart-sum', n ? `🛒 ${n} artículo${n > 1 ? 's' : ''} · <b class="money">${money(t)}</b>` : `<span class="muted">Llevas ${money(G.state.money)} encima</span>`);
+    p.foot.appendChild(sum);
+    if (n) { const v = h('button', 'btn ghost', 'Ver carrito'); v.onclick = () => { sfx('pop'); cartView(); }; p.foot.appendChild(v); }
+    const pay = h('button', 'btn' + (!n || t > G.state.money ? ' dim' : ''), n ? `Pagar ${money(t)}` : 'Pagar');
+    pay.onclick = payNow;
+    p.foot.appendChild(pay);
   };
-  for (const itemId of shop.stock) {
-    const it = ITEMS[itemId];
-    const locked = (it.rank || 0) > G.state.rank;
-    const card = h('div', 'card' + (locked ? ' locked' : ''));
-    card.innerHTML = `<div class="c-ic">${ii(itemId)}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${it.desc || ''}</div></div>`;
-    if (!locked) {
-      const st = stepper(0, { min: 0, max: it.stack * 2, step: (v) => (v >= 10 ? 5 : 1), onChange: (n) => { if (n) cart.set(itemId, n); else cart.delete(itemId); card.classList.toggle('in', n > 0); upd(); } });
-      steppers.push(st);
-      card.appendChild(st);
+  const screen = () => { p.body.innerHTML = ''; const sc = h('div', 'shop-steps'); p.body.appendChild(sc); return sc; };
+  const crumb = (sc, label, back) => {
+    const c = h('div', 'shop-crumb');
+    const b = h('button', 'btn ghost sm', '‹ Volver'); b.onclick = () => { sfx('pop'); back(); };
+    c.append(b, h('span', '', label));
+    sc.appendChild(c);
+  };
+  // 1) inicio: saludo y categorías (si solo hay una, se va directo a sus productos)
+  const home = () => {
+    if (cats.length === 1) return list(cats[0], null);
+    const sc = screen();
+    sc.appendChild(h('div', 'shop-hello', `Dependiente: <b>«${greet}»</b>`));
+    const grid = h('div', 'shop-cats');
+    for (const c of cats) {
+      const b = h('button', 'shop-cat', `<i>${c.ic}</i><b>${c.name}</b><small>${c.items.length} producto${c.items.length > 1 ? 's' : ''}</small>`);
+      b.dataset.names = c.items.map((k) => ITEMS[k].name).join('|');
+      b.onclick = () => { sfx('pop'); list(c, home); };
+      grid.appendChild(b);
     }
-    grid.appendChild(card);
-  }
-  clear.onclick = () => { steppers.forEach((st) => st.set(0)); sfx('click'); };
-  pay.onclick = () => {
+    sc.appendChild(grid);
+    foot();
+  };
+  // 2) productos de una categoría
+  const list = (cat, back) => {
+    const sc = screen();
+    if (back) crumb(sc, `<b>${cat.ic} ${cat.name}</b>`, back);
+    else sc.appendChild(h('div', 'shop-hello', `Dependiente: <b>«${greet}»</b>`));
+    const grid = h('div', 'shop-grid');
+    for (const itemId of cat.items) {
+      const it = ITEMS[itemId];
+      const locked = (it.rank || 0) > G.state.rank;
+      const inCart = cart.get(itemId) || 0;
+      const card = h('div', 'card' + (locked ? ' locked' : '') + (inCart ? ' in' : ''));
+      card.innerHTML = `<div class="c-ic">${ii(itemId)}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${inCart ? `<b>En el carrito: ${inCart}</b> · ` : ''}${it.desc || ''}</div></div>`;
+      card.onclick = () => { if (locked) return fail(`Necesitas el rango ${RANKS[it.rank].name}.`); sfx('pop'); qty(itemId, () => list(cat, back)); };
+      grid.appendChild(card);
+    }
+    sc.appendChild(grid);
+    foot();
+  };
+  // 3) cantidad de un producto
+  const qty = (itemId, back) => {
+    const it = ITEMS[itemId], max = it.stack * 2;
+    let n = cart.get(itemId) || 1;
+    const sc = screen();
+    crumb(sc, `<b>${it.name}</b>`, back);
+    sc.appendChild(h('div', 'shop-item', `<div class="big">${ii(itemId)}</div><div class="nm">${it.name}</div><div class="ds">${it.desc || ''}</div><div class="c-p">${money(it.price)} / unidad</div>`));
+    const quick = h('div', 'qty-quick');
+    const tot = h('div', 'shop-total');
+    const st = stepper(n, { min: 1, max, step: (v) => (v >= 10 ? 5 : 1), onChange: (v) => { n = v; paint(); } });
+    const paint = () => {
+      tot.innerHTML = `Total <b>${money(it.price * n)}</b>`;
+      quick.querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.q === n));
+    };
+    for (const q of [1, 2, 5, 10].filter((q) => q <= max)) {
+      const b = h('button', '', '×' + q); b.dataset.q = q;
+      b.onclick = () => { st.set(q); sfx('click'); };
+      quick.appendChild(b);
+    }
+    st.style.justifyContent = 'center';
+    sc.append(quick, st, tot);
+    const row = h('div', 'qty-quick');
+    const add = h('button', 'btn add', cart.has(itemId) ? 'Cambiar en el carrito' : 'Añadir al carrito');
+    add.onclick = () => { cart.set(itemId, n); sfx('pop'); back(); };
+    const buy = h('button', 'btn ghost', 'Comprar ya');
+    buy.onclick = () => { cart.set(itemId, n); payNow(); };
+    row.append(add, buy);
+    if (cart.has(itemId)) { const rm = h('button', 'btn ghost', 'Quitar'); rm.onclick = () => { cart.delete(itemId); sfx('pop'); back(); }; row.appendChild(rm); }
+    sc.appendChild(row);
+    paint();
+    foot();
+  };
+  // 4) carrito
+  const cartView = () => {
+    const sc = screen();
+    crumb(sc, '<b>🛒 Tu carrito</b>', home);
+    const ul = h('div', 'cart-list');
+    if (!cart.size) ul.appendChild(h('div', 'muted center', 'El carrito está vacío.'));
+    for (const [k, q] of cart) {
+      const r = h('div', 'cart-row', `<span class="ic">${ii(k)}</span><span>${ITEMS[k].name} <span class="muted">×${q}</span></span><b class="money">${money(ITEMS[k].price * q)}</b>`);
+      const rm = h('button', 'rm', '✕'); rm.onclick = () => { cart.delete(k); sfx('pop'); cartView(); };
+      r.appendChild(rm);
+      ul.appendChild(r);
+    }
+    sc.appendChild(ul);
+    foot();
+  };
+  // pago y recibo
+  function payNow() {
     if (!cart.size) return fail('Elige algo del catálogo.');
     const t = total();
     if (!canSpend('dirty', t)) return fail('No tienes suficiente dinero.');
@@ -179,10 +267,15 @@ export function openShop(id) {
     if (refund) G.act.toast(`No te cabía todo en la mochila: te devuelven ${money(refund)}.`, '🎒');
     if (bought.length) G.act.toast(`Comprado: ${bought.join(', ')}`, '🛍️');
     save();
-    steppers.forEach((st) => st.set(0));
-    upd();
-  };
-  upd();
+    cart.clear();
+    const sc = screen();
+    sc.appendChild(h('div', 'receipt', `<i>✓</i><b>${bought.length ? 'Compra hecha' : 'No te cabía nada'}</b><ul>${bought.map((b) => `<li>${b}</li>`).join('')}</ul><span>Pagado <b class="money">${money(t - refund)}</b> · Te quedan <b class="money">${money(G.state.money)}</b></span>`));
+    p.foot.innerHTML = '';
+    const more = h('button', 'btn', 'Seguir comprando'); more.onclick = () => { sfx('pop'); home(); };
+    const out = h('button', 'btn ghost', 'Salir'); out.onclick = () => closePanel();
+    p.foot.append(out, more);
+  }
+  home();
 }
 
 function fail(msg) { sfx('error'); G.act.toast(msg, '⚠️'); }
@@ -199,7 +292,7 @@ const VEH_SVG = {
 // ------------------------------------------------------------------
 export function openCasino() {
   if (!casinoOpen()) return messageDialog('Casino Royal', `Está cerrado. Horario: ${CASINO.open}:00 – ${CASINO.close}:00.`);
-  const p = openPanel({ title: 'Casino Royal', wide: true, cls: 'casino' });
+  const p = openPanel({ title: 'Casino Royal', wide: true, cls: 'casino t-casino' });
   let game = 'slots', bet = 10, pickR = 'rojo', busy = false, last = null;
   const render = () => {
     p.body.innerHTML = '';
@@ -262,7 +355,7 @@ export function openCasino() {
 export function openVehicleShop() {
   const hr = G.state.minute / 60;
   if (hr < 10 || hr >= 20) return messageDialog('Rueda Libre', 'Está cerrado. Horario: 10:00 – 20:00.');
-  const p = openPanel({ title: 'Rueda Libre · Bicis y patinetes', wide: true, cls: 'shop vshop' });
+  const p = openPanel({ title: 'Rueda Libre · Bicis y patinetes', wide: true, cls: 'shop vshop t-bicis' });
   const render = () => {
     p.body.innerHTML = '';
     const top = h('div', 'shop-top');
@@ -312,7 +405,7 @@ export function openPacker(obj) {
   const at = obj?.entry?.type === 'jarpacker' ? 'jarpacker' : 'packer';
   const forms = FORMS.filter((f) => f.at === at);
   const srcs = [...new Set(forms.map((f) => f.src))];
-  const p = openPanel({ title: at === 'jarpacker' ? 'Envasadora de tarros' : 'Mesa de empaquetado', wide: true });
+  const p = openPanel({ title: at === 'jarpacker' ? 'Envasadora de tarros' : 'Mesa de empaquetado', wide: true, cls: 't-madera' });
   let sel = null, mode = null;
   const render = () => {
     p.body.innerHTML = '';
@@ -388,7 +481,7 @@ export function moveCash(obj, n) {
   return n;
 }
 export function openSafe(obj) {
-  const p = openPanel({ title: '🔒 Caja fuerte', cls: 'safe' });
+  const p = openPanel({ title: '🔒 Caja fuerte', cls: 'safe t-acero' });
   const render = () => {
     const d = obj.entry.data;
     p.body.innerHTML = '';
@@ -580,7 +673,7 @@ export function npcActions(npc) {
 export function openNpc(npc, view = 'main') {
   const c = customer(npc.id);
   const name = c.unlocked ? npc.person.name : 'Vecino';
-  const p = openPanel({ title: name, cls: 'npc', onClose: () => { npc.talkT = 1; } });
+  const p = openPanel({ title: name, cls: 'npc t-trato', onClose: () => { npc.talkT = 1; } });
   npc.talk(999);
   npc.lookAt(G.player.pos.x, G.player.pos.z);
   let sel = null, qty = 1, unit = 0, note = '';
@@ -710,7 +803,7 @@ export function openNpc(npc, view = 'main') {
 // prefiere si lo tienes). Un toque para entregar; "Cambiar" para elegir a mano.
 export function openHandover(npc, deal) {
   const prod = product(deal.product);
-  const p = openPanel({ title: `Pedido de ${firstName(npc)}`, onClose: () => { npc.talkT = 1; } });
+  const p = openPanel({ title: `Pedido de ${firstName(npc)}`, cls: 't-trato', onClose: () => { npc.talkT = 1; } });
   npc.talk(999);
   npc.lookAt(G.player.pos.x, G.player.pos.z);
   const offer = new Map(); // key -> {id,p,q}
@@ -794,7 +887,7 @@ export function openHandover(npc, deal) {
 // ------------------------------------------------------------------
 export function friskDialog(cop) {
   const n = illegalCount();
-  const p = openPanel({ title: `👮 ${cop.name}`, onClose: () => { if (cop.mode === 'approach') cooperate(cop); } });
+  const p = openPanel({ title: `👮 ${cop.name}`, cls: 't-policia', onClose: () => { if (cop.mode === 'approach') cooperate(cop); } });
   p.body.appendChild(h('div', 'txt', `«Cacheo rutinario. Las manos donde pueda verlas.»${n ? `<div class="warn">⚠️ Llevas ${n} objeto${n > 1 ? 's' : ''} ilegal${n > 1 ? 'es' : ''} encima.</div>` : ''}`));
   const row = h('div', 'row end');
   const run = h('button', 'btn danger', '🏃 Huir');
@@ -818,7 +911,7 @@ export function robberyDialog() {
     sfx(r.lost ? 'error' : 'cash');
     G.act.toast(r.msg, r.lost ? '💸' : '💪');
   };
-  const p = openPanel({ title: `🐦‍⬛ ${GANG.name}`, cls: 'robbery', onClose: () => finish('pay') });
+  const p = openPanel({ title: `🐦‍⬛ ${GANG.name}`, cls: 'robbery t-banda', onClose: () => finish('pay') });
   p.body.appendChild(h('div', 'txt', want
     ? `«Quieto. Danos <b>${money(want)}</b> y aquí no ha pasado nada.»<div class="small muted">Llevas ${money(G.state.money)} en efectivo. El dinero limpio del banco no te lo pueden quitar.</div>`
     : '«¿No llevas nada? Pues lárgate.»'));

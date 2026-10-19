@@ -2,7 +2,7 @@
 // Se comprueban las reglas con los módulos reales del juego y el reloj del juego,
 // con la partida en pausa para que el tiempo solo avance cuando la prueba lo pide.
 import { test, expect } from '@playwright/test';
-import { watchErrors, ev, mod, press, frames, newGame } from './helpers.js';
+import { watchErrors, ev, mod, press, frames, newGame, shopAdd } from './helpers.js';
 
 const EC = '/src/systems/economy.js';
 const KEY = 'bloque9_save_v3';
@@ -147,7 +147,7 @@ test.describe.serial('Dinero sucio y limpio', () => {
     // tienda con carrito (con el dedo): solo se cobra lo que te llevas
     const m0 = (await bal(page)).dirty;
     await ev(page, () => { __G.state.inv = __G.state.inv.map(() => null); __G.act.openShop('ferreteria'); });
-    await press(page, testInfo, '.shop .card:has-text("Saco de tierra") .qb:has-text("+")');
+    await shopAdd(page, testInfo, 'Saco de tierra');
     await press(page, testInfo, '.panel .foot .btn:has-text("Pagar")');
     await expect.poll(async () => (await bal(page)).dirty).toBe(m0 - 10);
     expect(await ev(page, () => __G.state.ledger.at(-1).reason)).toBe('tienda: Ferretería Tornillo');

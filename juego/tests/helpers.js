@@ -119,3 +119,19 @@ export const spotOnScreen = (page, type, spot) => ev(page, ([type, spot]) => {
   const v = o.group.localToWorld(o.spots[spot].clone()).project(__G.camera);
   return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
 }, [type, spot]);
+
+// Tienda por pasos: vuelve al inicio, entra en la categoría del producto, lo abre, elige la
+// cantidad y lo añade al carrito (luego se paga con «Pagar» del pie).
+export async function shopAdd(page, testInfo, name, qty = 1) {
+  for (let k = 0; k < 3; k++) {
+    if (await page.locator(`.shop .card:has-text("${name}")`).count()) break;
+    const back = page.locator('.panel .shop-crumb .btn');
+    if (await back.count()) { await press(page, testInfo, '.panel .shop-crumb .btn'); continue; }
+    const cat = page.locator(`.shop-cat[data-names*="${name}"]`);
+    if (await cat.count()) { await press(page, testInfo, `.shop-cat[data-names*="${name}"]`); continue; }
+    break;
+  }
+  await press(page, testInfo, `.shop .card:has-text("${name}")`);
+  if (qty !== 1) await press(page, testInfo, `.qty-quick button[data-q="${qty}"]`);
+  await press(page, testInfo, '.panel .btn.add');
+}

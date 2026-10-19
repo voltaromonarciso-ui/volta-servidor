@@ -1,7 +1,7 @@
 // Bloque C de la fase 3: tienda de muebles, colocar/girar/cancelar y mover
 // objetos colocados sin perder nada, y el efecto real de cada mueble.
 import { test, expect } from '@playwright/test';
-import { watchErrors, ev, mod, press, frames, newGame, lookAt, act, prompt, selectSlot, isTouch } from './helpers.js';
+import { watchErrors, ev, mod, press, frames, newGame, lookAt, act, prompt, selectSlot, isTouch, shopAdd } from './helpers.js';
 
 const OB = '/src/systems/objects.js';
 const money = (page) => ev(page, () => __G.state.money);
@@ -40,7 +40,7 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
     await expect.poll(() => prompt(page)).toContain('catálogo');
     await act(page, testInfo);
     await expect(page.locator('.panel.shop')).toBeVisible();
-    await press(page, testInfo, '.shop .card:has-text("Cama buena") .qb:has-text("+")');
+    await shopAdd(page, testInfo, 'Cama buena');
     await press(page, testInfo, '.panel .foot .btn:has-text("Pagar")');
     expect(await money(page)).toBe(100);
     expect(await count(page, 'cama')).toBe(0);
@@ -48,12 +48,12 @@ test.describe.serial('Muebles: tienda, colocar y mover', () => {
 
   test('tienda: comprar los cuatro muebles y no cobrar dos veces', async ({}, testInfo) => {
     await ev(page, () => { __G.state.money = 2000; });
-    for (const n of ['Armario', 'Caja fuerte', 'Humidificador']) await press(page, testInfo, `.shop .card:has-text("${n}") .qb:has-text("+")`);
+    for (const n of ['Armario', 'Caja fuerte', 'Humidificador']) await shopAdd(page, testInfo, n);
     await press(page, testInfo, '.panel .foot .btn:has-text("Pagar")');
     await expect.poll(() => money(page)).toBe(2000 - 380 - 320 - 450 - 220);
     for (const id of ['cama', 'armario', 'caja_fuerte', 'humidificador']) expect(await count(page, id)).toBe(1);
-    // el carrito queda vacío: volver a pagar no cobra
-    await press(page, testInfo, '.panel .foot .btn:has-text("Pagar")');
+    // recibo de la compra; el carrito queda vacío y no se cobra dos veces
+    await expect(page.locator('.panel .receipt')).toContainText('Compra hecha');
     expect(await money(page)).toBe(630);
     await press(page, testInfo, '.panel .x');
     await expect.poll(() => ev(page, () => !__G.uiOpen)).toBe(true);

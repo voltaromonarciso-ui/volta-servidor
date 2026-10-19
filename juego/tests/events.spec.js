@@ -1,6 +1,6 @@
 // Armería, casino y bandas rivales: compras, apuestas y atracos sin duplicar dinero.
 import { test, expect } from '@playwright/test';
-import { watchErrors, ev, mod, frames, newGame, lookAt, act, prompt, press } from './helpers.js';
+import { watchErrors, ev, mod, frames, newGame, lookAt, act, prompt, press, shopAdd } from './helpers.js';
 
 const CZ = '/src/systems/casino.js';
 const GG = '/src/systems/gangs.js';
@@ -27,7 +27,7 @@ test.describe.serial('Armería, casino y bandas', () => {
     await expect(page.locator('.panel')).toContainText('Armería Lomas');
     // la pistola necesita rango (candado) y el spray se puede comprar
     await expect(page.locator('.shop .card:has-text("Pistola")')).toContainText('🔒');
-    await press(page, testInfo, '.shop .card:has-text("Spray") .qb:last-child');
+    await shopAdd(page, testInfo, 'Spray');
     await press(page, testInfo, '.panel .foot .btn:has-text("Pagar")');
     await expect.poll(() => ev(page, () => __G.state.money)).toBe(240);
     expect(await ev(page, () => __G.state.inv.filter((s) => s && s.id === 'spray').reduce((a, s) => a + s.q, 0))).toBe(1);

@@ -4,8 +4,11 @@
   --line: rgba(255, 255, 255, 0.1);
   --txt: #eef2f6;
   --mut: #9aa6b4;
-  --acc: #7ed957;
-  --acc2: #4fb83a;
+  --acc: #f2b84b;   /* color general de Rooktown: ámbar (el verde queda solo para el dinero) */
+  --acc2: #d9951f;
+  --btnfg: #1d1405;
+  --money: #7ed957;
+  --head: transparent;
   --red: #e5534b;
   --gold: #f4c542;
   --r: 14px;
@@ -24,7 +27,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .muted { color: var(--mut); }
 .small { font-size: 12px; }
 .center { text-align: center; padding: 8px; }
-.money { color: var(--acc); font-weight: 800; }
+.money { color: var(--money); font-weight: 800; }
 .badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; font-style: normal; font-size: 11px; font-weight: 800;
   min-width: 18px; height: 18px; border-radius: 9px; display: grid; place-items: center; padding: 0 4px; }
 
@@ -153,7 +156,7 @@ body.touch.ingame #joy { display: block; }
 .panel { background: var(--bg2); border: 1px solid var(--line); border-radius: 18px; width: min(440px, 92vw); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: pop 0.2s; }
 .panel.wide { width: min(820px, 94vw); }
 @keyframes pop { from { transform: scale(0.94); } }
-.panel header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--head); border-radius: 18px 18px 0 0; }
 .panel h2 { margin: 0; font-size: 18px; }
 .panel .x { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.08); font-size: 16px; }
 .panel .body { padding: 14px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
@@ -163,7 +166,7 @@ body.touch.ingame #joy { display: block; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .row.end { justify-content: flex-end; }
 .rowsp { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.btn { background: linear-gradient(180deg, var(--acc), var(--acc2)); color: #0d1a08; font-weight: 800; border-radius: 12px; padding: 10px 16px; font-size: 14px; }
+.btn { background: linear-gradient(180deg, var(--acc), var(--acc2)); color: var(--btnfg); font-weight: 800; border-radius: 12px; padding: 10px 16px; font-size: 14px; }
 .btn:active { transform: scale(0.97); }
 .btn.ghost { background: rgba(255,255,255,0.09); color: var(--txt); }
 .btn.danger { background: linear-gradient(180deg, #ef6b63, #c9433b); color: #fff; }
@@ -177,14 +180,14 @@ body.touch.ingame #joy { display: block; }
 .progress i { display: block; height: 100%; width: 0; background: var(--acc); transition: width 0.15s; }
 
 .shop-top { display: flex; justify-content: space-between; align-items: center; }
-.cash { font-weight: 900; color: var(--acc); font-size: 18px; }
+.cash { font-weight: 900; color: var(--money); font-size: 18px; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
 .card { background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
 .card.locked { opacity: 0.5; }
 .c-ic { font-size: 30px; }
 .c-n { font-weight: 800; }
 .c-d { font-size: 11px; color: var(--mut); flex: 1; }
-.c-p { font-weight: 800; color: var(--acc); }
+.c-p { font-weight: 800; color: var(--money); }
 .qty { display: flex; align-items: center; gap: 6px; }
 .qb { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.1); font-weight: 900; font-size: 16px; }
 .qv { min-width: 34px; text-align: center; font-weight: 800; }
@@ -195,7 +198,7 @@ body.touch.ingame #joy { display: block; }
 .pick { background: rgba(255,255,255,0.06); border: 2px solid var(--line); border-radius: 12px; padding: 8px 12px; text-align: left; display: flex; flex-direction: column; gap: 2px; }
 .pick.block { width: 100%; display: block; margin-bottom: 6px; }
 .pick small { color: var(--mut); }
-.pick.on { border-color: var(--acc); background: rgba(126, 217, 87, 0.12); }
+.pick.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent); }
 .pick.match { border-color: rgba(244, 197, 66, 0.6); }
 .pick.dim { opacity: 0.5; }
 .mix-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -220,7 +223,7 @@ body.touch.ingame #joy { display: block; }
 .sum b { font-size: 20px; }
 input[type=range] { width: 100%; accent-color: var(--acc); }
 .toggle { padding: 6px 14px; border-radius: 20px; background: rgba(255,255,255,0.1); font-weight: 800; font-size: 12px; }
-.toggle.on { background: var(--acc); color: #0d1a08; }
+.toggle.on { background: var(--acc); color: var(--btnfg); }
 
 /* ---------------- Móvil (teléfono del juego) ---------------- */
 #phone { position: fixed; inset: 0; z-index: 15; display: none; place-items: center; background: rgba(5, 8, 12, 0.35); }
@@ -426,7 +429,7 @@ body.lay-edit #hud > * { pointer-events: none !important; }
 .inv-grid.big { grid-template-columns: repeat(5, 62px); }
 .inv-grid.big .inv-cell { width: 62px; height: 62px; aspect-ratio: auto; min-height: 0; font-size: 26px; }
 @media (max-width: 600px) { .bag-cols { grid-template-columns: 1fr; } }
-.shop .card.in { border-color: var(--acc); background: rgba(126, 217, 87, 0.08); }
+.shop .card.in { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 10%, transparent); }
 .cart-sum { margin-right: auto; align-self: center; font-size: 14px; }
 
 /* iconos ilustrados */
@@ -606,3 +609,51 @@ body.touch .staff .btn.sm { min-height: 44px; }
 .atm-ok i { font-style: normal; width: 54px; height: 54px; line-height: 54px; text-align: center; border-radius: 50%; background: #2f86f0; color: #fff; font-size: 28px; box-shadow: 0 0 0 6px rgba(47,134,240,0.22); }
 .atm-ok b { font-size: 18px; }
 .atm-ok span { color: #9cc3f2; }
+
+/* ---------- Temas de color por sitio (cada local con los colores de su rótulo) ---------- */
+.panel.t-ferreteria { --acc: #f08a2c; --acc2: #c8650f; --btnfg: #fff; --head: linear-gradient(90deg, #c8650f, #8f4508); }
+.panel.t-gasolinera { --acc: #e8483c; --acc2: #b8241b; --btnfg: #fff; --head: linear-gradient(90deg, #c0392b, #8e1e14); }
+.panel.t-muebles { --acc: #c99561; --acc2: #9a6a3c; --btnfg: #fff; --head: linear-gradient(90deg, #8a5a32, #5e3b1f); }
+.panel.t-armeria, .panel.t-cartel { --acc: #d6322b; --acc2: #9e1712; --btnfg: #fff; --head: linear-gradient(90deg, #2a0d0d, #5a0f0f); background: linear-gradient(180deg, #1d1414, #120c0c); border-color: #5a1a1a; }
+.panel.t-casino { --acc: #f2c94c; --acc2: #c9962a; --btnfg: #2a0a10; --head: linear-gradient(90deg, #6b0f24, #3d0714); background: linear-gradient(180deg, #2a0b14, #170609); border-color: #7a5a1a; }
+.panel.t-bicis { --acc: #3fa9f5; --acc2: #1f7fd0; --btnfg: #fff; --head: linear-gradient(90deg, #1f7fd0, #155ea0); }
+.panel.t-bicis .c-p { color: #ffd23f; }
+.panel.t-policia { --acc: #4d7cff; --acc2: #2a50c8; --btnfg: #fff; --head: linear-gradient(90deg, #1a2b5c, #0f1a3a); background: linear-gradient(180deg, #121a2e, #0b1120); border-color: #2a3f7a; }
+.panel.t-banda { --acc: #d64541; --acc2: #a52a26; --btnfg: #fff; --head: linear-gradient(90deg, #3a3d42, #22252a); background: linear-gradient(180deg, #1e2024, #141518); border-color: #4a4d52; }
+.panel.t-acero { --acc: #9fb0c2; --acc2: #6f8296; --btnfg: #0d1520; --head: linear-gradient(90deg, #4a5663, #2c3540); }
+.panel.t-madera { --acc: #d4a066; --acc2: #a8743d; --btnfg: #1e1206; --head: linear-gradient(90deg, #7a5230, #4e331c); }
+.panel.t-trato { --acc: #f0a83a; --acc2: #c97f12; --btnfg: #1d1405; --head: linear-gradient(90deg, #6b4a12, #3d2a0a); }
+.panel[class*=" t-"] header h2 { color: #fff; }
+.panel[class*=" t-"] .x { background: rgba(255,255,255,0.14); }
+
+/* ---------- Tienda por pasos ---------- */
+.shop-steps { display: flex; flex-direction: column; gap: 10px; animation: atmIn 0.18s ease-out; }
+.shop-hello { color: var(--mut); font-size: 13px; }
+.shop-hello b { color: var(--txt); }
+.shop-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.shop-cat { background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 22%, #1b2230), color-mix(in srgb, var(--acc2) 12%, #141a24)); border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent); border-radius: 16px; padding: 14px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+.shop-cat:active { transform: scale(0.97); }
+.shop-cat i { font-style: normal; font-size: 30px; }
+.shop-cat b { font-size: 16px; }
+.shop-cat small { color: var(--mut); font-size: 12px; }
+.shop-crumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mut); }
+.shop-crumb b { color: var(--txt); }
+.shop .card { cursor: pointer; }
+.shop .card:active { transform: scale(0.99); }
+.shop-item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 6px 0; }
+.shop-item .big { font-size: 64px; line-height: 1; }
+.shop-item .nm { font-size: 19px; font-weight: 800; }
+.shop-item .ds { color: var(--mut); font-size: 13px; max-width: 360px; }
+.qty-quick { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.qty-quick button { min-width: 56px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 2px solid transparent; font-weight: 800; }
+.qty-quick button.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 18%, transparent); }
+.qty-quick button:disabled { opacity: 0.35; }
+.shop-total { text-align: center; font-size: 15px; color: var(--mut); }
+.shop-total b { color: var(--money); font-size: 22px; }
+.cart-list { display: flex; flex-direction: column; gap: 6px; }
+.cart-row { display: grid; grid-template-columns: 36px 1fr auto auto; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 10px; }
+.cart-row .ic { font-size: 26px; }
+.cart-row .rm { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.08); }
+.receipt { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.receipt i { font-style: normal; width: 56px; height: 56px; line-height: 56px; border-radius: 50%; background: var(--acc); color: var(--btnfg); font-size: 28px; }
+.receipt ul { list-style: none; padding: 0; margin: 4px 0; color: var(--mut); }

@@ -2,7 +2,7 @@
 // haría un jugador (botones táctiles en los perfiles móviles, teclado en escritorio).
 // Si una de estas pruebas falla tras un cambio, se ha roto un sistema existente.
 import { test, expect } from '@playwright/test';
-import { watchErrors, ev, mod, invSummary, press, drag, frames, newGame, lookAt, act, prompt, selectSlot, spotOnScreen, isTouch } from './helpers.js';
+import { watchErrors, ev, mod, invSummary, press, drag, frames, newGame, lookAt, act, prompt, selectSlot, spotOnScreen, isTouch, shopAdd } from './helpers.js';
 
 const count = (page, id, p) => ev(page, ([id, p]) => __G.state.inv.reduce((a, s) => a + (s && s.id === id && (p === undefined || s.p === p) ? s.q : 0), 0), [id, p]);
 const slotOf = (page, id) => ev(page, (id) => __G.state.inv.findIndex((s) => s && s.id === id), id);
@@ -58,9 +58,7 @@ test.describe.serial('Ciclo completo', () => {
 
   test('comprar en la ferretería', async ({}, testInfo) => {
     await ev(page, () => { __G.state.minute = 10 * 60; __G.act.openShop('ferreteria'); });
-    const card = page.locator('.card', { hasText: 'Saco de tierra' });
-    await press(page, testInfo, '.card:has-text("Saco de tierra") .qty .qb:last-child');
-    await expect(card.locator('.qv')).toHaveText('1');
+    await shopAdd(page, testInfo, 'Saco de tierra');
     await press(page, testInfo, '.panel .foot .btn:not(.ghost)');
     await expect.poll(() => count(page, 'tierra')).toBe(1);
     expect(await ev(page, () => __G.state.money)).toBe(340);

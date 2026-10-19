@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792363901.3600514,
-    "seen": 1792365345.2161195,
-    "ast_hash": "45ca073a6c89c3ac8c3cc85087ef74e6",
+    "mtime": 1792394452.830384,
+    "seen": 1792395024.8369675,
+    "ast_hash": "9779c479b03169a9e17b24d285742e1d",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -1218,15 +1218,15 @@
     "semantic_hash": ""
   },
   "juego/tests/core.spec.js": {
-    "mtime": 1792341745.7602324,
-    "seen": 1792341770.0547078,
-    "ast_hash": "e76aaf28af77545d0013eb869bd05216",
+    "mtime": 1792394478.1300037,
+    "seen": 1792395024.8376079,
+    "ast_hash": "b4943c34e10b90c71414398af1d74da2",
     "semantic_hash": ""
   },
   "juego/tests/helpers.js": {
-    "mtime": 1792339075.75017,
-    "seen": 1792341770.0547626,
-    "ast_hash": "cbe0ab281d75dc13e45d1820e3854e2c",
+    "mtime": 1792394478.096918,
+    "seen": 1792395024.837639,
+    "ast_hash": "4584b563e314aaaee40d8cf2322f4671",
     "semantic_hash": ""
   },
   "juego/tests/mobile-ui.spec.js": {
@@ -1326,9 +1326,9 @@
     "semantic_hash": ""
   },
   "juego/tests/furniture.spec.js": {
-    "mtime": 1792277303.61799,
-    "seen": 1792280672.4198372,
-    "ast_hash": "b2d64de2f98e7f9d1623440e256e9c6a",
+    "mtime": 1792394478.1307583,
+    "seen": 1792395024.8376372,
+    "ast_hash": "0a984e433e95c15889f936c42e2bcc8b",
     "semantic_hash": ""
   },
   "juego/src/data/staff.js": {
@@ -1356,9 +1356,9 @@
     "semantic_hash": ""
   },
   "juego/tests/money.spec.js": {
-    "mtime": 1792339233.418429,
-    "seen": 1792341770.0547695,
-    "ast_hash": "22648638b772f8a0b4269fc43c5af92a",
+    "mtime": 1792394478.1313262,
+    "seen": 1792395024.8376887,
+    "ast_hash": "0c8a03cf76494844add7a1d5a1e49760",
     "semantic_hash": ""
   },
   "juego/tests/.results-l2/.last-run.json": {
@@ -1398,9 +1398,9 @@
     "semantic_hash": ""
   },
   "juego/tests/events.spec.js": {
-    "mtime": 1792351193.9142642,
-    "seen": 1792351476.4707446,
-    "ast_hash": "da26ec877bd1e18bafdcc368526a7ee1",
+    "mtime": 1792394478.1304114,
+    "seen": 1792395024.8376348,
+    "ast_hash": "461d97ca8b77a49559ecd9a2ec01dab6",
     "semantic_hash": ""
   },
   "juego/tests/perf.spec.js": {
@@ -1959,6 +1959,66 @@
     "mtime": 1792391479.3100455,
     "seen": 1792391558.6438725,
     "ast_hash": "4da874bde484eb7f15e8d2844dae2d2a",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-19-banco.png": {
+    "mtime": 1792391560.4129283,
+    "seen": 1792395024.841388,
+    "ast_hash": "de68d07beebc9c74efd8f81e3bd4df4d",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-19-cartel.png": {
+    "mtime": 1792391561.0689282,
+    "seen": 1792395024.8413906,
+    "ast_hash": "3530e505fbeb74ab8635476676dbba62",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-19-dentro.png": {
+    "mtime": 1792391560.8889282,
+    "seen": 1792395024.8413923,
+    "ast_hash": "d8bfa5cb3e19a4557a41a5a2a0c3c934",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-19-eclipse.png": {
+    "mtime": 1792391560.6849282,
+    "seen": 1792395024.841394,
+    "ast_hash": "cf88eb7d12dee6d57620a028d4fe1bb8",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-19-esquina.png": {
+    "mtime": 1792391560.116928,
+    "seen": 1792395024.8413956,
+    "ast_hash": "c342e8e4ba3bb1ab84057b2894cab52f",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-20-cesped-bungalos.png": {
+    "mtime": 1792393493.221043,
+    "seen": 1792395024.8413975,
+    "ast_hash": "ae6675e057b4ca0657f4b4cc66fe0c93",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-20-cesped-calle.png": {
+    "mtime": 1792393493.797043,
+    "seen": 1792395024.841399,
+    "ast_hash": "99d9203f560e9c62b6d78c0a1d9d29ff",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-20-cesped-costa.png": {
+    "mtime": 1792393494.0850432,
+    "seen": 1792395024.8414004,
+    "ast_hash": "8577a6eadd4e40b1bbbd68327c9b4a41",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-20-cesped-dentro.png": {
+    "mtime": 1792393494.2170432,
+    "seen": 1792395024.8414018,
+    "ast_hash": "995e95c892ac6150972f20337d17d781",
+    "semantic_hash": ""
+  },
+  "juego/docs/avances-20-cesped-parque.png": {
+    "mtime": 1792393493.4930432,
+    "seen": 1792395024.8414028,
+    "ast_hash": "bd6460be4ebae57c40aea47af7117270",
     "semantic_hash": ""
   }
 }
