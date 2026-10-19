@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { pbrMat } from './buildingkit.js';
+import { eclipseInterior } from './eclipseInterior.js';
 
 const mats = new Map();
 function mat(color, o = {}) {
@@ -198,10 +199,21 @@ export function eclipse() {
 
   // --- sala principal: volumen de esquinas redondeadas (x -9..11, z -14..-2, h 7.5) ---
   const H = { x0: -9, x1: 11, z0: -14, z1: -2, h: 7.5 };
-  add(g, cache('salaEclipse', () => new RoundedBoxGeometry(H.x1 - H.x0, H.h, H.z1 - H.z0, 4, 0.9)), graphite, (H.x0 + H.x1) / 2, H.h / 2, (H.z0 + H.z1) / 2);
+  // sala hueca: muros de 0,3 m, cubierta y hueco de entrada en la pared delantera (x 1 ± 1,3)
+  const T0 = 0.3, DX = 1, DW = 1.3, DH = 3.3;
+  slab(g, graphite, H.x0, H.x1, 0, H.h, H.z0, H.z0 + T0);
+  slab(g, graphite, H.x0, H.x0 + T0, 0, H.h, H.z0, H.z1);
+  slab(g, graphite, H.x1 - T0, H.x1, 0, H.h, H.z0, H.z1);
+  slab(g, graphite, H.x0, DX - DW, 0, H.h, H.z1 - T0, H.z1);
+  slab(g, graphite, DX + DW, H.x1, 0, H.h, H.z1 - T0, H.z1);
+  slab(g, graphite, DX - DW, DX + DW, DH, H.h, H.z1 - T0, H.z1);
+  slab(g, graphite, H.x0, H.x1, H.h - 0.3, H.h, H.z0, H.z1);
+  for (const [cx, cz] of [[H.x0, H.z0], [H.x1, H.z0], [H.x0, H.z1], [H.x1, H.z1]]) add(g, cache('esquinaSala', () => new THREE.CylinderGeometry(0.45, 0.45, H.h, 16)), graphite, cx, H.h / 2, cz); // esquinas redondeadas
+  const inside = eclipseInterior(H);
+  g.add(inside.group);
   add(g, cache('frisoSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.1, 0.12, H.z1 - H.z0 + 0.1, 2, 0.06)), led, (H.x0 + H.x1) / 2, H.h - 0.6, (H.z0 + H.z1) / 2); // friso de luz
   add(g, cache('remateSala', () => new RoundedBoxGeometry(H.x1 - H.x0 + 0.3, 0.3, H.z1 - H.z0 + 0.3, 2, 0.12)), white, (H.x0 + H.x1) / 2, H.h + 0.1, (H.z0 + H.z1) / 2);
-  boxes.push([H.x0, H.x1, H.z0, H.z1, H.h]);
+  boxes.push([H.x0, H.x1, H.z0, H.z0 + T0, H.h], [H.x0, H.x0 + T0, H.z0, H.z1, H.h], [H.x1 - T0, H.x1, H.z0, H.z1, H.h], [H.x0, DX - DW, H.z1 - T0, H.z1, H.h], [DX + DW, H.x1, H.z1 - T0, H.z1, H.h], ...inside.boxes);
 
   // --- torre del logo con aristas redondeadas (x -16..-9) ---
   const T = { x0: -16, x1: -9.2, z0: -12, z1: 0.6, h: 13 };
@@ -224,7 +236,7 @@ export function eclipse() {
   boxes.push([T.x0, T.x1, T.z0, T.z1, T.h]);
 
   // --- el disco del eclipse: hormigón claro con portal circular (centro x 1, y 4.6) ---
-  const D = { x: 1, y: 4.6, R: 5.4, r: 3.1, z: -2.2, d: 1.4 };
+  const D = { x: 1, y: 3.45, R: 5.4, r: 3.1, z: -2.2, d: 1.4 }; // el hueco del portal llega al suelo
   const disc = add(g, ringGeo('discoEclipse', D.R, D.r, D.d), pbrMat('hormigon', '#ece9e2'), D.x, D.y, D.z);
   disc.scale.set(1, 1, 1);
   add(g, cache('coronaPortal', () => new THREE.TorusGeometry(D.r + 0.05, 0.11, 12, 72)), led, D.x, D.y, D.z + D.d + 0.12);      // corona de luz
@@ -232,12 +244,8 @@ export function eclipse() {
   // el disco se apoya en un zócalo (corta la parte que quedaría bajo el suelo)
   slab(g, mat('#5a5d61', { r: 0.8 }), D.x - 4.4, D.x + 4.4, -0.8, 0.35, D.z - 0.1, D.z + D.d + 0.2);
   // dentro del portal: vestíbulo iluminado con puertas de cristal
-  const lobby = new THREE.Mesh(new THREE.CircleGeometry(D.r, 48), mat('#ffffff', { map: interiorTex('eclipseHall', '#d7a6ff', '#7a3ccf'), e: '#ffffff', ei: 0.7, glow: 'win' }));
-  lobby.position.set(D.x, D.y, D.z - 0.3); g.add(lobby);
-  add(g, cache('cristalPortal', () => new THREE.CircleGeometry(D.r, 48)), glassM, D.x, D.y, D.z + 0.4);
   for (const s2 of [-1, 1]) slab(g, frame, D.x + s2 * 1.25 - 0.05, D.x + s2 * 1.25 + 0.05, 0.35, 3.3, D.z + 0.38, D.z + 0.46);
   slab(g, frame, D.x - 1.3, D.x + 1.3, 3.25, 3.35, D.z + 0.38, D.z + 0.46);
-  for (const s2 of [-1, 1]) slab(g, mat('#c9cfd6', { m: 0.8, r: 0.25 }), D.x + s2 * 0.18 - 0.03, D.x + s2 * 0.18 + 0.03, 1.1, 2.3, D.z + 0.46, D.z + 0.52);
   boxes.push([D.x - D.R, D.x - D.r + 0.3, D.z, D.z + D.d, 9], [D.x + D.r - 0.3, D.x + D.R, D.z, D.z + D.d, 9]);
 
   // --- ala derecha de dos plantas con esquina de cristal curva (x 11..20, z -12..1) ---

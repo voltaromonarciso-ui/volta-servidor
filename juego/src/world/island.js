@@ -101,8 +101,8 @@ function houseAt(x, z, front, seed) {
 // Devuelve el punto delante de la puerta o null si las texturas no están (se usa el de antes).
 function realAt(key, make, x, z, ry, { label, mapColor = '#b9a68a' } = {}) {
   if (!hasBuilding('q_Flat')) return null; // sin modelos/texturas cargados: edificio clásico
-  let door = null;
-  const box = F.place('real:' + key, () => { const r = make(); door = r.door; return r.group; }, x, z, ry);
+  const r = make(), door = r.door;
+  const box = F.place('real:' + key, () => r.group, x, z, ry);
   const turned = Math.abs(Math.sin(ry)) > 0.5, c = Math.cos(ry), sn = Math.sin(ry);
   const hw = (turned ? box.max.z - box.min.z : box.max.x - box.min.x) / 2, hd = (turned ? box.max.x - box.min.x : box.max.z - box.min.z) / 2;
   W.mapRects.push({ x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, c: mapColor });
@@ -376,13 +376,14 @@ function buildStreetFurniture() {
   // sucursales del Banco Rooktown (con el cajero empotrado), en la esquina noreste de cada
   // barrio que tiene cajero; si los modelos no cargaron, cajero suelto en la acera como antes
   const reserved = [];
+  let BANK = null;
   for (const zone of ATM_ZONES) {
     const b = blockOf(zone), zN = ZL[ROWS - b.j];
     let x = b.cx + 14, z = zN - WALLSIDE;
     if (hasBuilding('q_Flat')) {
       const bx = b.x1 - 4.6, bz = b.z1 - 3.9;
-      let info = null;
-      F.place('banco', () => { info = bankBranch(); return info.group; }, bx, bz, 0);
+      const info = BANK || (BANK = bankBranch()); // una sola sucursal modelo (el colocador la reutiliza)
+      F.place('banco', () => info.group, bx, bz, 0);
       W.mapRects.push({ x0: bx - 4, x1: bx + 4, z0: bz - 3.5, z1: bz + 3.5, c: '#1f5fbf' });
       x = bx + info.atm.x; z = bz + info.atm.z;
     }
@@ -500,8 +501,8 @@ const FILL = {
     const s = SIGN[b.zone] || {};
     if (b.zone === 'eclipse' && hasBuilding('q_Flat')) {
       // El Eclipse: fachada propia (disco con portal, torre del logo, ala con terraza)
-      let info = null;
-      F.place('eclipse', () => { info = eclipseFacade(); return info.group; }, b.cx - 1, b.cz + 6, 0, { solid: false });
+      const info = eclipseFacade();
+      F.place('eclipse', () => info.group, b.cx - 1, b.cz + 6, 0, { solid: false });
       for (const [x0, x1, z0, z1, h] of info.boxes) K.addBox(b.cx - 1 + x0, b.cx - 1 + x1, b.cz + 6 + z0, b.cz + 6 + z1, h);
       for (const [x, z] of info.planters || []) { F.place('macetero', SKP.macetero, b.cx - 1 + x, b.cz + 6 + z, 0); F.place('palmera', () => SKP.palmera(), b.cx - 1 + x, b.cz + 6 + z, 0, { y: 0.55, s: 1.1 }); }
       W.mapRects.push({ x0: b.cx - 17, x1: b.cx + 19, z0: b.cz - 8, z1: b.cz + 8, c: '#9b6bc9' });

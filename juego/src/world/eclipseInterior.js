@@ -98,7 +98,9 @@ export function eclipseInterior(H) {
   plane(g, WALL(), x1 - x0 - 0.6, h - 0.6, (x0 + x1) / 2, (h - 0.6) / 2, z0 + 0.31);
   plane(g, WALL(), z1 - z0 - 0.6, h - 0.6, x0 + 0.31, (h - 0.6) / 2, (z0 + z1) / 2, Math.PI / 2);
   plane(g, WALL(), z1 - z0 - 0.6, h - 0.6, x1 - 0.31, (h - 0.6) / 2, (z0 + z1) / 2, -Math.PI / 2);
-  for (const sx of [-1, 1]) plane(g, WALL(), (x1 - x0) / 2 - 1.6, h - 0.6, sx < 0 ? (x0 + 1 - 1.3) / 2 + 0.2 : (x1 + 1 + 1.3) / 2 - 0.2, (h - 0.6) / 2, z1 - 0.31, Math.PI);
+  // pared delantera por dentro, a ambos lados de la entrada (hueco en x 1 ± 1,3)
+  for (const [a, b] of [[x0 + 0.3, 1 - 1.3], [1 + 1.3, x1 - 0.3]]) plane(g, WALL(), b - a, h - 0.6, (a + b) / 2, (h - 0.6) / 2, z1 - 0.31, Math.PI);
+  plane(g, WALL(), 2.6, h - 0.6 - 3.3, 1, 3.3 + (h - 0.6 - 3.3) / 2, z1 - 0.31, Math.PI);
   // tiras de neón a lo largo de las paredes, arriba
   for (const [ax, az, len, ry] of [[(x0 + x1) / 2, z0 + 0.35, x1 - x0 - 0.8, 0], [x0 + 0.35, (z0 + z1) / 2, z1 - z0 - 0.8, Math.PI / 2], [x1 - 0.35, (z0 + z1) / 2, z1 - z0 - 0.8, Math.PI / 2]]) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(len, 0.06, 0.04), neon('#b45cff')); s.position.set(ax, h - 1.1, az); s.rotation.y = ry; g.add(s);

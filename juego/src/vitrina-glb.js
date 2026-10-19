@@ -37,6 +37,7 @@ export async function loadLocalItems() {
     ['Mercado', () => rb.shopBuilding({ w: 24, d: 14, floors: 1, wall: 'ladrilloRojo', stone: 'claro', sign: 'MERCADO', signBg: '#2e7d32', awning: '#c0392b' }).group],
     ['Oficinas', () => rb.shopBuilding({ w: 18, d: 14, floors: 4, wall: 'enfoscado', stone: 'blanco', sign: 'OFICINAS', signBg: '#34495e', kind: 'oficina', upKind: 'oficina' }).group],
     ['Taller', () => rb.warehouseBuilding({ w: 26, d: 18, h: 8, sign: 'TALLER', signBg: '#1f3a6b' }).group],
+    ['Eclipse (interior)', () => { const r = fa.eclipse(); r.group.traverse((o) => { if (o.isMesh) { const bb = new THREE.Box3().setFromObject(o); if (bb.min.y > 6.5 || (bb.min.y > 6 && bb.max.x - bb.min.x > 15)) o.visible = false; } }); return r.group; }],
     ['Banco Rooktown', () => { const r = rb.bankBranch(); const c = SK.cajero(); c.position.set(r.atm.x, 0, r.atm.z); r.group.add(c); return r.group; }],
     ['El Eclipse', () => { const r = fa.eclipse(); for (const [x, z] of r.planters || []) { const m = SK.macetero(); m.position.set(x, 0, z); r.group.add(m); const p = SK.palmera(); p.position.set(x, 0.55, z); p.scale.setScalar(1.1); r.group.add(p); } return r.group; }],
   ];
