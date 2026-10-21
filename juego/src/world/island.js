@@ -390,10 +390,10 @@ export function buildIsland() {
   retainingWalls();
   W.glowMats = res.glowMats;
   W.furnitureStats = res;
+  W.furnitureItems = F.items;
   W.furnitureReport = F.report();
   SK.setDetail(1);
-  K.buildSkyline();
-  K.buildMountains();
+  K.buildMountains(); // (sin el skyline de la ciudad antigua: en la isla quedaba flotando sobre el mar)
   tempProps();
 }
 
@@ -425,7 +425,7 @@ function starterBuilding(x, z, walkZ) {
     W.floors.push(m);
   }
   for (const d of f.doors) {
-    const door = K.makeDoor({ x: x + d.x, z: z + d.z, axis: d.axis, width: d.width, h: d.h, color: d.color, flip: d.flip, locked: d.flat ? () => !G.state.props.piso : null });
+    const door = K.makeDoor({ x: x + d.x, z: z + d.z, axis: d.axis, width: d.width, h: d.h, color: d.color, flip: d.flip, locked: null }); // se abren siempre (también sin ser tuya: puedes verla por dentro)
     door.pivot.position.y += d.y; door.hit.position.y += d.y; door.hit.updateMatrixWorld();
   }
   for (const l of f.lights) {

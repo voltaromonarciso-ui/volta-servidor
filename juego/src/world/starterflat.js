@@ -138,9 +138,23 @@ export function starterFlat() {
     slab(g, stone, sx - o, sx + 0.02, y0, y1, sz, ez);
     slab(g, stone, ex - 0.02, ex + o, y0, y1, sz, ez);
   }
-  slab(g, stone, sx - 0.25, ex + 0.25, HT, HT + 0.35, sz - 0.25, ez + 0.25);
-  slab(g, outer, sx, ex, HT + 0.35, HT + 1.0, sz, ez);
-  slab(g, stone, sx - 0.1, ex + 0.1, HT + 1.0, HT + 1.12, sz - 0.1, ez + 0.1);
+  // cubierta (con el hueco de la claraboya sobre la escalera)
+  const ring = (mat, y0, y1, o) => {
+    slab(g, mat, PW.x0, ex + o, y0, y1, sz - o, ez + o);
+    slab(g, mat, sx - o, COL.x0, y0, y1, sz - o, ez + o);
+    slab(g, mat, COL.x0, PW.x0, y0, y1, sz - o, sz + T);
+    slab(g, mat, COL.x0, PW.x0, y0, y1, ez - T, ez + o);
+  };
+  ring(stone, HT, HT + 0.35, 0.25);
+  ring(outer, HT + 0.35, HT + 1.0, 0);
+  ring(stone, HT + 1.0, HT + 1.12, 0.1);
+  // claraboya: marco y cristal a cuatro aguas sobre el patio de la escalera
+  const fr = FRAME(), cx = (COL.x0 + PW.x0) / 2, cz = (sz + T + ez - T) / 2, lx = PW.x0 - COL.x0, lz = ez - sz - 2 * T;
+  for (const [x0, x1, z0, z1] of [[COL.x0, PW.x0, sz + T, sz + T + 0.08], [COL.x0, PW.x0, ez - T - 0.08, ez - T], [COL.x0, COL.x0 + 0.08, sz + T, ez - T], [PW.x0 - 0.08, PW.x0, sz + T, ez - T]]) slab(g, fr, x0, x1, HT + 1.12, HT + 1.3, z0, z1);
+  for (let k = 1; k < 6; k++) slab(g, fr, COL.x0, PW.x0, HT + 1.12, HT + 1.4, sz + T + (k * lz) / 6 - 0.03, sz + T + (k * lz) / 6 + 0.03);
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(lx, lz), GLASS());
+  sky.rotation.x = -Math.PI / 2; sky.position.set(cx, HT + 1.3, cz); g.add(sky);
+  slab(g, fr, cx - 0.03, cx + 0.03, HT + 1.3, HT + 1.42, sz + T, ez - T); // cumbrera
   slab(g, plainMat('maquina', { color: '#a7adb3', roughness: 0.45, metalness: 0.5 }), 1, 2.6, HT + 1.0, HT + 1.9, -3, -1.8);
   // ventanas falsas (con interior iluminado) donde no hay estancia de verdad
   const fake = (x, y, z, rot = 0, w = 1.3, h = 1.5) => windowAt(g, x, y, z, w, h, { stone, kind: 'casa', rot });
@@ -175,9 +189,8 @@ export function starterFlat() {
   slab(g, plinth, COL.x0, PW.x0, FL - slabH, FL, sz + T, ST.z0);                  // rellano
   slab(g, plinth, COL.x0, PW.x0, 0, FL - slabH, sz + T, ST.z0);                   // macizo bajo el rellano
   slab(g, plinth, COL.x0, PW.x0, FL - slabH, FL, ST.z1, ez - T);                  // techo del portal
-  slab(g, plinth, sx + T, ex - T, 2 * FL - slabH, 2 * FL, sz + T, ez - T);        // forjado de la 2.ª (techo del piso)
+  slab(g, plinth, PW.x0, ex - T, 2 * FL - slabH, 2 * FL, sz + T, ez - T);        // forjado de la 2.ª (techo del piso; la escalera es un patio abierto)
   slab(g, ceil, PW.x1, ex - T, 2 * FL - slabH - 0.02, 2 * FL - slabH, sz + T, FLAT.z1); // techo del piso
-  slab(g, ceil, COL.x0 + 0.01, PW.x0 - 0.01, 2 * FL - slabH - 0.04, 2 * FL - slabH - 0.01, sz + T, ST.z1); // techo del hueco de la escalera (pintado)
   slab(g, ceil, COL.x0, PW.x0, FL - slabH - 0.02, FL - slabH, ST.z1, ez - T);           // techo del portal
   // suelo del portal y del rellano (terrazo)
   const terr = new THREE.MeshStandardMaterial({ map: pisoTileTex(), color: '#e8dcc8', roughness: 0.3 });
@@ -197,7 +210,7 @@ export function starterFlat() {
 
   // ---------------- tabiques ----------------
   // entre la escalera y el piso (con la puerta del piso en el rellano)
-  wall(g, paint, 'z', sz + T, ez - T, PW.x0, PW.x1, 0, 2 * FL, [[DOOR.z0, DOOR.z1, FL, FL + 2.2]]);
+  wall(g, paint, 'z', sz + T, ez - T, PW.x0, PW.x1, 0, HT, [[DOOR.z0, DOOR.z1, FL, FL + 2.2]]);
   boxes.push([PW.x0, PW.x1, sz, DOOR.z0, HT], [PW.x0, PW.x1, DOOR.z1, ez, HT]);
   // con el vecino (delante del piso)
   wall(g, paint, 'x', PW.x1, ex - T, FLAT.z1, FLAT.z1 + 0.2, FL, 2 * FL);
@@ -313,13 +326,11 @@ export function starterFlat() {
   for (const z of [-2.4, -2.1, -1.8]) cyl(g, steel, PW.x1 + 0.1, FL + 1.62, z, 0.015, 0.12, 6, { rz: Math.PI / 2 });
   slab(g, pm('chaqueta', '#3b4a5a', { roughness: 0.95 }), PW.x1 + 0.08, PW.x1 + 0.2, FL + 0.95, FL + 1.6, -2.2, -1.9);
 
-  // ---------------- portal: buzones, felpudo, maceta ----------------
+  // ---------------- portal: buzones y felpudo ----------------
   slab(g, lobby, COL.x0, COL.x0 + 0.02, 0, FL - slabH, ST.z1, ez - T);
   rslab(g, pm('buzon', '#8a6a3d', { roughness: 0.5 }), COL.x0, COL.x0 + 0.25, 1.1, 1.9, 3.8, 5.0, 0.02);
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) slab(g, pm('ranura', '#2b2b2b'), COL.x0 + 0.25, COL.x0 + 0.26, 1.2 + r * 0.26 + 0.12, 1.2 + r * 0.26 + 0.14, 3.88 + c * 0.29, 3.88 + c * 0.29 + 0.2);
   slab(g, pm('felpudo', '#5a4632', { roughness: 1 }), COL.x0 + 0.3, PW.x0 - 0.3, 0.03, 0.045, ez - T - 1.0, ez - T - 0.1);
-  cyl(g, pm('maceta', '#b0603a', { roughness: 0.8 }), PW.x0 - 0.35, 0.25, ez - T - 1.5, 0.2, 0.5, 14);
-  add(g, new THREE.IcosahedronGeometry(0.38, 1), pm('hojas', '#3e7a3a', { roughness: 0.8, flatShading: true }), PW.x0 - 0.35, 0.85, ez - T - 1.5);
   // puerta del vecino en el rellano (1.º B, cerrada)
   slab(g, pm('puertaB', '#6e4a2c', { roughness: 0.55 }), COL.x0 + 0.35, PW.x0 - 0.35, FL, FL + 2.15, sz + T, sz + T + 0.05);
   slab(g, jamb, COL.x0 + 0.28, PW.x0 - 0.28, FL + 2.15, FL + 2.22, sz + T, sz + T + 0.06);
@@ -328,7 +339,7 @@ export function starterFlat() {
   // apliques de luz
   const glow = plainMat('piso-luz', { color: '#fff4dc', emissive: '#ffe2b0', emissiveIntensity: 1.2 });
   cyl(g, glow, (COL.x0 + PW.x0) / 2, FL - slabH - 0.04, (ST.z1 + ez) / 2, 0.18, 0.04, 16);
-  cyl(g, glow, (COL.x0 + PW.x0) / 2, 2 * FL - slabH - 0.04, -4.1, 0.18, 0.04, 16);
+  slab(g, glow, PW.x0 - 0.05, PW.x0 - 0.02, FL + 2.3, FL + 2.5, -4.6, -3.2); // aplique sobre la puerta del piso
   for (const [x, z] of [[0.6, -1.0], [-1.0, -4.3], [5.5, -4.3]]) cyl(g, glow, x, 2 * FL - slabH - 0.05, z, x === 0.6 ? 0.3 : 0.16, 0.05, 20);
 
   // ---------------- datos para el juego ----------------

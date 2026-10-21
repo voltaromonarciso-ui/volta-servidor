@@ -80,6 +80,7 @@ export function createFurniture({ addBox, removeBox, level = null } = {}) {
   const glowMats = new Set();
   const api = {
     count: () => list.length,
+    items: () => list.map((it) => ({ key: it.key, x: it.x, z: it.z })), // (para pruebas: qué hay en cada sitio)
     // vértices por modelo (copias × vértices de una copia), para medir el coste
     report: () => [...used].map((p) => [p.key, p.n, p.n * p.parts.reduce((a, q) => a + q.geo.attributes.position.count, 0)]).sort((a, b) => b[2] - a[2]),
     // key: nombre único del modelo; fn: función de streetkit; ry: giro (el frente del modelo mira a +z)

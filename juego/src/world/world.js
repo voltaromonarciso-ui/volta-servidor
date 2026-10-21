@@ -2195,7 +2195,7 @@ function buildResidential() {
   const wall = '#e9d6b0';
   const door = room({
     id: 'bungalow', x0: -50, x1: -40.2, z0: 54, z1: 66, h: 3.2, wall, inner: '#f3ead6', front: '+x', doorAt: 60,
-    floorTex: TX.woodTex('#b0875a'), doorColor: '#2e5e4e', locked: () => !G.state.props.bungalow,
+    floorTex: TX.woodTex('#b0875a'), doorColor: '#2e5e4e', locked: null, // se puede entrar a verlo antes de comprarlo
   });
   B.add(roofGeo(12.8, 11, 2.2), '#3f4650', -45.1, 3.2, 60, 1, 1, 1, 0, { ao: 0 });
   B.box('#a9c7d8', -40.0, 1.0, 56.5, 0.06, 1.1, 1.6, 0, { mat: 'glass', shadow: false, ao: 0 });

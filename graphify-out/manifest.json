@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792614002.7009785,
-    "seen": 1792614056.4511929,
-    "ast_hash": "90628a7211db8541f679287093c30c45",
+    "mtime": 1792615120.768435,
+    "seen": 1792616954.3402467,
+    "ast_hash": "8e68d45183b3737dc90417c88357869a",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792614582.201528,
-    "seen": 1792614981.9019642,
-    "ast_hash": "1f9b931a94cc6510698f9bae50f1d57a",
+    "mtime": 1792615134.650847,
+    "seen": 1792616954.3399847,
+    "ast_hash": "e22a36e33f7327e8314352a79b2aff9b",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1638,9 +1638,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetfurniture.js": {
-    "mtime": 1792609673.2277415,
-    "seen": 1792614056.4511847,
-    "ast_hash": "c0dbece32478e82890b8083b411442a9",
+    "mtime": 1792615134.6496682,
+    "seen": 1792616954.3401172,
+    "ast_hash": "47d8ce0a47db2e6db6f743e82f98b946",
     "semantic_hash": ""
   },
   "juego/src/systems/atm.js": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/starterflat.js": {
-    "mtime": 1792613730.220437,
-    "seen": 1792614056.4511821,
-    "ast_hash": "aa0bc72d40b4a7d6b2558436c60cf82d",
+    "mtime": 1792616551.8700888,
+    "seen": 1792616954.3401144,
+    "ast_hash": "b354dff2f7e7d4c58e91baf919f4dda9",
     "semantic_hash": ""
   }
 }
