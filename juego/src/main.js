@@ -446,19 +446,7 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   G.time += dt;
   if (G.paused) {
-    function introPiso() {
-  const nm = G.state.name ? G.state.name.replace(/[<>&"]/g, '') : '';
-  P.messageDialog('Rooktown', `
-    <p>${nm ? `<b>${nm}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha conseguido un estudio en los Apartamentos de Rooktown, portal 7, primera planta: una isla de palmeras donde nunca pasa nada... en apariencia.</p>
-    <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva en el hueco libre del piso, empaqueta y vende a los vecinos sin que la policía te pille. Más adelante podrás comprar almacenes para crecer.</p>
-    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
-  '¡A trabajar!', () => {
-    setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${nm || 'primo'}. El piso es tuyo y no pagas nada de momento. Abre la caja, te he metido lo básico para empezar.`), 1500);
-    setTimeout(() => sendMsg('leo', 'Mi vieja nave la he dejado: ahora es el Almacén Bravo y está en venta. Cuando vayas bien de dinero, échale un ojo. Te paso a Chema y a Nuria; y ojo, a partir de las 21:00 hay toque de queda.'), 8000);
-  });
-}
-
-// menú principal: cámara orbitando sobre el pueblo a la hora del atardecer.
+    // menú principal: cámara orbitando sobre el pueblo a la hora del atardecer.
     // Con una partida en marcha (editor de controles) no se toca ni el reloj ni la cámara.
     if (!G.started) {
       menuAng += dt * 0.05;

@@ -189,12 +189,13 @@ test.describe.serial('Ciclo completo', () => {
       const slot = s.inv.findIndex((x) => !x);
       s.inv[slot] = { id: 'bolsa', p: pid, q: 3 };
       const v = E.prodValue(E.product(pid)), m0 = s.money;
+      const have = () => s.inv.reduce((a, x) => a + (x && x.id === 'bolsa' && x.p === pid ? x.q : 0), 0), n0 = have();
       const rnd = Math.random; Math.random = () => 0.999; // a ese precio, no
       const r1 = E.directSale(npc, { id: 'bolsa', p: pid }, 1, Math.round(v * 2.5));
       Math.random = rnd;
       const a1 = r1.counter ? E.acceptCounter(npc) : null;
       const a2 = E.acceptCounter(npc); // segundo toque: ya no vale
-      const out = { counter: r1.counter, accepted: r1.accepted, a1: a1 && a1.accepted, a2: a2.ok, paid: s.money - m0, total: a1 && a1.total, left: s.inv[slot]?.q, walk: c.walkDay === s.day };
+      const out = { counter: r1.counter, accepted: r1.accepted, a1: a1 && a1.accepted, a2: a2.ok, paid: s.money - m0, total: a1 && a1.total, left: n0 - have(), walk: c.walkDay === s.day };
       s.inv[slot] = null;
       return out;
     });
@@ -203,7 +204,7 @@ test.describe.serial('Ciclo completo', () => {
     expect(r.a1).toBe(true);
     expect(r.a2).toBe(false);
     expect(r.paid).toBe(r.total);
-    expect(r.left).toBe(2);
+    expect(r.left).toBe(1); // se entrega un sobre, una sola vez
     expect(r.walk).toBe(true); // hoy ya ha comprado
   });
 

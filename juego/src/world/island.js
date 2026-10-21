@@ -430,7 +430,7 @@ function starterBuilding(x, z, walkZ) {
   for (const p of f.floorPlanes) {
     const map = pisoWoodTex().clone(); map.needsUpdate = true;
     map.repeat.set((p.x1 - p.x0) / 1.6, (p.z1 - p.z0) / 1.6); // tablas de ~20 cm × 1,2 m
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.x1 - p.x0, p.z1 - p.z0), new THREE.MeshStandardMaterial({ map, roughness: 0.5 }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.x1 - p.x0, p.z1 - p.z0), new THREE.MeshStandardMaterial({ map, roughness: 0.5, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.18 }));
     m.rotation.x = -Math.PI / 2;
     m.position.set(x + (p.x0 + p.x1) / 2, FL + 0.012, z + (p.z0 + p.z1) / 2);
     m.receiveShadow = true;

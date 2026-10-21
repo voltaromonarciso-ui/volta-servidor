@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792610462.8697546,
-    "seen": 1792614056.451119,
-    "ast_hash": "6ba06333fd236c940f1d4c7532123777",
+    "mtime": 1792619829.2837498,
+    "seen": 1792620398.9877534,
+    "ast_hash": "bb16efc05c57c2af155e6745f2e3f660",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   "juego/tests/core.spec.js": {
-    "mtime": 1792617500.576065,
-    "seen": 1792618491.6209922,
-    "ast_hash": "195b66ef44552fc3fb990c13ae546da6",
+    "mtime": 1792620382.0528178,
+    "seen": 1792620398.9969947,
+    "ast_hash": "5aa7675a2d604644346e4b3f8fe9fd96",
     "semantic_hash": ""
   },
   "juego/tests/helpers.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792617253.4787397,
-    "seen": 1792618491.6204329,
-    "ast_hash": "db6fd93f7e02334845841df836c0d665",
+    "mtime": 1792620122.145804,
+    "seen": 1792620398.9885418,
+    "ast_hash": "6128e21249f42b194df8d1b5c880d14c",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/starterflat.js": {
-    "mtime": 1792616551.8700888,
-    "seen": 1792616954.3401144,
-    "ast_hash": "b354dff2f7e7d4c58e91baf919f4dda9",
+    "mtime": 1792620122.1439002,
+    "seen": 1792620398.996712,
+    "ast_hash": "74a7eff275ce1a662cfde5019ea4c815",
     "semantic_hash": ""
   }
 }

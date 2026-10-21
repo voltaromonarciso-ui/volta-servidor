@@ -34,7 +34,9 @@ const PORTAL = { x0: -6.35, x1: -5.05 };
 
 const rb = new Map();
 const rbox = (w, h, d, r) => { const k = [w, h, d, r].join(); if (!rb.has(k)) rb.set(k, new RoundedBoxGeometry(w, h, d, 2, r)); return rb.get(k); };
-const pm = (k, color, o = {}) => plainMat('piso-' + k, { color, roughness: 0.8, ...o });
+// (sin luces puntuales: cada una encarece el dibujo de todo el mapa; el interior se ve con un
+// poco de brillo propio cálido en sus materiales)
+const pm = (k, color, o = {}) => plainMat('piso-' + k, { color, roughness: 0.8, emissive: color, emissiveIntensity: 0.22, ...o });
 function add(g, geo, mat, x, y, z, { rx = 0, ry = 0, rz = 0 } = {}) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m;
 }
@@ -108,7 +110,7 @@ export function starterFlat() {
   const g = new THREE.Group(), boxes = [];
   const outer = pbrMat('enfoscado', '#f1e2c8'), stone = pbrMat('blanco'), plinth = pbrMat('hormigon', '#8f8b86');
   const paint = pm('pintura', '#efe9df', { roughness: 0.95 }), lobby = pm('portal', '#e2d9c8', { roughness: 0.9 });
-  const tiles = new THREE.MeshStandardMaterial({ map: pisoTileTex(), roughness: 0.35 });
+  const tiles = new THREE.MeshStandardMaterial({ map: pisoTileTex(), roughness: 0.35, emissive: '#ffffff', emissiveMap: pisoTileTex(), emissiveIntensity: 0.2 });
   const ceil = pm('techo', '#f6f3ee', { roughness: 1 });
   const sx = -W2, ex = W2, sz = -D2, ez = D2;
 
@@ -193,7 +195,7 @@ export function starterFlat() {
   slab(g, ceil, PW.x1, ex - T, 2 * FL - slabH - 0.02, 2 * FL - slabH, sz + T, FLAT.z1); // techo del piso
   slab(g, ceil, COL.x0, PW.x0, FL - slabH - 0.02, FL - slabH, ST.z1, ez - T);           // techo del portal
   // suelo del portal y del rellano (terrazo)
-  const terr = new THREE.MeshStandardMaterial({ map: pisoTileTex(), color: '#e8dcc8', roughness: 0.3 });
+  const terr = new THREE.MeshStandardMaterial({ map: pisoTileTex(), color: '#e8dcc8', roughness: 0.3, emissive: '#e8dcc8', emissiveMap: pisoTileTex(), emissiveIntensity: 0.2 });
   slab(g, terr, COL.x0, PW.x0, 0, 0.03, ST.z1, ez - T);
   slab(g, terr, COL.x0, PW.x0, FL, FL + 0.02, sz + T, ST.z0);
   // escalera: 18 peldaños de piedra con zanquín
@@ -368,10 +370,7 @@ export function starterFlat() {
       wardrobe: { x: (ax0 + ax1) / 2, y: FL + 1.1, z: (az0 + az1) / 2, w: ax1 - ax0, h: 2.2, d: 0.7 },
       basin: { x: 6.2, y: FL + 0.85, z: sz + T + 0.3, w: 0.8, h: 0.5, d: 0.6 },
     },
-    lights: [
-      { x: 0.6, y: FL + 2.5, z: -1.0, color: 0xffe2b8, i: 16, d: 13 },
-      { x: (COL.x0 + PW.x0) / 2, y: 2.6, z: 1.5, color: 0xfff0d8, i: 6, d: 9 },
-    ],
+    lights: [],
     spawn: { x: 0.8, z: 0.6, yaw: 0 },
     leo: { x: -2.4, z: 0.4, yaw: Math.PI / 2 },
     portal: { x: (PORTAL.x0 + PORTAL.x1) / 2, z: ez + 1.6 },
