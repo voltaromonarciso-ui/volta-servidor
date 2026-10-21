@@ -321,7 +321,9 @@ function drawMap() {
   g.fillStyle = '#2f8fb3'; g.fillRect(0, 0, W, Y(105));
   for (const r of G.world.mapRects) {
     g.fillStyle = r.c;
-    g.fillRect(X(r.x0), Y(r.z1), (r.x1 - r.x0) * sx, (r.z1 - r.z0) * sz);
+    if (r.coast && G.world.coastPoly) { // la orilla con sus cabos
+      g.beginPath(); G.world.coastPoly[r.coast].forEach(([x, z], i) => (i ? g.lineTo(X(x), Y(z)) : g.moveTo(X(x), Y(z)))); g.closePath(); g.fill();
+    } else g.fillRect(X(r.x0), Y(r.z1), (r.x1 - r.x0) * sx, (r.z1 - r.z0) * sz);
   }
   g.font = `bold ${Math.round(W / 34)}px sans-serif`;
   g.textAlign = 'center';

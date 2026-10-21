@@ -184,6 +184,7 @@ function resolve(pos, r, y = 0) {
       }
     }
   }
+  if (W.coastClamp?.(pos)) hit = true; // la orilla de la isla (con sus cabos)
   return hit;
 }
 

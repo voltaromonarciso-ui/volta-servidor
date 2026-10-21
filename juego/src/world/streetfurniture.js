@@ -74,7 +74,7 @@ function mergeAll(list, mat) {
 // no se ponen (y se quita su colisión). El resto (árboles, farolas, edificios en su solar…) se
 // apoya por el centro.
 const baseMat = new THREE.MeshStandardMaterial({ color: '#a7a39b', roughness: 0.9 });
-export function createFurniture({ addBox, removeBox, level = null } = {}) {
+export function createFurniture({ addBox, removeBox, level = null, keep = null } = {}) {
   const list = [];
   const used = new Set();
   const glowMats = new Set();
@@ -118,7 +118,9 @@ export function createFurniture({ addBox, removeBox, level = null } = {}) {
             const h = H(it.x + (lx * c + lz * sn) * it.s, it.z + (-lx * sn + lz * c) * it.s);
             lo = Math.min(lo, h); hi = Math.max(hi, h);
           }
-          if (hi - lo > 0.55) { skipped++; for (const col of it.cols) col && removeBox?.(col); continue; } // cuesta demasiado fuerte
+          // en cuesta solo se queda lo necesario (`keep`: paradas, hidrantes…), con su base; lo
+          // demás (bancos, papeleras, maceteros…) no se pone; y nada si la cuesta es muy fuerte
+          if (hi - lo > (keep?.test(it.key) ? 0.55 : 0.12)) { skipped++; for (const col of it.cols) col && removeBox?.(col); continue; }
           if (hi - lo > 0.04) {
             it.gy = hi;
             const bw = (b.max.x - b.min.x) * it.s + 0.12, bd = (b.max.z - b.min.z) * it.s + 0.12, bh = hi - lo + 0.1;

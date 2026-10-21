@@ -41,7 +41,7 @@ test.describe.serial('Relieve de la isla', () => {
         else if (d > 7.8 && !padEdge) steep = Math.max(steep, s); // dentro de las manzanas (el borde con la acera es un muro)
       }
       // en la misma orilla (el borde de la isla) el terreno queda a nivel del mar
-      return { range: max - min, steep, road, walls: W.wallCount, coast: [H(-249.6, 0), H(249.6, 0), H(0, 167.6), H(0, -164.6)] };
+      return { range: max - min, steep, road, walls: W.wallCount, coast: W.coastPoly.land.filter((q, i) => i % 9 === 0).map(([x, z]) => H(x, z)) }; // por toda la orilla (con sus cabos)
     });
     expect(r.range).toBeGreaterThan(12); // colina de unos 15 m
     expect(r.road).toBeLessThan(0.25); // calles: cuestas claras, como mucho ~22 %
@@ -66,6 +66,22 @@ test.describe.serial('Relieve de la isla', () => {
       return out.length;
     });
     expect(bad).toBe(0);
+  });
+
+  test('la costa tiene forma (cabos y calas), ningún edificio en el agua y no se sale al mar', async () => {
+    const r = await page.evaluate(() => {
+      const W = __G.world, sd = W.shoreDist, P = __G.player;
+      const wet = W.footprints.filter((f) => f.z0 < 130 && [[f.x0, f.z0], [f.x1, f.z0], [f.x0, f.z1], [f.x1, f.z1]].some(([x, z]) => sd(x, z) < 1)).length;
+      const out = [[-300, 22], [300, -32], [0, -200]].map(([x, z]) => { P.teleport(x, z, 0); P.update(1 / 30); return sd(P.pos.x, P.pos.z); });
+      const s = W.furnitureStats, sp = W.props.piso.spawn;
+      P.teleport(sp.x, sp.z, sp.yaw); // de vuelta al piso (las pruebas siguientes empiezan ahí)
+      return { wet, out, cape: sd(-268, 22), bay: sd(-32, -163), s };
+    });
+    expect(r.wet).toBe(0);
+    for (const d of r.out) expect(d).toBeGreaterThan(-7.5); // como mucho unos metros dentro del agua
+    expect(r.cape).toBeGreaterThan(0); // la península del oeste sale más allá del borde recto
+    expect(r.bay).toBeLessThan(0); // y en la cala el mar entra
+    expect(r.s.skipped).toBeGreaterThan(0); // en las cuestas se quitan los objetos que sobran
   });
 
   test('ningún edificio se mete dentro de otro', async () => {

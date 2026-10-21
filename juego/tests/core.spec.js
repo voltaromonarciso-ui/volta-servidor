@@ -171,10 +171,40 @@ test.describe.serial('Ciclo completo', () => {
     await frames(page, 4);
     const money0 = await ev(page, () => __G.state.money);
     await act(page, testInfo);
+    // por pasos: 1 pedido → 2 revisar → 3 resultado
+    await press(page, testInfo, 'text=Siguiente: revisar');
     await press(page, testInfo, 'text=Entregar y cobrar');
     await expect.poll(() => ev(page, () => __G.state.stats.deals)).toBe(1);
     expect(await ev(page, () => __G.state.money)).toBeGreaterThan(money0);
+    await expect(page.locator('.panel .deal-steps span.on')).toHaveText(/Resultado/);
     await ev(page, () => __debug.panels.closePanel(true));
+  });
+
+  test('venta en mano: contraoferta si el precio es alto, se cobra una sola vez', async () => {
+    const r = await ev(page, async () => {
+      const E = await import('/src/systems/economy.js');
+      const s = __G.state, npc = __G.npcs.find((n) => E.customer(n.id).unlocked && !n.deal) || __G.npcs[0];
+      const c = E.customer(npc.id); c.unlocked = true; c.walkDay = 0; c.affinity = 60;
+      const pid = Object.keys(s.products)[0];
+      const slot = s.inv.findIndex((x) => !x);
+      s.inv[slot] = { id: 'bolsa', p: pid, q: 3 };
+      const v = E.prodValue(E.product(pid)), m0 = s.money;
+      const rnd = Math.random; Math.random = () => 0.999; // a ese precio, no
+      const r1 = E.directSale(npc, { id: 'bolsa', p: pid }, 1, Math.round(v * 2.5));
+      Math.random = rnd;
+      const a1 = r1.counter ? E.acceptCounter(npc) : null;
+      const a2 = E.acceptCounter(npc); // segundo toque: ya no vale
+      const out = { counter: r1.counter, accepted: r1.accepted, a1: a1 && a1.accepted, a2: a2.ok, paid: s.money - m0, total: a1 && a1.total, left: s.inv[slot]?.q, walk: c.walkDay === s.day };
+      s.inv[slot] = null;
+      return out;
+    });
+    expect(r.accepted).toBe(false);
+    expect(r.counter).toBeGreaterThan(0);
+    expect(r.a1).toBe(true);
+    expect(r.a2).toBe(false);
+    expect(r.paid).toBe(r.total);
+    expect(r.left).toBe(2);
+    expect(r.walk).toBe(true); // hoy ya ha comprado
   });
 
   test('guardar y cargar la partida', async ({}, testInfo) => {

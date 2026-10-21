@@ -510,11 +510,54 @@ export function directSale(npc, slot, qty, unit) {
   if (total > saleBudget(npc)) return { ok: false, msg: `${first}: «No llevo tanto dinero encima. Como mucho ${money(saleBudget(npc))}.»` };
   const pre = checkTx(G.state, { acc: 'dirty', amount: total, kind: 'ingreso', reason: 'venta en mano' });
   if (!pre.ok) return { ok: false, msg: pre.msg };
-  c.walkDay = G.state.day;
+  c.counter = null;
   if (Math.random() >= saleChance(npc, slot, unit)) {
+    // a ese precio no: si hay un precio que sí le cuadra, te lo dice (contraoferta)
+    const cu = counterUnit(npc, slot, qty, unit);
+    if (cu) {
+      c.counter = { day: G.state.day, id: slot.id, p: slot.p, qty, unit: cu };
+      const ct = Math.round(units * cu);
+      return { ok: true, accepted: false, counter: cu, counterTotal: ct, msg: `${first}: «${pick(['A ese precio no.', 'Uf, te has pasado.', 'Demasiado caro.'])} Te doy ${money(ct)} por todo.»` };
+    }
+    c.walkDay = G.state.day;
     c.affinity = Math.max(0, c.affinity - 1);
     return { ok: true, accepted: false, msg: `${first}: «${pick(['Uf, a ese precio no.', 'Hoy paso, gracias.', 'Demasiado caro para mí.'])}»` };
   }
+  return finishSale(npc, slot, qty, unit);
+}
+
+// Precio por unidad que el cliente sí pagaría: su precio justo (valor del producto, más si es
+// de lo que le gusta y si se fía de ti), por debajo del ofrecido y de lo que lleva encima;
+// null si no hay trato posible.
+function counterUnit(npc, slot, qty, unit) {
+  const c = customer(npc.id), p = product(slot.p), v = prodValue(p), units = qty * (ITEMS[slot.id].units || 1);
+  let u = Math.round(v * (0.85 + (prefMatches(npc.person, p) ? 0.1 : 0) + c.affinity / 500 + c.addiction * 0.15));
+  u = Math.min(u, Math.floor(unit * 0.95), Math.floor(saleBudget(npc) / units));
+  return u >= Math.max(1, v * 0.5) ? u : null;
+}
+// Aceptar la contraoferta del cliente (una sola vez: se borra al usarla)
+export function acceptCounter(npc) {
+  const c = customer(npc.id), k = c.counter;
+  if (!k || k.day !== G.state.day) return { ok: false, msg: 'Ya no está en pie esa oferta.' };
+  c.counter = null;
+  if (inv.count(k.id, k.p) < k.qty) return { ok: false, msg: 'Ya no llevas tanto.' };
+  const total = Math.round(k.qty * (ITEMS[k.id].units || 1) * k.unit);
+  const pre = checkTx(G.state, { acc: 'dirty', amount: total, kind: 'ingreso', reason: 'venta en mano' });
+  if (!pre.ok) return { ok: false, msg: pre.msg };
+  return finishSale(npc, { id: k.id, p: k.p }, k.qty, k.unit);
+}
+// Rechazar la contraoferta: se va (y hoy ya no compra); baja un poco la confianza
+export function declineCounter(npc) {
+  const c = customer(npc.id);
+  if (!c.counter) return;
+  c.counter = null;
+  c.walkDay = G.state.day;
+  c.affinity = Math.max(0, c.affinity - 1);
+}
+function finishSale(npc, slot, qty, unit) {
+  const c = customer(npc.id), first = npc.person.name.split(' ')[0];
+  const p = product(slot.p), units = qty * (ITEMS[slot.id].units || 1), total = Math.round(units * unit);
+  c.walkDay = G.state.day;
   inv.remove(slot.id, qty, slot.p);
   earn('dirty', total, 'venta en mano', { sale: true });
   c.affinity = clamp(c.affinity + 2 + prefMatches(npc.person, p), 0, 100);

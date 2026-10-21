@@ -188,8 +188,10 @@ test.describe.serial('Dinero sucio y limpio', () => {
       const npc = __G.npcs.find((n) => n.person.id === 'chema');
       P.openHandover(npc, __G.state.deals.find((x) => x.id === 'dtest2'));
     });
-    await expect(page.locator('.panel .btn:has-text("Entregar y cobrar")')).toBeVisible();
+    await expect(page.locator('.panel .btn:has-text("Siguiente: revisar")')).toBeVisible();
     await page.waitForTimeout(700); // en móvil, el panel ignora los toques de sus primeros 400 ms (anti «toque fantasma»)
+    await ev(page, () => [...document.querySelectorAll('.panel .btn')].find((x) => x.textContent.includes('Siguiente: revisar')).click());
+    await expect(page.locator('.panel .btn:has-text("Entregar y cobrar")')).toBeVisible();
     await ev(page, () => { const b = [...document.querySelectorAll('.panel .btn')].find((x) => x.textContent.includes('Entregar y cobrar')); b.click(); b.click(); });
     await frames(page, 3);
     expect(await ev(page, () => [__G.state.inv[0]?.q, __G.state.ledger.filter((e) => e.key === 'deal:dtest2').length])).toEqual([1, 1]);

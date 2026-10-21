@@ -195,10 +195,12 @@ function drawMinimap() {
   g.translate(-p.x, -p.z);
   // agua
   g.fillStyle = '#1f4b66'; g.fillRect(-300, 105, 600, 400);
+  const poly = (pts) => { g.beginPath(); pts.forEach(([x, z], i) => (i ? g.lineTo(x, z) : g.moveTo(x, z))); g.closePath(); g.fill(); };
   for (const r of G.world.mapRects) {
     if (r.road) continue;
     g.fillStyle = r.c === '#79ad58' ? '#33473a' : r.c === '#e6d39c' ? '#6d6550' : '#1b2229';
-    g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0);
+    if (r.coast && G.world.coastPoly) poly(G.world.coastPoly[r.coast]); // la orilla con sus cabos
+    else g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0);
   }
   g.fillStyle = '#5c6874';
   for (const r of G.world.mapRects) if (r.road) g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0);

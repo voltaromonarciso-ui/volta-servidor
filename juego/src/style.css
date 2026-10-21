@@ -622,7 +622,20 @@ body.touch .staff .btn.sm { min-height: 44px; }
 .panel.t-banda { --acc: #d64541; --acc2: #a52a26; --btnfg: #fff; --head: linear-gradient(90deg, #3a3d42, #22252a); background: linear-gradient(180deg, #1e2024, #141518); border-color: #4a4d52; }
 .panel.t-acero { --acc: #9fb0c2; --acc2: #6f8296; --btnfg: #0d1520; --head: linear-gradient(90deg, #4a5663, #2c3540); }
 .panel.t-madera { --acc: #d4a066; --acc2: #a8743d; --btnfg: #1e1206; --head: linear-gradient(90deg, #7a5230, #4e331c); }
-.panel.t-trato { --acc: #f0a83a; --acc2: #c97f12; --btnfg: #1d1405; --head: linear-gradient(90deg, #6b4a12, #3d2a0a); }
+.panel.t-trato { --acc: #35c46f; --acc2: #1f8f4e; --btnfg: #04150b; --head: linear-gradient(90deg, #0f3b25, #0a2217); background: linear-gradient(180deg, #111915, #0a100d); border-color: #1d5136; }
+/* tratos por pasos */
+.deal-steps { display: flex; gap: 6px; margin-bottom: 2px; }
+.deal-steps span { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; padding: 7px 4px; border-radius: 10px; background: rgba(255,255,255,0.05); color: var(--mut); }
+.deal-steps i { font-style: normal; flex: 0 0 18px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.1); font-size: 11px; font-weight: 800; }
+.deal-steps span.on { background: color-mix(in srgb, var(--acc) 22%, transparent); color: #fff; font-weight: 800; }
+.deal-steps span.on i { background: var(--acc); color: var(--btnfg); }
+.deal-steps span.done { color: var(--acc); }
+.deal-sum { font-size: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 12px; }
+.deal-total { text-align: center; font-size: 15px; color: var(--mut); }
+.deal-total b, .deal-cash { color: #5fe398; font-size: 22px; font-weight: 800; }
+.deal-like { color: #5fe398; }
+.receipt.deal-counter i { background: #e0a72e; color: #1d1405; }
+.receipt.deal-no i { background: #c0392b; color: #fff; }
 .panel[class*=" t-"] header h2 { color: #fff; }
 .panel[class*=" t-"] .x { background: rgba(255,255,255,0.14); }
 

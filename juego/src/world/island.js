@@ -18,7 +18,7 @@ import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
-import { addPad, addFloor, drapeGeometry, allPads, H as groundH, Hlow } from './terrain.js';
+import { addPad, addFloor, drapeGeometry, allPads, H as groundH, Hlow, coastOutline, shoreDist } from './terrain.js';
 import { starterFlat, FL, pisoWoodTex } from './starterflat.js';
 import { pbrMat } from './buildingkit.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
@@ -28,7 +28,21 @@ import * as CO from './coast.js';
 export const XL = [-210, -150, -90, -30, 30, 90, 150, 210];
 export const ZL = [-120, -60, 0, 60, 120];
 const COLS = XL.length - 1, ROWS = ZL.length - 1;
-export const N = { x0: -250, x1: 250, z0: -165, z1: 168 }; // costa (límite caminable)
+export const N = {
+  x0: -250, x1: 250, z0: -165, z1: 168, r: 34, // costa: rectángulo de esquinas redondeadas…
+  // …con forma: cabos que salen al mar y alguna cala, donde no hay edificios [x, z, metros, ancho]
+  blobs: [
+    [-250, 146, 16, 20], [-236, 168, 11, 16],   // cabo del faro (noroeste)
+    [-250, 22, 24, 34],                         // península del oeste
+    [-250, -118, 13, 22],                       // punta suroeste
+    [-118, -165, 20, 26], [130, -165, 22, 26],  // cabos del sur
+    [32, -165, 11, 16],
+    [250, -32, 26, 30],                         // cabo del este
+    [250, 118, 12, 20], [222, 168, 14, 22],     // punta de la playa (noreste)
+    [-172, 168, -7, 14],                        // calas
+    [-32, -165, -6, 14], [80, -165, -6, 14],
+  ],
+};
 // explanada del puerto, ganada al mar por el norte (sale de la isla hasta z1)
 export const PORT = { x0: -120, x1: 100, z0: 132.5, z1: 222 };
 
@@ -295,7 +309,7 @@ function scatterTufts() {
   const M = freeMap();
   const industrial = (x, z) => M.zoneAt(x, z)?.kind === 'industrial';
   let n = 0, plants = 0, flowers = 0, rocks = 0;
-  for (let x = N.x0; x < N.x1; x += 2.6) for (let z = N.z0; z < N.z1; z += 2.6) {
+  for (let x = N.x0 - 28; x < N.x1 + 28; x += 2.6) for (let z = N.z0 - 24; z < N.z1 + 18; z += 2.6) {
     const px = x + R() * 2.4, pz = z + R() * 2.4, c = clump(px, pz);
     if (R() > 0.18 + c * 0.4 || !M.inside(px, pz) || M.roadD(px, pz) < K.SWO + 0.6 || industrial(px, pz)) continue;
     if (M.nearSolid(px, pz, 0.6) || M.onHard(px, pz, 0.4)) continue;
@@ -316,7 +330,7 @@ function scatterGreens() {
   const M = freeMap();
   const P = { residencial: 0.34, comercio: 0.14, ocio: 0.2, servicio: 0.1, verde: 0.12, industrial: 0 };
   const trees = [];
-  for (let x = N.x0; x < N.x1; x += 6.5) for (let z = N.z0; z < N.z1; z += 6.5) {
+  for (let x = N.x0 - 28; x < N.x1 + 28; x += 6.5) for (let z = N.z0 - 24; z < N.z1 + 18; z += 6.5) {
     const px = x + R() * 5, pz = z + R() * 5, zn = M.zoneAt(px, pz);
     const coast = !zn && (pz > ZL[ROWS] + 8 || pz < ZL[0] - 8 || px < XL[0] - 8 || px > XL[COLS] + 8);
     const p = zn ? P[zn.kind] ?? 0.1 : coast ? 0.22 : 0;
@@ -330,7 +344,7 @@ function scatterGreens() {
   }
   // arbustos: arrimados a las fachadas (como en la referencia) y alguno suelto
   let bushes = 0;
-  for (let x = N.x0; x < N.x1; x += 3.1) for (let z = N.z0; z < N.z1; z += 3.1) {
+  for (let x = N.x0 - 28; x < N.x1 + 28; x += 3.1) for (let z = N.z0 - 24; z < N.z1 + 18; z += 3.1) {
     const px = x + R() * 2.2, pz = z + R() * 2.2, zn = M.zoneAt(px, pz);
     if (!M.inside(px, pz) || (zn && zn.kind === 'industrial')) continue;
     const hug = M.nearSolid(px, pz, 2.6);
@@ -348,7 +362,7 @@ function scatterGreens() {
 export function buildIsland() {
   seedN = 7;
   // objetos que se nivelan con base en las cuestas (o no se ponen si es demasiado fuerte)
-  F = createFurniture({ addBox: K.addBox, removeBox, level: /^(banco|bancoParque|papelera|macetero|cabina|cartel|bici|aparcabicis|reciclaje|buzon|cajaElectrica|seto|seto3|jardin|fuenteAgua|taxi|bolardos|paradaBus|cono|vallaObra|cilindro|hidrante|noray|vallaMad|vallaMetal|caseta|sombrilla|tumbona|toalla|chiringuito|socorrista|kv_)/ });
+  F = createFurniture({ addBox: K.addBox, removeBox, keep: /^(paradaBus|taxi|hidrante|noray)/, level: /^(banco|bancoParque|papelera|macetero|cabina|cartel|bici|aparcabicis|reciclaje|buzon|cajaElectrica|seto|seto3|jardin|fuenteAgua|taxi|bolardos|paradaBus|cono|vallaObra|cilindro|hidrante|noray|vallaMad|vallaMetal|caseta|sombrilla|tumbona|toalla|chiringuito|socorrista|kv_)/ });
   LAWNS.length = 0; HARD.length = 0; DRAPE.length = 0; LAWN_GEO.length = 0; DOORS.length = 0; PATH_ENDS.length = 0; FOOT.length = 0;
   const KB = K.building; // los edificios clásicos (fallback, mansión…) también dejan su huella
   K.building = (o) => { FOOT.push({ x0: o.x0, x1: o.x1, z0: o.z0, z1: o.z1, tag: 'kb:' + (o.label || o.sign || o.style || '') }); return KB(o); };
@@ -360,7 +374,7 @@ export function buildIsland() {
   SK.setDetail(0.4); // versión ligera de los modelos para el mapa
   W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
-  W.bounds = { ...N, z1: PORT.z1 + 44 }; // incluye el puerto ganado al mar
+  W.bounds = { x0: N.x0 - 28, x1: N.x1 + 28, z0: N.z0 - 24, z1: PORT.z1 + 44 }; // incluye los cabos y el puerto ganado al mar
   W.zones = [];
   buildLandAndSea();
   buildRoadNet();
@@ -468,14 +482,12 @@ function tempProps() {
 //  Tierra, playa y mar
 // ------------------------------------------------------------------
 function islandShape(pad = 0) {
-  // rectángulo de esquinas redondeadas con entrantes suaves (la costa de la referencia)
-  const x0 = N.x0 - pad, x1 = N.x1 + pad, z0 = N.z0 - pad, z1 = N.z1 + pad, r = 34 + pad;
+  // la orilla con sus cabos y calas (terrain.coastOutline), desplazada `pad` metros al mar
+  const pts = coastOutline(pad);
   const s = new THREE.Shape();
-  s.moveTo(x0 + r, z0);
-  s.lineTo(x1 - r, z0); s.quadraticCurveTo(x1, z0, x1, z0 + r);
-  s.lineTo(x1, z1 - r); s.quadraticCurveTo(x1, z1, x1 - r, z1);
-  s.lineTo(x0 + r, z1); s.quadraticCurveTo(x0, z1, x0, z1 - r);
-  s.lineTo(x0, z0 + r); s.quadraticCurveTo(x0, z0, x0 + r, z0);
+  s.moveTo(pts[0][0], pts[0][1]);
+  for (let k = 1; k < pts.length; k++) s.lineTo(pts[k][0], pts[k][1]);
+  s.closePath();
   return s;
 }
 function buildLandAndSea() {
@@ -503,15 +515,21 @@ function buildLandAndSea() {
   water.userData.terrainDone = true;
   scene.add(water);
   W.water = water;
-  // límites: no se puede salir al mar (salvo por los muelles, que tienen su propio cierre)
-  const t = 3;
-  K.addBox(N.x0 - 8 - t, N.x0 - 8, N.z0 - 12, N.z1 + 12, 10);
-  K.addBox(N.x1 + 8, N.x1 + 8 + t, N.z0 - 12, N.z1 + 12, 10);
-  K.addBox(N.x0 - 12, N.x1 + 12, N.z0 - 8 - t, N.z0 - 8, 10);
-  K.addBox(N.x0 - 12, PORT.x0 - 1, N.z1 + 8, N.z1 + 8 + t, 10); // (el puerto tiene su propio cierre)
-  K.addBox(PORT.x1 + 1, N.x1 + 12, N.z1 + 8, N.z1 + 8 + t, 10);
-  W.mapRects.push({ x0: N.x0 - 10, x1: N.x1 + 10, z0: N.z0 - 10, z1: N.z1 + 10, c: '#e6d39c' });
-  W.mapRects.push({ x0: N.x0, x1: N.x1, z0: N.z0, z1: N.z1, c: '#6f9a55' });
+  // límites: no se puede salir al mar más de unos metros (siguiendo la orilla con sus cabos);
+  // el puerto, que sale al mar, tiene su propio cierre
+  const inPort = (x, z) => x > PORT.x0 - 1.5 && x < PORT.x1 + 1.5 && z > N.z1 - 12;
+  W.coastClamp = (pos) => {
+    const sd = shoreDist(pos.x, pos.z);
+    if (sd >= -7 || inPort(pos.x, pos.z)) return false;
+    const e = 0.5, gx = (shoreDist(pos.x + e, pos.z) - shoreDist(pos.x - e, pos.z)) / (2 * e), gz = (shoreDist(pos.x, pos.z + e) - shoreDist(pos.x, pos.z - e)) / (2 * e);
+    const gl = Math.hypot(gx, gz) || 1;
+    pos.x += (gx / gl) * (-7 - sd); pos.z += (gz / gl) * (-7 - sd); // de vuelta hacia la orilla
+    return true;
+  };
+  W.coastPoly = { sand: coastOutline(10, 6), land: coastOutline(0, 6) };
+  W.shoreDist = shoreDist;
+  W.mapRects.push({ x0: N.x0 - 10, x1: N.x1 + 10, z0: N.z0 - 10, z1: N.z1 + 10, c: '#e6d39c', coast: 'sand' });
+  W.mapRects.push({ x0: N.x0, x1: N.x1, z0: N.z0, z1: N.z1, c: '#6f9a55', coast: 'land' });
 }
 
 // ------------------------------------------------------------------

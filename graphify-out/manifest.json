@@ -204,9 +204,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/economy.js": {
-    "mtime": 1792610462.8713088,
-    "seen": 1792614056.4511285,
-    "ast_hash": "85f290091d435f97e0c6f143babc76c7",
+    "mtime": 1792618009.6928203,
+    "seen": 1792618491.6197941,
+    "ast_hash": "91341cce168d5b58a07a2802e0460528",
     "semantic_hash": ""
   },
   "juego/src/systems/interact.js": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792610462.8707242,
-    "seen": 1792614056.4511473,
-    "ast_hash": "35adde3f2e9dbdad8628810ef9ee87cc",
+    "mtime": 1792617087.709163,
+    "seen": 1792618491.620086,
+    "ast_hash": "bae19d1ec86b9ca61e7b56f749ab1517",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -252,15 +252,15 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792609645.727232,
-    "seen": 1792614056.451152,
-    "ast_hash": "9779c479b03169a9e17b24d285742e1d",
+    "mtime": 1792617500.5591648,
+    "seen": 1792618491.6201448,
+    "ast_hash": "dac3546641b8d407a89aa5d30085be32",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792609645.727202,
-    "seen": 1792614056.451154,
-    "ast_hash": "fd7724b8c1fb22f234e0c65c31eee309",
+    "mtime": 1792617087.7099495,
+    "seen": 1792618491.620147,
+    "ast_hash": "beab4c80497b922c506fc0657518b3bc",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792615120.768435,
-    "seen": 1792616954.3402467,
-    "ast_hash": "8e68d45183b3737dc90417c88357869a",
+    "mtime": 1792617087.7083948,
+    "seen": 1792618491.6207912,
+    "ast_hash": "d544639e2641bc531a4975f066ba0812",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   "juego/tests/core.spec.js": {
-    "mtime": 1792584201.6862693,
-    "seen": 1792588098.5120726,
-    "ast_hash": "607d17da8461d1ea30357b3701d88beb",
+    "mtime": 1792617500.576065,
+    "seen": 1792618491.6209922,
+    "ast_hash": "195b66ef44552fc3fb990c13ae546da6",
     "semantic_hash": ""
   },
   "juego/tests/helpers.js": {
@@ -1356,9 +1356,9 @@
     "semantic_hash": ""
   },
   "juego/tests/money.spec.js": {
-    "mtime": 1792396452.4393268,
-    "seen": 1792588098.51221,
-    "ast_hash": "80d10b04997e31abe177f5110b589104",
+    "mtime": 1792617500.576779,
+    "seen": 1792618491.6212249,
+    "ast_hash": "c7ab45e53a2787d8e3797440dd03e74a",
     "semantic_hash": ""
   },
   "juego/tests/.results-l2/.last-run.json": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792615134.650847,
-    "seen": 1792616954.3399847,
-    "ast_hash": "e22a36e33f7327e8314352a79b2aff9b",
+    "mtime": 1792617253.4787397,
+    "seen": 1792618491.6204329,
+    "ast_hash": "db6fd93f7e02334845841df836c0d665",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1638,9 +1638,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetfurniture.js": {
-    "mtime": 1792615134.6496682,
-    "seen": 1792616954.3401172,
-    "ast_hash": "47d8ce0a47db2e6db6f743e82f98b946",
+    "mtime": 1792617136.384532,
+    "seen": 1792618491.6206157,
+    "ast_hash": "46644d64dfee52704edf9fa414b1bd36",
     "semantic_hash": ""
   },
   "juego/src/systems/atm.js": {
@@ -2022,9 +2022,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/terrain.js": {
-    "mtime": 1792610432.6950276,
-    "seen": 1792614056.4511883,
-    "ast_hash": "15d7991788e37c70aaf621c52c0a315b",
+    "mtime": 1792617060.8944993,
+    "seen": 1792618491.6207027,
+    "ast_hash": "d738faf3bb13bdc6d1660fd3c66baa8a",
     "semantic_hash": ""
   },
   "juego/src/world/vegetation.js": {
@@ -2034,9 +2034,9 @@
     "semantic_hash": ""
   },
   "juego/tests/terrain.spec.js": {
-    "mtime": 1792614582.2022638,
-    "seen": 1792614981.903075,
-    "ast_hash": "540105ac11a6c86abe8730ebdaf704e4",
+    "mtime": 1792618468.006937,
+    "seen": 1792618491.6213028,
+    "ast_hash": "ec47bfe91704308899de245079ac7a66",
     "semantic_hash": ""
   },
   "juego/src/world/coast.js": {

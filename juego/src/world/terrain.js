@@ -82,11 +82,49 @@ export function baseH(x, z) {
   return st ?? naturalH(x, z);
 }
 
+// Orilla con forma: el rectángulo de esquinas redondeadas de la isla (ISLE, radio r) con cabos
+// que salen al mar (amp > 0) y calas (amp < 0) repartidos por la costa: blobs [x, z, amp, ancho]
+// centrados en un punto de la orilla original.
+const CLAMP = (v, a, b) => Math.max(a, Math.min(b, v));
+function onRect(x, z) { // punto más cercano de la orilla rectangular y distancia con signo (+ fuera)
+  const { x0, x1, z0, z1, r } = ISLE;
+  const qx = CLAMP(x, x0 + r, x1 - r), qz = CLAMP(z, z0 + r, z1 - r);
+  let dx = x - qx, dz = z - qz, l = Math.hypot(dx, dz);
+  if (l < 1e-6) { // dentro del rectángulo interior: hacia el lado más cercano
+    const ds = [[x - (x0 + r), -1, 0], [x1 - r - x, 1, 0], [z - (z0 + r), 0, -1], [z1 - r - z, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+    return { d: -ds[0] - r, sx: x + ds[1] * (ds[0] + r), sz: z + ds[2] * (ds[0] + r), nx: ds[1], nz: ds[2] };
+  }
+  return { d: l - r, sx: qx + (dx / l) * r, sz: qz + (dz / l) * r, nx: dx / l, nz: dz / l };
+}
+function bulge(sx, sz) {
+  let b = 0;
+  for (const [bx, bz, amp, w] of ISLE.blobs || []) b += amp * Math.exp(-((sx - bx) ** 2 + (sz - bz) ** 2) / (w * w));
+  return b;
+}
+// Metros tierra adentro desde la orilla (negativo: en el mar)
+export function shoreDist(x, z) {
+  if (!ISLE) return 1e9;
+  const o = onRect(x, z);
+  return bulge(o.sx, o.sz) - o.d;
+}
+// Contorno de la orilla desplazado `pad` metros hacia el mar (puntos [x, z] en orden)
+export function coastOutline(pad = 0, step = 3) {
+  const { x0, x1, z0, z1, r } = ISLE, out = [];
+  const push = (x, z, nx, nz) => { const b = bulge(x, z) + pad; out.push([x + nx * b, z + nz * b]); };
+  const side = (ax, az, bx, bz, nx, nz) => { const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / step)); for (let k = 0; k < n; k++) push(ax + ((bx - ax) * k) / n, az + ((bz - az) * k) / n, nx, nz); };
+  const arc = (cx, cz, a0) => { const n = Math.max(4, Math.round((Math.PI * r) / 2 / step)); for (let k = 0; k < n; k++) { const a = a0 + ((Math.PI / 2) * k) / n, nx = Math.cos(a), nz = Math.sin(a); push(cx + nx * r, cz + nz * r, nx, nz); } };
+  side(x0 + r, z0, x1 - r, z0, 0, -1); arc(x1 - r, z0 + r, -Math.PI / 2);
+  side(x1, z0 + r, x1, z1 - r, 1, 0); arc(x1 - r, z1 - r, 0);
+  side(x1 - r, z1, x0 + r, z1, 0, 1); arc(x0 + r, z1 - r, Math.PI / 2);
+  side(x0, z1 - r, x0, z0 + r, -1, 0); arc(x0 + r, z0 + r, Math.PI);
+  return out;
+}
+
 // Franja de costa (fuera de la circunvalación): dunas y lomas bajas que mueren en la orilla y
 // junto a la acera de la circunvalación
 function coastH(x, z, out) {
   if (!ISLE) return 0;
-  const shore = Math.min(x - ISLE.x0, ISLE.x1 - x, z - ISLE.z0, ISLE.z1 - z);
+  const shore = shoreDist(x, z);
   const band = smooth(WALK + 6, WALK + 16, out) * smooth(1, 12, shore);
   if (band <= 0) return 0;
   const n = 0.55 + 0.3 * Math.sin(x * 0.07 + Math.sin(z * 0.05) * 2) + 0.15 * Math.sin(z * 0.11 - x * 0.04);
