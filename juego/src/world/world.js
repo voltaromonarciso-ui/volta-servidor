@@ -494,7 +494,8 @@ function asphalt(x0, x1, z0, z1, color = '#45484d') {
   B.box(color, (x0 + x1) / 2, 0, (z0 + z1) / 2, x1 - x0, 0.03, z1 - z0, 0, { shadow: false, ao: 0 });
 }
 function paving(x0, x1, z0, z1, color = '#c9c2b4', mat = null, tile = 2.5) {
-  B.box(color, (x0 + x1) / 2, 0, (z0 + z1) / 2, x1 - x0, 0.06, z1 - z0, 0, { shadow: false, ao: 0, mat: mat || TM.slab, uvScale: [(x1 - x0) / tile, (z1 - z0) / tile] });
+  // 12 cm: con relieve, el césped (rejilla de 2 m) no asoma por encima de las baldosas
+  B.box(color, (x0 + x1) / 2, 0, (z0 + z1) / 2, x1 - x0, 0.12, z1 - z0, 0, { shadow: false, ao: 0, mat: mat || TM.slab, uvScale: [(x1 - x0) / tile, (z1 - z0) / tile] });
 }
 
 // Cajas de cartón (todas en un solo InstancedMesh con textura).

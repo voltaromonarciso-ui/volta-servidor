@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792597843.0947635,
-    "seen": 1792604481.5064945,
-    "ast_hash": "06d7c10bd7654dbb231edae3b70772b5",
+    "mtime": 1792605048.6028697,
+    "seen": 1792607076.9268,
+    "ast_hash": "6065365e3452d2430ca69ca060ff0977",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792604282.5575447,
-    "seen": 1792604481.5064774,
-    "ast_hash": "2b14090e7315bca919c1d49b8559cd78",
+    "mtime": 1792606176.423828,
+    "seen": 1792607076.9265823,
+    "ast_hash": "aa151d8d892f10d82fca404d16c5f8fb",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1692,9 +1692,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792597843.0951622,
-    "seen": 1792604481.506467,
-    "ast_hash": "68d4aa44863165adf194406dae23fa9e",
+    "mtime": 1792605090.1209567,
+    "seen": 1792607076.9264905,
+    "ast_hash": "b089e22edbae550344cf1b5e52234bd2",
     "semantic_hash": ""
   },
   "juego/tools/blend_list.py": {
@@ -1944,9 +1944,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/grass.js": {
-    "mtime": 1792597843.0964882,
-    "seen": 1792604481.5064752,
-    "ast_hash": "8f8c2526f15132bfe4271f3e8ec120de",
+    "mtime": 1792605048.5998173,
+    "seen": 1792607076.9265797,
+    "ast_hash": "06dfa53a186b7aa096571a478712644b",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_c.jpg": {
@@ -2022,9 +2022,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/terrain.js": {
-    "mtime": 1792597843.096752,
-    "seen": 1792604481.5064893,
-    "ast_hash": "bd69fadba72718df41cb8880344d91e9",
+    "mtime": 1792606657.6336246,
+    "seen": 1792607076.926746,
+    "ast_hash": "94cb360583f8827eb278598143db3309",
     "semantic_hash": ""
   },
   "juego/src/world/vegetation.js": {
@@ -2034,15 +2034,15 @@
     "semantic_hash": ""
   },
   "juego/tests/terrain.spec.js": {
-    "mtime": 1792597843.1650608,
-    "seen": 1792604481.5069182,
-    "ast_hash": "eda5bac33e8f89cf72a0f3ec7a330455",
+    "mtime": 1792607067.5941257,
+    "seen": 1792607076.9271445,
+    "ast_hash": "845c84a165aab18f56db1b72dc13b322",
     "semantic_hash": ""
   },
   "juego/src/world/coast.js": {
-    "mtime": 1792604085.1009498,
-    "seen": 1792604481.5064688,
-    "ast_hash": "466ac8ffb76455e23ef85ff614a3a913",
+    "mtime": 1792605132.7175953,
+    "seen": 1792607076.9264956,
+    "ast_hash": "e4a5e8992a1648753b08ec85ae587a55",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_c2.jpg": {

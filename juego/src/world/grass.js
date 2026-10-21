@@ -45,9 +45,10 @@ export function islandLawn(scene, shape, y) {
   const geo = new THREE.ShapeGeometry(new THREE.Shape(pts), 1);
   geo.rotateX(Math.PI / 2);
   // subdivisión en cuadrícula (la ShapeGeometry sale con triángulos enormes): se rehace
-  // como rejilla de 4 m recortada por la caja de la forma (y así sigue bien el relieve)
+  // como rejilla de 2 m recortada por la caja de la forma (y así sigue bien el relieve sin
+  // asomar por encima de aceras, caminos ni arena)
   const box = new THREE.Box3().setFromBufferAttribute(geo.attributes.position);
-  const sx = Math.ceil((box.max.x - box.min.x) / 4), sz = Math.ceil((box.max.z - box.min.z) / 4);
+  const sx = Math.ceil((box.max.x - box.min.x) / 2), sz = Math.ceil((box.max.z - box.min.z) / 2);
   const grid = new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z, sx, sz);
   grid.rotateX(-Math.PI / 2); grid.translate((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2);
   const m = new THREE.Mesh(lawnGeoFromPositions(grid), lawnMat);
@@ -81,8 +82,8 @@ export function fringeMesh(scene, lines) {
   for (const [x0, z0, x1, z1] of lines) {
     const len = Math.hypot(x1 - x0, z1 - z0); if (len < 0.3) continue;
     const n = Math.ceil(len / 1.1), dx = (x1 - x0) / len, dz = (z1 - z0) / len;
-    for (let k = 0; k < n; k++) for (const off of [0.02, 0.16]) { // dos filas, la de atrás algo más alta
-      const a = (k / n) * len, b = Math.min(len, a + len / n + 0.15), h = (off > 0.1 ? 0.2 : 0.13) + rnd() * 0.08;
+    for (let k = 0; k < n; k++) for (const off of [0.18, 0.36]) { // dos filas metidas en el césped, la de atrás algo más alta
+      const a = (k / n) * len, b = Math.min(len, a + len / n + 0.15), h = (off > 0.3 ? 0.17 : 0.11) + rnd() * 0.06;
       const nx = -dz * off, nz = dx * off, i = pos.length / 3, u0 = rnd();
       for (const [t, y, u, v] of [[a, 0, u0, 0], [b, 0, u0 + 0.6, 0], [b, h, u0 + 0.6, 0.95], [a, h, u0, 0.95]]) {
         pos.push(x0 + dx * t + nx, y, z0 + dz * t + nz); uv.push(u, v); nrm.push(0, 1, 0);

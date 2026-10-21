@@ -8,6 +8,7 @@
 // peatones, tráfico, semáforos, farolas y edificios de cada barrio. Los locales en los que
 // se entra (tiendas, propiedades, El Cartel…) se montan en la fase 2 sobre esta base.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { G } from '../game.js';
 import { W, B, TM, scene, K } from './world.js';
 import * as SK from './streetkit.js';
@@ -17,7 +18,8 @@ import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
-import { addPad, drapeGeometry } from './terrain.js';
+import { addPad, drapeGeometry, allPads, H as groundH, Hlow } from './terrain.js';
+import { pbrMat } from './buildingkit.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
 import * as CO from './coast.js';
 
@@ -26,6 +28,8 @@ export const XL = [-210, -150, -90, -30, 30, 90, 150, 210];
 export const ZL = [-120, -60, 0, 60, 120];
 const COLS = XL.length - 1, ROWS = ZL.length - 1;
 export const N = { x0: -250, x1: 250, z0: -165, z1: 168 }; // costa (límite caminable)
+// explanada del puerto, ganada al mar por el norte (sale de la isla hasta z1)
+export const PORT = { x0: -120, x1: 100, z0: 132.5, z1: 222 };
 
 // Barrio de cada manzana: ZONES[fila][columna], fila 0 = la más al norte.
 export const ZONES = [
@@ -143,7 +147,7 @@ const LOOK = {
 // ------------------------------------------------------------------
 //  Césped: solares de las manzanas y matas de hierba por toda la isla
 // ------------------------------------------------------------------
-const LAWNS = [], HARD = [], DRAPE = [];
+const LAWNS = [], HARD = [], DRAPE = [], LAWN_GEO = [];
 let restoreK = () => {};
 // Qué hay libre en cada punto (para repartir la vegetación sin tapar nada)
 function freeMap() {
@@ -172,6 +176,37 @@ function freeMap() {
   const onHard = (x, z, m) => hard.some((r) => inRect(x, z, r, m));
   return { inside, roadD, zoneAt, blocked, nearSolid, onHard };
 }
+// Muros de contención: donde el suelo da un escalón (borde de manzana contra la acera, o entre
+// dos solares a distinta altura) se levanta un muro de piedra que lo tapa, como en los pueblos
+// en cuesta. Se calcula al final, con el relieve ya completo.
+function retainingWalls() {
+  const lines = [];
+  for (const b of W.zones) lines.push([b.x1, b.z1, b.x0, b.z1], [b.x0, b.z1, b.x0, b.z0], [b.x0, b.z0, b.x1, b.z0], [b.x1, b.z0, b.x1, b.z1]);
+  for (const p of allPads()) lines.push([p.x1, p.z1, p.x0, p.z1], [p.x0, p.z1, p.x0, p.z0], [p.x0, p.z0, p.x1, p.z0], [p.x1, p.z0, p.x1, p.z1]);
+  const parts = [];
+  for (const [x0, z0, x1, z1] of lines) {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 1.2)), dx = (x1 - x0) / len, dz = (z1 - z0) / len;
+    const nx = -dz, nz = dx; // hacia dentro
+    for (let k = 0; k < n; k++) {
+      const t = (k + 0.5) / n, mx = x0 + (x1 - x0) * t, mz = z0 + (z1 - z0) * t;
+      const hin = groundH(mx + nx * 0.25, mz + nz * 0.25), hout = groundH(mx - nx * 0.25, mz - nz * 0.25);
+      if (Math.abs(hin - hout) < 0.3) continue;
+      const lo = Math.min(hin, hout) - 0.35, hi = Math.max(hin, hout) + 0.12, seg = len / n + 0.04;
+      const g = new THREE.BoxGeometry(seg, hi - lo, 0.35);
+      g.rotateY(Math.atan2(-dz, dx));
+      g.translate(mx + nx * 0.1, (hi + lo) / 2, mz + nz * 0.1);
+      const P = g.attributes.position, N = g.attributes.normal, uv = g.attributes.uv;
+      for (let i = 0; i < P.count; i++) uv.setXY(i, Math.abs(N.getX(i)) > 0.5 ? P.getZ(i) / 3 : P.getX(i) / 3, Math.abs(N.getY(i)) > 0.5 ? P.getZ(i) / 3 : P.getY(i) / 3);
+      parts.push(g);
+    }
+  }
+  if (!parts.length) return;
+  const m = new THREE.Mesh(mergeGeometries(parts), pbrMat('hormigon', '#b9ab95'));
+  m.castShadow = m.receiveShadow = true; m.userData.terrainDone = true;
+  scene.add(m);
+  W.wallCount = parts.length;
+}
+
 // Bordes del césped (contra aceras, caminos y arena): trozos de ~1 m con el césped a la
 // izquierda del sentido de avance; se quitan los que caen sobre asfalto, baldosas o edificios
 function fringeLines() {
@@ -254,7 +289,7 @@ function scatterGreens() {
 export function buildIsland() {
   seedN = 7;
   F = createFurniture({ addBox: K.addBox });
-  LAWNS.length = 0; HARD.length = 0; DRAPE.length = 0;
+  LAWNS.length = 0; HARD.length = 0; DRAPE.length = 0; LAWN_GEO.length = 0;
   // apunta el asfalto y las baldosas que se pintan sobre la hierba (ahí no van matas)
   const A = K.asphalt, Pv = K.paving;
   K.asphalt = (...a) => { HARD.push(a.slice(0, 4)); return A(...a); };
@@ -263,7 +298,7 @@ export function buildIsland() {
   SK.setDetail(0.4); // versión ligera de los modelos para el mapa
   W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
-  W.bounds = N;
+  W.bounds = { ...N, z1: PORT.z1 + 44 }; // incluye el puerto ganado al mar
   W.zones = [];
   buildLandAndSea();
   buildRoadNet();
@@ -276,9 +311,11 @@ export function buildIsland() {
   restoreK();
   if (grassReady()) scatterTufts();
   scatterGreens();
-  if (grassReady()) { const fr = fringeMesh(scene, fringeLines()); fr.userData.terrainDone = true; DRAPE.push(fr.geometry); }
+  if (grassReady()) { const fr = fringeMesh(scene, fringeLines()); fr.userData.terrainDone = true; LAWN_GEO.push(fr.geometry); }
   const res = F.build(scene);
-  for (const g of DRAPE) drapeGeometry(g); // calzadas y césped, sobre el relieve
+  for (const g of DRAPE) drapeGeometry(g); // calzadas y arena, sobre el relieve
+  for (const g of LAWN_GEO) drapeGeometry(g, 0, Hlow); // el césped, por debajo en los escalones
+  retainingWalls();
   W.glowMats = res.glowMats;
   W.furnitureStats = res;
   W.furnitureReport = F.report();
@@ -326,7 +363,7 @@ function buildLandAndSea() {
   };
   // arena (borde de toda la isla) y hierba encima
   flat(islandShape(10), 0xe2cf9a, -0.06);
-  if (grassReady()) { const lawn = islandLawn(scene, islandShape(0), 0); lawn.userData.terrainDone = true; DRAPE.push(lawn.geometry); } // césped realista en toda la isla
+  if (grassReady()) { const lawn = islandLawn(scene, islandShape(0), -0.05); lawn.userData.terrainDone = true; LAWN_GEO.push(lawn.geometry); } // césped realista en toda la isla
   else {
     const gt = K.TX.groundTex('#7d9a4c', 3);
     gt.repeat.set(0.18, 0.18);
@@ -344,7 +381,8 @@ function buildLandAndSea() {
   K.addBox(N.x0 - 8 - t, N.x0 - 8, N.z0 - 12, N.z1 + 12, 10);
   K.addBox(N.x1 + 8, N.x1 + 8 + t, N.z0 - 12, N.z1 + 12, 10);
   K.addBox(N.x0 - 12, N.x1 + 12, N.z0 - 8 - t, N.z0 - 8, 10);
-  K.addBox(N.x0 - 12, N.x1 + 12, N.z1 + 8, N.z1 + 8 + t, 10);
+  K.addBox(N.x0 - 12, PORT.x0 - 1, N.z1 + 8, N.z1 + 8 + t, 10); // (el puerto tiene su propio cierre)
+  K.addBox(PORT.x1 + 1, N.x1 + 12, N.z1 + 8, N.z1 + 8 + t, 10);
   W.mapRects.push({ x0: N.x0 - 10, x1: N.x1 + 10, z0: N.z0 - 10, z1: N.z1 + 10, c: '#e6d39c' });
   W.mapRects.push({ x0: N.x0, x1: N.x1, z0: N.z0, z1: N.z1, c: '#6f9a55' });
 }
@@ -744,6 +782,30 @@ const SIGN = {
 // ------------------------------------------------------------------
 //  Costa: Faro (NO), Puerto (N), Playa (NE), Urbanización (S), Muelle de carga (SE)
 // ------------------------------------------------------------------
+// Relleno de la costa con modelos ya hechos (casas de Kenney re-texturizadas y las de siempre):
+// filas de chalets con jardín en las franjas oeste, este y sur, y bloques de apartamentos de
+// 3–5 plantas frente a la playa (noreste)
+const CHALETS = ['ks_a', 'ks_b', 'ks_c', 'ks_d', 'ks_f', 'ks_k', 'ks_o', 'ks_q', 'ks_s', 'ks_u', 'h_house2', 'h_house4'];
+function coastFill(zN, zS) {
+  const xW = XL[0] - K.SWO, xE = XL[COLS] + K.SWO;
+  let n = 0;
+  const chalet = (x, z, ry) => {
+    const nm = CHALETS[n++ % CHALETS.length];
+    const r = modelBuilding(nm, x, z, ry, { mapColor: '#c9b28e' });
+    if (!r) return;
+    W.homes.push({ x: x + Math.round(Math.sin(ry)) * ((r.x1 - r.x0) / 2 + 1.2), z: z + Math.round(Math.cos(ry)) * ((r.z1 - r.z0) / 2 + 1.2) });
+  };
+  // oeste (entre la circunvalación y el mar), mirando a la calle (+x)
+  for (let z = -104; z <= 108; z += 21) chalet(xW - 15, z, Math.PI / 2);
+  // este, mirando a la calle (-x); al norte, bloques de apartamentos
+  for (let z = -104; z <= 40; z += 21) chalet(xE + 15, z, -Math.PI / 2);
+  ['kc_a', 'kc_d', 'kc_h', 'kc_b'].forEach((nm, k) => modelBuilding(nm, xE + 16, 62 + k * 17, -Math.PI / 2, { mapColor: '#b9a68a', label: k === 1 ? 'Apartamentos del mar' : undefined }));
+  // frente a la playa, al este de la arena, mirando al mar (norte)
+  ['kc_f', 'kc_g'].forEach((nm, k) => modelBuilding(nm, xE + 12 + k * 13, zN + 22, 0, { mapColor: '#b9a68a' }));
+  // sur: más chalets a los lados de la urbanización
+  for (const x of [-232, -210, -188, -166]) chalet(x, zS - 16, 0);
+}
+const noray = () => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.45, 10), new THREE.MeshStandardMaterial({ color: '#2b2e33', roughness: 0.5, metalness: 0.6 })); m.position.y = 0.34; g.add(m); return g; };
 function buildCoast() {
   const zN = ZL[ROWS] + K.SWO, zS = ZL[0] - K.SWO;
   // Faro sobre una loma de rocas (noroeste)
@@ -764,36 +826,68 @@ function buildCoast() {
   K.addBox(fx - 9, fx + 3, fz + 9.1, fz + 9.4, 1.1);
   for (const x of [fx - 6, fx - 1.5]) F.place('bancoParque', () => SKP.bancoParque(), x, fz + 7.5, 0);
   W.mapLabels.push({ x: fx, z: fz, t: 'Faro' });
-  // Puerto (norte): muelles de madera, contenedores y grúas
-  const px = -10;
-  K.paving(px - 60, px + 60, zN + 6, zN + 30, '#b9b2a5');
-  addPad(px - 60, px + 60, zN + 6, zN + 31, { h: 0, m: 8 }); // muelle a nivel del mar
-  // edificios del puerto (modelos ya hechos de realbuilding/buildingkit): nave, lonja y capitanía
-  realAt('navePuerto', () => warehouseBuilding({ w: 28, d: 16, h: 8, sign: 'NAVE PORTUARIA', signBg: '#1f4f7a', doors: 2 }), px - 88, zN + 19, 0, { label: 'Nave portuaria', mapColor: '#8a9aa6' });
-  realAt('lonja', () => shopBuilding({ w: 18, d: 10, floors: 1, sign: 'LONJA', signBg: '#1f5f8b', wall: 'blanco', stone: 'claro', awning: '#2b7bd1' }), px, zN + 20, Math.PI, { label: 'Lonja', mapColor: '#c98a6b' });
-  modelBuilding('q_Bank', px + 70, zN + 18, Math.PI, { w: 13, mapColor: '#b9a68a', label: 'Capitanía' });
-  F.place('caseta', SKP.cabinaVigilancia, px - 30, zN + 8, Math.PI);
-  for (let k = 0; k < 4; k++) {
-    const x = px - 45 + k * 30;
-    F.place('pantalan', () => CO.pantalan(30.5, 4), x, zN + 30, 0, { solid: false, y: -0.04 });
-    if (k < 3) F.place('barca' + (k % 3), () => CO.barca(['#2c6e9e', '#c0392b', '#2e7d32'][k % 3]), x + 5.2, zN + 42 + k * 4, 0.05, { solid: false, y: -0.62 });
-    K.addBox(x - 2.4, x - 2.1, zN + 30, zN + 60.5, 10); K.addBox(x + 2.1, x + 2.4, zN + 30, zN + 60.5, 10); K.addBox(x - 2.4, x + 2.4, zN + 60.4, zN + 61, 10);
-  }
-  K.addBox(px - 64, px + 64, zN + 30.4, zN + 31, 10); // borde del muelle (salvo pasarelas)
-  const cols = ['#b5402f', '#2c6e9e', '#2e7d32', '#d9822b', '#7f8c8d'];
+  // Puerto moderno (norte), ganado al mar: explanada de hormigón PORT con, al oeste, la
+  // terminal de contenedores (pilas de 2–4 alturas, dos grúas de muelle y un buque atracado);
+  // al este, el puerto deportivo (pantalanes con yates y veleros y el club náutico); y junto a
+  // la circunvalación, naves y oficinas con su aparcamiento.
+  const px = -10, P = PORT, cols = ['#b5402f', '#2c6e9e', '#2e7d32', '#d9822b', '#7f8c8d', '#6d6f73'];
+  const pcx = (P.x0 + P.x1) / 2, pcz = (P.z0 + P.z1) / 2;
+  addPad(P.x0, P.x1, zN + 4, N.z1 + 2, { h: 0, m: 8 }); // dentro de la isla, a nivel del muelle
+  B.box('#9c988f', pcx, -3.2, pcz, P.x1 - P.x0, 3.32, P.z1 - P.z0, 0, { ao: 0 }); // losa con su canto en el agua
+  K.paving(P.x0, P.x1, P.z0, P.z1, '#b4afa5', null, 4);
+  W.mapRects.push({ x0: P.x0, x1: P.x1, z0: P.z0, z1: P.z1, c: '#a9a59d' });
+  // cierre: borde del muelle (norte, salvo los pantalanes) y costados
+  K.addBox(P.x0 - 1, P.x0, P.z0, P.z1 + 1, 10); K.addBox(P.x1, P.x1 + 1, P.z0, P.z1 + 1, 10);
+  K.addBox(P.x0, 18, P.z1, P.z1 + 1, 10);
+  // --- terminal de contenedores (oeste) ---
+  K.asphalt(P.x0 + 4, -14, P.z0 + 26, P.z1 - 4, '#55585d');
+  for (let x = P.x0 + 8; x < -22; x += 12) B.box('#e9e4c8', x, 0, (P.z0 + P.z1) / 2 + 13, 0.25, 0.135, P.z1 - P.z0 - 34, 0, { shadow: false, ao: 0 }); // marcas de calle
   const cont = (c, x, z, y = 0) => F.place('cont' + c, () => CO.contenedor(c), x, z, 0, { solid: false, y });
-  for (let k = 0; k < 10; k++) {
-    const x = px - 52 + (k % 5) * 6.5, z = zN + 12 + Math.floor(k / 5) * 3.2;
-    cont(cols[k % 5], x, z);
-    if (k % 3 === 0) cont(cols[(k + 2) % 5], x, z, 2.62); // algunos apilados
-    K.addBox(x - 3, x + 3, z - 1.3, z + 1.3, k % 3 === 0 ? 5.4 : 3);
+  let ck = 0;
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 7; col++) {
+    const x = P.x0 + 14 + col * 12.5, z = P.z0 + 34 + row * 9;
+    for (const dz of [0, 2.6]) {
+      const hgt = 2 + ((row * 7 + col * 3 + (dz ? 1 : 0)) % 3);
+      for (let k = 0; k < hgt; k++) cont(cols[(ck++ * 7 + k) % cols.length], x, z + dz, k * 2.62);
+    }
+    K.addBox(x - 3.1, x + 3.1, z - 1.3, z + 3.9, 11);
   }
-  for (const x of [px + 25, px + 45]) {
-    F.place('grua', CO.gruaPortico, x, zN + 24, 0, { solid: false });
-    for (const lx of [-4, 4]) for (const lz of [-3, 3]) K.addBox(x + lx - 0.6, x + lx + 0.6, zN + 24 + lz - 0.8, zN + 24 + lz + 0.8, 16);
+  for (const x of [P.x0 + 30, P.x0 + 70]) {
+    F.place('sts', CO.gruaSTS, x, P.z1 - 12, 0, { solid: false });
+    for (const lx of [-7, 7]) for (const lz of [-8, 8]) K.addBox(x + lx - 0.9, x + lx + 0.9, P.z1 - 12 + lz - 1.3, P.z1 - 12 + lz + 1.3, 26);
   }
-  W.spots.push({ id: 'muelle', name: 'Muelle del puerto', x: px - 15, z: zN + 50, discreet: true });
-  W.mapLabels.push({ x: px, z: zN + 20, t: 'Puerto' });
+  F.place('buque', () => CO.buque(110, 3), P.x0 + 58, P.z1 + 13, 0, { solid: false });
+  for (let k = 0; k < 4; k++) F.place('kv_truck', () => buildingModel('kv_truck')(), P.x0 + 16 + k * 16, P.z0 + 26, Math.PI / 2, { hit: 2.2 });
+  for (let x = P.x0 + 4; x < -16; x += 5) F.place('noray', noray, x, P.z1 - 0.6, 0, { solid: false });
+  // --- puerto deportivo (este): pantalanes que salen al mar con yates y veleros ---
+  for (let k = 0; k < 4; k++) {
+    const x = 26 + k * 18;
+    F.place('flotante', () => CO.pantalanFlotante(42), x, P.z1, 0, { solid: false, y: -0.18 });
+    K.addBox(x - 1.4, x - 1.2, P.z1, P.z1 + 42, 10); K.addBox(x + 1.2, x + 1.4, P.z1, P.z1 + 42, 10); K.addBox(x - 1.4, x + 1.4, P.z1 + 42, P.z1 + 42.4, 10);
+    for (let j = 0; j < 5; j++) for (const sd of [-1, 1]) {
+      if ((j + k + (sd > 0 ? 1 : 0)) % 4 === 3) continue; // algún amarre libre
+      const sail = (j + k) % 2 === 0;
+      F.place(sail ? 'velero' : 'yate', sail ? () => CO.velero(10) : () => CO.yate(13), x + sd * 5.2, P.z1 + 6 + j * 7.5, Math.PI / 2 + (sd > 0 ? 0 : Math.PI), { solid: false, y: -0.45 });
+    }
+  }
+  K.addBox(18, P.x1, P.z1, P.z1 + 0.3, 1.1); // barandilla del paseo (entre pantalanes se baja por ellos)
+  for (let x = 20; x < P.x1; x += 3) if (![26, 44, 62, 80].some((v) => Math.abs(v - x) < 2)) F.place('vallaMetal', () => SKP.valla(3), x + 1.5, P.z1 - 0.3, 0, { solid: false });
+  // club náutico y bares del paseo
+  modelBuilding('kc_j', 58, P.z1 - 14, Math.PI, { mapColor: '#c9b28e', label: 'Club náutico' });
+  [['marisqueria', 'MARISQUERÍA', '#1f5f8b'], ['cafeMarina', 'CAFÉ MARINA', '#6b4226']].forEach(([key, text, bg], k) => {
+    realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall: 'blanco', stone: 'claro', awning: bg }), 30 + k * 56, P.z1 - 12, Math.PI, { mapColor: '#c98a6b' });
+  });
+  for (let x = 22; x < P.x1 - 4; x += 10) F.place('bancoParque', () => SKP.bancoParque(), x, P.z1 - 2.2, Math.PI);
+  // --- naves y oficinas junto a la circunvalación, con aparcamiento ---
+  const naves = ['ki_a', 'ki_c', 'ki_l', 'ki_e', 'ki_b'];
+  naves.forEach((nm, k) => modelBuilding(nm, P.x0 + 14 + k * 21, P.z0 + 12, 0, { mapColor: '#8a9aa6', label: k === 2 ? 'Naves del puerto' : undefined }));
+  modelBuilding('kc_i', 8, P.z0 + 12, 0, { mapColor: '#b9a68a', label: 'Oficinas del puerto' });
+  modelBuilding('kc_k', 32, P.z0 + 12, 0, { mapColor: '#b9a68a' });
+  K.asphalt(46, P.x1 - 4, P.z0 + 4, P.z0 + 26, '#4a4d52');
+  for (let k = 0; k < 6; k++) K.parkedCar(52 + k * 7, P.z0 + 12, 0);
+  F.place('kv_delivery', () => buildingModel('kv_delivery')(), 92, P.z0 + 20, Math.PI / 2, { hit: 1.8 });
+  W.spots.push({ id: 'muelle', name: 'Muelle del puerto', x: P.x0 + 6, z: P.z1 - 4, discreet: true });
+  W.mapLabels.push({ x: pcx, z: pcz + 10, t: 'Puerto' });
   // Playa (noreste): arena, sombrillas y palmeras
   const bx = XL[COLS] - 30;
   // arena con textura, sombrillas a rayas con sus tumbonas y toallas, chiringuito y socorrista
@@ -805,7 +899,11 @@ function buildCoast() {
   K.paving(bx - 88, bx + 40, zN + 0.6, zN + 4, '#d8ccb2');
   for (let x = bx - 84; x <= bx + 36; x += 12) { F.place('bancoParque', () => SKP.bancoParque(), x, zN + 3.3, 0); F.place('papelera', SK.papelera, x + 2, zN + 3.5, 0); }
   [['heladeria', 'HELADERÍA', '#e05a8a', 'blanco'], ['barOla', 'BAR LA OLA', '#1f6f8b', 'beige'], ['surf', 'SURF', '#e67e22', 'claro']].forEach(([key, text, bg, wall], k) => {
-    realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall, stone: 'blanco', awning: bg }), bx - 82 + k * 14, zN + 12, 0, { label: k === 1 ? 'Paseo marítimo' : undefined, mapColor: '#c98a6b' });
+    realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall, stone: 'blanco', awning: bg }), PORT.x1 + 6 + k * 13, zN + 10, Math.PI, { label: k === 1 ? 'Paseo marítimo' : undefined, mapColor: '#c98a6b' });
+  });
+  // hoteles de 5 plantas detrás, mirando al mar
+  [['hotelMarina', 'HOTEL MARINA', '#1f4f7a', 'blanco'], ['hotelSol', 'HOTEL SOL', '#c0662a', 'beige']].forEach(([key, text, bg, wall], k) => {
+    realAt(key, () => shopBuilding({ w: 16, d: 11, floors: 5, sign: text, signBg: bg, wall, stone: 'blanco', awning: bg }), PORT.x1 + 11 + k * 19, zN + 27, 0, { label: text === 'HOTEL MARINA' ? 'Hoteles' : undefined, mapColor: '#c9b28e' });
   });
   HARD.push([bx - 40, bx + 40, zN + 4, zN + 40]);
   for (const [x, z, c] of [[-14, 14, '#e74c3c'], [-4, 22, '#2c7fb8'], [8, 13, '#f1c40f'], [20, 23, '#27ae60'], [30, 15, '#e74c3c']]) {
@@ -828,6 +926,7 @@ function buildCoast() {
     if (k % 3 === 1) { addPad(x - 4, x + 4, zS - 30, zS - 25, { m: 3 }); B.box('#2f8fc9', x, 0, zS - 27.5, 7, 0.1, 4, 0, { mat: 'glass', ao: 0 }); B.box('#e9e3d6', x, 0, zS - 27.5, 8, 0.08, 5, 0, { ao: 0 }); }
   }
   W.mapLabels.push({ x: 0, z: zS - 16, t: 'Urbanización' });
+  coastFill(zN, zS);
   // Muelle de carga (sureste)
   const mx = XL[COLS] - 25;
   K.paving(mx - 20, mx + 20, zS - 30, zS - 6, '#a8a49c');
@@ -841,7 +940,7 @@ function buildCoast() {
   for (let k = 0; k < 4; k++) K.pallet(mx - 14 + k * 2.4, zS - 12, 0, k % 3);
   K.forklift(mx + 8, zS - 11, 0.6);
   // bordillo del muelle con norays
-  for (let x = mx - 18; x <= mx + 18; x += 6) F.place('noray', () => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.45, 10), new THREE.MeshStandardMaterial({ color: '#2b2e33', roughness: 0.5, metalness: 0.6 })); m.position.y = 0.22; g.add(m); return g; }, x, zS - 29.3, 0, { solid: false });
+  for (let x = mx - 18; x <= mx + 18; x += 6) F.place('noray', noray, x, zS - 29.3, 0, { solid: false });
   W.spots.push({ id: 'muelleCarga', name: 'Muelle de carga', x: mx + 12, z: zS - 26, discreet: true });
   W.mapLabels.push({ x: mx, z: zS - 22, t: 'Muelle de carga' });
   // paseo para los peatones

@@ -282,3 +282,109 @@ export function sandGeometry(rects) {
   for (let i = 0; i < P.count; i++) uv.setXY(i, P.getX(i) / 3, P.getZ(i) / 3);
   return g;
 }
+
+// ---------- puerto moderno ----------
+// Grúa de muelle (pórtico STS): patas en A, pluma larga que vuela sobre el agua (hacia +z),
+// sala de máquinas y carro con el spreader. Unos 38 m de alto.
+export function gruaSTS() {
+  const g = new THREE.Group();
+  const c = mat('stsAzul', { color: '#4f6f96', roughness: 0.5, metalness: 0.45 }), w = mat('stsBlanco', { color: '#e9ecef', roughness: 0.5, metalness: 0.3 }), d = mat('gruaOs', { color: '#3a3d42', roughness: 0.5, metalness: 0.5 });
+  for (const x of [-7, 7]) {
+    for (const z of [-8, 8]) { add(g, BOX, c, x, 13, z, 0, 0, 0, 1.2, 26, 1.2); add(g, BOX, d, x, 0.5, z, 0, 0, 0, 1.8, 1, 2.6); }
+    add(g, BOX, c, x, 26.5, 0, 0, 0, 0, 1.2, 1.4, 17.2);           // viga superior
+    add(g, BOX, c, x, 12, 0, 0, 0, 0, 0.8, 0.8, 16.4);              // travesaño
+    for (const s of [-1, 1]) add(g, BOX, c, x, 19, s * 4, s * 0.72, 0, 0, 0.5, 0.5, 11); // diagonales
+  }
+  for (const z of [-8, 8]) add(g, BOX, c, 0, 26.5, z, 0, 0, 0, 15.4, 1.2, 1.2);
+  // pluma: de -26 (contrapeso, tierra) a +44 (agua)
+  add(g, BOX, w, 0, 31, 9, 0, 0, 0, 3.2, 2.4, 70);
+  add(g, BOX, w, 0, 30, -22, 0, 0, 0, 6, 4, 8);                     // contrapeso
+  add(g, BOX, mat('stsMaq', { color: '#d9dde1', roughness: 0.5 }), 0, 34.2, -4, 0, 0, 0, 8, 4, 10); // sala de máquinas
+  // tirantes de la pluma hasta el castillete
+  add(g, BOX, c, 0, 40, -4, 0, 0, 0, 1.4, 14, 1.4);
+  for (const [z1, len] of [[22, 31], [-16, 14]]) { const dz = z1 - -4, dy = 31 - 46, L = Math.hypot(dz, dy); add(g, BOX, d, 0, (46 + 31) / 2, (-4 + z1) / 2, Math.atan2(-dy, dz) - Math.PI / 2 + Math.PI / 2, 0, 0, 0.25, 0.25, L); }
+  add(g, BOX, mat('stsCabina', { color: '#f2f2f2', roughness: 0.4 }), 0, 28.6, 18, 0, 0, 0, 2.4, 2.2, 3);
+  add(g, BOX, d, 0, 29.4, 30, 0, 0, 0, 3.4, 1.2, 3.4);             // carro
+  add(g, BOX, d, 0, 14, 30, 0, 0, 0, 2.6, 0.5, 12.5);             // spreader (colgando)
+  for (const s of [-1, 1]) add(g, cyl(0.04, 0.04, 15, 4), d, s * 0.8, 21.5, 30);
+  return g;
+}
+
+// Buque portacontenedores atracado (eslora L, de -L/2 a L/2 en x), con puente a popa y
+// contenedores en cubierta (colores sobrios)
+export function buque(L = 110, seed = 1) {
+  const g = new THREE.Group(), B = 22;
+  const hull = once(geos, 'casco' + L, () => {
+    const s = new THREE.Shape();
+    s.moveTo(-L / 2, -B / 2); s.lineTo(L / 2 - 14, -B / 2); s.quadraticCurveTo(L / 2, -B / 2, L / 2 + 4, 0); s.quadraticCurveTo(L / 2, B / 2, L / 2 - 14, B / 2); s.lineTo(-L / 2, B / 2); s.lineTo(-L / 2, -B / 2);
+    const e = new THREE.ExtrudeGeometry(s, { depth: 11, bevelEnabled: false }); e.rotateX(-Math.PI / 2); e.translate(0, -6, 0); return e;
+  });
+  add(g, hull, mat('cascoBuque', { color: '#1f3b5a', roughness: 0.6, metalness: 0.2 }));
+  add(g, BOX, mat('lineaRoja', { color: '#8e2a22', roughness: 0.7 }), 0, -5.2, 0, 0, 0, 0, L - 2, 1.6, B + 0.05);
+  add(g, BOX, mat('cubiertaB', { color: '#7b8087', roughness: 0.8 }), 0, 5.05, 0, 0, 0, 0, L - 6, 0.1, B - 1);
+  // puente de mando (popa)
+  const wh = mat('puente', { color: '#eef0f1', roughness: 0.5 });
+  add(g, BOX, wh, -L / 2 + 8, 13, 0, 0, 0, 0, 10, 16, 16);
+  add(g, BOX, wh, -L / 2 + 8, 21.5, 0, 0, 0, 0, 11, 1, B);
+  add(g, BOX, mat('gruaVid', { color: '#2a3a48', roughness: 0.1, metalness: 0.5 }), -L / 2 + 13.05, 19.5, 0, 0, 0, 0, 0.1, 1.5, 15);
+  add(g, cyl(1.2, 1.4, 6, 10), mat('chimenea', { color: '#b5402f', roughness: 0.6 }), -L / 2 + 4, 24, 0);
+  // contenedores en cubierta: bloques de 6 m en filas y alturas variables
+  const rnd = rng(seed * 11 + 3), cols = ['#b5402f', '#2c6e9e', '#2e7d32', '#d9822b', '#7f8c8d', '#8e44ad'.replace('8e44ad', '6d6f73')];
+  const shell = once(mats, 'contShip', () => new THREE.MeshStandardMaterial({ map: ribTex(), vertexColors: true, roughness: 0.6, metalness: 0.25 }));
+  const parts = [];
+  for (let x = -L / 2 + 16; x < L / 2 - 16; x += 6.3) for (let z = -B / 2 + 2; z < B / 2 - 1; z += 2.5) {
+    const h = 1 + Math.floor(rnd() * 4);
+    for (let k = 0; k < h; k++) {
+      const bx = new THREE.BoxGeometry(6, 2.5, 2.4).toNonIndexed(); bx.translate(x, 5.1 + 1.25 + k * 2.55, z + 1.2);
+      const cc = new THREE.Color(cols[Math.floor(rnd() * cols.length)]), col = [];
+      for (let i = 0; i < bx.attributes.position.count; i++) col.push(cc.r, cc.g, cc.b);
+      bx.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      const uv = bx.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 2.7, uv.getY(i));
+      parts.push(bx);
+    }
+  }
+  add(g, mergeGeometries(parts), shell);
+  return g;
+}
+
+// Yate a motor blanco (casco afilado, dos cubiertas con cristales oscuros)
+export function yate(len = 14) {
+  const g = new THREE.Group(), wh = mat('yate', { color: '#f4f5f6', roughness: 0.35 }), gl = mat('yateVid', { color: '#1c2a36', roughness: 0.08, metalness: 0.6 });
+  const hull = once(geos, 'yateCasco' + len, () => {
+    const s = new THREE.Shape(), w = len * 0.17;
+    s.moveTo(-len / 2, -w); s.lineTo(len * 0.2, -w); s.quadraticCurveTo(len / 2, -w * 0.6, len / 2, 0); s.quadraticCurveTo(len / 2, w * 0.6, len * 0.2, w); s.lineTo(-len / 2, w); s.lineTo(-len / 2, -w);
+    const e = new THREE.ExtrudeGeometry(s, { depth: 1.6, bevelEnabled: true, bevelSize: 0.15, bevelThickness: 0.15, bevelSegments: 2 }); e.rotateX(-Math.PI / 2); e.translate(0, -0.7, 0); return e;
+  });
+  add(g, hull, wh);
+  add(g, BOX, mat('yateFranja', { color: '#203a5a', roughness: 0.4 }), 0, 0.05, 0, 0, 0, 0, len * 0.95, 0.25, len * 0.345);
+  add(g, BOX, mat('teca', { color: '#a87a4b', roughness: 0.8 }), -len * 0.05, 1.0, 0, 0, 0, 0, len * 0.85, 0.06, len * 0.3);
+  add(g, BOX, wh, -len * 0.08, 1.75, 0, 0, 0, 0, len * 0.42, 1.4, len * 0.26);
+  add(g, BOX, gl, -len * 0.08, 1.85, 0, 0, 0, 0, len * 0.43, 0.6, len * 0.265);
+  add(g, BOX, wh, -len * 0.14, 2.7, 0, 0, 0, 0, len * 0.26, 0.5, len * 0.22);
+  return g;
+}
+// Velero: casco blanco, mástil y vela recogida en la botavara
+export function velero(len = 10) {
+  const g = new THREE.Group(), wh = mat('yate', { color: '#f4f5f6', roughness: 0.35 });
+  const hull = once(geos, 'veleroCasco' + len, () => {
+    const s = new THREE.Shape(), w = len * 0.16;
+    s.moveTo(-len / 2, -w * 0.8); s.quadraticCurveTo(0, -w * 1.2, len / 2, 0); s.quadraticCurveTo(0, w * 1.2, -len / 2, w * 0.8); s.lineTo(-len / 2, -w * 0.8);
+    const e = new THREE.ExtrudeGeometry(s, { depth: 1.1, bevelEnabled: false }); e.rotateX(-Math.PI / 2); e.translate(0, -0.5, 0); return e;
+  });
+  add(g, hull, wh);
+  add(g, BOX, mat('teca', { color: '#a87a4b', roughness: 0.8 }), 0, 0.62, 0, 0, 0, 0, len * 0.7, 0.05, len * 0.22);
+  add(g, BOX, wh, -len * 0.1, 0.95, 0, 0, 0, 0, len * 0.25, 0.6, len * 0.18);
+  const al = mat('aluminio', { color: '#c9ced3', roughness: 0.3, metalness: 0.8 });
+  add(g, cyl(0.07, 0.08, len * 1.3, 6), al, len * 0.08, 0.6 + len * 0.65, 0);
+  add(g, BOX, al, -len * 0.12, 1.7, 0, 0, 0, 0, len * 0.42, 0.1, 0.1);
+  add(g, BOX, mat('velaRec', { color: '#1f3b5a', roughness: 0.9 }), -len * 0.12, 1.85, 0, 0, 0, 0, len * 0.4, 0.22, 0.24);
+  return g;
+}
+// Pantalán flotante del puerto deportivo (hormigón claro con bitas), len × 2,4 m
+export function pantalanFlotante(len = 30) {
+  const g = new THREE.Group();
+  add(g, boxM(2.4, 0.35, len, 2), mat('flotante', { color: '#c9c3b6', roughness: 0.9 }), 0, 0.05, len / 2);
+  add(g, BOX, mat('defensa', { color: '#2b2e33', roughness: 0.8 }), 0, 0.0, len / 2, 0, 0, 0, 2.5, 0.12, len);
+  for (let z = 3; z < len; z += 6) for (const s of [-1, 1]) add(g, cyl(0.07, 0.09, 0.3, 8), mat('hierro', { color: '#2b2e33', roughness: 0.5, metalness: 0.6 }), s * 1.05, 0.37, z);
+  return g;
+}

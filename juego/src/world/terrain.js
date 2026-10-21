@@ -1,6 +1,7 @@
 // Relieve de la isla: una sola función de altura para todo el mapa.
 //
-// · baseH: lomas suaves (pendientes de hasta ~8 %) que se aplanan hacia la circunvalación,
+// · baseH: una colina clara en el centro-norte (~15 m, cuestas de hasta ~18 %) con ondulaciones
+//   suaves, que se aplana hacia la circunvalación,
 //   así la costa, la playa y los muelles quedan a ras del mar.
 // · Explanadas (pads): cada edificio tiene un solar llano a una sola altura; alrededor el
 //   terreno se funde con las lomas en unos metros. Así los suelos, las puertas y los
@@ -23,21 +24,24 @@ export function setRelief(on, { rx = 210, rz = 120, xs = [], zs = [], walk = 6.5
   T.on = on; RX = rx; RZ = rz; XS = xs; ZS = zs; WALK = walk; ISLE = isle;
   pads.length = 0; grid.clear();
 }
-// 0 sobre calles y aceras, 1 a partir de metro y medio dentro de la manzana
+// 0 sobre calles y aceras, 1 justo dentro de la manzana
 function offRoad(x, z) {
   let d = 1e9;
   if (Math.abs(z) < RZ + WALK) for (const v of XS) d = Math.min(d, Math.abs(x - v));
   if (Math.abs(x) < RX + WALK) for (const v of ZS) d = Math.min(d, Math.abs(z - v));
-  return smooth(WALK, WALK + 1.5, d);
+  return smooth(WALK, WALK + 0.3, d); // el escalón con la acera lo tapa un muro (island.retainingWalls)
 }
 
 export function baseH(x, z) {
   if (!T.on) return 0;
   const d = Math.min(RX - Math.abs(x), RZ - Math.abs(z));
-  const m = smooth(-24, 70, d);
+  const m = smooth(-30, 115, d); // transición larga: la colina baja hacia la costa sin tramos de más del ~20 %
   const coast = d < 0 ? coastH(x, z, -d) : 0; // continuo: se suma a las lomas
   if (m <= 0) return coast;
-  const h = 2.5 + 1.35 * Math.sin(x * 0.0115 + 0.6) + 1.0 * Math.sin(z * 0.016 - 0.4) + 0.55 * Math.sin((x + z) * 0.0085 + 2.0);
+  // colina clara en el centro-norte (Barrio Alto, Parque, Mansión): ~15 m arriba, bajando
+  // hacia la costa; encima, ondulaciones suaves para que las calles no sean planos inclinados
+  const hill = 15 * Math.exp(-(((x + 60) / 110) ** 2) - (((z - 8) / 72) ** 2));
+  const h = hill + 0.9 + 0.8 * Math.sin(x * 0.021 + 0.6) + 0.6 * Math.sin(z * 0.027 - 0.4);
   return Math.max(0, h) * m + coast;
 }
 
@@ -58,6 +62,12 @@ function coastH(x, z, out) {
 export function addPad(x0, x1, z0, z1, { h, m = 3, front } = {}) {
   if (!T.on) return 0;
   const p = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), m };
+  // el solar nunca entra en la acera ni en la calzada (los toldos y rótulos de un modelo
+  // pueden volar sobre la acera, pero el suelo de la acera es el de la calle)
+  const cut = WALK + 0.3;
+  if (Math.abs((p.z0 + p.z1) / 2) < RZ + WALK) for (const v of XS) if (p.x0 < v + cut && p.x1 > v - cut) { if ((p.x0 + p.x1) / 2 > v) p.x0 = v + cut; else p.x1 = v - cut; }
+  if (Math.abs((p.x0 + p.x1) / 2) < RX + WALK) for (const v of ZS) if (p.z0 < v + cut && p.z1 > v - cut) { if ((p.z0 + p.z1) / 2 > v) p.z0 = v + cut; else p.z1 = v - cut; }
+  if (p.x1 - p.x0 < 0.5 || p.z1 - p.z0 < 0.5) return baseH((x0 + x1) / 2, (z0 + z1) / 2);
   const cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2;
   const at = { '+z': [cx, p.z1 + 1], '-z': [cx, p.z0 - 1], '+x': [p.x1 + 1, cz], '-x': [p.x0 - 1, cz] }[front] || [cx, cz];
   // terreno a lo largo del borde del solar
@@ -69,6 +79,9 @@ export function addPad(x0, x1, z0, z1, { h, m = 3, front } = {}) {
   const lo = Math.min(...edge), hi = Math.max(...edge);
   // los solares grandes, a media altura (el talud se reparte por todos los lados)
   p.h = h ?? ((p.x1 - p.x0) * (p.z1 - p.z0) > 400 ? (lo + hi) / 2 : baseH(at[0], at[1]));
+  // si se solapa con otro solar, a su misma altura (dos alturas en el mismo suelo = escalón)
+  const over = h == null && pads.find((q) => q.x0 < p.x1 && q.x1 > p.x0 && q.z0 < p.z1 && q.z1 > p.z0);
+  if (over) p.h = over.h;
   // cuanto más se separa el solar del terreno (edificios grandes en cuesta), más largo el talud
   const dev = Math.max(Math.abs(hi - p.h), Math.abs(lo - p.h));
   m = p.m = Math.min(12, Math.max(m, 1.5 + dev * 3.4));
@@ -92,7 +105,8 @@ export function H(x, z) {
   let ws = 0, hs = 0, wm = 0;
   for (const p of list) {
     const dx = Math.max(p.x0 - x, 0, x - p.x1), dz = Math.max(p.z0 - z, 0, z - p.z1);
-    const d = dx === 0 && dz === 0 ? 0 : Math.hypot(dx, dz);
+    if (dx === 0 && dz === 0) return p.h; // dentro del solar: llano siempre (también junto a la acera)
+    const d = Math.hypot(dx, dz);
     if (d >= p.m) continue;
     const w = 1 - smooth(0, p.m, d);
     ws += w; hs += w * p.h; if (w > wm) wm = w;
@@ -106,12 +120,17 @@ export function slope(x, z, e = 0.8) {
   return [(H(x + e, z) - H(x - e, z)) / (2 * e), (H(x, z + e) - H(x, z - e)) / (2 * e)];
 }
 
+// Solares registrados (para levantar muros de contención en sus bordes)
+export const allPads = () => pads;
+// Altura «por debajo»: la menor alrededor (radio r). El césped la usa para no asomar por
+// encima de aceras, caminos o muros donde el suelo da un escalón.
+export const Hlow = (x, z, r = 1.1) => Math.min(H(x, z), H(x + r, z), H(x - r, z), H(x, z + r), H(x, z - r));
 // Deforma una geometría en coordenadas del mundo: cada vértice sube lo que mida el suelo
 // debajo (para calzadas, aceras, césped y todo lo que es «suelo»)
-export function drapeGeometry(geo, dy = 0) {
+export function drapeGeometry(geo, dy = 0, fn = H) {
   if (!T.on) return geo;
   const P = geo.attributes.position;
-  for (let i = 0; i < P.count; i++) P.setY(i, P.getY(i) + H(P.getX(i), P.getZ(i)) + dy);
+  for (let i = 0; i < P.count; i++) P.setY(i, P.getY(i) + fn(P.getX(i), P.getZ(i)) + dy);
   P.needsUpdate = true;
   geo.computeBoundingSphere?.();
   return geo;

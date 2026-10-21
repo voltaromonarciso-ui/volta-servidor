@@ -2,6 +2,9 @@
 //   h_*  Family House Collection (drummyfish): casas con textura realista
 //   q_*  LowPoly Buildings (Quaternius): bloques, tienda, banco y casas de estilo dibujo
 //   cb_* City Buildings (OpenGameArt): bloques de pisos, locales y un motel con escaleras
+//   ks_* / kc_* / ki_*  City Kit Suburban / Commercial / Industrial (Kenney, CC0): chalets,
+//        bloques de 3–5 plantas y naves; la textura de paleta va incrustada en el .glb
+//        (tools/embed_glb.py) y se re-texturizan como los q_/cb_
 // Se cargan al arrancar; cada modelo queda centrado en planta, apoyado en el suelo, con la
 // fachada principal hacia +z y a su tamaño real en metros (FIT).
 import * as THREE from 'three';
@@ -16,6 +19,8 @@ const FIT = {
   cb_Building_1_A: { w: 12.4 }, cb_Building_1_D: { w: 12.4 }, cb_Building_2_A: { w: 12.3 },
   cb_Building_3_A: { w: 30 }, cb_Building_5_A: { w: 24 },
 };
+// los kits de Kenney van a escala única por kit (1 unidad ≈ 8,5–10 m)
+const KIT_SCALE = { ks: 8.5, kc: 9, ki: 10, kv: 2.6 }; // kv_: camiones y furgonetas (Car Kit), sin re-texturizar
 const MODELS = {};
 
 // ---------- re-texturizado realista (texturas Poly Haven, CC0) ----------
@@ -201,13 +206,13 @@ export async function loadBuildings() {
     g.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(g), size = box.getSize(new THREE.Vector3());
     const fit = FIT[name] || {};
-    const k = fit.w ? fit.w / size.x : fit.h ? fit.h / size.y : 1;
+    const k = fit.w ? fit.w / size.x : fit.h ? fit.h / size.y : KIT_SCALE[name.slice(0, 2)] || 1;
     const root = new THREE.Group(), inner = new THREE.Group();
     inner.add(g);
     inner.scale.setScalar(k);
     inner.position.set(-(box.min.x + box.max.x) / 2 * k, -box.min.y * k, -(box.min.z + box.max.z) / 2 * k);
     root.add(inner);
-    if (/^(q|cb)_/.test(name)) {
+    if (/^(q|cb|ks|kc|ki)_/.test(name)) {
       // estilo dibujo → realista: se rehacen las mallas con texturas de verdad (en metros)
       const seed = [...name].reduce((a, c) => a + c.charCodeAt(0), 0);
       const real = retexture(root, seed);

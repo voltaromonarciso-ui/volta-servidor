@@ -26,7 +26,7 @@ test.describe.serial('Relieve de la isla', () => {
     expect(await page.evaluate(() => !!__G.world.atms && __G.world.zones.length)).toBe(28);
   });
 
-  test('hay cuestas de verdad, suaves, y la costa queda a ras del mar', async () => {
+  test('hay una colina clara, calles en cuesta y la costa queda a ras del mar', async () => {
     const r = await page.evaluate(() => {
       const H = __G.world.groundAt;
       let min = 1e9, max = -1e9, steep = 0, road = 0;
@@ -39,16 +39,22 @@ test.describe.serial('Relieve de la isla', () => {
       // en la misma orilla (el borde de la isla) el terreno queda a nivel del mar
       return { range: max - min, steep, road, coast: [H(-249.6, 0), H(249.6, 0), H(0, 167.6), H(0, -164.6)] };
     });
-    expect(r.range).toBeGreaterThan(3);
-    expect(r.road).toBeLessThan(0.1); // calles: como mucho un 10 %
-    expect(r.steep).toBeLessThan(0.8); // taludes de césped junto a algún solar
+    expect(r.range).toBeGreaterThan(12); // colina de unos 15 m
+    expect(r.road).toBeLessThan(0.25); // calles: cuestas claras, como mucho ~22 %
+    expect(r.steep).toBeLessThan(1.0); // taludes de césped junto a algún solar
     for (const h of r.coast) expect(h).toBeLessThan(0.02);
   });
 
   test('los edificios están en solares llanos', async () => {
     const bad = await page.evaluate(() => {
       const H = __G.world.groundAt, out = [];
-      for (const r of __G.world.mapRects.filter((q) => !q.road && !q.zone && (q.x1 - q.x0) * (q.z1 - q.z0) < 4000)) {
+      // (el rectángulo del mapa incluye toldos y rótulos que vuelan sobre la acera: se recorta)
+      const W = __G.world, cut = 6.9, inBlock = (x, z) => !W.roadsX.some((v) => Math.abs(x - v) < cut) && !W.roadsZ.some((v) => Math.abs(z - v) < cut);
+      for (const q of W.mapRects.filter((q) => !q.road && !q.zone && (q.x1 - q.x0) * (q.z1 - q.z0) < 4000)) {
+        const r = { ...q };
+        for (const v of W.roadsX) if (r.x0 < v + cut && r.x1 > v - cut) { if ((r.x0 + r.x1) / 2 > v) r.x0 = v + cut; else r.x1 = v - cut; }
+        for (const v of W.roadsZ) if (r.z0 < v + cut && r.z1 > v - cut) { if ((r.z0 + r.z1) / 2 > v) r.z0 = v + cut; else r.z1 = v - cut; }
+        if (r.x1 - r.x0 < 1 || r.z1 - r.z0 < 1 || !inBlock((r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2)) continue;
         const hs = [[r.x0 + 0.2, r.z0 + 0.2], [r.x1 - 0.2, r.z0 + 0.2], [r.x0 + 0.2, r.z1 - 0.2], [r.x1 - 0.2, r.z1 - 0.2], [(r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2]].map(([x, z]) => H(x, z));
         if (Math.max(...hs) - Math.min(...hs) > 0.02) out.push(r);
       }
