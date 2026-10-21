@@ -588,6 +588,7 @@ function buildStreetFurniture() {
     reserved.push([x, z]);
   }
   // una calle: tramo entre dos cruces; lado s = -1/+1; (along, across) → mundo
+  let benchN = 0;
   const segment = (kind, at, faceRy, seed, lampRy) => {
     const len = 46, n = 13, step = len / (n - 1); // un hueco cada ~3,8 m
     const rec = RECIPE[kind];
@@ -606,6 +607,8 @@ function buildStreetFurniture() {
       if (slot !== 2 && slot !== 4) continue;
       const [name, side] = rec[r++ % rec.length];
       if (!name) continue; // hueco libre en la acera
+      // bancos de sentarse: solo uno de cada tres huecos que les tocan (había demasiados)
+      if ((name === 'banco' || name === 'bancoParque') && (benchN++ % 3)) continue;
       const [x, z] = at(t, side === 'c' ? CURB : WALLSIDE);
       if (reserved.some(([qx, qz]) => Math.hypot(qx - x, qz - z) < 3.5)) continue;
       const ry = name === 'arbol' || name === 'palmera' ? r * 1.7 : name === 'bici' ? faceRy + Math.PI / 2 : faceRy; // la bici, paralela a la calle
@@ -833,15 +836,23 @@ function buildCoast() {
   const px = -10, P = PORT, cols = ['#b5402f', '#2c6e9e', '#2e7d32', '#d9822b', '#7f8c8d', '#6d6f73'];
   const pcx = (P.x0 + P.x1) / 2, pcz = (P.z0 + P.z1) / 2;
   addPad(P.x0, P.x1, zN + 4, N.z1 + 2, { h: 0, m: 8 }); // dentro de la isla, a nivel del muelle
-  B.box('#9c988f', pcx, -3.2, pcz, P.x1 - P.x0, 3.32, P.z1 - P.z0, 0, { ao: 0 }); // losa con su canto en el agua
-  K.paving(P.x0, P.x1, P.z0, P.z1, '#b4afa5', null, 4);
+  B.box('#9c988f', pcx, -3.2, pcz, P.x1 - P.x0, 3.2, P.z1 - P.z0, 0, { ao: 0 }); // losa con su canto en el agua
+  // suelo: asfalto con textura (una sola superficie, por encima de la losa: nada parpadea)
+  const asph = new THREE.Mesh(CO.planeM(P.x0, P.x1, P.z0, P.z1, 6), CO.COAST_MAT.asphalt());
+  asph.position.y = 0.05; asph.receiveShadow = true; asph.userData.terrainDone = true; scene.add(asph);
+  HARD.push([P.x0, P.x1, P.z0, P.z1]);
+  // marcas pintadas: calles de la terminal, bandas de seguridad del cantil y plazas
+  const paint = (c, x0, x1, z0, z1) => B.box(c, (x0 + x1) / 2, 0.06, (z0 + z1) / 2, x1 - x0, 0.015, z1 - z0, 0, { shadow: false, ao: 0 });
+  paint('#e9c43a', P.x0 + 1, P.x1 - 1, P.z1 - 2.2, P.z1 - 2.0);            // línea amarilla del cantil
+  for (const z of [P.z0 + 29, P.z0 + 70]) for (let x = P.x0 + 4; x < -16; x += 6) paint('#efefe8', x, x + 3, z - 0.1, z + 0.1); // ejes discontinuos
+  for (const z of [P.z0 + 22, P.z0 + 76]) paint('#efefe8', P.x0 + 4, -16, z - 0.08, z + 0.08); // bordes de calle
+  for (let x = 48; x < P.x1 - 4; x += 3.2) paint('#efefe8', x, x + 0.12, P.z0 + 6, P.z0 + 11); // plazas del aparcamiento
+  for (let x = 48; x < P.x1 - 4; x += 3.2) paint('#efefe8', x, x + 0.12, P.z0 + 14, P.z0 + 19);
   W.mapRects.push({ x0: P.x0, x1: P.x1, z0: P.z0, z1: P.z1, c: '#a9a59d' });
   // cierre: borde del muelle (norte, salvo los pantalanes) y costados
   K.addBox(P.x0 - 1, P.x0, P.z0, P.z1 + 1, 10); K.addBox(P.x1, P.x1 + 1, P.z0, P.z1 + 1, 10);
   K.addBox(P.x0, 18, P.z1, P.z1 + 1, 10);
   // --- terminal de contenedores (oeste) ---
-  K.asphalt(P.x0 + 4, -14, P.z0 + 26, P.z1 - 4, '#55585d');
-  for (let x = P.x0 + 8; x < -22; x += 12) B.box('#e9e4c8', x, 0, (P.z0 + P.z1) / 2 + 13, 0.25, 0.135, P.z1 - P.z0 - 34, 0, { shadow: false, ao: 0 }); // marcas de calle
   const cont = (c, x, z, y = 0) => F.place('cont' + c, () => CO.contenedor(c), x, z, 0, { solid: false, y });
   let ck = 0;
   for (let row = 0; row < 4; row++) for (let col = 0; col < 7; col++) {
@@ -860,31 +871,32 @@ function buildCoast() {
   for (let k = 0; k < 4; k++) F.place('kv_truck', () => buildingModel('kv_truck')(), P.x0 + 16 + k * 16, P.z0 + 26, Math.PI / 2, { hit: 2.2 });
   for (let x = P.x0 + 4; x < -16; x += 5) F.place('noray', noray, x, P.z1 - 0.6, 0, { solid: false });
   // --- puerto deportivo (este): pantalanes que salen al mar con yates y veleros ---
-  for (let k = 0; k < 4; k++) {
-    const x = 26 + k * 18;
+  // 6 barcos en total, no más: [pantalán, amarre, lado, tipo]
+  const BOATS = [[0, 0, -1, 'yate'], [0, 1, 1, 'velero'], [0, 2, -1, 'velero'], [1, 0, 1, 'yate'], [1, 1, -1, 'yate'], [1, 3, 1, 'velero']];
+  for (let k = 0; k < 2; k++) {
+    const x = 34 + k * 30;
     F.place('flotante', () => CO.pantalanFlotante(42), x, P.z1, 0, { solid: false, y: -0.18 });
     K.addBox(x - 1.4, x - 1.2, P.z1, P.z1 + 42, 10); K.addBox(x + 1.2, x + 1.4, P.z1, P.z1 + 42, 10); K.addBox(x - 1.4, x + 1.4, P.z1 + 42, P.z1 + 42.4, 10);
-    for (let j = 0; j < 5; j++) for (const sd of [-1, 1]) {
-      if ((j + k + (sd > 0 ? 1 : 0)) % 4 === 3) continue; // algún amarre libre
-      const sail = (j + k) % 2 === 0;
-      F.place(sail ? 'velero' : 'yate', sail ? () => CO.velero(10) : () => CO.yate(13), x + sd * 5.2, P.z1 + 6 + j * 7.5, Math.PI / 2 + (sd > 0 ? 0 : Math.PI), { solid: false, y: -0.45 });
+    for (const [pk, jj, sd, kind] of BOATS) {
+      if (pk !== k) continue;
+      F.place(kind, kind === 'velero' ? () => CO.velero(10) : () => CO.yate(14), x + sd * 5.4, P.z1 + 8 + jj * 9, Math.PI / 2 + (sd > 0 ? 0 : Math.PI), { solid: false, y: kind === 'velero' ? -0.2 : -0.35 });
     }
   }
   K.addBox(18, P.x1, P.z1, P.z1 + 0.3, 1.1); // barandilla del paseo (entre pantalanes se baja por ellos)
-  for (let x = 20; x < P.x1; x += 3) if (![26, 44, 62, 80].some((v) => Math.abs(v - x) < 2)) F.place('vallaMetal', () => SKP.valla(3), x + 1.5, P.z1 - 0.3, 0, { solid: false });
+  K.paving(18, P.x1, P.z1 - 7, P.z1, '#cfc6b6', null, 2); // paseo del puerto deportivo
+  for (let x = 20; x < P.x1; x += 3) if (![34, 64].some((v) => Math.abs(v - x) < 2)) F.place('vallaMetal', () => SKP.valla(3), x + 1.5, P.z1 - 0.3, 0, { solid: false });
   // club náutico y bares del paseo
   modelBuilding('kc_j', 58, P.z1 - 14, Math.PI, { mapColor: '#c9b28e', label: 'Club náutico' });
   [['marisqueria', 'MARISQUERÍA', '#1f5f8b'], ['cafeMarina', 'CAFÉ MARINA', '#6b4226']].forEach(([key, text, bg], k) => {
     realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall: 'blanco', stone: 'claro', awning: bg }), 30 + k * 56, P.z1 - 12, Math.PI, { mapColor: '#c98a6b' });
   });
-  for (let x = 22; x < P.x1 - 4; x += 10) F.place('bancoParque', () => SKP.bancoParque(), x, P.z1 - 2.2, Math.PI);
+  for (let x = 24; x < P.x1 - 4; x += 30) F.place('bancoParque', () => SKP.bancoParque(), x, P.z1 - 2.2, Math.PI); // uno cada 30 m
   // --- naves y oficinas junto a la circunvalación, con aparcamiento ---
   const naves = ['ki_a', 'ki_c', 'ki_l', 'ki_e', 'ki_b'];
   naves.forEach((nm, k) => modelBuilding(nm, P.x0 + 14 + k * 21, P.z0 + 12, 0, { mapColor: '#8a9aa6', label: k === 2 ? 'Naves del puerto' : undefined }));
   modelBuilding('kc_i', 8, P.z0 + 12, 0, { mapColor: '#b9a68a', label: 'Oficinas del puerto' });
   modelBuilding('kc_k', 32, P.z0 + 12, 0, { mapColor: '#b9a68a' });
-  K.asphalt(46, P.x1 - 4, P.z0 + 4, P.z0 + 26, '#4a4d52');
-  for (let k = 0; k < 6; k++) K.parkedCar(52 + k * 7, P.z0 + 12, 0);
+  for (let k = 0; k < 6; k++) K.parkedCar(49.6 + k * 6.4, P.z0 + 8.5, 0);
   F.place('kv_delivery', () => buildingModel('kv_delivery')(), 92, P.z0 + 20, Math.PI / 2, { hit: 1.8 });
   W.spots.push({ id: 'muelle', name: 'Muelle del puerto', x: P.x0 + 6, z: P.z1 - 4, discreet: true });
   W.mapLabels.push({ x: pcx, z: pcz + 10, t: 'Puerto' });
@@ -897,7 +909,7 @@ function buildCoast() {
   DRAPE.push(sand.geometry); // las dunas: la arena sigue el relieve de la costa
   // paseo marítimo: baldosas junto a la arena, bancos mirando al mar y locales (heladería, bar, surf)
   K.paving(bx - 88, bx + 40, zN + 0.6, zN + 4, '#d8ccb2');
-  for (let x = bx - 84; x <= bx + 36; x += 12) { F.place('bancoParque', () => SKP.bancoParque(), x, zN + 3.3, 0); F.place('papelera', SK.papelera, x + 2, zN + 3.5, 0); }
+  for (let x = bx - 84; x <= bx + 36; x += 36) { F.place('bancoParque', () => SKP.bancoParque(), x, zN + 3.3, 0); F.place('papelera', SK.papelera, x + 2, zN + 3.5, 0); } // un banco cada 36 m
   [['heladeria', 'HELADERÍA', '#e05a8a', 'blanco'], ['barOla', 'BAR LA OLA', '#1f6f8b', 'beige'], ['surf', 'SURF', '#e67e22', 'claro']].forEach(([key, text, bg, wall], k) => {
     realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall, stone: 'blanco', awning: bg }), PORT.x1 + 6 + k * 13, zN + 10, Math.PI, { label: k === 1 ? 'Paseo marítimo' : undefined, mapColor: '#c98a6b' });
   });

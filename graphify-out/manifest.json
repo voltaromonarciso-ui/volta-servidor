@@ -102,194 +102,194 @@
     "semantic_hash": ""
   },
   "juego/src/assets/people/anims.json": {
-    "mtime": 1792597843.1229649,
-    "seen": 1792604481.5063684,
+    "mtime": 1792607398.7169604,
+    "seen": 1792609453.4518983,
     "ast_hash": "1b51eac4a707c099660a64c90eabe6b7",
     "semantic_hash": ""
   },
   "juego/src/core/audio.js": {
-    "mtime": 1792597843.0901387,
-    "seen": 1792604481.5063713,
+    "mtime": 1792607398.6836815,
+    "seen": 1792609453.4519026,
     "ast_hash": "3cf69d0553b9b28a11f7b3e35a1582e5",
     "semantic_hash": ""
   },
   "juego/src/core/input.js": {
-    "mtime": 1792597843.0908887,
-    "seen": 1792604481.5063736,
+    "mtime": 1792607398.684474,
+    "seen": 1792609453.451905,
     "ast_hash": "e24b4dfea1480f6e9f67be27f963a0e4",
     "semantic_hash": ""
   },
   "juego/src/core/state.js": {
-    "mtime": 1792597843.0898302,
-    "seen": 1792604481.5063784,
+    "mtime": 1792607398.683361,
+    "seen": 1792609453.4519093,
     "ast_hash": "7272c90152033cf1e97f13c2d40eeabe",
     "semantic_hash": ""
   },
   "juego/src/data/effects.js": {
-    "mtime": 1792597843.091593,
-    "seen": 1792604481.5063834,
+    "mtime": 1792607398.6855307,
+    "seen": 1792609453.4519114,
     "ast_hash": "da157b2efb20e7f939c3c7105c67827d",
     "semantic_hash": ""
   },
   "juego/src/data/items.js": {
-    "mtime": 1792597843.0914354,
-    "seen": 1792604481.5063863,
+    "mtime": 1792607398.6852605,
+    "seen": 1792609453.4519305,
     "ast_hash": "32203ddcab2e4b9e7e012b353f8f4c67",
     "semantic_hash": ""
   },
   "juego/src/data/people.js": {
-    "mtime": 1792597843.091756,
-    "seen": 1792604481.506388,
+    "mtime": 1792607398.6857405,
+    "seen": 1792609453.4519331,
     "ast_hash": "cefcc9d250fe04193e9ebc7b11c7aa87",
     "semantic_hash": ""
   },
   "juego/src/data/quests.js": {
-    "mtime": 1792597843.091885,
-    "seen": 1792604481.5063903,
+    "mtime": 1792607398.6858943,
+    "seen": 1792609453.4519353,
     "ast_hash": "91165196eea71ebae6551a4ef19b53ef",
     "semantic_hash": ""
   },
   "juego/src/entities/cars.js": {
-    "mtime": 1792597843.0983353,
-    "seen": 1792604481.506401,
+    "mtime": 1792607398.697293,
+    "seen": 1792609453.4519463,
     "ast_hash": "302e1a201fc109f7a06a1754b3838889",
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
-    "mtime": 1792597843.09902,
-    "seen": 1792604481.5064046,
+    "mtime": 1792607398.6980367,
+    "seen": 1792609453.45195,
     "ast_hash": "8e72a2d6064a6ca922f2097afa860004",
     "semantic_hash": ""
   },
   "juego/src/entities/human.js": {
-    "mtime": 1792597843.0981364,
-    "seen": 1792604481.5064065,
+    "mtime": 1792607398.697106,
+    "seen": 1792609453.451952,
     "ast_hash": "6fbccbbbf0d238388ba0e3828be50fcf",
     "semantic_hash": ""
   },
   "juego/src/entities/models.js": {
-    "mtime": 1792597843.0979278,
-    "seen": 1792604481.5064085,
+    "mtime": 1792607398.6958892,
+    "seen": 1792609453.4519536,
     "ast_hash": "5e1964aa95a6e61b22418e625380b4e6",
     "semantic_hash": ""
   },
   "juego/src/entities/npc.js": {
-    "mtime": 1792597843.0996678,
-    "seen": 1792604481.5064106,
+    "mtime": 1792607398.6986842,
+    "seen": 1792609453.4519558,
     "ast_hash": "7bb4cefa1c302c610a004b368e2a0400",
     "semantic_hash": ""
   },
   "juego/src/entities/player.js": {
-    "mtime": 1792597843.0985405,
-    "seen": 1792604481.5064123,
+    "mtime": 1792607398.6974611,
+    "seen": 1792609453.4519575,
     "ast_hash": "b476567f2fdd00ac58f9a9acc21d9cb6",
     "semantic_hash": ""
   },
   "juego/src/game.js": {
-    "mtime": 1792597843.1042883,
-    "seen": 1792604481.506417,
+    "mtime": 1792607398.7017906,
+    "seen": 1792609453.4519663,
     "ast_hash": "360842f828b8b7c16bab26c2fa9d5f4a",
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792597843.1052783,
-    "seen": 1792604481.5064182,
+    "mtime": 1792607398.7023873,
+    "seen": 1792609453.4519682,
     "ast_hash": "dd20d5aca2fff4da8037fc76c53c740e",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
-    "mtime": 1792597843.104528,
-    "seen": 1792604481.5064197,
+    "mtime": 1792607398.7019134,
+    "seen": 1792609453.4519708,
     "ast_hash": "49e16eb5c5bf7cd56ab4623fc11ef9b8",
     "semantic_hash": ""
   },
   "juego/src/systems/economy.js": {
-    "mtime": 1792597843.1001265,
-    "seen": 1792604481.506427,
+    "mtime": 1792607398.6990507,
+    "seen": 1792609453.4519958,
     "ast_hash": "7d98bb68f85d576c655f6b59e08ad403",
     "semantic_hash": ""
   },
   "juego/src/systems/interact.js": {
-    "mtime": 1792597843.100717,
-    "seen": 1792604481.5064309,
+    "mtime": 1792607398.6994896,
+    "seen": 1792609453.4520054,
     "ast_hash": "d8a93e7a4168c00791807b1e14245a5f",
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792597843.10117,
-    "seen": 1792604481.5064323,
+    "mtime": 1792607398.699793,
+    "seen": 1792609453.4520128,
     "ast_hash": "4fa786decfbd92e12df248b6518e6585",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792597843.1018276,
-    "seen": 1792604481.5064337,
+    "mtime": 1792607398.70022,
+    "seen": 1792609453.4520159,
     "ast_hash": "fa913ece4c4b92e7b7c11c7f0aac01a1",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
-    "mtime": 1792597843.1005726,
-    "seen": 1792604481.5064447,
+    "mtime": 1792607398.6993556,
+    "seen": 1792609453.4520252,
     "ast_hash": "cbec4d23c2643454fed0cab1c5250ec4",
     "semantic_hash": ""
   },
   "juego/src/ui/creator.js": {
-    "mtime": 1792597843.1029754,
-    "seen": 1792604481.5064466,
+    "mtime": 1792607398.7011898,
+    "seen": 1792609453.4520268,
     "ast_hash": "32bc787692473b455f19c1a24c5073bb",
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792597843.1027737,
-    "seen": 1792604481.5064502,
+    "mtime": 1792607398.7010622,
+    "seen": 1792609453.4520311,
     "ast_hash": "ea3f60dcafa32702c598ba6cbb5ce6a4",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
-    "mtime": 1792597843.1031585,
-    "seen": 1792604481.506454,
+    "mtime": 1792607398.7013133,
+    "seen": 1792609453.4520354,
     "ast_hash": "dce7951fe052b2727fdef700def40943",
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792597843.1039202,
-    "seen": 1792604481.506456,
+    "mtime": 1792607398.7016366,
+    "seen": 1792609453.4520369,
     "ast_hash": "9779c479b03169a9e17b24d285742e1d",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792597843.1034868,
-    "seen": 1792604481.5064576,
+    "mtime": 1792607398.7014577,
+    "seen": 1792609453.4520388,
     "ast_hash": "fd7724b8c1fb22f234e0c65c31eee309",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
-    "mtime": 1792597843.0930827,
-    "seen": 1792604481.5064638,
+    "mtime": 1792607398.6873965,
+    "seen": 1792609453.4520462,
     "ast_hash": "0b4baabbb7cc30d0de672873da811b97",
     "semantic_hash": ""
   },
   "juego/src/world/nav.js": {
-    "mtime": 1792597843.0934932,
-    "seen": 1792604481.506479,
+    "mtime": 1792607398.688943,
+    "seen": 1792609453.452063,
     "ast_hash": "b1cc7119e89583786ba092222f16b753",
     "semantic_hash": ""
   },
   "juego/src/world/sky.js": {
-    "mtime": 1792597843.0933187,
-    "seen": 1792604481.5064845,
+    "mtime": 1792607398.6875522,
+    "seen": 1792609453.4520688,
     "ast_hash": "89184b3c821c69888c16906cdc8d60ef",
     "semantic_hash": ""
   },
   "juego/src/world/textures.js": {
-    "mtime": 1792597843.0927923,
-    "seen": 1792604481.5064912,
+    "mtime": 1792607398.6872194,
+    "seen": 1792609453.4520762,
     "ast_hash": "54b706ebe51102e14411b64d3ea5d03e",
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792605048.6028697,
-    "seen": 1792607076.9268,
+    "mtime": 1792607398.6899064,
+    "seen": 1792609453.4520798,
     "ast_hash": "6065365e3452d2430ca69ca060ff0977",
     "semantic_hash": ""
   },
@@ -774,14 +774,14 @@
     "semantic_hash": ""
   },
   "juego/src/entities/vehicles.js": {
-    "mtime": 1792597843.097749,
-    "seen": 1792604481.5064156,
+    "mtime": 1792607398.692197,
+    "seen": 1792609453.4519634,
     "ast_hash": "daf98fb12e9f8f1a945d31108341044f",
     "semantic_hash": ""
   },
   "juego/src/world/props.js": {
-    "mtime": 1792597843.0925028,
-    "seen": 1792604481.506481,
+    "mtime": 1792607398.6868746,
+    "seen": 1792609453.452065,
     "ast_hash": "5910432ab30418c3d76cb619a1ad4052",
     "semantic_hash": ""
   },
@@ -966,212 +966,212 @@
     "semantic_hash": ""
   },
   "juego/src/assets/cars/CarTexture.png": {
-    "mtime": 1792597843.1256628,
-    "seen": 1792604481.5122826,
+    "mtime": 1792607398.7188885,
+    "seen": 1792609453.4576495,
     "ast_hash": "8cec0d4a676b80cf946c08ad8a3f3159",
     "semantic_hash": ""
   },
   "juego/src/assets/cars/CopTexture.png": {
-    "mtime": 1792597843.125938,
-    "seen": 1792604481.512285,
+    "mtime": 1792607398.7191412,
+    "seen": 1792609453.4576519,
     "ast_hash": "8a3bb89d13f6606d697db17e89fe8177",
     "semantic_hash": ""
   },
   "juego/src/assets/cars/TaxiTexture.png": {
-    "mtime": 1792597843.1258087,
-    "seen": 1792604481.5122871,
+    "mtime": 1792607398.7190144,
+    "seen": 1792609453.457654,
     "ast_hash": "2afa021de9f7176839ebd3c5fa97d25a",
     "semantic_hash": ""
   },
   "juego/src/assets/props/colormap.png": {
-    "mtime": 1792597843.126247,
-    "seen": 1792604481.5122888,
+    "mtime": 1792607398.7192798,
+    "seen": 1792609453.4576561,
     "ast_hash": "5d05c98adbb1a749dab658e0c3d838a9",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/bag.mp3": {
-    "mtime": 1792597843.128553,
-    "seen": 1792604481.512348,
+    "mtime": 1792607398.7211654,
+    "seen": 1792609453.457709,
     "ast_hash": "e5ff6d0e0b81f119792bcc4a4bfcd6a7",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/cash1.mp3": {
-    "mtime": 1792597843.1279516,
-    "seen": 1792604481.5123534,
+    "mtime": 1792607398.7206547,
+    "seen": 1792609453.4577105,
     "ast_hash": "6a79a360186423a0c0fcd614001eb4dd",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/cash2.mp3": {
-    "mtime": 1792597843.1281118,
-    "seen": 1792604481.5123553,
+    "mtime": 1792607398.7207913,
+    "seen": 1792609453.4577127,
     "ast_hash": "8ed55f56be871a7d0dc59decc1003651",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/click.mp3": {
-    "mtime": 1792597843.1289675,
-    "seen": 1792604481.5123565,
+    "mtime": 1792607398.7214735,
+    "seen": 1792609453.4577148,
     "ast_hash": "663826753403165c5bb2bbcfe068e54c",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/close.mp3": {
-    "mtime": 1792597843.1292825,
-    "seen": 1792604481.512358,
+    "mtime": 1792607398.7218063,
+    "seen": 1792609453.4577167,
     "ast_hash": "e90a4eb670e24db92e4890859949304a",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/coins.mp3": {
-    "mtime": 1792597843.1282969,
-    "seen": 1792604481.5123594,
+    "mtime": 1792607398.7209117,
+    "seen": 1792609453.4577184,
     "ast_hash": "2eeeb6dfec06a149b0e61e3cd457a977",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/day.mp3": {
-    "mtime": 1792597843.1312728,
-    "seen": 1792604481.5123608,
+    "mtime": 1792607398.7235117,
+    "seen": 1792609453.4577198,
     "ast_hash": "698ad2b1ef1c09081bc12f07667937cb",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/door_close.mp3": {
-    "mtime": 1792597843.127805,
-    "seen": 1792604481.512362,
+    "mtime": 1792607398.7204945,
+    "seen": 1792609453.4577212,
     "ast_hash": "64ae523e93c206a80b9bacffe6dd3417",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/door_open.mp3": {
-    "mtime": 1792597843.1276789,
-    "seen": 1792604481.5123632,
+    "mtime": 1792607398.7203608,
+    "seen": 1792609453.4577231,
     "ast_hash": "ae15ea85b99a7c1a8a0490955f424a2e",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/engine.mp3": {
-    "mtime": 1792597843.1315591,
-    "seen": 1792604481.5123646,
+    "mtime": 1792607398.7238061,
+    "seen": 1792609453.4577246,
     "ast_hash": "e51c8799738e4cef114ccf6959b9a406",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/error.mp3": {
-    "mtime": 1792597843.1297212,
-    "seen": 1792604481.512366,
+    "mtime": 1792607398.7221773,
+    "seen": 1792609453.4577262,
     "ast_hash": "cdb2945010ff2d09ad8aa2e886db4298",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/harvest.mp3": {
-    "mtime": 1792597843.1286936,
-    "seen": 1792604481.5123672,
+    "mtime": 1792607398.7213237,
+    "seen": 1792609453.4577277,
     "ast_hash": "61670f6479f4424f56d50370cd312d78",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/latch.mp3": {
-    "mtime": 1792597843.1302767,
-    "seen": 1792604481.5123687,
+    "mtime": 1792607398.7227697,
+    "seen": 1792609453.4577293,
     "ast_hash": "e860df4944336d369e35d8217ba8020d",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/level.mp3": {
-    "mtime": 1792597843.1299708,
-    "seen": 1792604481.51237,
+    "mtime": 1792607398.7224474,
+    "seen": 1792609453.4577308,
     "ast_hash": "e93c50a86fc231cef4312b2930b5e72e",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/msg1.mp3": {
-    "mtime": 1792597843.1294534,
-    "seen": 1792604481.5123715,
+    "mtime": 1792607398.7219338,
+    "seen": 1792609453.4577324,
     "ast_hash": "0b3f54a35ac4650fc6e7d2d21cb29192",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/msg2.mp3": {
-    "mtime": 1792597843.1295924,
-    "seen": 1792604481.5123727,
+    "mtime": 1792607398.7220526,
+    "seen": 1792609453.4577339,
     "ast_hash": "79fa3e717b2a2a343a347f89463b7d76",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/night.mp3": {
-    "mtime": 1792597843.130894,
-    "seen": 1792604481.5123742,
+    "mtime": 1792607398.7231762,
+    "seen": 1792609453.4577358,
     "ast_hash": "452921007fa9396ba9ba8da216b1cb34",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/open.mp3": {
-    "mtime": 1792597843.1291323,
-    "seen": 1792604481.5123756,
+    "mtime": 1792607398.7216213,
+    "seen": 1792609453.457737,
     "ast_hash": "374543466ea53d08a1f7339d371df2a4",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/pack.mp3": {
-    "mtime": 1792597843.128438,
-    "seen": 1792604481.5123765,
+    "mtime": 1792607398.7210424,
+    "seen": 1792609453.4577384,
     "ast_hash": "65fff379383a2b57356800ed2f668117",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/phone.mp3": {
-    "mtime": 1792597843.1301343,
-    "seen": 1792604481.5123777,
+    "mtime": 1792607398.722634,
+    "seen": 1792609453.4577398,
     "ast_hash": "81cffeb1791c864ced34c9dcfeb774e8",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/pop.mp3": {
-    "mtime": 1792597843.1298501,
-    "seen": 1792604481.512379,
+    "mtime": 1792607398.7223122,
+    "seen": 1792609453.4577413,
     "ast_hash": "2f5699f1ba3d84685dbde0ceb2d55215",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/siren.mp3": {
-    "mtime": 1792597843.130463,
-    "seen": 1792604481.5123804,
+    "mtime": 1792607398.7229187,
+    "seen": 1792609453.457743,
     "ast_hash": "4cac166c69a873615cfd13c43cc1f18d",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/step0.mp3": {
-    "mtime": 1792597843.1269202,
-    "seen": 1792604481.512382,
+    "mtime": 1792607398.7197142,
+    "seen": 1792609453.4577446,
     "ast_hash": "64777bb4943ea70acc619e571d280a7f",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/step1.mp3": {
-    "mtime": 1792597843.127072,
-    "seen": 1792604481.5123835,
+    "mtime": 1792607398.7198381,
+    "seen": 1792609453.4577463,
     "ast_hash": "9e7ade69efd627b7e622b949157965d8",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/step2.mp3": {
-    "mtime": 1792597843.1272173,
-    "seen": 1792604481.5123847,
+    "mtime": 1792607398.7199547,
+    "seen": 1792609453.4577477,
     "ast_hash": "27e4a9fd47f76affd25cdfc71709a8e2",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/step3.mp3": {
-    "mtime": 1792597843.1273723,
-    "seen": 1792604481.5123863,
+    "mtime": 1792607398.720069,
+    "seen": 1792609453.457749,
     "ast_hash": "00f456c9fc6f434f1ba76057f9793947",
     "semantic_hash": ""
   },
   "juego/src/assets/sounds/step4.mp3": {
-    "mtime": 1792597843.1275368,
-    "seen": 1792604481.5123878,
+    "mtime": 1792607398.7201865,
+    "seen": 1792609453.4577506,
     "ast_hash": "55f0b87f97856390362dcca00197a51f",
     "semantic_hash": ""
   },
   "juego/src/entities/goods.js": {
-    "mtime": 1792597843.098758,
-    "seen": 1792604481.5064034,
+    "mtime": 1792607398.6977494,
+    "seen": 1792609453.4519484,
     "ast_hash": "dc7ba7c1cbdc305bf626c9065d181af3",
     "semantic_hash": ""
   },
   "juego/src/systems/station.js": {
-    "mtime": 1792597843.1003773,
-    "seen": 1792604481.506443,
+    "mtime": 1792607398.6992226,
+    "seen": 1792609453.4520228,
     "ast_hash": "7c23a33377fd499e42cfe795dc5071fe",
     "semantic_hash": ""
   },
   "juego/src/ui/icons.js": {
-    "mtime": 1792597843.1023993,
-    "seen": 1792604481.5064526,
+    "mtime": 1792607398.700732,
+    "seen": 1792609453.4520333,
     "ast_hash": "190adfe252ef74170e4335d5effe0203",
     "semantic_hash": ""
   },
   "juego/src/world/benches.js": {
-    "mtime": 1792597843.093958,
-    "seen": 1792604481.5064652,
+    "mtime": 1792607398.6893659,
+    "seen": 1792609453.4520478,
     "ast_hash": "2abb4b943b47cb34d566b8367728581c",
     "semantic_hash": ""
   },
@@ -1272,26 +1272,26 @@
     "semantic_hash": ""
   },
   "juego/src/data/style.js": {
-    "mtime": 1792597843.0920155,
-    "seen": 1792604481.5063949,
+    "mtime": 1792607398.6860402,
+    "seen": 1792609453.4519403,
     "ast_hash": "75be530df4969030002b22728f5161d9",
     "semantic_hash": ""
   },
   "juego/src/entities/avatar.js": {
-    "mtime": 1792597843.0993207,
-    "seen": 1792604481.506399,
+    "mtime": 1792607398.6982372,
+    "seen": 1792609453.4519446,
     "ast_hash": "fc165e00c0d640bcee061046a1018067",
     "semantic_hash": ""
   },
   "juego/src/systems/appearance.js": {
-    "mtime": 1792597843.101422,
-    "seen": 1792604481.5064216,
+    "mtime": 1792607398.6999412,
+    "seen": 1792609453.4519732,
     "ast_hash": "3d430edae4be9939afd85d8c2e000147",
     "semantic_hash": ""
   },
   "juego/src/ui/dressing.js": {
-    "mtime": 1792597843.102623,
-    "seen": 1792604481.5064487,
+    "mtime": 1792607398.7008886,
+    "seen": 1792609453.452029,
     "ast_hash": "b8722c1cb1d039d9a20b8fe8a91f3cfa",
     "semantic_hash": ""
   },
@@ -1302,20 +1302,20 @@
     "semantic_hash": ""
   },
   "juego/src/data/vehicles.js": {
-    "mtime": 1792597843.0923145,
-    "seen": 1792604481.506397,
+    "mtime": 1792607398.686456,
+    "seen": 1792609453.4519424,
     "ast_hash": "890cdba7dc2014b25f45950745cff4aa",
     "semantic_hash": ""
   },
   "juego/src/entities/rideables.js": {
-    "mtime": 1792597843.0995064,
-    "seen": 1792604481.506414,
+    "mtime": 1792607398.698437,
+    "seen": 1792609453.4519603,
     "ast_hash": "5714a1989d78469af4c9531cc28bb146",
     "semantic_hash": ""
   },
   "juego/src/systems/riding.js": {
-    "mtime": 1792597843.1009018,
-    "seen": 1792604481.5064387,
+    "mtime": 1792607398.6996374,
+    "seen": 1792609453.4520185,
     "ast_hash": "80f34f1b566aa79df28188d9d598c06e",
     "semantic_hash": ""
   },
@@ -1332,14 +1332,14 @@
     "semantic_hash": ""
   },
   "juego/src/data/staff.js": {
-    "mtime": 1792597843.0921621,
-    "seen": 1792604481.5063925,
+    "mtime": 1792607398.6861799,
+    "seen": 1792609453.4519377,
     "ast_hash": "ead2153e202c9a581fa8b50edf1a07f8",
     "semantic_hash": ""
   },
   "juego/src/systems/staff.js": {
-    "mtime": 1792597843.1016214,
-    "seen": 1792604481.5064406,
+    "mtime": 1792607398.700093,
+    "seen": 1792609453.4520202,
     "ast_hash": "4ee34cc57aaba3fb28dc441805769658",
     "semantic_hash": ""
   },
@@ -1350,8 +1350,8 @@
     "semantic_hash": ""
   },
   "juego/src/core/money.js": {
-    "mtime": 1792597843.091153,
-    "seen": 1792604481.506376,
+    "mtime": 1792607398.68489,
+    "seen": 1792609453.4519074,
     "ast_hash": "a3ac72ab406632b22ea0db239bcfed1f",
     "semantic_hash": ""
   },
@@ -1386,14 +1386,14 @@
     "semantic_hash": ""
   },
   "juego/src/systems/casino.js": {
-    "mtime": 1792597843.1021981,
-    "seen": 1792604481.5064256,
+    "mtime": 1792607398.7005172,
+    "seen": 1792609453.4519796,
     "ast_hash": "7afc73f66e937d14a409fb08e476a549",
     "semantic_hash": ""
   },
   "juego/src/systems/gangs.js": {
-    "mtime": 1792597843.0998862,
-    "seen": 1792604481.5064294,
+    "mtime": 1792607398.698873,
+    "seen": 1792609453.4520016,
     "ast_hash": "ce2b9442f3130cdc79bed2eb8aa658cb",
     "semantic_hash": ""
   },
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792606176.423828,
-    "seen": 1792607076.9265823,
-    "ast_hash": "aa151d8d892f10d82fca404d16c5f8fb",
+    "mtime": 1792608864.3488894,
+    "seen": 1792609453.4520614,
+    "ast_hash": "4a45da237e27619fd545f3fa26a157f3",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1530,14 +1530,14 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina.js": {
-    "mtime": 1792597843.1056447,
-    "seen": 1792604481.5064619,
+    "mtime": 1792607398.702524,
+    "seen": 1792609453.4520433,
     "ast_hash": "0cb81dfa9d835d632bb58acd3c43c887",
     "semantic_hash": ""
   },
   "juego/src/world/streetkit.js": {
-    "mtime": 1792597843.0962212,
-    "seen": 1792604481.5064878,
+    "mtime": 1792607398.6909099,
+    "seen": 1792609453.4520729,
     "ast_hash": "54d17883eb27a9557456014296d7e839",
     "semantic_hash": ""
   },
@@ -1638,14 +1638,14 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetfurniture.js": {
-    "mtime": 1792597843.0958793,
-    "seen": 1792604481.5064862,
+    "mtime": 1792607398.6906319,
+    "seen": 1792609453.452071,
     "ast_hash": "d1a6de063e79d4a5e302c86717234f27",
     "semantic_hash": ""
   },
   "juego/src/systems/atm.js": {
-    "mtime": 1792597843.102007,
-    "seen": 1792604481.5064232,
+    "mtime": 1792607398.7003608,
+    "seen": 1792609453.4519763,
     "ast_hash": "7b070dce3322ecd5051b6b56a52bce87",
     "semantic_hash": ""
   },
@@ -1656,8 +1656,8 @@
     "semantic_hash": ""
   },
   "juego/src/world/facades.js": {
-    "mtime": 1792597843.0955813,
-    "seen": 1792604481.5064735,
+    "mtime": 1792607398.6904445,
+    "seen": 1792609453.4520566,
     "ast_hash": "8b8c16cc7944ec1beb7c09925e85ad48",
     "semantic_hash": ""
   },
@@ -1686,14 +1686,14 @@
     "semantic_hash": ""
   },
   "juego/src/vitrina-glb.js": {
-    "mtime": 1792597843.1050656,
-    "seen": 1792604481.5064597,
+    "mtime": 1792607398.7022636,
+    "seen": 1792609453.4520404,
     "ast_hash": "c840988915ec05ecba7c4259ed1ce29e",
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792605090.1209567,
-    "seen": 1792607076.9264905,
+    "mtime": 1792607398.6901515,
+    "seen": 1792609453.45205,
     "ast_hash": "b089e22edbae550344cf1b5e52234bd2",
     "semantic_hash": ""
   },
@@ -1758,164 +1758,164 @@
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/beige_wall_001_c.jpg": {
-    "mtime": 1792597843.1431081,
-    "seen": 1792604481.512306,
+    "mtime": 1792607398.7555618,
+    "seen": 1792609453.457664,
     "ast_hash": "cd866b04b2fa50ac42e43b33c38fff72",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/beige_wall_001_n.jpg": {
-    "mtime": 1792597843.143325,
-    "seen": 1792604481.5123076,
+    "mtime": 1792607398.7559216,
+    "seen": 1792609453.4576662,
     "ast_hash": "d8bd452e40c4ba41cc6e40133979d38b",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/brick_wall_02_c.jpg": {
-    "mtime": 1792597843.1435962,
-    "seen": 1792604481.5123096,
+    "mtime": 1792607398.7562993,
+    "seen": 1792609453.4576678,
     "ast_hash": "43c64ab97aae6e300182473c3008bfe0",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/brick_wall_02_n.jpg": {
-    "mtime": 1792597843.1438851,
-    "seen": 1792604481.5123115,
+    "mtime": 1792607398.7565458,
+    "seen": 1792609453.4576697,
     "ast_hash": "d48df3e03ea2dc5cd314a416ada6b0c5",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/brick_wall_10_c.jpg": {
-    "mtime": 1792597843.1441422,
-    "seen": 1792604481.5123136,
+    "mtime": 1792607398.7570722,
+    "seen": 1792609453.4576714,
     "ast_hash": "91d71569e9fd2a21835f61c7f8c16a8f",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/brick_wall_10_n.jpg": {
-    "mtime": 1792597843.1443837,
-    "seen": 1792604481.512315,
+    "mtime": 1792607398.757373,
+    "seen": 1792609453.457673,
     "ast_hash": "6125c4b0c2f89ff1c89f462e197ff1f5",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/clay_roof_tiles_02_c.jpg": {
-    "mtime": 1792597843.1451578,
-    "seen": 1792604481.5123167,
+    "mtime": 1792607398.7599733,
+    "seen": 1792609453.457675,
     "ast_hash": "9ccfcceb922f35dfd7e70f1259b3585b",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/clay_roof_tiles_02_n.jpg": {
-    "mtime": 1792597843.145381,
-    "seen": 1792604481.5123193,
+    "mtime": 1792607398.7604458,
+    "seen": 1792609453.4576771,
     "ast_hash": "f704c1f8a5e9966474763221fef2fc23",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/concrete_wall_008_c.jpg": {
-    "mtime": 1792597843.1455867,
-    "seen": 1792604481.5123212,
+    "mtime": 1792607398.7608411,
+    "seen": 1792609453.457679,
     "ast_hash": "0529cb66a7c5b7f7ec4b07ce5519a1ac",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/concrete_wall_008_n.jpg": {
-    "mtime": 1792597843.145787,
-    "seen": 1792604481.5123231,
+    "mtime": 1792607398.7610786,
+    "seen": 1792609453.4576812,
     "ast_hash": "da5498408d55a9a8cd697735773d8cb4",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/corrugated_iron_02_c.jpg": {
-    "mtime": 1792597843.1459897,
-    "seen": 1792604481.5123243,
+    "mtime": 1792607398.7613394,
+    "seen": 1792609453.4576824,
     "ast_hash": "a6c5007ddd36544c14af66a2d6a0f667",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/corrugated_iron_02_n.jpg": {
-    "mtime": 1792597843.1462498,
-    "seen": 1792604481.512326,
+    "mtime": 1792607398.7616053,
+    "seen": 1792609453.4576843,
     "ast_hash": "dddb21a0f96015a3f4188688e3990693",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/metal_plate_c.jpg": {
-    "mtime": 1792597843.1484668,
-    "seen": 1792604481.5123272,
+    "mtime": 1792607398.7664292,
+    "seen": 1792609453.4576857,
     "ast_hash": "cab88846938b95c23ff416a3b9d2ce81",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/metal_plate_n.jpg": {
-    "mtime": 1792597843.148692,
-    "seen": 1792604481.5123289,
+    "mtime": 1792607398.7673962,
+    "seen": 1792609453.4576876,
     "ast_hash": "fb41b0c7d03f7ba29743eca192e545d8",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/painted_plaster_wall_c.jpg": {
-    "mtime": 1792597843.1476915,
-    "seen": 1792604481.5123305,
+    "mtime": 1792607398.7654703,
+    "seen": 1792609453.4576893,
     "ast_hash": "46c628fa03e620c31448c903430c17de",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/painted_plaster_wall_n.jpg": {
-    "mtime": 1792597843.147855,
-    "seen": 1792604481.512332,
+    "mtime": 1792607398.7657046,
+    "seen": 1792609453.457691,
     "ast_hash": "33bcff40dc483da5a5973be693b2259e",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/plastered_wall_02_c.jpg": {
-    "mtime": 1792597843.1468706,
-    "seen": 1792604481.5123336,
+    "mtime": 1792607398.7642987,
+    "seen": 1792609453.4576924,
     "ast_hash": "abff9fe065e73f6cc03ce33cf4963729",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/plastered_wall_02_n.jpg": {
-    "mtime": 1792597843.1470551,
-    "seen": 1792604481.5123348,
+    "mtime": 1792607398.7645576,
+    "seen": 1792609453.4576948,
     "ast_hash": "4916f4c6d29c79f2281138a149e9d7b6",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/red_brick_03_c.jpg": {
-    "mtime": 1792597843.144664,
-    "seen": 1792604481.5123365,
+    "mtime": 1792607398.759042,
+    "seen": 1792609453.457697,
     "ast_hash": "46226bc2b0b7d5a9cd10174b449ce5ec",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/red_brick_03_n.jpg": {
-    "mtime": 1792597843.1449316,
-    "seen": 1792604481.512338,
+    "mtime": 1792607398.759469,
+    "seen": 1792609453.4576983,
     "ast_hash": "ba2fb8e4d91b0b2d20a0b232ea764a84",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/roof_slates_02_c.jpg": {
-    "mtime": 1792597843.1464493,
-    "seen": 1792604481.512339,
+    "mtime": 1792607398.76295,
+    "seen": 1792609453.4577,
     "ast_hash": "c91f9f44cfcd28411c5c3d50b13138cd",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/roof_slates_02_n.jpg": {
-    "mtime": 1792597843.1466427,
-    "seen": 1792604481.5123405,
+    "mtime": 1792607398.7639027,
+    "seen": 1792609453.4577014,
     "ast_hash": "1445064ae208a2f7813b499584d325a1",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/white_plaster_02_c.jpg": {
-    "mtime": 1792597843.147261,
-    "seen": 1792604481.5123417,
+    "mtime": 1792607398.7649777,
+    "seen": 1792609453.4577026,
     "ast_hash": "128b32d9b5ade7eca9d3bbaf7f4d4ecc",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/white_plaster_02_n.jpg": {
-    "mtime": 1792597843.1474726,
-    "seen": 1792604481.512343,
+    "mtime": 1792607398.7651868,
+    "seen": 1792609453.4577038,
     "ast_hash": "96b0acc277c8be4ccb4b0edfb9384dff",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/wood_planks_c.jpg": {
-    "mtime": 1792597843.1480675,
-    "seen": 1792604481.5123444,
+    "mtime": 1792607398.7660062,
+    "seen": 1792609453.4577055,
     "ast_hash": "e0f21400d3898d70b137747554b09ce6",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/wood_planks_n.jpg": {
-    "mtime": 1792597843.1483054,
-    "seen": 1792604481.5123458,
+    "mtime": 1792607398.7662125,
+    "seen": 1792609453.457707,
     "ast_hash": "62b70faa89154d0af4199f231c618a61",
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792597843.0936968,
-    "seen": 1792604481.5064828,
+    "mtime": 1792607398.6891935,
+    "seen": 1792609453.4520674,
     "ast_hash": "d8850f92008b7888454d264d00d70e74",
     "semantic_hash": ""
   },
@@ -1938,26 +1938,26 @@
     "semantic_hash": ""
   },
   "juego/src/world/eclipseInterior.js": {
-    "mtime": 1792597843.0953777,
-    "seen": 1792604481.5064716,
+    "mtime": 1792607398.690303,
+    "seen": 1792609453.4520545,
     "ast_hash": "3abaf51ee28af5253b0e90aff7fa19fa",
     "semantic_hash": ""
   },
   "juego/src/world/grass.js": {
-    "mtime": 1792605048.5998173,
-    "seen": 1792607076.9265797,
+    "mtime": 1792607398.6911917,
+    "seen": 1792609453.4520588,
     "ast_hash": "06dfa53a186b7aa096571a478712644b",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_c.jpg": {
-    "mtime": 1792597843.1490073,
-    "seen": 1792604481.5122905,
+    "mtime": 1792607398.7678115,
+    "seen": 1792609453.4576585,
     "ast_hash": "5593ab5a4245e9a0b606b0feaf95b00a",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_n.jpg": {
-    "mtime": 1792597843.1493073,
-    "seen": 1792604481.512304,
+    "mtime": 1792607398.7682052,
+    "seen": 1792609453.4576619,
     "ast_hash": "4da874bde484eb7f15e8d2844dae2d2a",
     "semantic_hash": ""
   },
@@ -2022,14 +2022,14 @@
     "semantic_hash": ""
   },
   "juego/src/world/terrain.js": {
-    "mtime": 1792606657.6336246,
-    "seen": 1792607076.926746,
-    "ast_hash": "94cb360583f8827eb278598143db3309",
+    "mtime": 1792607398.6917734,
+    "seen": 1792609453.4520748,
+    "ast_hash": "07f89224ed2af8ab8f9b64022da19f29",
     "semantic_hash": ""
   },
   "juego/src/world/vegetation.js": {
-    "mtime": 1792601023.6091442,
-    "seen": 1792604481.5064929,
+    "mtime": 1792607398.6895568,
+    "seen": 1792609453.452078,
     "ast_hash": "abbda819879c7db6869f8e19f33975aa",
     "semantic_hash": ""
   },
@@ -2040,14 +2040,14 @@
     "semantic_hash": ""
   },
   "juego/src/world/coast.js": {
-    "mtime": 1792605132.7175953,
-    "seen": 1792607076.9264956,
-    "ast_hash": "e4a5e8992a1648753b08ec85ae587a55",
+    "mtime": 1792608645.534124,
+    "seen": 1792609453.4520526,
+    "ast_hash": "8f6dc6b4390db56f27e3a2e555dedc82",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_c2.jpg": {
-    "mtime": 1792597843.1494663,
-    "seen": 1792604481.5122929,
+    "mtime": 1792607398.768745,
+    "seen": 1792609453.4576602,
     "ast_hash": "c79cb27bf701e3e8e28d0f6cffc2e085",
     "semantic_hash": ""
   }

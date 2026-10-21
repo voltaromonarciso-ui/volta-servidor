@@ -1,8 +1,8 @@
 // Relieve de la isla: una sola función de altura para todo el mapa.
 //
-// · baseH: una colina clara en el centro-norte (~15 m, cuestas de hasta ~18 %) con ondulaciones
-//   suaves, que se aplana hacia la circunvalación,
-//   así la costa, la playa y los muelles quedan a ras del mar.
+// · baseH: una colina clara en el centro (~12 m) con ondulaciones suaves, que se aplana hacia
+//   la circunvalación (la costa, la playa y los muelles quedan a ras del mar). Las calles van
+//   por su cuenta: cada cruce es llano y entre cruces la calle sube o baja en rampa recta.
 // · Explanadas (pads): cada edificio tiene un solar llano a una sola altura; alrededor el
 //   terreno se funde con las lomas en unos metros. Así los suelos, las puertas y los
 //   interiores quedan a nivel y nada flota ni se entierra.
@@ -22,6 +22,7 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 let RX = 210, RZ = 120, XS = [], ZS = [], WALK = 6.5, ISLE = null;
 export function setRelief(on, { rx = 210, rz = 120, xs = [], zs = [], walk = 6.5, isle = null } = {}) {
   T.on = on; RX = rx; RZ = rz; XS = xs; ZS = zs; WALK = walk; ISLE = isle;
+  nodeH.clear();
   pads.length = 0; grid.clear();
 }
 // 0 sobre calles y aceras, 1 justo dentro de la manzana
@@ -32,17 +33,53 @@ function offRoad(x, z) {
   return smooth(WALK, WALK + 0.3, d); // el escalón con la acera lo tapa un muro (island.retainingWalls)
 }
 
-export function baseH(x, z) {
-  if (!T.on) return 0;
+// Terreno natural (sin calles)
+function naturalH(x, z) {
   const d = Math.min(RX - Math.abs(x), RZ - Math.abs(z));
   const m = smooth(-30, 115, d); // transición larga: la colina baja hacia la costa sin tramos de más del ~20 %
   const coast = d < 0 ? coastH(x, z, -d) : 0; // continuo: se suma a las lomas
   if (m <= 0) return coast;
-  // colina clara en el centro-norte (Barrio Alto, Parque, Mansión): ~15 m arriba, bajando
-  // hacia la costa; encima, ondulaciones suaves para que las calles no sean planos inclinados
-  const hill = 15 * Math.exp(-(((x + 60) / 110) ** 2) - (((z - 8) / 72) ** 2));
+  // colina clara en el centro (Barrio Alto, Parque, Mansión): ~12 m arriba, bajando hacia la
+  // costa; encima, ondulaciones suaves para que las calles no sean planos inclinados
+  const hill = 12.5 * Math.exp(-(((x + 60) / 115) ** 2) - (((z - 8) / 80) ** 2));
   const h = hill + 0.9 + 0.8 * Math.sin(x * 0.021 + 0.6) + 0.6 * Math.sin(z * 0.027 - 0.4);
   return Math.max(0, h) * m + coast;
+}
+// Calles: como en la vida real, cada cruce es llano (el cruce y los pasos de cebra) y entre
+// dos cruces la calle sube o baja en rampa recta, con un acuerdo suave al empezar y acabar.
+const FLAT = 8, KNEE = 3;
+function ramp(s, L) { // 0 → 1 a lo largo del tramo [0, L]
+  const a = FLAT, b = L - FLAT;
+  if (s <= a) return 0;
+  if (s >= b) return 1;
+  const lin = (t) => (t - a - KNEE / 2) / (b - a - KNEE);
+  if (s < a + KNEE) { const u = (s - a) / KNEE; return (u * u * KNEE) / 2 / (b - a - KNEE); } // acuerdo de entrada
+  if (s > b - KNEE) { const u = (b - s) / KNEE; return 1 - (u * u * KNEE) / 2 / (b - a - KNEE); } // acuerdo de salida
+  return lin(s);
+}
+const nodeH = new Map();
+const node = (x, z) => { const k = x + ',' + z; if (!nodeH.has(k)) nodeH.set(k, naturalH(x, z)); return nodeH.get(k); };
+function streetH(x, z) {
+  if (!XS.length || Math.abs(x) > RX + WALK || Math.abs(z) > RZ + WALK) return null;
+  let ix = 0, iz = 0;
+  for (let k = 1; k < XS.length; k++) if (Math.abs(x - XS[k]) < Math.abs(x - XS[ix])) ix = k;
+  for (let k = 1; k < ZS.length; k++) if (Math.abs(z - ZS[k]) < Math.abs(z - ZS[iz])) iz = k;
+  const onX = Math.abs(x - XS[ix]) < WALK, onZ = Math.abs(z - ZS[iz]) < WALK; // calle N-S / calle E-O
+  if (!onX && !onZ) return null;
+  if (onX && onZ) return node(XS[ix], ZS[iz]);
+  if (onZ) { // calle este-oeste: entre los cruces a la izquierda y a la derecha
+    let a = XS.findLastIndex((v) => v <= x); a = Math.max(0, Math.min(XS.length - 2, a));
+    const L = XS[a + 1] - XS[a], f = ramp(x - XS[a], L);
+    return node(XS[a], ZS[iz]) + (node(XS[a + 1], ZS[iz]) - node(XS[a], ZS[iz])) * f;
+  }
+  let a = ZS.findLastIndex((v) => v <= z); a = Math.max(0, Math.min(ZS.length - 2, a));
+  const L = ZS[a + 1] - ZS[a], f = ramp(z - ZS[a], L);
+  return node(XS[ix], ZS[a]) + (node(XS[ix], ZS[a + 1]) - node(XS[ix], ZS[a])) * f;
+}
+export function baseH(x, z) {
+  if (!T.on) return 0;
+  const st = streetH(x, z);
+  return st ?? naturalH(x, z);
 }
 
 // Franja de costa (fuera de la circunvalación): dunas y lomas bajas que mueren en la orilla y
