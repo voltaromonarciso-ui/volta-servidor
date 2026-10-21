@@ -18,9 +18,9 @@ const KEYS = [
   [6,    C('#4a5c9c'), C('#ffa877'), C('#ffb37a'), 1.4, 0.66, C('#e2a888')],
   [7.6,  C('#3f88d4'), C('#cfe5f2'), C('#fff0d6'), 2.7, 0.98, C('#cddde6')],
   [15,   C('#3b84d0'), C('#d5e8f1'), C('#fff1da'), 2.8, 1.02, C('#d0dde2')],
-  [16.4, C('#4f78c0'), C('#f6cf9e'), C('#ffd6a2'), 2.75, 0.92, C('#ead0ad')],
-  [17.4, C('#5a62b2'), C('#ffb37c'), C('#ffbf86'), 2.6, 0.82, C('#f0b894')],
-  [18.4, C('#4f4a9e'), C('#ff9268'), C('#ff9a62'), 2.1, 0.68, C('#e3967f')],
+  [16.4, C('#3d7fd0'), C('#f9dcb0'), C('#ffdcaa'), 2.8, 0.95, C('#e2dccb')],
+  [17.4, C('#4677c8'), C('#ffcb94'), C('#ffcf94'), 2.7, 0.9, C('#ead3b4')],
+  [18.4, C('#4a5fb0'), C('#ffa46e'), C('#ffa864'), 2.25, 0.74, C('#e2a98c')],
   [19.4, C('#363170'), C('#d8628a'), C('#ff7f5e'), 0.95, 0.5, C('#a5607f')],
   [20.4, C('#151839'), C('#4f3666'), C('#a08cff'), 0.32, 0.36, C('#3c2d54')],
   [24,   C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.3, C('#1a1c34')],
@@ -135,7 +135,7 @@ function sample(hour) {
 export let nightFactor = 0;
 // Distancia de dibujo: plano lejano de la cámara, niebla y tamaño del cielo (el cielo,
 // el sol y la luna se encogen para quedar siempre dentro del plano lejano).
-export const DRAW = { corta: { far: 260, fog: [40, 230] }, media: { far: 520, fog: [55, 460] }, larga: { far: 1100, fog: [60, 640] } };
+export const DRAW = { corta: { far: 260, fog: [50, 235] }, media: { far: 520, fog: [75, 480] }, larga: { far: 1100, fog: [95, 720] } }; // (niebla más lejana: aire limpio como la referencia)
 let skyK = 1;
 export function setDrawDistance(mode = 'larga') {
   const d = DRAW[mode] || DRAW.larga;

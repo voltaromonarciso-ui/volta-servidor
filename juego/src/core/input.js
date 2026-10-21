@@ -32,6 +32,7 @@ export function initInput() {
     if (e.code === 'KeyG') emit('btn', 'place-store');
     if (e.code === 'Tab' || e.code === 'KeyP') { emit('btn', 'phone'); e.preventDefault(); }
     if (e.code === 'KeyI') emit('btn', 'bag');
+    if (e.code === 'KeyV') emit('btn', 'cam');
     if (e.code === 'KeyC' || e.code === 'ControlLeft') input.crouch = !input.crouch;
     if (e.code === 'Escape') emit('btn', 'escape');
     if (e.code.startsWith('Digit')) {

@@ -583,7 +583,7 @@ export function updatePlacement() {
   if (!type || G.uiOpen) { setGhost(null); return null; }
   // si te alejas mucho mientras mueves algo, vuelve a su sitio
   if (m && Math.hypot(G.player.pos.x - m.x, G.player.pos.z - m.z) > 30) { cancelPlacement(); return null; }
-  ray.setFromCamera({ x: 0, y: 0 }, G.camera);
+  G.player.aim(ray);
   ray.far = 4.5;
   const hit = ray.intersectObjects(G.world.floors, false)[0];
   const rotate = { label: 'Girar', fn: () => rotatePlacement(1), secondary: true };

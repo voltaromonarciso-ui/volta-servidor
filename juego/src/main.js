@@ -215,6 +215,11 @@ on('btn', (b) => {
     return pauseMenu();
   }
   if (b === 'phone') return togglePhone();
+  if (b === 'cam') { // primera / tercera persona
+    if (!G.avatar) return toast('No disponible con este personaje.', '⚠️');
+    G.state.settings.cam3 = !G.state.settings.cam3; save();
+    return toast(G.state.settings.cam3 ? 'Cámara en tercera persona (V para volver)' : 'Cámara en primera persona', '🎥');
+  }
   if (b === 'bag') { if (phoneOpen()) closePhone(); return P.panelOpen() ? P.closePanel() : P.openBag(); }
   if (G.uiOpen) return;
   // en un vehículo: E / el botón de usar sirven para bajarse
@@ -307,7 +312,7 @@ function intro() {
   P.messageDialog('Puerto Lomas', `
     <p>${G.state.name ? `<b>${G.state.name.replace(/[<>&"]/g, '')}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha prestado una vieja nave en el polígono de Puerto Lomas, una ciudad costera de palmeras donde nunca pasa nada... en apariencia.</p>
     <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva, empaqueta y vende a los vecinos sin que la policía te pille. Construye tu imperio desde cero.</p>
-    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
+    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · V cámara · 1-0 objetos'}</p>`,
   '¡A trabajar!', () => {
     setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${G.state.name || 'primo'}. La nave es tuya: deja la caja dentro y ábrela, te he metido lo básico para empezar.`), 1500);
     setTimeout(() => sendMsg('leo', 'Te paso dos contactos: Chema y Nuria. Cuando tengas material, te escribirán. Y ojo: a partir de las 21:00 hay toque de queda, la poli no perdona.'), 8000);
@@ -319,7 +324,7 @@ function introPiso() {
   P.messageDialog('Rooktown', `
     <p>${nm ? `<b>${nm}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha conseguido un estudio en los Apartamentos de Rooktown, portal 7, primera planta: una isla de palmeras donde nunca pasa nada... en apariencia.</p>
     <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva en el hueco libre del piso, empaqueta y vende a los vecinos sin que la policía te pille. Más adelante podrás comprar almacenes para crecer.</p>
-    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
+    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · V cámara · 1-0 objetos'}</p>`,
   '¡A trabajar!', () => {
     setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${nm || 'primo'}. El piso es tuyo y no pagas nada de momento. Abre la caja, te he metido lo básico para empezar.`), 1500);
     setTimeout(() => sendMsg('leo', 'Mi vieja nave la he dejado: ahora es el Almacén Bravo y está en venta. Cuando vayas bien de dinero, échale un ojo. Te paso a Chema y a Nuria; y ojo, a partir de las 21:00 hay toque de queda.'), 8000);
@@ -410,26 +415,46 @@ async function boot() {
   frame();
 }
 
-// Si el móvil no llega a ~24 fps de forma sostenida, baja la calidad automáticamente.
-let lowFps = 0, playSecs = 0;
+// Ajuste automático (prioriza la fluidez): si no llega a ~28 fps de forma sostenida, baja un
+// paso (calidad, resolución, distancia de dibujo); si va sobrado un buen rato, deshace el último.
+let lowFps = 0, highFps = 0, playSecs = 0;
+const AUTO_STEPS = [
+  (st) => st.quality === 'alta' && ['quality', 'media', 'Calidad gráfica: media'],
+  (st) => (st.res ?? 1) > 0.85 && ['res', 0.85, 'Resolución: 85 %'],
+  (st) => st.quality === 'media' && ['quality', 'baja', 'Calidad gráfica: baja'],
+  (st) => (st.res ?? 1) > 0.7 && ['res', 0.7, 'Resolución: 70 %'],
+  (st) => (st.draw || 'larga') === 'larga' && ['draw', 'media', 'Distancia de dibujo: media'],
+  (st) => st.draw === 'media' && ['draw', 'corta', 'Distancia de dibujo: corta'],
+];
+function applySetting(st, k, v) {
+  if (k === 'quality') { G.act.quality(v); st.quality = v; }
+  else if (k === 'res') { st.res = v; resize(); }
+  else if (k === 'draw') G.act.drawDistance(v);
+}
 function autoQuality(fps) {
   const st = G.state.settings;
   if (G.paused || G.uiOpen || st.autoQ === false) return;
   playSecs++;
   if (playSecs < 5) return;
-  lowFps = fps < 24 ? lowFps + 1 : 0;
-  if (lowFps >= 5 && st.quality !== 'baja') {
+  lowFps = fps < 28 ? lowFps + 1 : 0;
+  highFps = fps > 52 ? highFps + 1 : 0;
+  st.autoStack ||= [];
+  if (lowFps >= 4) {
     lowFps = 0;
-    const q = st.quality === 'alta' ? 'media' : 'baja';
-    G.act.quality(q);
-    st.quality = q;
-    toast(`Calidad gráfica ajustada a ${q} para que vaya más fluido.`, '⚙️');
-  } else if (lowFps >= 8 && st.quality === 'baja' && (st.draw || 'larga') !== 'corta') {
-    // ya en calidad baja: se acorta también la distancia de dibujo
-    lowFps = 0;
-    const d = (st.draw || 'larga') === 'larga' ? 'media' : 'corta';
-    G.act.drawDistance(d);
-    toast(`Distancia de dibujo ajustada a ${d} para que vaya más fluido.`, '⚙️');
+    for (const step of AUTO_STEPS) {
+      const r = step(st);
+      if (!r) continue;
+      const [k, v, label] = r;
+      st.autoStack.push([k, k === 'quality' ? st.quality : k === 'res' ? st.res ?? 1 : st.draw || 'larga']);
+      applySetting(st, k, v);
+      toast(`${label}, para que vaya más fluido.`, '⚙️');
+      break;
+    }
+  } else if (highFps >= 20 && st.autoStack.length) {
+    // va sobrado: se recupera lo último que se bajó
+    highFps = 0;
+    const [k, v] = st.autoStack.pop();
+    applySetting(st, k, v);
   }
 }
 

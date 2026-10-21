@@ -62,6 +62,7 @@ export function initHUD() {
   br.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); br.setPointerCapture?.(e.pointerId); br.classList.add('on'); emit('btn', 'brake'); });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) br.addEventListener(ev, () => { br.classList.remove('on'); emit('btn', 'brake-off'); });
   btn('btn-pause', () => emit('btn', 'escape'));
+  btn('btn-cam', () => emit('btn', 'cam'));
   btn('minimap', () => G.act.openPhone('map'));
   // en móvil se interactúa tocando la etiqueta de acción (la principal o la secundaria)
   els.prompt.addEventListener('pointerdown', (e) => {
@@ -127,15 +128,25 @@ export function updateHUD(target, dt = 0.016) {
   els.info.classList.toggle('show', !!info);
   document.body.classList.toggle('aiming', !!prim);
 
-  if (waypoint) {
+  // destino: el que se haya marcado (un trato…) o, si no, el de la misión actual
+  let dest = waypoint, isQuest = false;
+  if (!dest) {
+    const q = QUESTS[s.quest], t = q?.target?.();
     const p = G.player.pos;
-    const dx = waypoint.x - p.x, dz = waypoint.z - p.z, d = Math.hypot(dx, dz);
-    if (d < 4) clearWaypoint();
+    // (si ya estás dentro de tu casa, no hace falta flecha)
+    if (t && !(t.inside && p.x > t.inside.x0 && p.x < t.inside.x1 && p.z > t.inside.z0 && p.z < t.inside.z1)) { dest = t; isQuest = true; }
+  }
+  if (dest) {
+    const p = G.player.pos;
+    const dx = dest.x - p.x, dz = dest.z - p.z, d = Math.hypot(dx, dz);
+    if (d < 4 && !isQuest) clearWaypoint();
+    if (d < (isQuest ? 8 : 4)) els.wp.style.display = 'none';
     else {
       const ang = Math.atan2(-dx, -dz) - G.player.yaw;
       els.wp.style.display = '';
+      els.wp.classList.toggle('quest', isQuest);
       els.wpArrow.style.transform = `rotate(${-ang}rad)`;
-      txt(els.wpText, `${waypoint.label} · ${Math.round(d)} m`);
+      txt(els.wpText, `${dest.label} · ${Math.round(d)} m`);
     }
   } else els.wp.style.display = 'none';
 
@@ -239,6 +250,15 @@ function drawMinimap() {
     icon(spot.x, spot.z, '#27ae60', '$');
   }
   if (waypoint) icon(waypoint.x, waypoint.z, '#d4a017', '★');
+  // nombres de los sitios cercanos (sin girar el texto)
+  g.font = `700 ${Math.round(S * 0.062)}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const l of W.mapLabels) {
+    if (!l.t || Math.abs(l.x - G.player.pos.x) > 70 || Math.abs(l.z - G.player.pos.z) > 70) continue;
+    const [sx, sz, cl] = toScreen(l.x, l.z);
+    if (cl) continue;
+    g.lineWidth = S * 0.02; g.strokeStyle = 'rgba(10,14,20,0.85)'; g.strokeText(l.t, sx, sz);
+    g.fillStyle = 'rgba(255,255,255,0.92)'; g.fillText(l.t, sx, sz);
+  }
   for (const cop of G.police) {
     const [sx, sz, cl] = toScreen(cop.pos.x, cop.pos.z);
     if (cl) continue;

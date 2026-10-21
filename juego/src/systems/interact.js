@@ -23,17 +23,18 @@ export function updateInteract(dt) {
     return target;
   }
 
-  ray.setFromCamera({ x: 0, y: 0 }, G.camera);
+  G.player.aim(ray); // (en tercera persona, desde los ojos del personaje)
+  const o = ray.ray.origin;
   const hits = ray.intersectObjects(G.interactables, false);
   for (const h of hits) {
     const ia = h.object.userData.ia;
     if (!ia || (ia.enabled && !ia.enabled())) continue;
     // muro de por medio?
-    _v.copy(h.point).sub(G.camera.position);
+    _v.copy(h.point).sub(o);
     const d = _v.length() - 0.35;
     if (d > 0.2) {
-      const ex = G.camera.position.x + (_v.x / _v.length()) * d, ez = G.camera.position.z + (_v.z / _v.length()) * d;
-      if (!G.world.los(G.camera.position.x, G.camera.position.z, ex, ez, 2.5)) continue;
+      const ex = o.x + (_v.x / _v.length()) * d, ez = o.z + (_v.z / _v.length()) * d;
+      if (!G.world.los(o.x, o.z, ex, ez, 2.5)) continue;
     }
     target.actions = ia.actions() || [];
     target.info = ia.info ? ia.info() : '';
