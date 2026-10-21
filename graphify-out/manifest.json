@@ -2028,9 +2028,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/vegetation.js": {
-    "mtime": 1792587256.749999,
-    "seen": 1792588098.5119488,
-    "ast_hash": "8629a8c473b1fd445b87b31d2f42e12e",
+    "mtime": 1792593201.9650104,
+    "seen": 1792593211.8081253,
+    "ast_hash": "1922b46ee23bb2eada4aaf1b995ab779",
     "semantic_hash": ""
   },
   "juego/tests/terrain.spec.js": {
