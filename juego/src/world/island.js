@@ -19,6 +19,7 @@ import { grassReady, islandLawn, tuft } from './grass.js';
 import * as SKP from './streetkit.js';
 import { addPad, drapeGeometry } from './terrain.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
+import * as CO from './coast.js';
 
 // líneas de calle (centro de la calzada)
 export const XL = [-210, -150, -90, -30, 30, 90, 150, 210];
@@ -725,45 +726,51 @@ function buildCoast() {
   const zN = ZL[ROWS] + K.SWO, zS = ZL[0] - K.SWO;
   // Faro sobre una loma de rocas (noroeste)
   const fx = XL[0] - 12, fz = zN + 26;
-  for (let k = 0; k < 9; k++) B.add(K.GEO.ico1, '#7d7a72', fx + rr(-10, 10), 0.2, fz + rr(-8, 8), rr(5, 9), rr(2, 4), rr(5, 9), R() * 3, { jitter: 0.1 });
-  B.add(K.GEO.cyl16, '#ecf0f1', fx, 6, fz, 3.4, 12, 3.4);
-  for (let y = 1.5; y < 12; y += 3) B.add(K.GEO.cyl16, '#c0392b', fx, y, fz, 3.45, 1.2, 3.45, 0, { ao: 0 });
-  B.add(K.GEO.cyl8, '#2c3e50', fx, 12.6, fz, 2.2, 1.2, 2.2);
-  B.add(K.GEO.cone8, '#c0392b', fx, 13.8, fz, 2.6, 1.4, 2.6);
-  W.bulbPositions.push([fx, 12.6, fz - 1.2]);
-  K.addBox(fx - 2, fx + 2, fz - 2, fz + 2, 14);
+  // faro torneado con linterna y casa del farero, entre rocas
+  F.place('faro', CO.faro, fx, fz, 0, { solid: false });
+  for (let k = 0; k < 11; k++) { const a = (k / 11) * Math.PI * 2 + R(), d = rr(6.5, 11); F.place('rocaC' + (k % 4), () => CO.rocaCosta((k % 4) + 1, rr(0.9, 1.5)), fx + Math.cos(a) * d, fz + Math.sin(a) * d, R() * 6.28, { solid: false }); }
+  K.addBox(fx - 2.6, fx + 2.6, fz - 2.6, fz + 2.6, 14);
+  K.addBox(fx + 2.7, fx + 7.7, fz - 3.2, fz + 0.8, 4); // casa del farero
   W.mapLabels.push({ x: fx, z: fz, t: 'Faro' });
   // Puerto (norte): muelles de madera, contenedores y grúas
   const px = -10;
   K.paving(px - 60, px + 60, zN + 6, zN + 30, '#b9b2a5');
   for (let k = 0; k < 4; k++) {
     const x = px - 45 + k * 30;
-    for (let z = zN + 30; z <= zN + 60; z += 0.9) B.box('#9c7a52', x, -0.1, z, 4, 0.18, 0.8, 0, { jitter: 0.12, ao: 0 });
+    F.place('pantalan', () => CO.pantalan(30.5, 4), x, zN + 30, 0, { solid: false, y: -0.04 });
+    if (k < 3) F.place('barca' + (k % 3), () => CO.barca(['#2c6e9e', '#c0392b', '#2e7d32'][k % 3]), x + 5.2, zN + 42 + k * 4, 0.05, { solid: false, y: -0.62 });
     K.addBox(x - 2.4, x - 2.1, zN + 30, zN + 60.5, 10); K.addBox(x + 2.1, x + 2.4, zN + 30, zN + 60.5, 10); K.addBox(x - 2.4, x + 2.4, zN + 60.4, zN + 61, 10);
   }
   K.addBox(px - 64, px + 64, zN + 30.4, zN + 31, 10); // borde del muelle (salvo pasarelas)
-  const cols = ['#c0392b', '#2c6e9e', '#2e7d32', '#e67e22', '#7f8c8d'];
+  const cols = ['#b5402f', '#2c6e9e', '#2e7d32', '#d9822b', '#7f8c8d'];
+  const cont = (c, x, z, y = 0) => F.place('cont' + c, () => CO.contenedor(c), x, z, 0, { solid: false, y });
   for (let k = 0; k < 10; k++) {
     const x = px - 52 + (k % 5) * 6.5, z = zN + 12 + Math.floor(k / 5) * 3.2;
-    B.box(cols[k % 5], x, 0, z, 6, 2.6, 2.6, 0, { mat: 'metal' });
-    K.addBox(x - 3, x + 3, z - 1.3, z + 1.3, 3);
+    cont(cols[k % 5], x, z);
+    if (k % 3 === 0) cont(cols[(k + 2) % 5], x, z, 2.62); // algunos apilados
+    K.addBox(x - 3, x + 3, z - 1.3, z + 1.3, k % 3 === 0 ? 5.4 : 3);
   }
   for (const x of [px + 25, px + 45]) {
-    B.box('#e8b923', x, 0, zN + 24, 1, 16, 1, 0, { mat: 'metal' });
-    B.box('#e8b923', x - 5, 15, zN + 24, 14, 0.8, 0.8, 0, { mat: 'metal' });
-    K.addBox(x - 0.5, x + 0.5, zN + 23.5, zN + 24.5, 16);
+    F.place('grua', CO.gruaPortico, x, zN + 24, 0, { solid: false });
+    for (const lx of [-4, 4]) for (const lz of [-3, 3]) K.addBox(x + lx - 0.6, x + lx + 0.6, zN + 24 + lz - 0.8, zN + 24 + lz + 0.8, 16);
   }
   W.spots.push({ id: 'muelle', name: 'Muelle del puerto', x: px - 15, z: zN + 50, discreet: true });
   W.mapLabels.push({ x: px, z: zN + 20, t: 'Puerto' });
   // Playa (noreste): arena, sombrillas y palmeras
   const bx = XL[COLS] - 30;
-  B.box('#e8d5a0', bx, 0, zN + 22, 80, 0.07, 36, 0, { shadow: false, ao: 0 });
-  for (const [x, z, c] of [[-20, 15, '#e74c3c'], [-5, 22, '#3498db'], [10, 14, '#f1c40f'], [24, 24, '#2ecc71']]) {
-    B.add(K.GEO.cyl6, '#ffffff', bx + x, 1.2, zN + z, 0.08, 2.4, 0.08);
-    B.add(K.GEO.cone8, c, bx + x, 2.5, zN + z, 3, 0.7, 3, 0, { ao: 0 });
-    B.box('#ffffff', bx + x + 1.2, 0, zN + z + 1, 0.7, 0.3, 1.8);
+  // arena con textura, sombrillas a rayas con sus tumbonas y toallas, chiringuito y socorrista
+  const sand = new THREE.Mesh(CO.sandGeometry([[bx - 40, bx + 40, zN + 4, zN + 40]]), CO.COAST_MAT.sand());
+  sand.position.y = 0.035; sand.receiveShadow = true; sand.userData.terrainDone = true; scene.add(sand);
+  HARD.push([bx - 40, bx + 40, zN + 4, zN + 40]);
+  for (const [x, z, c] of [[-14, 14, '#e74c3c'], [-4, 22, '#2c7fb8'], [8, 13, '#f1c40f'], [20, 23, '#27ae60'], [30, 15, '#e74c3c']]) {
+    F.place('sombrilla' + c, () => CO.sombrilla(c), bx + x, zN + z, R() * 6, { hit: 0.2 });
+    for (const dx of [-0.9, 0.9]) F.place('tumbona' + c, () => CO.tumbona(c === '#f1c40f' ? '#2c7fb8' : c), bx + x + dx, zN + z + 1.3, Math.PI + rr(-0.1, 0.1), { solid: false });
+    if (R() < 0.6) F.place('toalla' + c, () => CO.toalla(c), bx + x + rr(2.5, 3.5), zN + z + rr(-1, 1), R() * 6, { solid: false });
   }
-  for (let k = 0; k < 14; k++) palm(bx + rr(-38, 38), zN + rr(6, 34), rr(8, 12));
+  F.place('chiringuito', CO.chiringuito, bx - 30, zN + 26, 0, { solid: false });
+  K.addBox(bx - 33.2, bx + -26.8, zN + 24.2, zN + 27.3, 3);
+  F.place('socorrista', CO.torreSocorrista, bx + 14, zN + 33, Math.PI, { hit: 2 });
+  for (let k = 0; k < 7; k++) palm(bx + rr(-38, 38), zN + rr(6, 12), rr(8, 11));
   W.spots.push({ id: 'playa', name: 'Chiringuito de la playa', x: bx - 30, z: zN + 30 });
   W.mapLabels.push({ x: bx, z: zN + 22, t: 'Playa' });
   // Urbanización (sur): fila de casas frente al mar
@@ -772,7 +779,15 @@ function buildCoast() {
   // Muelle de carga (sureste)
   const mx = XL[COLS] - 25;
   K.paving(mx - 20, mx + 20, zS - 30, zS - 6, '#a8a49c');
-  for (let k = 0; k < 6; k++) { const x = mx - 15 + k * 6; B.box(cols[k % 5], x, 0, zS - 18, 5.4, 2.6, 2.6, 0, { mat: 'metal' }); K.addBox(x - 2.7, x + 2.7, zS - 19.3, zS - 16.7, 3); }
+  for (let k = 0; k < 6; k++) {
+    const x = mx - 15 + k * 6.3; cont(cols[k % 5], x, zS - 18);
+    if (k % 2) cont(cols[(k + 3) % 5], x, zS - 18, 2.62);
+    K.addBox(x - 3, x + 3, zS - 19.3, zS - 16.7, k % 2 ? 5.4 : 3);
+  }
+  for (let k = 0; k < 4; k++) K.pallet(mx - 14 + k * 2.4, zS - 12, 0, k % 3);
+  K.forklift(mx + 8, zS - 11, 0.6);
+  // bordillo del muelle con norays
+  for (let x = mx - 18; x <= mx + 18; x += 6) F.place('noray', () => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.45, 10), new THREE.MeshStandardMaterial({ color: '#2b2e33', roughness: 0.5, metalness: 0.6 })); m.position.y = 0.22; g.add(m); return g; }, x, zS - 29.3, 0, { solid: false });
   W.spots.push({ id: 'muelleCarga', name: 'Muelle de carga', x: mx + 12, z: zS - 26, discreet: true });
   W.mapLabels.push({ x: mx, z: zS - 22, t: 'Muelle de carga' });
   // paseo para los peatones
