@@ -179,3 +179,16 @@ quiere modelos muy trabajados, fieles a sus imágenes, aunque lleve mucho más t
 - **El Eclipse**: se tiene que poder entrar, con interior completo (pista, zona VIP, barra).
 - **Modelos**: el usuario va a abrir las descargas (poly.pizza, sketchfab, itch.io, polyhaven,
   Google Drive) para usar edificios y objetos libres de calidad en vez de modelarlos por código.
+- **Mejora visual (capturas de referencia «calle al atardecer» y lámina de árboles y césped)**:
+  - **Estilo**: el de las imágenes (semirrealista cálido, luz dorada de atardecer, árboles de
+    copa redonda, césped vivo con matas y flores). Los edificios con textura se quedan.
+  - **Relieve**: **calles con cuestas de verdad** (terrain.js). Las calles y aceras siguen el
+    terreno natural (≤ ~7 %); cada edificio tiene un solar llano a ras de la acera delante de
+    su fachada; la costa queda a nivel del mar.
+  - **Mapa**: la **isla es el mapa por defecto** (el antiguo, con `?mapa=1`; lo usan las pruebas
+    de referencia de los sistemas).
+  - **Palmeras**: pocas y **solo en jardines y costa**; ningún árbol en las aceras.
+  - **Cantidad de elementos**: «había una cantidad excesiva»: dos piezas de mobiliario entre
+    farola y farola, en parejas con sentido, y menos matas, plantas y rocas en el césped.
+  - **Árboles**: hojas pegadas a la copa (nada de hojas sueltas flotando).
+  - **Costa** (puerto, muelle de carga, faro, playa): rehecha con modelos propios (coast.js).
