@@ -5,6 +5,8 @@ import { ITEMS, STRAINS } from '../data/items.js';
 import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
 import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile } from './goods.js';
+import { FPArms } from './fparms.js';
+import { MODELS } from './models.js';
 
 // Brazos y manos en primera persona (escena aparte, nunca atraviesan paredes).
 const SKIN = '#e2b08c', SLEEVE = '#24272e', CUFF = '#30343c';
@@ -307,6 +309,18 @@ export class ViewModel {
     this.t = 0;
   }
 
+  // Brazos del propio personaje (fparms.js) en vez de las manos dibujadas por código
+  useAvatar(model, style) {
+    if (model && MODELS[model] && this.armsModel !== model) {
+      if (this.arms) this.arms.group.removeFromParent();
+      this.arms = new FPArms(model);
+      this.armsModel = model;
+      if (this.arms.ok) this.root.add(this.arms.group);
+      else this.arms = null;
+    }
+    if (this.arms && style) this.arms.apply(style);
+  }
+
   // Animación de entregar lo que llevas en la mano.
   give() { this.giveT = 1; }
 
@@ -390,6 +404,24 @@ export class ViewModel {
     }
     this.fitSleeve(this.sleeveL, this.L, -0.34);
     this.fitSleeve(this.sleeveR, this.Rh, 0.34);
+    if (this.arms) {
+      // las manos de referencia marcan dónde va cada muñeca; se ven las del personaje
+      const vis = { R: this.Rh.visible, L: this.L.visible };
+      if (this.pose !== 'box') this.Rh.position.add(new THREE.Vector3(-0.02, 0.07, -0.03)); // algo más arriba, como la referencia
+      if (this.pose === 'box') { // la caja, agarrada por los lados desde abajo
+        const b = this.itemHolder.position, s = this.itemHolder.children[0];
+        const w = s ? new THREE.Box3().setFromObject(s).getSize(new THREE.Vector3()).x / 2 : 0.21;
+        this.Rh.position.set(b.x + w + 0.035, b.y - 0.07, b.z + 0.07);
+        this.L.position.set(b.x - w - 0.035, b.y - 0.07, b.z + 0.07);
+      }
+      this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = false;
+      this.arms.update(dt, this.pose, {
+        R: { position: this.Rh.position, quaternion: this.Rh.quaternion, visible: vis.R, side: -1 },
+        L: { position: this.L.position, quaternion: this.L.quaternion, visible: vis.L, side: 1 },
+      });
+      // lo que llevas en una mano se apoya en la palma de verdad
+      if (this.pose !== 'box' && this.arms.palmR) this.itemHolder.position.copy(this.arms.palmR);
+    }
   }
 
   placeHand(h, x, y, z, rx, ry, rz, grip) {

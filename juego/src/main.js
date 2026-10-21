@@ -150,6 +150,7 @@ Object.assign(G.act, {
   lookChanged: () => {
     const look = G.state.look, st = style();
     G.avatar?.apply(st);
+    G.player.vm.useAvatar?.(look?.model, st); // brazos en primera persona del propio personaje
     if (look) G.player.applyLook?.({ ...look, shirt: sleeveFor(look, st.worn) || look.shirt });
   }, openShelf: P.openShelf,
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,

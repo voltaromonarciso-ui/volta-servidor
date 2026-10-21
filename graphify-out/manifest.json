@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
-    "mtime": 1792609645.7266507,
-    "seen": 1792614056.4511049,
-    "ast_hash": "8e72a2d6064a6ca922f2097afa860004",
+    "mtime": 1792626920.4971676,
+    "seen": 1792626928.883144,
+    "ast_hash": "d1382432479a42a6f4edbc0d1f32f008",
     "semantic_hash": ""
   },
   "juego/src/entities/human.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792624619.1037946,
-    "seen": 1792624883.9516985,
-    "ast_hash": "42183b121213cd2e38679a7b1d775f1f",
+    "mtime": 1792625135.9676366,
+    "seen": 1792626928.8833365,
+    "ast_hash": "915bfa5033f2383c2fbc08d91ee1881a",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -2055,6 +2055,12 @@
     "mtime": 1792620122.1439002,
     "seen": 1792620398.996712,
     "ast_hash": "74a7eff275ce1a662cfde5019ea4c815",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/fparms.js": {
+    "mtime": 1792626358.771251,
+    "seen": 1792626928.883112,
+    "ast_hash": "cbb2f53ef9a787d7f57e742c7504e209",
     "semantic_hash": ""
   }
 }
