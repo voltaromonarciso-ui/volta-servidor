@@ -8,7 +8,7 @@ import * as TX from './textures.js';
 import { buildBike, buildScooter } from '../entities/rideables.js';
 import { PARKING } from '../data/vehicles.js';
 import { Nav } from './nav.js';
-import { buildIsland, XL as ISLAND_XL, ZL as ISLAND_ZL } from './island.js';
+import { buildIsland, XL as ISLAND_XL, ZL as ISLAND_ZL, N as ISLAND_N } from './island.js';
 import { setRelief, addPad, H, T } from './terrain.js';
 
 // ¿Isla de Rooktown? Es el mapa normal; el antiguo (Puerto Lomas) queda con ?mapa=1 o
@@ -56,7 +56,7 @@ export function createWorld(sc) {
   B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
   TM = makeTexMats();
 
-  setRelief(mapV2(), { xs: ISLAND_XL, zs: ISLAND_ZL, walk: SWO });
+  setRelief(mapV2(), { xs: ISLAND_XL, zs: ISLAND_ZL, walk: SWO, isle: ISLAND_N });
   if (mapV2()) {
     // isla de Rooktown, con relieve (terrain.js)
     const n0 = scene.children.length;

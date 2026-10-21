@@ -25,6 +25,24 @@ function canvasTex(key, w, h, draw, srgb = true) {
   });
 }
 
+// Mapa de normales a partir de un dibujo en grises (relieve barato: el bumpMap cuesta mucho
+// más en móviles y en WebGL por software)
+function normalFromHeight(key, w, h, draw, strength = 2) {
+  return once(texs, key, () => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); draw(g, w, h);
+    const src = g.getImageData(0, 0, w, h).data, out = g.createImageData(w, h);
+    const at = (x, y) => src[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = (at(x + 1, y) - at(x - 1, y)) * strength, dy = (at(x, y + 1) - at(x, y - 1)) * strength;
+      const l = Math.hypot(dx, dy, 1), i = (y * w + x) * 4;
+      out.data[i] = (-dx / l * 0.5 + 0.5) * 255; out.data[i + 1] = (dy / l * 0.5 + 0.5) * 255; out.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; out.data[i + 3] = 255;
+    }
+    g.putImageData(out, 0, 0);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  });
+}
 // ---------- texturas ----------
 // Racimo de hojas grandes y redondeadas, con degradado y nervio (fondo transparente)
 const leafTex = () => canvasTex('veg-hojas', 256, 256, (c, w) => {
@@ -61,18 +79,33 @@ const leafFillTex = () => canvasTex('veg-relleno', 256, 256, (c, w) => {
     }
   }
 });
-// Corteza: placas verticales rojizas con grietas oscuras
-const barkTex = () => canvasTex('veg-corteza', 128, 256, (c, w, h) => {
-  c.fillStyle = '#8a5638'; c.fillRect(0, 0, w, h);
+// Corteza como la de la lámina: placas alargadas rojizas separadas por grietas que suben en
+// espiral. Se dibujan dos lienzos iguales: el de color y uno en grises para el relieve (normales)
+function drawBark(c, w, h, relief) {
   const rnd = rng(5);
-  for (let k = 0; k < 70; k++) {
-    const x = rnd() * w, y = rnd() * h, pw = 10 + rnd() * 16, ph = 18 + rnd() * 34;
-    c.fillStyle = `hsl(${18 + rnd() * 10},${38 + rnd() * 14}%,${30 + rnd() * 14}%)`;
-    for (const dx of [-w, 0, w]) for (const dy of [-h, 0, h]) { c.beginPath(); c.ellipse(x + dx, y + dy, pw / 2, ph / 2, 0, 0, Math.PI * 2); c.fill(); }
+  c.fillStyle = relief ? '#202020' : '#5a3020'; c.fillRect(0, 0, w, h);
+  // placas: tiras inclinadas (la espiral) con el centro más claro
+  for (let row = 0; row < 14; row++) for (let col = 0; col < 6; col++) {
+    const pw = w / 6 - 3, ph = h / 7 + rnd() * 20;
+    const x = col * (w / 6) + 1.5 + (row % 2) * (w / 12), y = row * (h / 14) - 10 + rnd() * 8;
+    for (const dx of [-w, 0, w]) {
+      c.save(); c.translate(x + dx + pw / 2, y + ph / 2); c.transform(1, -0.35, 0, 1, 0, 0);
+      const g = c.createLinearGradient(-pw / 2, 0, pw / 2, 0);
+      if (relief) { g.addColorStop(0, '#606060'); g.addColorStop(0.5, '#f0f0f0'); g.addColorStop(1, '#707070'); }
+      else { const hue = 14 + rnd() * 8, l = 30 + rnd() * 10; g.addColorStop(0, `hsl(${hue},45%,${l - 8}%)`); g.addColorStop(0.5, `hsl(${hue + 4},48%,${l + 6}%)`); g.addColorStop(1, `hsl(${hue},42%,${l - 10}%)`); }
+      c.fillStyle = g;
+      c.beginPath(); c.ellipse(0, 0, pw / 2, ph / 2, 0, 0, Math.PI * 2); c.fill();
+      c.restore();
+    }
   }
-  c.strokeStyle = 'rgba(40,20,12,0.55)'; c.lineWidth = 2;
-  for (let k = 0; k < 16; k++) { const x = rnd() * w; c.beginPath(); c.moveTo(x, 0); for (let y = 0; y <= h; y += 16) c.lineTo(x + Math.sin(y * 0.05 + k) * 4, y); c.stroke(); }
-});
+  // vetas finas a lo largo de cada placa
+  c.globalAlpha = relief ? 0.35 : 0.22; c.strokeStyle = relief ? '#000' : '#2a140c'; c.lineWidth = 1;
+  for (let k = 0; k < 60; k++) { const x = rnd() * w, y = rnd() * h; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 8, y - 26); c.stroke(); }
+  c.globalAlpha = 1;
+}
+const barkTex = () => canvasTex('veg-corteza2', 128, 256, (c, w, h) => drawBark(c, w, h, false));
+const barkNormal = () => normalFromHeight('veg-corteza2-n', 128, 256, (c, w, h) => drawBark(c, w, h, true), 3);
+
 // Briznas (matas y plantas de hoja larga): degradado de la base oscura a la punta clara
 const bladeTex = () => canvasTex('veg-brizna', 128, 128, (c) => {
   const rnd = rng(23);
@@ -97,7 +130,10 @@ const flowerTex = () => canvasTex('veg-flor', 64, 64, (c) => {
 
 // ---------- materiales ----------
 export const VMAT = {
-  bark: () => once(mats, 'bark', () => { const t = barkTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping; return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 0.95 }); }),
+  bark: () => once(mats, 'bark', () => {
+    const t = barkTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return new THREE.MeshStandardMaterial({ map: t, normalMap: barkNormal(), normalScale: new THREE.Vector2(1.2, 1.2), color: '#ffffff', roughness: 0.95 });
+  }),
   core: () => once(mats, 'core', () => { const t = leafFillTex(); t.wrapS = t.wrapT = THREE.RepeatWrapping; return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', vertexColors: true, roughness: 0.9 }); }),
   leaves: () => once(mats, 'leaves', () => new THREE.MeshStandardMaterial({ map: leafTex(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.8 })),
   blades: () => once(mats, 'blades', () => new THREE.MeshStandardMaterial({ map: bladeTex(), vertexColors: true, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.85 })),
@@ -121,7 +157,7 @@ function taperTube(pts, r0, r1, radial = 8, segs = 10, flare = 0) {
       const f = flare ? 1 + flare * Math.exp(-t * len * 3.2) * (0.75 + 0.25 * Math.cos(a * 5)) : 1;
       const cx = Math.cos(a) * r * f, sy = Math.sin(a) * r * f;
       pos.push(P.x + N.x * cx + Bn.x * sy, P.y + N.y * cx + Bn.y * sy, P.z + N.z * cx + Bn.z * sy);
-      uv.push((j / radial) * 2, (t * len) / 1.6);
+      uv.push((j / radial) * Math.max(1, Math.round(r * 9)), (t * len) / 1.1); // placas de ~1 m, más estrechas en las ramas
     }
   }
   for (let i = 0; i < segs; i++) for (let j = 0; j < radial; j++) {
@@ -137,16 +173,16 @@ function taperTube(pts, r0, r1, radial = 8, segs = 10, flare = 0) {
 
 // Tarjetas de hojas alrededor de un racimo (centro c, radio r) de una copa con centro C.
 // La normal sale del centro de la copa (volumen único); el color oscurece abajo y dentro.
-function leafCards(list, c, r, C, R, rnd, n) {
+function leafCards(list, c, r, C, R, rnd, n, o = {}) {
   const q = new THREE.Quaternion(), zf = new THREE.Vector3(0, 0, 1), m4 = new THREE.Matrix4(), one = new THREE.Vector3(1, 1, 1);
   for (let k = 0; k < n; k++) {
     // repartidas por la mitad de arriba y los lados del racimo, pegadas a su superficie
     const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 1.5 - 0.35, rnd() * 2 - 1).normalize();
     // medio hundidas en el racimo: ninguna queda suelta ni sobresale flotando
-    const p = c.clone().addScaledVector(dir, r * (0.66 + rnd() * 0.1));
+    const p = c.clone().addScaledVector(dir, r * ((o.at ?? 0.68) + rnd() * 0.08));
     const out = p.clone().sub(C).normalize();
     const nrm = out.clone().lerp(new THREE.Vector3(0, 1, 0), 0.2).normalize();
-    const size = r * (0.36 + rnd() * 0.16);
+    const size = r * ((o.size ?? 0.26) + rnd() * 0.12); // pequeñas: solo algún borde de hoja asoma
     const pg = new THREE.PlaneGeometry(size, size);
     // de cara hacia fuera (casi tumbadas sobre el racimo), con un poco de giro
     q.setFromUnitVectors(zf, dir.clone().lerp(out, 0.15).normalize());
@@ -164,8 +200,8 @@ function leafCards(list, c, r, C, R, rnd, n) {
 }
 // Cuerpo de un racimo: bola blanda y algo abollada, con textura de hojas; la luz sale del
 // centro de la copa (volumen redondo) y el color oscurece abajo y por dentro
-function coreBall(out, c, r, C, R) {
-  let g = new THREE.IcosahedronGeometry(r * 0.88, 2);
+function coreBall(out, c, r, C, R, detail = 2) {
+  let g = new THREE.IcosahedronGeometry(r * 0.88, detail);
   g.deleteAttribute('normal'); g.deleteAttribute('uv');
   g = mergeVertices(g);
   const P = g.attributes.position, col = [], uv = [], nrm = [];
@@ -191,9 +227,9 @@ function coreBall(out, c, r, C, R) {
 }
 
 // Copa: racimos repartidos por una cúpula (achatada) de radio R y altura media y0
-function canopy(clusters, C, R, rnd, cardsPer) {
+function canopy(clusters, C, R, rnd, cardsPer, o) {
   const cores = [], cards = [];
-  for (const [c, r] of clusters) { coreBall(cores, c, r, C, R); leafCards(cards, c, r, C, R, rnd, cardsPer); }
+  for (const [c, r] of clusters) { coreBall(cores, c, r, C, R, o?.detail ?? 2); leafCards(cards, c, r, C, R, rnd, cardsPer, o); }
   return { core: mergeGeometries(cores), leaves: mergeGeometries(cards) };
 }
 
@@ -205,15 +241,17 @@ export function arbolCopa(variant = 0, seed = 1) {
     const rnd = rng(seed * 7 + variant * 31 + 3);
     const H = [6.4, 5.8, 4.6][variant], R = [3.0, 2.4, 1.9][variant], tr = [0.36, 0.28, 0.22][variant];
     const lean = (rnd() - 0.5) * 0.4;
-    const fork = H * 0.42;
+    const fork = H * 0.36;
     const trunk = [taperTube([[0, 0, 0], [lean * 0.3, fork * 0.5, 0], [lean, fork, lean * 0.4]], tr, tr * 0.72, 10, 8, 0.9)];
-    const C = new THREE.Vector3(lean, H - R * 0.85, lean * 0.4);
+    const C = new THREE.Vector3(lean, H - R * 0.72, lean * 0.4); // copa alta: se ven tronco y ramas
     // ramas en horquilla hacia los racimos principales
     const nb = 3 + Math.floor(rnd() * 2), clusters = [];
     for (let k = 0; k < nb; k++) {
       const a = (k / nb) * Math.PI * 2 + rnd() * 0.6, sp = R * (0.45 + rnd() * 0.2);
       const end = [C.x + Math.cos(a) * sp, C.y + (rnd() - 0.2) * R * 0.35, C.z + Math.sin(a) * sp];
-      trunk.push(taperTube([[lean, fork - 0.1, lean * 0.4], [(lean + end[0]) / 2, (fork + end[1]) / 2 + 0.2, (lean * 0.4 + end[2]) / 2], end], tr * 0.62, tr * 0.25, 6, 5));
+      trunk.push(taperTube([[lean, fork - 0.1, lean * 0.4], [(lean * 0.6 + end[0] * 0.4), fork + (end[1] - fork) * 0.45, (lean * 0.24 + end[2] * 0.4)], end], tr * 0.66, tr * 0.22, 7, 6));
+      // ramilla secundaria que asoma por debajo de la copa
+      trunk.push(taperTube([[(lean * 0.6 + end[0] * 0.4), fork + (end[1] - fork) * 0.45, (lean * 0.24 + end[2] * 0.4)], [end[0] * 1.05 + Math.sin(a) * 0.3, end[1] - R * 0.35, end[2] * 1.05 - Math.cos(a) * 0.3]], tr * 0.28, tr * 0.08, 5, 3));
       clusters.push([new THREE.Vector3(...end), R * (0.5 + rnd() * 0.12)]);
     }
     // racimos de relleno: corona alta, anillo medio y algunos bajos
@@ -232,14 +270,18 @@ export function arbolCopa(variant = 0, seed = 1) {
   return g;
 }
 
-// Arbusto redondo de hojas (3–5 racimos pegados al suelo)
+// Arbusto como el de la lámina: un montículo de muchos racimos pequeños (no una bola), más
+// claro arriba, con hojas que asoman por el borde
 export function arbusto(seed = 1, s = 1) {
-  const parts = once(geos, 'arbusto' + seed + ':' + s, () => {
-    const rnd = rng(seed * 13 + 5), R = 0.75 * s, C = new THREE.Vector3(0, R * 0.55, 0), clusters = [];
-    const n = 3 + Math.floor(rnd() * 3);
-    for (let k = 0; k < n; k++) { const a = (k / n) * 6.28 + rnd(); clusters.push([C.clone().add(new THREE.Vector3(Math.cos(a) * R * 0.45, rnd() * R * 0.3, Math.sin(a) * R * 0.45)), R * (0.5 + rnd() * 0.15)]); }
-    clusters.push([C.clone().add(new THREE.Vector3(0, R * 0.35, 0)), R * 0.55]);
-    return canopy(clusters, C, R, rnd, 5);
+  const parts = once(geos, 'arbusto2-' + seed + ':' + s, () => {
+    const rnd = rng(seed * 13 + 5), R = 0.8 * s, C = new THREE.Vector3(0, R * 0.35, 0), clusters = [];
+    const n = 7 + Math.floor(rnd() * 3);
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * 6.28 + rnd() * 0.5, d = R * (0.45 + rnd() * 0.3);
+      clusters.push([new THREE.Vector3(Math.cos(a) * d, R * (0.22 + rnd() * 0.15), Math.sin(a) * d * 0.85), R * (0.34 + rnd() * 0.1)]);
+    }
+    for (let k = 0; k < 3; k++) { const a = rnd() * 6.28; clusters.push([new THREE.Vector3(Math.cos(a) * R * 0.2, R * (0.55 + rnd() * 0.15), Math.sin(a) * R * 0.2), R * (0.36 + rnd() * 0.08)]); }
+    return canopy(clusters, C, R, rnd, 8, { at: 0.74, size: 0.42, detail: 1 }); // racimos pequeños: menos polígonos
   });
   const g = new THREE.Group();
   for (const [geo, m] of [[parts.core, VMAT.core()], [parts.leaves, VMAT.leaves()]]) { const o = new THREE.Mesh(geo, m); o.castShadow = true; o.receiveShadow = true; g.add(o); }

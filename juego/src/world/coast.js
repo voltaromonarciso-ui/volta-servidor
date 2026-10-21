@@ -39,6 +39,24 @@ function boxM(w, h, d, k = 1) {
   });
 }
 
+// Mapa de normales a partir de un dibujo en grises (relieve barato: el bumpMap cuesta mucho
+// más en móviles y en WebGL por software)
+function normalFromHeight(key, w, h, draw, strength = 2) {
+  return once(texs, key, () => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); draw(g, w, h);
+    const src = g.getImageData(0, 0, w, h).data, out = g.createImageData(w, h);
+    const at = (x, y) => src[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = (at(x + 1, y) - at(x - 1, y)) * strength, dy = (at(x, y + 1) - at(x, y - 1)) * strength;
+      const l = Math.hypot(dx, dy, 1), i = (y * w + x) * 4;
+      out.data[i] = (-dx / l * 0.5 + 0.5) * 255; out.data[i + 1] = (dy / l * 0.5 + 0.5) * 255; out.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; out.data[i + 3] = 255;
+    }
+    g.putImageData(out, 0, 0);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  });
+}
 // ---------- texturas ----------
 const planksTex = () => canvasTex('co-tablas', 256, 256, (c, w) => {
   const rnd = rng(3);
@@ -61,13 +79,28 @@ const ribTex = () => canvasTex('co-chapa', 128, 128, (c, w) => {
   const rnd = rng(9); c.globalAlpha = 0.25;
   for (let k = 0; k < 40; k++) { c.fillStyle = rnd() < 0.5 ? '#6b4a2a' : '#555'; c.fillRect(rnd() * w, rnd() * w, 2 + rnd() * 6, 4 + rnd() * 16); }
 });
-const sandTex = () => canvasTex('co-arena', 256, 256, (c, w) => {
-  c.fillStyle = '#e6d3a3'; c.fillRect(0, 0, w, w);
+// Arena: grano fino de varios tonos y ondas que deja el viento; el mismo dibujo en grises da
+// el relieve (mapa de normales) para que no parezca una lámina lisa
+function drawSand(c, w, relief) {
   const rnd = rng(13);
-  for (let k = 0; k < 6000; k++) { const l = 62 + rnd() * 26; c.fillStyle = `hsl(${38 + rnd() * 8},${38 + rnd() * 18}%,${l}%)`; c.fillRect(rnd() * w, rnd() * w, 1.5, 1.5); }
-  c.globalAlpha = 0.12; c.strokeStyle = '#b89c66'; c.lineWidth = 3;
-  for (let k = 0; k < 9; k++) { const y = rnd() * w; c.beginPath(); c.moveTo(0, y); c.bezierCurveTo(w * 0.3, y + 10, w * 0.6, y - 10, w, y); c.stroke(); }
-});
+  c.fillStyle = relief ? '#808080' : '#e2cc98'; c.fillRect(0, 0, w, w);
+  for (let k = 0; k < 9000; k++) {
+    const l = relief ? 100 + rnd() * 80 : 0;
+    c.fillStyle = relief ? `rgb(${l},${l},${l})` : `hsl(${36 + rnd() * 10},${34 + rnd() * 22}%,${58 + rnd() * 30}%)`;
+    c.fillRect(rnd() * w, rnd() * w, 1.5, 1.5);
+  }
+  // ondas: crestas claras con su sombra justo debajo
+  for (let k = 0; k < 14; k++) {
+    const y = (k / 14) * w + rnd() * 8, amp = 4 + rnd() * 5, ph = rnd() * 6;
+    for (const [dy, col, lw] of [[2.5, relief ? '#303030' : 'rgba(160,128,80,0.45)', 3], [0, relief ? '#f0f0f0' : 'rgba(255,244,214,0.6)', 2.5]]) {
+      c.strokeStyle = col; c.lineWidth = lw; c.beginPath();
+      for (let x = 0; x <= w; x += 8) { const yy = y + dy + Math.sin((x / w) * Math.PI * 4 + ph) * amp; x ? c.lineTo(x, yy) : c.moveTo(x, yy); }
+      c.stroke();
+    }
+  }
+}
+const sandTex = () => canvasTex('co-arena2', 256, 256, (c, w) => drawSand(c, w, false));
+const sandNormal = () => normalFromHeight('co-arena2-n', 256, 256, (c, w) => drawSand(c, w, true), 2);
 const stripeTex = (a, b) => canvasTex('co-raya' + a + b, 64, 8, (c) => { for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? a : b; c.fillRect(k * 8, 0, 8, 8); } });
 const thatchTex = () => canvasTex('co-paja', 128, 128, (c, w) => {
   c.fillStyle = '#b08a4a'; c.fillRect(0, 0, w, w);
@@ -80,7 +113,7 @@ export const COAST_MAT = {
   wood: () => mat('madera', { map: planksTex(), roughness: 0.88 }),
   pile: () => mat('pilote', { color: '#5a4632', roughness: 0.95 }),
   concrete: () => mat('hormigon', { color: '#b9b3a8', roughness: 0.95 }),
-  sand: () => { const t = sandTex(); return mat('arena', { map: t, roughness: 1 }); },
+  sand: () => mat('arena', { map: sandTex(), normalMap: sandNormal(), normalScale: new THREE.Vector2(1, 1), roughness: 1 }),
 };
 export { sandTex };
 
@@ -184,6 +217,14 @@ export function rocaCosta(seed = 1, s = 1) {
   const g = new THREE.Group(); add(g, geo, rockMat(), 0, 0.3 * s, 0); return g;
 }
 
+// Valla de madera de len metros (postes y dos travesaños), para caminos y miradores
+export function vallaMadera(len = 2) {
+  const g = new THREE.Group(), w = mat('vallaMad', { color: '#8a6440', roughness: 0.9 });
+  for (const x of [-len / 2, len / 2]) add(g, BOX, w, x, 0.5, 0, 0, 0, 0, 0.1, 1.0, 0.1);
+  for (const y of [0.45, 0.85]) add(g, BOX, w, 0, y, 0, 0, 0, 0, len, 0.07, 0.05);
+  return g;
+}
+
 // ---------- playa ----------
 // Sombrilla de tela a rayas con mástil de madera
 export function sombrilla(a = '#e74c3c', b = '#f4efe4') {
@@ -234,9 +275,9 @@ export function toalla(a = '#2c7fb8', b = '#ffffff') {
   return g;
 }
 
-// Suelo de arena: varias losas en una malla, con la textura en metros
+// Suelo de arena: varias losas en una malla (rejilla de 2 m: sigue bien las dunas), con la textura en metros
 export function sandGeometry(rects) {
-  const parts = rects.map(([x0, x1, z0, z1]) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0, Math.ceil((x1 - x0) / 4), Math.ceil((z1 - z0) / 4)); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, (z0 + z1) / 2); return g; });
+  const parts = rects.map(([x0, x1, z0, z1]) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0, Math.ceil((x1 - x0) / 2), Math.ceil((z1 - z0) / 2)); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, (z0 + z1) / 2); return g; });
   const g = mergeGeometries(parts), P = g.attributes.position, uv = g.attributes.uv;
   for (let i = 0; i < P.count; i++) uv.setXY(i, P.getX(i) / 3, P.getZ(i) / 3);
   return g;

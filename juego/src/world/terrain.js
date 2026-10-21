@@ -18,9 +18,9 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 
 // límites de la zona con relieve (la circunvalación de la isla) y ejes de las calles: en la
 // calzada y la acera manda el terreno natural (los solares no las deforman)
-let RX = 210, RZ = 120, XS = [], ZS = [], WALK = 6.5;
-export function setRelief(on, { rx = 210, rz = 120, xs = [], zs = [], walk = 6.5 } = {}) {
-  T.on = on; RX = rx; RZ = rz; XS = xs; ZS = zs; WALK = walk;
+let RX = 210, RZ = 120, XS = [], ZS = [], WALK = 6.5, ISLE = null;
+export function setRelief(on, { rx = 210, rz = 120, xs = [], zs = [], walk = 6.5, isle = null } = {}) {
+  T.on = on; RX = rx; RZ = rz; XS = xs; ZS = zs; WALK = walk; ISLE = isle;
   pads.length = 0; grid.clear();
 }
 // 0 sobre calles y aceras, 1 a partir de metro y medio dentro de la manzana
@@ -35,9 +35,21 @@ export function baseH(x, z) {
   if (!T.on) return 0;
   const d = Math.min(RX - Math.abs(x), RZ - Math.abs(z));
   const m = smooth(-24, 70, d);
-  if (m <= 0) return 0;
+  const coast = d < 0 ? coastH(x, z, -d) : 0; // continuo: se suma a las lomas
+  if (m <= 0) return coast;
   const h = 2.5 + 1.35 * Math.sin(x * 0.0115 + 0.6) + 1.0 * Math.sin(z * 0.016 - 0.4) + 0.55 * Math.sin((x + z) * 0.0085 + 2.0);
-  return Math.max(0, h) * m;
+  return Math.max(0, h) * m + coast;
+}
+
+// Franja de costa (fuera de la circunvalación): dunas y lomas bajas que mueren en la orilla y
+// junto a la acera de la circunvalación
+function coastH(x, z, out) {
+  if (!ISLE) return 0;
+  const shore = Math.min(x - ISLE.x0, ISLE.x1 - x, z - ISLE.z0, ISLE.z1 - z);
+  const band = smooth(WALK + 6, WALK + 16, out) * smooth(1, 12, shore);
+  if (band <= 0) return 0;
+  const n = 0.55 + 0.3 * Math.sin(x * 0.07 + Math.sin(z * 0.05) * 2) + 0.15 * Math.sin(z * 0.11 - x * 0.04);
+  return band * n * 1.5;
 }
 
 // Solar llano: [x0,x1]×[z0,z1] a la altura h. Por defecto, la del terreno delante de la

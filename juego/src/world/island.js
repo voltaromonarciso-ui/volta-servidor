@@ -15,7 +15,7 @@ import { createFurniture } from './streetfurniture.js';
 import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
 import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
-import { grassReady, islandLawn, tuft } from './grass.js';
+import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
 import { addPad, drapeGeometry } from './terrain.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
@@ -25,7 +25,7 @@ import * as CO from './coast.js';
 export const XL = [-210, -150, -90, -30, 30, 90, 150, 210];
 export const ZL = [-120, -60, 0, 60, 120];
 const COLS = XL.length - 1, ROWS = ZL.length - 1;
-const N = { x0: -250, x1: 250, z0: -165, z1: 168 }; // costa (límite caminable)
+export const N = { x0: -250, x1: 250, z0: -165, z1: 168 }; // costa (límite caminable)
 
 // Barrio de cada manzana: ZONES[fila][columna], fila 0 = la más al norte.
 export const ZONES = [
@@ -172,6 +172,27 @@ function freeMap() {
   const onHard = (x, z, m) => hard.some((r) => inRect(x, z, r, m));
   return { inside, roadD, zoneAt, blocked, nearSolid, onHard };
 }
+// Bordes del césped (contra aceras, caminos y arena): trozos de ~1 m con el césped a la
+// izquierda del sentido de avance; se quitan los que caen sobre asfalto, baldosas o edificios
+function fringeLines() {
+  const M = freeMap(), out = [];
+  const piece = (x0, z0, x1, z1) => {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 1.1));
+    for (let k = 0; k < n; k++) {
+      const a = k / n, b = (k + 1) / n, mx = x0 + (x1 - x0) * (a + b) / 2, mz = z0 + (z1 - z0) * (a + b) / 2;
+      if (M.onHard(mx, mz, 0.2) || M.nearSolid(mx, mz, 0.2) || !M.inside(mx, mz)) continue;
+      out.push([x0 + (x1 - x0) * a, z0 + (z1 - z0) * a, x0 + (x1 - x0) * b, z0 + (z1 - z0) * b]);
+    }
+  };
+  for (const b of W.zones) {
+    if (b.kind === 'industrial') continue;
+    piece(b.x1, b.z1, b.x0, b.z1); piece(b.x0, b.z1, b.x0, b.z0); piece(b.x0, b.z0, b.x1, b.z0); piece(b.x1, b.z0, b.x1, b.z1);
+  }
+  const zN = ZL[ROWS] + K.SWO, zS = ZL[0] - K.SWO, xW = XL[0] - K.SWO, xE = XL[COLS] + K.SWO;
+  piece(xW, zN, xE, zN); piece(xE, zS, xW, zS); piece(xW, zS, xW, zN); piece(xE, zN, xE, zS);
+  return out;
+}
+
 // ruido suave para agrupar la vegetación en manchas (nada de rejillas repetidas)
 const clump = (x, z) => 0.5 + 0.25 * Math.sin(x * 0.083 + Math.sin(z * 0.061) * 2.1) + 0.25 * Math.sin(z * 0.071 - x * 0.033 + 0.7);
 
@@ -255,6 +276,7 @@ export function buildIsland() {
   restoreK();
   if (grassReady()) scatterTufts();
   scatterGreens();
+  if (grassReady()) { const fr = fringeMesh(scene, fringeLines()); fr.userData.terrainDone = true; DRAPE.push(fr.geometry); }
   const res = F.build(scene);
   for (const g of DRAPE) drapeGeometry(g); // calzadas y césped, sobre el relieve
   W.glowMats = res.glowMats;
@@ -731,10 +753,26 @@ function buildCoast() {
   for (let k = 0; k < 11; k++) { const a = (k / 11) * Math.PI * 2 + R(), d = rr(6.5, 11); F.place('rocaC' + (k % 4), () => CO.rocaCosta((k % 4) + 1, rr(0.9, 1.5)), fx + Math.cos(a) * d, fz + Math.sin(a) * d, R() * 6.28, { solid: false }); }
   K.addBox(fx - 2.6, fx + 2.6, fz - 2.6, fz + 2.6, 14);
   K.addBox(fx + 2.7, fx + 7.7, fz - 3.2, fz + 0.8, 4); // casa del farero
+  addPad(fx - 3, fx + 8.5, fz - 4, fz + 3, { m: 6 }); // faro y casa, a nivel sobre la loma
+  // entorno: camino vallado desde la circunvalación, farolillos, mirador con bancos al mar
+  K.paving(XL[0] - 4.5, XL[0] - 1.5, zN, fz - 4, '#cbbfa8');
+  K.paving(XL[0] - 4.5, fx + 1, fz - 4, fz - 1.5, '#cbbfa8');
+  for (let z = zN + 2; z < fz - 5; z += 2.2) for (const x of [XL[0] - 5, XL[0] - 1]) F.place('vallaMad', () => CO.vallaMadera(2), x, z, Math.PI / 2, { solid: false });
+  for (const z of [zN + 6, zN + 16]) F.place('farolDeco', SKP.farolDecorativo, XL[0] - 5.4, z, 0, { hit: 0.3 });
+  K.paving(fx - 9, fx + 3, fz + 4, fz + 9, '#cbbfa8'); // mirador
+  for (let x = fx - 8; x <= fx + 2; x += 2) F.place('vallaMad', () => CO.vallaMadera(2), x, fz + 9.2, 0, { solid: false });
+  K.addBox(fx - 9, fx + 3, fz + 9.1, fz + 9.4, 1.1);
+  for (const x of [fx - 6, fx - 1.5]) F.place('bancoParque', () => SKP.bancoParque(), x, fz + 7.5, 0);
   W.mapLabels.push({ x: fx, z: fz, t: 'Faro' });
   // Puerto (norte): muelles de madera, contenedores y grúas
   const px = -10;
   K.paving(px - 60, px + 60, zN + 6, zN + 30, '#b9b2a5');
+  addPad(px - 60, px + 60, zN + 6, zN + 31, { h: 0, m: 8 }); // muelle a nivel del mar
+  // edificios del puerto (modelos ya hechos de realbuilding/buildingkit): nave, lonja y capitanía
+  realAt('navePuerto', () => warehouseBuilding({ w: 28, d: 16, h: 8, sign: 'NAVE PORTUARIA', signBg: '#1f4f7a', doors: 2 }), px - 88, zN + 19, 0, { label: 'Nave portuaria', mapColor: '#8a9aa6' });
+  realAt('lonja', () => shopBuilding({ w: 18, d: 10, floors: 1, sign: 'LONJA', signBg: '#1f5f8b', wall: 'blanco', stone: 'claro', awning: '#2b7bd1' }), px, zN + 20, Math.PI, { label: 'Lonja', mapColor: '#c98a6b' });
+  modelBuilding('q_Bank', px + 70, zN + 18, Math.PI, { w: 13, mapColor: '#b9a68a', label: 'Capitanía' });
+  F.place('caseta', SKP.cabinaVigilancia, px - 30, zN + 8, Math.PI);
   for (let k = 0; k < 4; k++) {
     const x = px - 45 + k * 30;
     F.place('pantalan', () => CO.pantalan(30.5, 4), x, zN + 30, 0, { solid: false, y: -0.04 });
@@ -760,7 +798,15 @@ function buildCoast() {
   const bx = XL[COLS] - 30;
   // arena con textura, sombrillas a rayas con sus tumbonas y toallas, chiringuito y socorrista
   const sand = new THREE.Mesh(CO.sandGeometry([[bx - 40, bx + 40, zN + 4, zN + 40]]), CO.COAST_MAT.sand());
-  sand.position.y = 0.035; sand.receiveShadow = true; sand.userData.terrainDone = true; scene.add(sand);
+  // por encima del césped aunque la malla de este sea más gruesa
+  sand.position.y = 0.12; sand.receiveShadow = true; sand.userData.terrainDone = true; scene.add(sand);
+  DRAPE.push(sand.geometry); // las dunas: la arena sigue el relieve de la costa
+  // paseo marítimo: baldosas junto a la arena, bancos mirando al mar y locales (heladería, bar, surf)
+  K.paving(bx - 88, bx + 40, zN + 0.6, zN + 4, '#d8ccb2');
+  for (let x = bx - 84; x <= bx + 36; x += 12) { F.place('bancoParque', () => SKP.bancoParque(), x, zN + 3.3, 0); F.place('papelera', SK.papelera, x + 2, zN + 3.5, 0); }
+  [['heladeria', 'HELADERÍA', '#e05a8a', 'blanco'], ['barOla', 'BAR LA OLA', '#1f6f8b', 'beige'], ['surf', 'SURF', '#e67e22', 'claro']].forEach(([key, text, bg, wall], k) => {
+    realAt(key, () => shopBuilding({ w: 11, d: 8, floors: 1, sign: text, signBg: bg, wall, stone: 'blanco', awning: bg }), bx - 82 + k * 14, zN + 12, 0, { label: k === 1 ? 'Paseo marítimo' : undefined, mapColor: '#c98a6b' });
+  });
   HARD.push([bx - 40, bx + 40, zN + 4, zN + 40]);
   for (const [x, z, c] of [[-14, 14, '#e74c3c'], [-4, 22, '#2c7fb8'], [8, 13, '#f1c40f'], [20, 23, '#27ae60'], [30, 15, '#e74c3c']]) {
     F.place('sombrilla' + c, () => CO.sombrilla(c), bx + x, zN + z, R() * 6, { hit: 0.2 });
@@ -774,11 +820,19 @@ function buildCoast() {
   W.spots.push({ id: 'playa', name: 'Chiringuito de la playa', x: bx - 30, z: zN + 30 });
   W.mapLabels.push({ x: bx, z: zN + 22, t: 'Playa' });
   // Urbanización (sur): fila de casas frente al mar
-  for (let k = 0; k < 9; k++) W.homes.push(houseAt(XL[1] + 10 + k * 24, zS - 16, '+z', 120 + k));
+  for (let k = 0; k < 12; k++) {
+    const x = XL[1] + 10 + k * 24;
+    W.homes.push(houseAt(x, zS - 16, '+z', 120 + k));
+    // jardín: seto delante (con hueco para el camino) y, en algunos, piscina detrás
+    for (const dx of [-6.6, -3.6, 3.6, 6.6]) F.place('seto3', () => SKP.seto(3), x + dx, zS - 2.4, 0);
+    if (k % 3 === 1) { addPad(x - 4, x + 4, zS - 30, zS - 25, { m: 3 }); B.box('#2f8fc9', x, 0, zS - 27.5, 7, 0.1, 4, 0, { mat: 'glass', ao: 0 }); B.box('#e9e3d6', x, 0, zS - 27.5, 8, 0.08, 5, 0, { ao: 0 }); }
+  }
   W.mapLabels.push({ x: 0, z: zS - 16, t: 'Urbanización' });
   // Muelle de carga (sureste)
   const mx = XL[COLS] - 25;
   K.paving(mx - 20, mx + 20, zS - 30, zS - 6, '#a8a49c');
+  addPad(mx - 20, mx + 20, zS - 30.5, zS - 6, { h: 0, m: 8 });
+  realAt('naveCarga', () => warehouseBuilding({ w: 22, d: 12, h: 7, sign: 'MUELLE DE CARGA', signBg: '#34495e', doors: 2 }), mx + 28, zS - 18, -Math.PI / 2, { label: undefined, mapColor: '#8a9aa6' });
   for (let k = 0; k < 6; k++) {
     const x = mx - 15 + k * 6.3; cont(cols[k % 5], x, zS - 18);
     if (k % 2) cont(cols[(k + 3) % 5], x, zS - 18, 2.62);

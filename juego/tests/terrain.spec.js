@@ -29,16 +29,20 @@ test.describe.serial('Relieve de la isla', () => {
   test('hay cuestas de verdad, suaves, y la costa queda a ras del mar', async () => {
     const r = await page.evaluate(() => {
       const H = __G.world.groundAt;
-      let min = 1e9, max = -1e9, steep = 0;
-      for (let x = -200; x <= 200; x += 5) for (let z = -110; z <= 110; z += 5) {
+      let min = 1e9, max = -1e9, steep = 0, road = 0;
+      const onRoad = (x, z) => (__G.world.roadsX.some((r) => Math.abs(x - r) < 6.5) && Math.abs(z) < 127) || (__G.world.roadsZ.some((r) => Math.abs(z - r) < 6.5) && Math.abs(x) < 217);
+      for (let x = -200; x <= 200; x += 2) for (let z = -110; z <= 110; z += 2) {
         const h = H(x, z); min = Math.min(min, h); max = Math.max(max, h);
-        steep = Math.max(steep, Math.abs(H(x + 1, z) - h), Math.abs(H(x, z + 1) - h));
+        const s = Math.max(Math.abs(H(x + 1, z) - h), Math.abs(H(x, z + 1) - h));
+        steep = Math.max(steep, s); if (onRoad(x, z)) road = Math.max(road, s);
       }
-      return { range: max - min, steep, coast: [H(-240, 0), H(240, 0), H(0, 160), H(0, -160)] };
+      // en la misma orilla (el borde de la isla) el terreno queda a nivel del mar
+      return { range: max - min, steep, road, coast: [H(-249.6, 0), H(249.6, 0), H(0, 167.6), H(0, -164.6)] };
     });
     expect(r.range).toBeGreaterThan(3);
-    expect(r.steep).toBeLessThan(0.16); // como mucho un 16 % en algún borde de solar
-    for (const h of r.coast) expect(h).toBe(0);
+    expect(r.road).toBeLessThan(0.1); // calles: como mucho un 10 %
+    expect(r.steep).toBeLessThan(0.8); // taludes de césped junto a algún solar
+    for (const h of r.coast) expect(h).toBeLessThan(0.02);
   });
 
   test('los edificios están en solares llanos', async () => {
