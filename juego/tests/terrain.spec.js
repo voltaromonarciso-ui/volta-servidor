@@ -151,8 +151,11 @@ test.describe.serial('Relieve de la isla', () => {
     const gaps = [];
     for (let k = 0; k < 6; k++) {
       await page.evaluate(() => { __G.player.vel.set(0, 0, 0); });
+      // se anda hasta avanzar unos metros (el navegador de pruebas dibuja por software y va a
+      // pocos fotogramas por segundo: un tiempo fijo puede no dar ni un fotograma)
+      const z0 = await page.evaluate(() => __G.player.pos.z);
       await page.keyboard.down('KeyW');
-      await page.waitForTimeout(1500);
+      for (let t = 0; t < 120; t++) { await page.waitForTimeout(500); if ((await page.evaluate(() => __G.player.pos.z)) - z0 > 2.2) break; }
       await page.keyboard.up('KeyW');
       await frames(page, 4);
       const p = await page.evaluate(() => ({ x: __G.player.pos.x, y: __G.player.pos.y, z: __G.player.pos.z }));

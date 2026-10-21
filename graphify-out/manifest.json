@@ -2034,15 +2034,15 @@
     "semantic_hash": ""
   },
   "juego/tests/terrain.spec.js": {
-    "mtime": 1792618468.006937,
-    "seen": 1792618491.6213028,
-    "ast_hash": "ec47bfe91704308899de245079ac7a66",
+    "mtime": 1792622922.6338413,
+    "seen": 1792622945.3699558,
+    "ast_hash": "7bc68d15c5f25c327a1bf1a3baa9c6f3",
     "semantic_hash": ""
   },
   "juego/src/world/coast.js": {
-    "mtime": 1792609645.7264555,
-    "seen": 1792614056.451165,
-    "ast_hash": "8f6dc6b4390db56f27e3a2e555dedc82",
+    "mtime": 1792621561.7556074,
+    "seen": 1792622945.3689039,
+    "ast_hash": "a05009427d939267dbb5fe81c0f592c4",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/grass/cesped_c2.jpg": {

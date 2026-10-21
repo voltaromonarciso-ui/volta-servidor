@@ -374,7 +374,7 @@ export function buque(L = 110, seed = 1) {
   for (let x = x0; x < x1; x += 6.5) {
     const tiers = 2 + Math.round(3 * (1 - Math.max(0, (x - (x1 - 20)) / 20))) - (rnd() < 0.2 ? 1 : 0);
     for (let z = -B / 2 + 2.2; z < B / 2 - 2; z += 2.55) for (let k = 0; k < tiers; k++) {
-      const bx = rbox(6.05, 2.5, 2.42, 0.06).clone(); bx.translate(x, 5.05 + 1.25 + k * 2.56, z + 1.2);
+      const bx = new THREE.BoxGeometry(6.05, 2.5, 2.42); bx.translate(x, 5.05 + 1.25 + k * 2.56, z + 1.2); // caja simple: cientos de ellos (las esquinas redondeadas costaban 650.000 vértices)
       const cc = new THREE.Color(cols[Math.floor(rnd() * cols.length)]), col = [];
       for (let i = 0; i < bx.attributes.position.count; i++) col.push(cc.r, cc.g, cc.b);
       bx.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
