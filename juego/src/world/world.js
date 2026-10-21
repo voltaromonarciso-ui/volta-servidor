@@ -8,11 +8,13 @@ import * as TX from './textures.js';
 import { buildBike, buildScooter } from '../entities/rideables.js';
 import { PARKING } from '../data/vehicles.js';
 import { Nav } from './nav.js';
-import { buildIsland } from './island.js';
+import { buildIsland, XL as ISLAND_XL, ZL as ISLAND_ZL } from './island.js';
+import { setRelief, addPad, H, T } from './terrain.js';
 
-// ¿Isla nueva de Rooktown? (en construcción, se activa a mano)
+// ¿Isla de Rooktown? Es el mapa normal; el antiguo (Puerto Lomas) queda con ?mapa=1 o
+// localStorage rooktown_map=1 (lo usan las pruebas de referencia de los sistemas).
 export function mapV2() {
-  try { return /[?&]mapa=2\b/.test(location.search) || localStorage.getItem('rooktown_map') === '2'; } catch (e) { return false; }
+  try { return !(/[?&]mapa=1\b/.test(location.search) || localStorage.getItem('rooktown_map') === '1'); } catch (e) { return true; }
 }
 
 // ------------------------------------------------------------------
@@ -49,18 +51,21 @@ export function createWorld(sc) {
     colliders: [], grid: new Map(), nav: new Nav(),
     pois: {}, homes: [], spots: [], wander: [], floors: [], mapRects: [], mapLabels: [],
     props: {}, winMats: [], doors: [], shutters: [], bulbPositions: [], lampPools: [], water: null, boxes: [], lights: [],
-    resolve, los, addBox, inProperty, update, groundAt: () => 0,
+    resolve, los, addBox, inProperty, update, groundAt: H,
   };
   B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
   TM = makeTexMats();
 
+  setRelief(mapV2(), { xs: ISLAND_XL, zs: ISLAND_ZL, walk: SWO });
   if (mapV2()) {
-    // isla de Rooktown (en construcción): solo con ?mapa=2 o localStorage rooktown_map=2
+    // isla de Rooktown, con relieve (terrain.js)
+    const n0 = scene.children.length;
     buildIsland();
     W.static = B.build(scene);
     buildProps(scene);
     buildBulbs();
     buildBoxes();
+    seatOnTerrain(scene.children.slice(n0));
     return W;
   }
   buildGround();
@@ -88,6 +93,28 @@ export function createWorld(sc) {
   buildBulbs();
   buildBoxes();
   return W;
+}
+
+// Apoya en el relieve lo que se ha añadido suelto a la escena (rótulos, coches aparcados,
+// zonas de interacción…) y cada copia de las mallas instanciadas. Lo fundido en mallas
+// (StaticBatch, mobiliario) y el suelo ya llevan la altura: están en el origen o marcados.
+function seatOnTerrain(list) {
+  const m = new THREE.Matrix4(), p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+  for (const o of list) {
+    if (o.userData.terrainDone) continue;
+    if (o.isInstancedMesh) {
+      for (let i = 0; i < o.count; i++) {
+        o.getMatrixAt(i, m); m.decompose(p, q, s);
+        p.y += H(p.x, p.z); m.compose(p, q, s); o.setMatrixAt(i, m);
+      }
+      o.instanceMatrix.needsUpdate = true;
+      o.computeBoundingSphere();
+      continue;
+    }
+    if (o.position.x === 0 && o.position.z === 0) continue;
+    o.position.y += H(o.position.x, o.position.z);
+    o.updateMatrix(); o.updateMatrixWorld(true);
+  }
 }
 
 // ------------------------------------------------------------------
@@ -241,6 +268,7 @@ function building(o) {
     sign, signBg = '#1e2a33', signFg = '#fff', signBorder = '#f4c542', awning, roofType = 'flat', seed = Math.floor(Math.random() * 9999),
     sideStyle, labels, mapColor, noDoor, label } = o;
   const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  addPad(x0 + OX, x1 + OX, z0 + OZ, z1 + OZ, { front }); // solar llano (con relieve)
   const rows = Math.max(1, Math.round(h / 3.2));
   const face = (len, isFront) => {
     const cols = isFront && labels ? labels.length : Math.max(1, Math.round(len / 3.2));
@@ -690,9 +718,10 @@ function update(dt) {
     s.t += ((s.open ? 1 : 0) - s.t) * Math.min(1, dt * 3);
     const k = Math.max(0.03, 1 - s.t);
     s.mesh.scale.y = k;
-    s.mesh.position.y = s.h - (s.h * k) / 2;
+    s.gy ??= H(s.mesh.position.x, s.mesh.position.z); // altura del terreno (relieve)
+    s.mesh.position.y = s.gy + s.h - (s.h * k) / 2;
     s.col.on = s.t < 0.7;
-    s.hit.position.y = s.open ? s.h - 0.6 : 0.9;
+    s.hit.position.y = s.gy + (s.open ? s.h - 0.6 : 0.9);
     s.hit.updateMatrixWorld();
   }
   // puertas automáticas de las tiendas: se abren si estás cerca y está abierto

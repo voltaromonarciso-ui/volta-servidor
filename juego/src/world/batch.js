@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { H, T } from './terrain.js';
 
 // Agrupa toda la geometría estática en pocas mallas (por material y por zona)
 // con colores por vértice y oclusión ambiental falsa cerca del suelo.
@@ -39,6 +40,15 @@ for (const m of [MAT.lit, MAT.litMetal]) {
   m.customProgramCacheKey = () => 'lit';
 }
 
+// caja unidad subdividida en x/z (para piezas de suelo largas)
+const segCache = new Map();
+function boxSeg(nx, nz) {
+  nx = Math.min(nx, 40); nz = Math.min(nz, 40);
+  const k = nx + ',' + nz;
+  if (!segCache.has(k)) segCache.set(k, new THREE.BoxGeometry(1, 1, 1, nx, 1, nz));
+  return segCache.get(k);
+}
+
 export class StaticBatch {
   constructor(chunk = 60) {
     this.chunk = chunk;
@@ -48,6 +58,11 @@ export class StaticBatch {
   // opts: { mat, shadow, jitter, rx, rz, ao, aoH }
   add(geo, color, x, y, z, sx = 1, sy = 1, sz = 1, ry = 0, opts = {}) {
     const mat = typeof opts.mat === 'string' ? MAT[opts.mat] : opts.mat || MAT.solid;
+    // con relieve: las piezas planas y bajas a ras de suelo (calzada, aceras, bordillos,
+    // caminos…) son «suelo» y se subdividen para doblarse con el terreno vértice a vértice;
+    // el resto se apoya entero a la altura del terreno en su centro
+    const ground = T.on && (geo === GEO.box || geo === GEO.plane) && sy <= 0.35 && y - (geo === GEO.box ? sy / 2 : 0) <= 0.2 && Math.max(sx, sz) >= 1;
+    if (ground && geo === GEO.box && Math.max(sx, sz) > 3) geo = boxSeg(Math.ceil(sx / 3), Math.ceil(sz / 3));
     let g = geo.index ? geo.toNonIndexed() : geo.clone();
     _e.set(opts.rx || 0, ry, opts.rz || 0);
     _q.setFromEuler(_e);
@@ -75,6 +90,7 @@ export class StaticBatch {
     // opts.global: un único lote para toda la ciudad (piezas pequeñas repartidas, p. ej. luces de semáforo)
     const key = mat.uuid + '|' + (opts.global ? 'all' : Math.floor(x / this.chunk) + ',' + Math.floor(z / this.chunk)) + (shadow ? 's' : 'n');
     if (!this.buckets.has(key)) this.buckets.set(key, { mat, shadow, list: [] });
+    g.userData = { ax: x, az: z, ground };
     this.buckets.get(key).list.push(g);
   }
 
@@ -86,6 +102,12 @@ export class StaticBatch {
   build(parent) {
     const meshes = [];
     for (const { mat, shadow, list } of this.buckets.values()) {
+      if (T.on) for (const g of list) {
+        // la altura se aplica ahora, cuando ya están todos los solares de los edificios
+        const P = g.attributes.position, ud = g.userData;
+        if (ud.ground) for (let i = 0; i < P.count; i++) P.setY(i, P.getY(i) + H(P.getX(i), P.getZ(i)));
+        else { const h = H(ud.ax, ud.az); if (h) for (let i = 0; i < P.count; i++) P.setY(i, P.getY(i) + h); }
+      }
       const geo = mergeGeometries(list, false);
       geo.computeBoundingSphere();
       const mesh = new THREE.Mesh(geo, mat);

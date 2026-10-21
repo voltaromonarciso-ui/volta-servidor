@@ -29,7 +29,7 @@ function open(kind, spot, sitting) {
   if (document.pointerLockElement) document.exitPointerLock();
   resetTouch();
   G.uiOpen = true;
-  av.group.position.set(spot.x, 0, spot.z);
+  av.group.position.set(spot.x, G.world.groundAt(spot.x, spot.z), spot.z);
   av.group.rotation.y = spot.yaw;
   av.group.visible = true;
   av.apply(style());
@@ -60,15 +60,16 @@ export function updateDressing(dt) {
   const av = G.avatar;
   av.group.rotation.y = D.yaw;
   av.animate(dt, 0);
-  av.group.position.y = 0;
+  const gy = G.world.groundAt(D.spot.x, D.spot.z); // relieve
+  av.group.position.y = gy;
   if (D.sitting) {
     bendPose(av, SIT);
-    av.group.position.y = -0.36; // la pelvis baja al asiento
+    av.group.position.y = gy - 0.36; // la pelvis baja al asiento
   }
   // cámara: el espejo (peluquería: la cara; probador: cuerpo entero)
   av.group.updateMatrixWorld(true);
   const f = new THREE.Vector3(Math.sin(D.yaw), 0, Math.cos(D.yaw));
-  const target = new THREE.Vector3(D.spot.x, D.sitting ? 1.2 : 0.95, D.spot.z);
+  const target = new THREE.Vector3(D.spot.x, gy + (D.sitting ? 1.2 : 0.95), D.spot.z);
   const eye = target.clone().addScaledVector(f, D.sitting ? 0.95 : 2.6).add(new THREE.Vector3(0, D.sitting ? 0.06 : 0.15, 0));
   // el panel ocupa la derecha: el personaje se desplaza a la izquierda del encuadre
   const right = new THREE.Vector3(f.z, 0, -f.x);

@@ -13,17 +13,17 @@ const C = (h) => new THREE.Color(h);
 
 // hora, cénit, horizonte, color sol, intensidad sol, intensidad cielo, niebla
 const KEYS = [
-  [0,    C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.28, C('#1a1c34')],
-  [4.8,  C('#0e1432'), C('#2c2852'), C('#8c8cff'), 0.2, 0.32, C('#27264a')],
-  [6,    C('#3b5590'), C('#f3a06d'), C('#ffb37a'), 1.3, 0.62, C('#d8a080')],
-  [7.6,  C('#3f86d0'), C('#c3dff0'), C('#fff0d8'), 2.6, 0.95, C('#c6d9e4')],
-  [15,   C('#3a80cc'), C('#cfe4ef'), C('#fff0d8'), 2.7, 1.0, C('#cad9e0')],
-  [16.6, C('#4a72b8'), C('#f4c690'), C('#ffd09a'), 2.7, 0.86, C('#e6c6a2')],
-  [17.8, C('#4d5aa6'), C('#ff9a58'), C('#ffa260'), 2.5, 0.7, C('#eaa27c')],
-  [18.8, C('#433f8e'), C('#ff7a4a'), C('#ff8a50'), 1.9, 0.58, C('#d9837a')],
-  [19.7, C('#2e2b66'), C('#c9537a'), C('#ff7a5c'), 0.8, 0.46, C('#9a5a7c')],
-  [20.6, C('#141738'), C('#4c3463'), C('#a08cff'), 0.3, 0.34, C('#3a2c52')],
-  [24,   C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.28, C('#1a1c34')],
+  [0,    C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.3, C('#1a1c34')],
+  [4.8,  C('#0e1432'), C('#2c2852'), C('#8c8cff'), 0.2, 0.34, C('#27264a')],
+  [6,    C('#4a5c9c'), C('#ffa877'), C('#ffb37a'), 1.4, 0.66, C('#e2a888')],
+  [7.6,  C('#3f88d4'), C('#cfe5f2'), C('#fff0d6'), 2.7, 0.98, C('#cddde6')],
+  [15,   C('#3b84d0'), C('#d5e8f1'), C('#fff1da'), 2.8, 1.02, C('#d0dde2')],
+  [16.4, C('#4f78c0'), C('#f6cf9e'), C('#ffd6a2'), 2.75, 0.92, C('#ead0ad')],
+  [17.4, C('#5a62b2'), C('#ffb37c'), C('#ffbf86'), 2.6, 0.82, C('#f0b894')],
+  [18.4, C('#4f4a9e'), C('#ff9268'), C('#ff9a62'), 2.1, 0.68, C('#e3967f')],
+  [19.4, C('#363170'), C('#d8628a'), C('#ff7f5e'), 0.95, 0.5, C('#a5607f')],
+  [20.4, C('#151839'), C('#4f3666'), C('#a08cff'), 0.32, 0.36, C('#3c2d54')],
+  [24,   C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.3, C('#1a1c34')],
 ];
 
 const skyShader = () => ({
@@ -173,8 +173,9 @@ function updateSky(dt) {
   dome.material.uniforms.sunCol.value.copy(k.sunC).multiplyScalar(dir.y > -0.15 ? 1 : 0);
   G.scene.fog.color.copy(k.fog);
   hemi.intensity = k.hemiI * 1.15;
-  hemi.color.copy(k.top).lerp(C('#ffffff'), 0.45);
-  hemi.groundColor.copy(k.bot).lerp(C('#6b5f50'), 0.7);
+  // cielo algo más blanco que el cénit y rebote del suelo cálido y verdoso (césped, piedra)
+  hemi.color.copy(k.top).lerp(C('#ffffff'), 0.5);
+  hemi.groundColor.copy(k.bot).lerp(C('#7a7048'), 0.65);
   sun.color.copy(k.sunC);
   sun.intensity = k.sunI;
 
@@ -187,7 +188,7 @@ function updateSky(dt) {
   // se mueve en esos mismos fotogramas, así no "bailan" entre medias
   shadowN = (shadowN + 1) % (G.shadowEvery || 1);
   if (shadowN === 0) {
-    sun.target.position.set(snap(p.x), 0, snap(p.z));
+    sun.target.position.set(snap(p.x), p.y, snap(p.z)); // con relieve, a la altura del jugador
     sun.position.copy(sun.target.position).addScaledVector(lightDir.normalize(), 140);
     sun.shadow.needsUpdate = true;
   }

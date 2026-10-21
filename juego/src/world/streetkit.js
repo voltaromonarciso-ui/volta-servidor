@@ -435,11 +435,12 @@ function bush(g, x, y, z, r, seed) {
 
 // Macetero de hormigón con arbustos
 export function macetero() {
-  const g = new THREE.Group(), m = mat('#8e9399', { r: 0.85 });
+  // hormigón claro y cálido (como la jardinera de la referencia), bien lleno de arbustos
+  const g = new THREE.Group(), m = mat('#cbc2b4', { r: 0.9 });
   add(g, taperBox('macetero', 1.2, 0.5, 0.6, 0.04, 1.06), m, 0, 0.27, 0);
-  add(g, rbox(1.32, 0.06, 0.7, 0.025), mat('#a3a8ae', { r: 0.8 }), 0, 0.53, 0);
+  add(g, rbox(1.32, 0.06, 0.7, 0.025), mat('#ddd5c8', { r: 0.85 }), 0, 0.53, 0);
   add(g, rbox(1.12, 0.04, 0.52, 0.01), mat('#4a3626', { r: 1 }), 0, 0.52, 0);
-  for (const [x, z, r, s] of [[-0.3, 0, 0.3, 3], [0.3, 0.03, 0.32, 7], [0, -0.08, 0.26, 11]]) bush(g, x, 0.68 + r * 0.3, z, r, s);
+  for (const [x, z, r, s] of [[-0.32, 0, 0.36, 3], [0.3, 0.03, 0.38, 7], [0, -0.06, 0.32, 11]]) bush(g, x, 0.66 + r * 0.32, z, r, s);
   return g;
 }
 

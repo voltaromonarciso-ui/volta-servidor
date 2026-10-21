@@ -65,7 +65,10 @@ class Car {
       m.castShadow = kind === 'box';
       inner.add(m);
     }, color, 0, 0, 0);
-    this.g.add(inner);
+    // inclinación con la cuesta (relieve): el coche cabecea dentro de este grupo
+    this.tilt = new THREE.Group();
+    this.tilt.add(inner);
+    this.g.add(this.tilt);
     // repartidos a lo largo del bucle (start = fracción del recorrido, 0–1)
     const n = this.pts.length, segs = this.pts.map((p, k) => Math.hypot(this.pts[(k + 1) % n].x - p.x, this.pts[(k + 1) % n].z - p.z));
     let rest = (start % 1) * segs.reduce((a, b) => a + b, 0), k = 0;
@@ -154,6 +157,15 @@ class Car {
     const step = this.speed * dt;
     pos.x += fx * step;
     pos.z += fz * step;
+    this.seat(fx, fz);
+  }
+
+  // apoyar en el relieve: altura en el centro y cabeceo según la cuesta entre los ejes
+  seat(fx, fz) {
+    const pos = this.g.position, gr = G.world.groundAt;
+    const hf = gr(pos.x + fx * 1.3, pos.z + fz * 1.3), hb = gr(pos.x - fx * 1.3, pos.z - fz * 1.3);
+    pos.y = (hf + hb) / 2;
+    this.tilt.rotation.x = -Math.atan2(hf - hb, 2.6);
   }
 
   // avanzar por el carril sin simular (solo para colocarlo al aparecer)

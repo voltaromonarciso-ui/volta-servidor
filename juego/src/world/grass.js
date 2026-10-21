@@ -22,7 +22,8 @@ const n2 = (x, z) => Math.sin(x * 0.061 + Math.sin(z * 0.043) * 1.7) * 0.5 + Mat
 function tint(x, z) {
   const k = n2(x, z), k2 = Math.sin(x * 0.19 + z * 0.13) * 0.5 + 0.5;
   // de verde más oscuro y húmedo a uno algo más claro y seco
-  return [0.86 + k * 0.1 + k2 * 0.04, 0.92 + k * 0.08, 0.84 + k * 0.06 - k2 * 0.04];
+  // más vivo y algo más verde que la textura (que tira a oliva), como el césped de la referencia
+  return [0.9 + k * 0.09 + k2 * 0.05, 1.1 + k * 0.08, 0.78 + k * 0.05 - k2 * 0.05];
 }
 
 // Malla de césped sobre una forma de THREE.Shape (en XY → XZ) o un rectángulo; UV en metros.
@@ -44,9 +45,9 @@ export function islandLawn(scene, shape, y) {
   const geo = new THREE.ShapeGeometry(new THREE.Shape(pts), 1);
   geo.rotateX(Math.PI / 2);
   // subdivisión en cuadrícula (la ShapeGeometry sale con triángulos enormes): se rehace
-  // como rejilla de 8 m recortada por la caja de la forma
+  // como rejilla de 4 m recortada por la caja de la forma (y así sigue bien el relieve)
   const box = new THREE.Box3().setFromBufferAttribute(geo.attributes.position);
-  const sx = Math.ceil((box.max.x - box.min.x) / 8), sz = Math.ceil((box.max.z - box.min.z) / 8);
+  const sx = Math.ceil((box.max.x - box.min.x) / 4), sz = Math.ceil((box.max.z - box.min.z) / 4);
   const grid = new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z, sx, sz);
   grid.rotateX(-Math.PI / 2); grid.translate((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2);
   const m = new THREE.Mesh(lawnGeoFromPositions(grid), lawnMat);
@@ -78,8 +79,11 @@ const bladeTex = () => {
   let s0 = 7; const rnd = () => { s0 = (s0 * 9301 + 49297) % 233280; return s0 / 233280; };
   for (let k = 0; k < 46; k++) {
     const x = 10 + rnd() * 108, hgt = 50 + rnd() * 74, lean = (rnd() - 0.5) * 34, w = 2.5 + rnd() * 2.5;
-    const l = 26 + rnd() * 22;
-    g.fillStyle = `hsl(${88 + rnd() * 22},${42 + rnd() * 18}%,${l}%)`;
+    // brizna con degradado: base oscura y punta clara y cálida (como en la referencia)
+    const l = 34 + rnd() * 16, gr = g.createLinearGradient(0, 128, 0, 128 - hgt);
+    gr.addColorStop(0, `hsl(${100 + rnd() * 10},${48 + rnd() * 12}%,${l - 16}%)`);
+    gr.addColorStop(1, `hsl(${82 + rnd() * 14},${58 + rnd() * 14}%,${l + 8}%)`);
+    g.fillStyle = gr;
     g.beginPath(); g.moveTo(x - w, 128); g.quadraticCurveTo(x + lean * 0.3, 128 - hgt * 0.6, x + lean, 128 - hgt); g.quadraticCurveTo(x + lean * 0.3 + w * 0.6, 128 - hgt * 0.55, x + w, 128); g.fill();
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -89,9 +93,9 @@ let tuftMat = null;
 // Mata: tres planos cruzados con briznas recortadas; la luz de cada plano mira hacia arriba
 // (normales verticales) para que no se oscurezcan según el ángulo del sol
 export function tuft() {
-  tuftMat ||= new THREE.MeshStandardMaterial({ map: bladeTex(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9, color: '#d6e6c2' });
+  tuftMat ||= new THREE.MeshStandardMaterial({ map: bladeTex(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9, color: '#f2f7e4' });
   const grp = new THREE.Group();
-  const geo = new THREE.PlaneGeometry(0.7, 0.42); geo.translate(0, 0.21, 0);
+  const geo = new THREE.PlaneGeometry(0.75, 0.5); geo.translate(0, 0.25, 0);
   const N = geo.attributes.normal; for (let i = 0; i < N.count; i++) N.setXYZ(i, 0, 1, 0);
   for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(geo, tuftMat); m.rotation.y = (k * Math.PI) / 3; grp.add(m); }
   return grp;

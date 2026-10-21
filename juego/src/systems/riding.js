@@ -73,9 +73,10 @@ function park(e, p) {
 // ------------------------------------------------------------------
 function place(v) {
   const e = v.entry;
-  v.group.position.set(e.x, 0, e.z);
+  const gy = G.world.groundAt(e.x, e.z); // relieve
+  v.group.position.set(e.x, gy, e.z);
   v.group.rotation.y = e.yaw;
-  v.hit.position.set(e.x, 0.6, e.z);
+  v.hit.position.set(e.x, gy + 0.6, e.z);
   v.hit.rotation.y = e.yaw;
   v.hit.updateMatrixWorld();
 }
@@ -83,7 +84,8 @@ function place(v) {
 // ¿Se puede estar aquí? (dentro del mapa y sin atravesar paredes)
 // (rozar una pared vale: aparcar pegado a ella es normal; estar dentro, no)
 function freeSpot(x, z, r = 0.45) {
-  if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) >= 110 || Math.abs(z) >= 110) return false;
+  const bd = G.world.bounds; // la isla tiene sus propios límites; el mapa antiguo, ±110
+  if (!Number.isFinite(x) || !Number.isFinite(z) || (bd ? x <= bd.x0 || x >= bd.x1 || z <= bd.z0 || z >= bd.z1 : Math.abs(x) >= 110 || Math.abs(z) >= 110)) return false;
   tmp.set(x, 0, z);
   if (!G.world.resolve(tmp, r, 0)) return true;
   return Math.hypot(tmp.x - x, tmp.z - z) < 0.05;
@@ -139,13 +141,14 @@ function mount(v) {
   camFrom.copy(G.camera.position); qFrom.copy(G.camera.quaternion);
   const e = v.entry;
   const f = fwdOf(e.yaw);
-  R.cam.set(e.x, 2.2, e.z).addScaledVector(f, -4.2);
-  R.look.set(e.x, 1.2, e.z).addScaledVector(f, 2);
+  const gy = G.world.groundAt(e.x, e.z);
+  R.cam.set(e.x, gy + 2.2, e.z).addScaledVector(f, -4.2);
+  R.look.set(e.x, gy + 1.2, e.z).addScaledVector(f, 2);
   input.sprintToggle = false; input.crouch = false;
   G.avatar.group.visible = true;
   G.avatar.apply(G.act.currentStyle?.() || {});
   document.body.classList.add('riding');
-  G.player.pos.set(e.x, 0, e.z);
+  G.player.pos.set(e.x, gy, e.z);
   sfx('pop');
 }
 
@@ -247,13 +250,14 @@ export function updateRiding(dt) {
   if (def.battery && R.speed > 0) e.battery = Math.max(0, (e.battery ?? 1) - (R.speed * dt) / def.battery);
   place(v);
   // el jugador va con el vehículo (policía, clientes y mapa lo ven ahí)
-  G.player.pos.set(e.x, 0, e.z);
+  const gy = G.world.groundAt(e.x, e.z);
+  G.player.pos.set(e.x, gy, e.z);
   G.player.yaw = e.yaw + Math.PI;
   // --- ruedas, pedales y postura del personaje
   const ud = v.group.userData;
   for (const w of ud.wheels) w.rotation.x += (R.speed * dt) / ud.wheelR;
   const av = G.avatar;
-  av.group.position.set(e.x, 0, e.z).addScaledVector(f, def.kind === 'bike' ? -0.2 : -0.08);
+  av.group.position.set(e.x, gy, e.z).addScaledVector(f, def.kind === 'bike' ? -0.2 : -0.08);
   av.group.rotation.y = e.yaw;
   av.animate(dt, 0);
   if (def.kind === 'bike') {
@@ -261,19 +265,19 @@ export function updateRiding(dt) {
     if (ud.crank) ud.crank.rotation.x = R.phase;
     const p = Math.sin(R.phase) * 0.35;
     bendPose(av, [['Bip01_L_Thigh', -1.15 + p], ['Bip01_R_Thigh', -1.15 - p], ['Bip01_L_Calf', 0.9 - p], ['Bip01_R_Calf', 0.9 + p], ['Bip01_L_UpperArm', -0.85], ['Bip01_R_UpperArm', -0.85], ['Bip01_L_Forearm', -0.35], ['Bip01_R_Forearm', -0.35]]);
-    av.group.position.y = 0.12;
+    av.group.position.y = gy + 0.12;
   } else {
     bendPose(av, [['Bip01_L_UpperArm', -0.8], ['Bip01_R_UpperArm', -0.8], ['Bip01_L_Forearm', -0.45], ['Bip01_R_Forearm', -0.45]]);
-    av.group.position.y = ud.deckY;
+    av.group.position.y = gy + ud.deckY;
   }
   // --- cámara en tercera persona: detrás y algo por encima, siempre suave
   const back = 3.9 + clamp(Math.abs(R.speed) * 0.08, 0, 0.8);
-  const want = tmp.set(e.x, 2.25, e.z).addScaledVector(f, -back);
+  const want = tmp.set(e.x, gy + 2.25, e.z).addScaledVector(f, -back);
   // si hay una pared detrás, la cámara se acerca
-  if (!G.world.los(e.x, e.z, want.x, want.z, 2.2)) want.set(e.x, 2.0, e.z).addScaledVector(f, -1.4);
+  if (!G.world.los(e.x, e.z, want.x, want.z, 2.2)) want.set(e.x, gy + 2.0, e.z).addScaledVector(f, -1.4);
   const k = 1 - Math.exp(-dt * 6);
   R.cam.lerp(want, k);
-  R.look.lerp(new THREE.Vector3(e.x, 1.25, e.z).addScaledVector(f, 2.2), k);
+  R.look.lerp(new THREE.Vector3(e.x, gy + 1.25, e.z).addScaledVector(f, 2.2), k);
   tmpM.lookAt(R.cam, R.look, new THREE.Vector3(0, 1, 0));
   tmpQ.setFromRotationMatrix(tmpM);
   R.blend = Math.min(1, R.blend + dt * 2.2);

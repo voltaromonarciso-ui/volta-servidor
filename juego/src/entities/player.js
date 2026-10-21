@@ -23,7 +23,7 @@ export class Player {
   }
 
   teleport(x, z, yaw) {
-    this.pos.set(x, 0, z);
+    this.pos.set(x, G.world?.groundAt(x, z) || 0, z);
     if (yaw !== undefined) this.yaw = yaw;
     this.pitch = 0;
     this.vel.set(0, 0, 0);
@@ -53,14 +53,20 @@ export class Player {
 
     if (input.jump && this.grounded && !frozen && !this.crouching) { this.vy = JUMP; this.grounded = false; sfx('jump'); }
     input.jump = false;
-    this.vy -= GRAV * dt;
-    this.pos.y += this.vy * dt;
-    if (this.pos.y <= 0) { this.pos.y = 0; this.vy = 0; this.grounded = true; }
 
+    // la posición es absoluta: el suelo está a groundAt(x, z) (relieve); las colisiones
+    // miran la altura sobre el suelo
+    const g0 = G.world.groundAt(this.pos.x, this.pos.z);
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
-    G.world.resolve(this.pos, R, this.pos.y);
+    G.world.resolve(this.pos, R, this.pos.y - g0);
     for (const car of G.cars) car.pushOut(this.pos, R);
+    const gy = G.world.groundAt(this.pos.x, this.pos.z);
+    this.vy -= GRAV * dt;
+    this.pos.y += this.vy * dt;
+    // cuesta abajo se sigue pegado al suelo (sin ir dando saltitos)
+    if (this.grounded && this.vy <= 0 && this.pos.y - gy < 0.3) this.pos.y = gy;
+    if (this.pos.y <= gy) { this.pos.y = gy; this.vy = 0; this.grounded = true; }
 
     const hs = Math.hypot(this.vel.x, this.vel.z);
     if (this.grounded && hs > 0.5) {

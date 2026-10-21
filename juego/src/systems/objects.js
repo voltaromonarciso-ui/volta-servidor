@@ -51,7 +51,7 @@ function mesh(geo, color, sx, sy, sz, x = 0, y = 0, z = 0, parent) {
 // ------------------------------------------------------------------
 export function spawnObject(entry) {
   const o = { entry, group: new THREE.Group() };
-  o.group.position.set(entry.x, 0, entry.z);
+  o.group.position.set(entry.x, G.world.groundAt(entry.x, entry.z), entry.z);
   o.group.rotation.y = entry.r || 0;
   G.scene.add(o.group);
   BUILD[entry.type](o);
@@ -514,7 +514,7 @@ export function startMove(o) {
 function settle(o, x, z, r) {
   const e = o.entry;
   e.x = x; e.z = z; e.r = r;
-  o.group.position.set(x, 0, z);
+  o.group.position.set(x, G.world.groundAt(x, z), z);
   o.group.rotation.y = r;
   removeBox(o.col);
   const [fw, fd] = footprint(e.type, r);
@@ -595,7 +595,7 @@ export function updatePlacement() {
   const r = placement.rot;
   const x = Math.round(hit.point.x * 4) / 4, z = Math.round(hit.point.z * 4) / 4;
   const ok = canPlace(type, x, z, r, hit.object.userData.prop);
-  ghost.position.set(x, 0, z);
+  ghost.position.set(x, G.world.groundAt(x, z), z);
   ghost.rotation.y = r;
   tintGhost(ok);
   const name = ITEMS[ITEM_OF[type]].name.toLowerCase();

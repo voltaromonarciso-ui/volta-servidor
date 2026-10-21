@@ -18,7 +18,7 @@ test.describe.serial('Ciclo completo', () => {
   test.afterAll(async () => { await page?.context().close(); });
 
   test('menú principal: sin joystick ni botones de partida', async ({}, testInfo) => {
-    await page.goto('/');
+    await page.goto('/?mapa=1');
     await page.waitForFunction(() => document.getElementById('loading').classList.contains('hide'), null, { timeout: 300_000 });
     await expect(page.locator('#menu')).toBeVisible();
     for (const id of ['#joy', '#btn-jump', '#btn-run', '#btn-crouch', '#btn-phone', '#cash']) await expect(page.locator(id)).toBeHidden();

@@ -62,6 +62,7 @@ export class Walker {
   lookAt(x, z) { this.face = Math.atan2(x - this.pos.x, z - this.pos.z); }
 
   animate(dt) {
+    this.pos.y = G.world.groundAt(this.pos.x, this.pos.z); // de pie sobre el relieve
     let diff = this.face - this.g.rotation.y;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;

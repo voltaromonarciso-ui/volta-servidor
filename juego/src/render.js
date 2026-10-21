@@ -10,10 +10,10 @@ import { G } from './game.js';
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
-    vignette: { value: 0.42 },
-    saturation: { value: 1.12 },
-    contrast: { value: 1.06 },
-    warm: { value: new THREE.Vector3(1.03, 1.0, 0.97) },
+    vignette: { value: 0.32 },
+    saturation: { value: 1.16 },
+    contrast: { value: 1.07 },
+    warm: { value: new THREE.Vector3(1.04, 1.0, 0.955) },
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: `
@@ -38,7 +38,7 @@ export function initRender(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.06;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);

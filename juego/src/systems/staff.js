@@ -384,7 +384,7 @@ export function updateWorkers(dt) {
     let x, z, yaw;
     if (o) { const r = o.entry.r || 0; x = o.entry.x + Math.sin(r) * 0.95; z = o.entry.z + Math.cos(r) * 0.95; yaw = r + Math.PI; }
     else { const i = staff().filter((x) => x.prop === e.prop).indexOf(e); x = prop.spawn.x + 1.4 + i * 0.9; z = prop.spawn.z - 1.2; yaw = 0; } // mirando a la entrada
-    b.group.position.set(x, 0, z);
+    b.group.position.set(x, G.world.groundAt(x, z), z);
     b.group.rotation.y = yaw;
     const near = (x - p.x) ** 2 + (z - p.z) ** 2 < 900;
     b.group.visible = near;

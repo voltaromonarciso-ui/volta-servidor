@@ -65,7 +65,7 @@ export async function frames(page, n = 10) {
 
 // Arranca una partida nueva desde el menú, con el creador de personaje y la intro.
 export async function newGame(page, testInfo) {
-  await page.goto('/');
+  await page.goto('/?mapa=1'); // las pruebas de referencia usan el mapa antiguo (Puerto Lomas)
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForFunction(() => document.getElementById('loading').classList.contains('hide'), null, { timeout: 300_000 });

@@ -6,6 +6,7 @@
 // llamadas aunque tenga cientos de objetos. Las colisiones salen de la caja de cada modelo.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { H } from './terrain.js';
 
 const SECTOR = 120; // m: tamaño de la celda que se funde en una malla (y que se descarta fuera de cámara)
 const plain = {
@@ -70,9 +71,12 @@ function mergeAll(list, mat) {
 // Colocador: se le van dando objetos y al final se construyen las mallas
 export function createFurniture({ addBox } = {}) {
   const list = [];
+  const used = new Set();
   const glowMats = new Set();
   const api = {
     count: () => list.length,
+    // vértices por modelo (copias × vértices de una copia), para medir el coste
+    report: () => [...used].map((p) => [p.key, p.n, p.n * p.parts.reduce((a, q) => a + q.geo.attributes.position.count, 0)]).sort((a, b) => b[2] - a[2]),
     // key: nombre único del modelo; fn: función de streetkit; ry: giro (el frente del modelo mira a +z)
     place(key, fn, x, z, ry = 0, { solid = true, y = 0, s = 1, hit = 0 } = {}) {
       const p = proto(key, fn);
@@ -90,6 +94,7 @@ export function createFurniture({ addBox } = {}) {
           addBox(x0, x1, z0, z1, b.max.y * s);
         }
       }
+      p.n = (p.n || 0) + 1; p.key = key; used.add(p);
       return p.box;
     },
     // Funde todo en mallas por sector y material y las añade a la escena
@@ -109,7 +114,7 @@ export function createFurniture({ addBox } = {}) {
       for (const byMat of cells.values()) for (const [mat, items] of byMat) {
         const geos = items.map(({ geo, it }) => {
           q.setFromAxisAngle(up, it.ry);
-          m4.compose(new THREE.Vector3(it.x, it.y, it.z), q, new THREE.Vector3(it.s, it.s, it.s));
+          m4.compose(new THREE.Vector3(it.x, it.y + H(it.x, it.z), it.z), q, new THREE.Vector3(it.s, it.s, it.s)); // apoyado en el relieve
           return geo.clone().applyMatrix4(m4);
         });
         const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos);

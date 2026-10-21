@@ -72,7 +72,7 @@ let sky, leo;
 function buildWorld() {
   G.world = createWorld(scene);
   // exposición de la tienda de muebles
-  for (const it of G.world.showroom || []) { const m = furnitureModel(it.type); m.position.set(it.x, 0, it.z); m.rotation.y = it.r; scene.add(m); }
+  for (const it of G.world.showroom || []) { const m = furnitureModel(it.type); m.position.set(it.x, G.world.groundAt(it.x, it.z), it.z); m.rotation.y = it.r; scene.add(m); }
   sky = createSky(scene);
   G.player = new Player(camera);
   G.player.teleport(-66, -38, 0);
@@ -87,7 +87,7 @@ function spawnClerks() {
   (G.world.clerks || []).forEach((c, i) => {
     if (!pool.length) return;
     const h = makeRealHuman(pool[(i * 5 + 3) % pool.length]);
-    h.group.position.set(c.x, 0, c.z);
+    h.group.position.set(c.x, G.world.groundAt(c.x, c.z), c.z);
     h.group.rotation.y = c.yaw;
     scene.add(h.group);
     clerks.push(h);
@@ -99,7 +99,7 @@ function spawnLeo() {
   leo = MODELS[LEO_MODEL] ? makeRealHuman(LEO_MODEL) : makeHuman({ skin: '#d9a47f', hair: '#16181c', shirt: '#25282e', pants: '#3a5a86', hairStyle: 3, top: 'hoodie', height: 1.02, wide: 1.05 });
   if (leo.real) { leo.pose = 'give'; leo.loopGive = true; }
   const wk = G.world.worker;
-  leo.group.position.set(wk.x, 0, wk.z);
+  leo.group.position.set(wk.x, G.world.groundAt(wk.x, wk.z), wk.z);
   leo.group.rotation.y = wk.yaw;
   scene.add(leo.group);
   const hb = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, 0.9), new THREE.MeshBasicMaterial({ visible: false }));
