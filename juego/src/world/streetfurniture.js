@@ -69,7 +69,12 @@ function mergeAll(list, mat) {
 }
 
 // Colocador: se le van dando objetos y al final se construyen las mallas
-export function createFurniture({ addBox } = {}) {
+// Objetos anchos sobre el relieve (bancos, papeleras, jardineras…): se quedan rectos sobre su
+// punto más alto con una base de hormigón que absorbe la pendiente; si la cuesta es muy fuerte
+// no se ponen (y se quita su colisión). El resto (árboles, farolas, edificios en su solar…) se
+// apoya por el centro.
+const baseMat = new THREE.MeshStandardMaterial({ color: '#a7a39b', roughness: 0.9 });
+export function createFurniture({ addBox, removeBox, level = null } = {}) {
   const list = [];
   const used = new Set();
   const glowMats = new Set();
@@ -80,9 +85,10 @@ export function createFurniture({ addBox } = {}) {
     // key: nombre único del modelo; fn: función de streetkit; ry: giro (el frente del modelo mira a +z)
     place(key, fn, x, z, ry = 0, { solid = true, y = 0, s = 1, hit = 0 } = {}) {
       const p = proto(key, fn);
-      list.push({ p, x, y, z, ry, s });
+      const it = { p, x, y, z, ry, s, key, cols: [] };
+      list.push(it);
       p.glow.forEach((m) => glowMats.add(m));
-      if (solid && addBox && hit) addBox(x - hit / 2, x + hit / 2, z - hit / 2, z + hit / 2, p.box.max.y * s);
+      if (solid && addBox && hit) it.cols.push(addBox(x - hit / 2, x + hit / 2, z - hit / 2, z + hit / 2, p.box.max.y * s));
       else if (solid && addBox) {
         const b = p.box, c = Math.cos(ry), sn = Math.sin(ry);
         if (b.max.y - b.min.y > 0.25) {
@@ -91,7 +97,7 @@ export function createFurniture({ addBox } = {}) {
             const wx = x + (lx * c + lz * sn) * s, wz = z + (-lx * sn + lz * c) * s;
             x0 = Math.min(x0, wx); x1 = Math.max(x1, wx); z0 = Math.min(z0, wz); z1 = Math.max(z1, wz);
           }
-          addBox(x0, x1, z0, z1, b.max.y * s);
+          it.cols.push(addBox(x0, x1, z0, z1, b.max.y * s));
         }
       }
       p.n = (p.n || 0) + 1; p.key = key; used.add(p);
@@ -99,8 +105,28 @@ export function createFurniture({ addBox } = {}) {
     },
     // Funde todo en mallas por sector y material y las añade a la escena
     build(scene) {
-      const cells = new Map();
+      const cells = new Map(), bases = [];
+      let skipped = 0;
       for (const it of list) {
+        it.gy = H(it.x, it.z);
+        if (level && level.test(it.key)) {
+          // esquinas de la planta del objeto en el mundo
+          const b = it.p.box, c = Math.cos(it.ry), sn = Math.sin(it.ry);
+          let lo = Infinity, hi = -Infinity;
+          for (const lx of [b.min.x, b.max.x]) for (const lz of [b.min.z, b.max.z]) {
+            const h = H(it.x + (lx * c + lz * sn) * it.s, it.z + (-lx * sn + lz * c) * it.s);
+            lo = Math.min(lo, h); hi = Math.max(hi, h);
+          }
+          if (hi - lo > 0.55) { skipped++; for (const col of it.cols) col && removeBox?.(col); continue; } // cuesta demasiado fuerte
+          if (hi - lo > 0.04) {
+            it.gy = hi;
+            const bw = (b.max.x - b.min.x) * it.s + 0.12, bd = (b.max.z - b.min.z) * it.s + 0.12, bh = hi - lo + 0.1;
+            const g = new THREE.BoxGeometry(bw, bh, bd);
+            const cx = ((b.min.x + b.max.x) / 2) * it.s, cz = ((b.min.z + b.max.z) / 2) * it.s;
+            g.translate(cx, -bh / 2 + 0.02, cz); g.rotateY(it.ry); g.translate(it.x, hi, it.z);
+            bases.push(g);
+          }
+        }
         const key = `${Math.floor(it.x / SECTOR)},${Math.floor(it.z / SECTOR)}`;
         if (!cells.has(key)) cells.set(key, new Map());
         const byMat = cells.get(key);
@@ -114,7 +140,7 @@ export function createFurniture({ addBox } = {}) {
       for (const byMat of cells.values()) for (const [mat, items] of byMat) {
         const geos = items.map(({ geo, it }) => {
           q.setFromAxisAngle(up, it.ry);
-          m4.compose(new THREE.Vector3(it.x, it.y + H(it.x, it.z), it.z), q, new THREE.Vector3(it.s, it.s, it.s)); // apoyado en el relieve
+          m4.compose(new THREE.Vector3(it.x, it.y + it.gy, it.z), q, new THREE.Vector3(it.s, it.s, it.s)); // apoyado en el relieve
           return geo.clone().applyMatrix4(m4);
         });
         const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos);
@@ -126,9 +152,14 @@ export function createFurniture({ addBox } = {}) {
         scene.add(mesh);
         meshes++; verts += merged.attributes.position.count;
       }
+      if (bases.length) {
+        const bm = new THREE.Mesh(mergeGeometries(bases), baseMat);
+        bm.castShadow = bm.receiveShadow = true; bm.matrixAutoUpdate = false; bm.userData.terrainDone = true;
+        scene.add(bm);
+      }
       // las luces del mobiliario se encienden con las farolas (sky.js)
       for (const m of glowMats) m.userData.ei0 ??= m.emissiveIntensity;
-      return { meshes, verts, glowMats: [...glowMats] };
+      return { meshes, verts, glowMats: [...glowMats], bases: bases.length, skipped };
     },
   };
   return api;

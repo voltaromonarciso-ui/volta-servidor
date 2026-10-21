@@ -224,7 +224,8 @@ function drawMinimap() {
   };
   const W = G.world;
   const P = W.pois, at = (p, ...a) => { if (p) icon(p.x, p.z, ...a); }; // un sitio que no exista no rompe el minimapa
-  at(P.nave, '#2b3540', '⌂');
+  if (G.state.props.piso) at(P.piso, '#2b3540', '⌂');
+  if (G.state.props.nave) at(P.nave, '#2b3540', '⌂');
   if (G.state.props.bungalow) at(P.bungalow, '#2e7d4f', '⌂');
   at(P.ferreteria, '#b0302a', '⚒', false);
   at(P.gasolinera, '#2e86de', '⛽', false);

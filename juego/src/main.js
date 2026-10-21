@@ -111,6 +111,19 @@ function spawnLeo() {
 
 function leoTip() {
   const q = G.state.quest;
+  if (G.state.home === 'piso') {
+    const tips = [
+      'Abre la caja, primo. Te he metido lo básico para empezar.',
+      'Pon la maceta en el suelo, en el hueco libre del salón. Cabe de sobra.',
+      'La tierra la venden en la ferretería. Míralo en el mapa del móvil.',
+      'Rubio te deja las semillas en el contenedor verde junto al Almacén Bravo.',
+      'Primero la tierra, luego la semilla. No tiene más misterio.',
+      'El fregadero de la cocina sirve para llenar la regadera. El del baño también.',
+      'Si estás cansado, la cama es toda tuya. Yo duermo en el sofá de mi colega.',
+      'Sobres vacíos y mesa de empaquetado, en la ferretería. La mesa ponla aquí, en el hueco.',
+    ];
+    return tips[q] || 'Tú a lo tuyo, que yo vigilo el piso.';
+  }
   const tips = [
     'Deja la caja dentro y ábrela, primo. Te he metido lo básico.',
     'Pon la maceta en el suelo, donde quieras. Aquí hay sitio de sobra.',
@@ -144,7 +157,7 @@ Object.assign(G.act, {
   arrested: (r) => P.arrestedDialog(r),
   openPhone: (app, arg) => { P.closePanel(true); openPhone(app, arg); },
   sleep: (prop, opts) => sleep(prop, false, opts),
-  openSafe: P.openSafe, openAtm: P.openAtm,
+  openSafe: P.openSafe, openAtm: P.openAtm, openBag: () => P.openBag(),
   refill: () => {
     if (!inv.count('regadera')) return toast('No llevas regadera.');
     G.state.water = 6; sfx('water'); toast('Regadera llena (6 usos).', '💧');
@@ -166,7 +179,8 @@ Object.assign(G.act, {
   traffic: (t) => { G.state.settings.traffic = t; setTraffic(t); },
   quality: (q) => { G.state.settings.quality = q; setQuality(q); resize(); setShadows(q !== 'baja' && G.state.settings.shadows); },
   openStarterBox: () => {
-    if (G.world.inProperty(G.player.pos.x, G.player.pos.z) !== 'nave') return toast('Llévala dentro de tu nave antes de abrirla.', '📦');
+    const home = G.state.home === 'piso' ? 'piso' : 'nave';
+    if (G.world.inProperty(G.player.pos.x, G.player.pos.z) !== home) return toast(`Llévala dentro de tu ${home} antes de abrirla.`, '📦');
     inv.remove('caja', 1);
     inv.add('maceta', 1);
     inv.add('regadera', 1);
@@ -174,7 +188,7 @@ Object.assign(G.act, {
     G.state.water = 4;
     G.player.use();
     sfx('pop');
-    bigToast('Caja abierta', 'Maceta, regadera y sobres vacíos. Coloca la maceta en el suelo de la nave.');
+    bigToast('Caja abierta', `Maceta, regadera y sobres vacíos. Coloca la maceta en el suelo ${home === 'piso' ? 'del piso' : 'de la nave'}.`);
     G.act.flag('boxOpened');
     G.state.sel = G.state.inv.findIndex((x) => x && x.id === 'maceta');
   },
@@ -237,6 +251,8 @@ async function startGame(fresh, look) {
   if (!loaded) {
     inv.add('caja', 1);
     unlockStartingCustomers();
+    // isla: empiezas en tu piso de los Apartamentos (gratis); la nave pasa a ser un almacén
+    if (G.world.props.piso) { s.props.piso = true; s.props.nave = false; s.home = 'piso'; }
   }
   // vecinos
   PEOPLE.forEach((p, i) => G.npcs.push(new NPC(p, G.world.homes[i % G.world.homes.length], i + 1)));
@@ -246,7 +262,7 @@ async function startGame(fresh, look) {
   if (s.props.bungalow && G.world.saleSign) G.world.saleSign.visible = false;
   const prop = G.world.props[s.home] || G.world.props.nave;
   if (loaded) G.player.teleport(prop.spawn.x, prop.spawn.z, prop.spawn.yaw);
-  else if (G.world.pois.inicio) { const st = G.world.pois.inicio; G.player.teleport(st.x, st.z, Math.PI); } // isla de Rooktown
+  else if (G.world.pois.inicio) { const st = G.world.pois.inicio; G.player.teleport(st.x, st.z, st.yaw ?? Math.PI); } // isla de Rooktown
   else { G.player.teleport(-62.5, -38.2, 0.32); G.player.pitch = -0.08; }
 
   if (look) { s.look = look; s.name = String(look.name || '').replace(/[<>&"]/g, '').slice(0, 14); }
@@ -287,6 +303,7 @@ async function startGame(fresh, look) {
 }
 
 function intro() {
+  if (G.state.home === 'piso') return introPiso();
   P.messageDialog('Puerto Lomas', `
     <p>${G.state.name ? `<b>${G.state.name.replace(/[<>&"]/g, '')}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha prestado una vieja nave en el polígono de Puerto Lomas, una ciudad costera de palmeras donde nunca pasa nada... en apariencia.</p>
     <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva, empaqueta y vende a los vecinos sin que la policía te pille. Construye tu imperio desde cero.</p>
@@ -294,6 +311,18 @@ function intro() {
   '¡A trabajar!', () => {
     setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${G.state.name || 'primo'}. La nave es tuya: deja la caja dentro y ábrela, te he metido lo básico para empezar.`), 1500);
     setTimeout(() => sendMsg('leo', 'Te paso dos contactos: Chema y Nuria. Cuando tengas material, te escribirán. Y ojo: a partir de las 21:00 hay toque de queda, la poli no perdona.'), 8000);
+  });
+}
+
+function introPiso() {
+  const nm = G.state.name ? G.state.name.replace(/[<>&"]/g, '') : '';
+  P.messageDialog('Rooktown', `
+    <p>${nm ? `<b>${nm}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha conseguido un estudio en los Apartamentos de Rooktown, portal 7, primera planta: una isla de palmeras donde nunca pasa nada... en apariencia.</p>
+    <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva en el hueco libre del piso, empaqueta y vende a los vecinos sin que la policía te pille. Más adelante podrás comprar almacenes para crecer.</p>
+    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
+  '¡A trabajar!', () => {
+    setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${nm || 'primo'}. El piso es tuyo y no pagas nada de momento. Abre la caja, te he metido lo básico para empezar.`), 1500);
+    setTimeout(() => sendMsg('leo', 'Mi vieja nave la he dejado: ahora es el Almacén Bravo y está en venta. Cuando vayas bien de dinero, échale un ojo. Te paso a Chema y a Nuria; y ojo, a partir de las 21:00 hay toque de queda.'), 8000);
   });
 }
 
@@ -417,7 +446,19 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   G.time += dt;
   if (G.paused) {
-    // menú principal: cámara orbitando sobre el pueblo a la hora del atardecer.
+    function introPiso() {
+  const nm = G.state.name ? G.state.name.replace(/[<>&"]/g, '') : '';
+  P.messageDialog('Rooktown', `
+    <p>${nm ? `<b>${nm}</b>, lo` : 'Lo'} perdiste todo en la ciudad. Tu primo Leo te ha conseguido un estudio en los Apartamentos de Rooktown, portal 7, primera planta: una isla de palmeras donde nunca pasa nada... en apariencia.</p>
+    <p>Tienes <b>$350</b> y una caja con lo básico. Cultiva en el hueco libre del piso, empaqueta y vende a los vecinos sin que la policía te pille. Más adelante podrás comprar almacenes para crecer.</p>
+    <p class="muted small">${G.touch ? 'Joystick a la izquierda para moverte, arrastra a la derecha para mirar. Toca la etiqueta que aparece en el centro para interactuar. Toca el objeto que llevas en la barra para abrir la mochila.' : 'WASD moverse · Ratón mirar · E usar · R acción secundaria · Shift correr · C agacharse · Tab móvil · I mochila · 1-0 objetos'}</p>`,
+  '¡A trabajar!', () => {
+    setTimeout(() => sendMsg('leo', `Bienvenid${G.state.look?.female ? 'a' : 'o'}, ${nm || 'primo'}. El piso es tuyo y no pagas nada de momento. Abre la caja, te he metido lo básico para empezar.`), 1500);
+    setTimeout(() => sendMsg('leo', 'Mi vieja nave la he dejado: ahora es el Almacén Bravo y está en venta. Cuando vayas bien de dinero, échale un ojo. Te paso a Chema y a Nuria; y ojo, a partir de las 21:00 hay toque de queda.'), 8000);
+  });
+}
+
+// menú principal: cámara orbitando sobre el pueblo a la hora del atardecer.
     // Con una partida en marcha (editor de controles) no se toca ni el reloj ni la cámara.
     if (!G.started) {
       menuAng += dt * 0.05;

@@ -23,7 +23,7 @@ let RX = 210, RZ = 120, XS = [], ZS = [], WALK = 6.5, ISLE = null;
 export function setRelief(on, { rx = 210, rz = 120, xs = [], zs = [], walk = 6.5, isle = null } = {}) {
   T.on = on; RX = rx; RZ = rz; XS = xs; ZS = zs; WALK = walk; ISLE = isle;
   nodeH.clear();
-  pads.length = 0; grid.clear();
+  pads.length = 0; grid.clear(); floors.length = 0;
 }
 // 0 sobre calles y aceras, 1 justo dentro de la manzana
 function offRoad(x, z) {
@@ -156,6 +156,17 @@ export function H(x, z) {
 export function slope(x, z, e = 0.8) {
   return [(H(x + e, z) - H(x - e, z)) / (2 * e), (H(x, z + e) - H(x, z - e)) / (2 * e)];
 }
+
+// Suelos elevados dentro de los edificios (escaleras, plantas altas): donde los hay, el
+// jugador y los objetos pisan esa altura en vez del terreno. h(x, z) da la altura absoluta.
+const floors = [];
+export function addFloor(x0, x1, z0, z1, h) { floors.push({ x0, x1, z0, z1, h }); }
+export function floorAt(x, z) {
+  for (const f of floors) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) return f.h(x, z);
+  return null;
+}
+// Altura donde se pisa: el suelo elevado si lo hay, si no el terreno
+export const groundAt = (x, z) => (floors.length ? floorAt(x, z) ?? H(x, z) : H(x, z));
 
 // Solares registrados (para levantar muros de contención en sus bordes)
 export const allPads = () => pads;

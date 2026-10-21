@@ -556,7 +556,7 @@ export function onHour(hour) {
     }
   }
   // alquiler semanal de la nave: única operación que puede dejar el efectivo en negativo
-  if (hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day) {
+  if (s.props.nave && hour === 7 && s.day % 7 === 1 && s.day > 1 && s.rentPaidWeek < s.day) {
     s.rentPaidWeek = s.day;
     spend('dirty', 100, 'alquiler', { key: `rent:${s.day}`, allowNegative: true });
     sendMsg('motel', 'Te he cobrado el alquiler semanal de la nave: $100. Que vaya bien el negocio.');

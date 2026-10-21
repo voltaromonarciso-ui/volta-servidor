@@ -8,7 +8,7 @@ import { pbrMat, plainMat, FRAME } from './buildingkit.js';
 
 // Caja con UV en metros (continuas entre piezas porque se calculan con las coordenadas del
 // edificio, no de cada caja): la textura de ladrillo tiene el mismo tamaño en todo el edificio.
-function slab(g, mat, x0, x1, y0, y1, z0, z1) {
+export function slab(g, mat, x0, x1, y0, y1, z0, z1) {
   const w = x1 - x0, h = y1 - y0, d = z1 - z0;
   if (w <= 0 || h <= 0 || d <= 0) return null;
   const geo = new THREE.BoxGeometry(w, h, d);
@@ -39,7 +39,7 @@ function canvasTex(key, w, h, draw) {
 const mats = new Map();
 const mat = (k, o) => { if (!mats.has(k)) { const { userData, ...rest } = o; const m = new THREE.MeshStandardMaterial(rest); if (userData) Object.assign(m.userData, userData); mats.set(k, m); } return mats.get(k); };
 // cristal semitransparente: de día refleja, de noche deja ver el interior encendido
-const GLASS = () => mat('vidrioRB', { color: '#7f9db3', roughness: 0.08, metalness: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
+export const GLASS = () => mat('vidrioRB', { color: '#7f9db3', roughness: 0.08, metalness: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
 
 // Interior visto por la ventana: techo con luces, fondo, muebles; de noche brilla (glow 'win')
 function interiorMat(kind, warm = '#f1d3a6') {
@@ -81,7 +81,7 @@ function awningMat(color) {
 
 // Ventana sobre la cara del muro: interior iluminado, cristal, marco con parteluz, alféizar y
 // dintel de piedra. El muro es macizo, así que la ventana se monta delante de él (0–0,25 m).
-function windowAt(g, x, y, zf, w, h, { stone, kind, rot = 0 } = {}) {
+export function windowAt(g, x, y, zf, w, h, { stone, kind, rot = 0 } = {}) {
   const frame = FRAME();
   const holder = new THREE.Group(); holder.position.set(x, y, zf); holder.rotation.y = rot; g.add(holder);
   const inner = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.1, h - 0.1), interiorMat(kind));

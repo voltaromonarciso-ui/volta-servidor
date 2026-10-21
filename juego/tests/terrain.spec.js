@@ -28,26 +28,31 @@ test.describe.serial('Relieve de la isla', () => {
 
   test('hay una colina clara, calles en cuesta y la costa queda a ras del mar', async () => {
     const r = await page.evaluate(() => {
-      const H = __G.world.groundAt;
+      const H = __G.world.terrainH; // el terreno (sin los suelos elevados de escaleras y pisos)
       let min = 1e9, max = -1e9, steep = 0, road = 0;
-      const onRoad = (x, z) => (__G.world.roadsX.some((r) => Math.abs(x - r) < 6.5) && Math.abs(z) < 127) || (__G.world.roadsZ.some((r) => Math.abs(z - r) < 6.5) && Math.abs(x) < 217);
+      const W = __G.world, dRoad = (x, z) => Math.min(...W.roadsX.map((r) => (Math.abs(z) < 127 ? Math.abs(x - r) : 1e9)), ...W.roadsZ.map((r) => (Math.abs(x) < 217 ? Math.abs(z - r) : 1e9)));
       for (let x = -200; x <= 200; x += 2) for (let z = -110; z <= 110; z += 2) {
         const h = H(x, z); min = Math.min(min, h); max = Math.max(max, h);
         const s = Math.max(Math.abs(H(x + 1, z) - h), Math.abs(H(x, z + 1) - h));
-        steep = Math.max(steep, s); if (onRoad(x, z)) road = Math.max(road, s);
+        const d = dRoad(x, z);
+        // el borde de un solar llano con desnivel es un muro de contención, no un talud
+        const padEdge = W.pads.some((p) => (x - 0.6 < p.x1 && x + 1.6 > p.x0 && z - 0.6 < p.z1 && z + 1.6 > p.z0) && !(x - 0.6 > p.x0 && x + 1.6 < p.x1 && z - 0.6 > p.z0 && z + 1.6 < p.z1));
+        if (d < 5.5) road = Math.max(road, s); // calzada y acera
+        else if (d > 7.8 && !padEdge) steep = Math.max(steep, s); // dentro de las manzanas (el borde con la acera es un muro)
       }
       // en la misma orilla (el borde de la isla) el terreno queda a nivel del mar
-      return { range: max - min, steep, road, coast: [H(-249.6, 0), H(249.6, 0), H(0, 167.6), H(0, -164.6)] };
+      return { range: max - min, steep, road, walls: W.wallCount, coast: [H(-249.6, 0), H(249.6, 0), H(0, 167.6), H(0, -164.6)] };
     });
     expect(r.range).toBeGreaterThan(12); // colina de unos 15 m
     expect(r.road).toBeLessThan(0.25); // calles: cuestas claras, como mucho ~22 %
     expect(r.steep).toBeLessThan(1.0); // taludes de césped junto a algún solar
+    expect(r.walls).toBeGreaterThan(0); // los escalones entre acera y manzana llevan muro de contención
     for (const h of r.coast) expect(h).toBeLessThan(0.02);
   });
 
   test('los edificios están en solares llanos', async () => {
     const bad = await page.evaluate(() => {
-      const H = __G.world.groundAt, out = [];
+      const H = __G.world.terrainH, out = [];
       // (el rectángulo del mapa incluye toldos y rótulos que vuelan sobre la acera: se recorta)
       const W = __G.world, cut = 6.9, inBlock = (x, z) => !W.roadsX.some((v) => Math.abs(x - v) < cut) && !W.roadsZ.some((v) => Math.abs(z - v) < cut);
       for (const q of W.mapRects.filter((q) => !q.road && !q.zone && (q.x1 - q.x0) * (q.z1 - q.z0) < 4000)) {
@@ -61,6 +66,65 @@ test.describe.serial('Relieve de la isla', () => {
       return out.length;
     });
     expect(bad).toBe(0);
+  });
+
+  test('ningún edificio se mete dentro de otro', async () => {
+    const r = await page.evaluate(() => ({ n: __G.world.footprints.length, ov: __G.world.footOverlaps }));
+    expect(r.n).toBeGreaterThan(80);
+    expect(r.ov).toEqual([]);
+  });
+
+  test('piso inicial: empiezas dentro, en la 1.ª planta, con Leo', async () => {
+    const r = await page.evaluate(() => {
+      const W = __G.world, p = __G.player.pos, s = __G.state;
+      return { home: s.home, props: s.props, inside: W.inProperty(p.x, p.z), up: p.y - W.terrainH(p.x, p.z), caja: s.inv.some((x) => x && x.id === 'caja') };
+    });
+    expect(r.home).toBe('piso');
+    expect(r.props.piso).toBe(true);
+    expect(r.props.nave).toBe(false); // la nave de Leo es ahora el Almacén Bravo (no es tuya)
+    expect(r.inside).toBe('piso');
+    expect(r.up).toBeGreaterThan(3); // primera planta
+    expect(r.caja).toBe(true);
+  });
+
+  test('piso inicial: se sube por la escalera del portal y se entra por la puerta', async () => {
+    const r = await page.evaluate(async () => {
+      const { input } = await import('/src/core/input.js');
+      const W = __G.world, P = __G.player, pis = W.props.piso, log = [];
+      // del portal (planta baja) escaleras arriba hasta el rellano de la 1.ª
+      const px = W.pois.piso.x, pz = W.pois.piso.z;
+      const door = W.doors.find((d) => Math.hypot(d.pivot.position.x - (px - 0.65), d.pivot.position.z - (pz - 1.75)) < 1.5);
+      if (door) { door.open = true; door.col.on = false; }
+      P.teleport(px, pz - 3, 0);
+      const y0 = P.pos.y - W.terrainH(P.pos.x, P.pos.z);
+      const walk = (n, yaw) => { P.yaw = yaw; for (let i = 0; i < n; i++) { input.my = 1; input.mx = 0; P.update(1 / 30); } input.my = 0; };
+      walk(150, 0);
+      const top = { up: P.pos.y - W.terrainH(P.pos.x, P.pos.z), z: P.pos.z };
+      // la puerta del piso, en el rellano: abrirla y entrar
+      const fd = W.doors.filter((d) => d.pivot.position.x > px && d.pivot.position.x < pis.x0 + 0.5 && Math.abs(d.pivot.position.y - P.pos.y) < 0.3)[0];
+      if (fd) { fd.open = true; fd.col.on = false; P.pos.z = fd.pivot.position.z + 0.65; }
+      walk(60, -Math.PI / 2);
+      return { y0, top, inside: W.inProperty(P.pos.x, P.pos.z), door: !!fd };
+    });
+    expect(r.y0).toBeLessThan(0.1); // en el portal, a pie de calle
+    expect(r.top.up).toBeGreaterThan(3); // arriba, en el rellano
+    expect(r.door).toBe(true);
+    expect(r.inside).toBe('piso');
+  });
+
+  test('piso inicial: el fregadero rellena la regadera', async () => {
+    const r = await page.evaluate(() => {
+      const W = __G.world, pis = W.props.piso, s = __G.state;
+      const slot = s.inv.findIndex((x) => !x);
+      s.inv[slot] = { id: 'regadera', q: 1 }; s.water = 0;
+      const sinks = __G.interactables.filter((m) => m.position.x > pis.x0 - 1 && m.position.x < pis.x1 + 1 && m.position.z > pis.z0 - 1 && m.position.z < pis.z1 + 1 && m.userData.ia?.actions?.().some((a) => a.label === 'Rellenar regadera'));
+      sinks[0].userData.ia.actions().find((a) => a.label === 'Rellenar regadera').fn();
+      const w = s.water;
+      s.inv[slot] = null;
+      return { sinks: sinks.length, w };
+    });
+    expect(r.sinks).toBe(2); // cocina y baño
+    expect(r.w).toBe(6);
   });
 
   test('el jugador anda cuesta arriba y abajo pegado al suelo', async ({}, testInfo) => {

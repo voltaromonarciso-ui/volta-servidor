@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { G } from '../game.js';
-import { W, B, TM, scene, K } from './world.js';
+import { W, B, TM, scene, K, removeBox } from './world.js';
 import * as SK from './streetkit.js';
 import { createFurniture } from './streetfurniture.js';
 import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
@@ -18,7 +18,8 @@ import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
-import { addPad, drapeGeometry, allPads, H as groundH, Hlow } from './terrain.js';
+import { addPad, addFloor, drapeGeometry, allPads, H as groundH, Hlow } from './terrain.js';
+import { starterFlat, FL, pisoWoodTex } from './starterflat.js';
 import { pbrMat } from './buildingkit.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
 import * as CO from './coast.js';
@@ -91,16 +92,18 @@ function modelBuilding(name, x, z, ry, { w, mapColor = '#b9a68a', label } = {}) 
   F.place('bld:' + name, buildingModel(name), x, z, ry, { s });
   const turned = Math.abs(Math.sin(ry)) > 0.5, hw = ((turned ? sz.z : sz.x) * s) / 2, hd = ((turned ? sz.x : sz.z) * s) / 2;
   const r = { x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd };
-  pad(r.x0, r.x1, r.z0, r.z1, ry); // solar llano en el relieve
+  pad(r.x0, r.x1, r.z0, r.z1, ry, name); // solar llano en el relieve
+  DOORS.push({ ...r, x, z, ry, house: /^(ks_|h_house)/.test(name) });
   W.mapRects.push({ ...r, c: mapColor });
   if (label) W.mapLabels.push({ x, z, t: label });
   return r;
 }
 // Solar llano para un edificio (relieve) a la altura de la acera delante de su fachada, con
 // un zócalo de piedra por debajo que tapa la junta con el talud alrededor
-function pad(x0, x1, z0, z1, ry) {
+function pad(x0, x1, z0, z1, ry, tag = '', h) {
+  FOOT.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), tag });
   const s = Math.round(Math.sin(ry)), c = Math.round(Math.cos(ry));
-  addPad(x0, x1, z0, z1, { front: c > 0 ? '+z' : c < 0 ? '-z' : s > 0 ? '+x' : '-x' });
+  addPad(x0, x1, z0, z1, { h, front: c > 0 ? '+z' : c < 0 ? '-z' : s > 0 ? '+x' : '-x' });
   // (la caja del modelo incluye aleros y porches: el zócalo queda bajo el césped y solo
   // asoma donde el terreno baja)
   B.box('#8a8176', (x0 + x1) / 2, -1.1, (z0 + z1) / 2, x1 - x0 - 1.2, 1.06, z1 - z0 - 1.2, 0, { ao: 0 });
@@ -111,8 +114,7 @@ function houseAt(x, z, front, seed) {
   const ry = front === '+z' ? 0 : Math.PI, f = front === '+z' ? 1 : -1;
   const r = modelBuilding(HOUSES[seed % HOUSES.length], x, z, ry, { mapColor: '#c9b28e' });
   if (!r) return K.house(x, z, front, seed);
-  const zf = f > 0 ? r.z1 : r.z0;
-  B.box('#d6cdb9', x, 0, zf + f * 1.6, 1.4, 0.05, 3.2, 0, { shadow: false, ao: 0 }); // camino a la puerta
+  const zf = f > 0 ? r.z1 : r.z0; // (el camino a la puerta lo pone buildPaths)
   return { x, z: zf + f * 1.2 };
 }
 
@@ -125,7 +127,8 @@ function realAt(key, make, x, z, ry, { label, mapColor = '#b9a68a' } = {}) {
   const turned = Math.abs(Math.sin(ry)) > 0.5, c = Math.cos(ry), sn = Math.sin(ry);
   const hw = (turned ? box.max.z - box.min.z : box.max.x - box.min.x) / 2, hd = (turned ? box.max.x - box.min.x : box.max.z - box.min.z) / 2;
   W.mapRects.push({ x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, c: mapColor });
-  pad(x - hw, x + hw, z - hd, z + hd, ry);
+  pad(x - hw, x + hw, z - hd, z + hd, ry, key);
+  DOORS.push({ x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, x, z, ry, house: false });
   if (label) W.mapLabels.push({ x, z, t: label });
   return door ? { x: x + door.x * c + door.z * sn, z: z - door.x * sn + door.z * c } : { x, z };
 }
@@ -147,7 +150,11 @@ const LOOK = {
 // ------------------------------------------------------------------
 //  Césped: solares de las manzanas y matas de hierba por toda la isla
 // ------------------------------------------------------------------
-const LAWNS = [], HARD = [], DRAPE = [], LAWN_GEO = [];
+const LAWNS = [], HARD = [], DRAPE = [], LAWN_GEO = [], DOORS = [], PATH_ENDS = [];
+// huellas de todos los edificios (para que ninguno se meta dentro de otro)
+const FOOT = [];
+const overlapArea = (a, b, m = 0) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + m) * Math.max(0, Math.min(a.z1, b.z1) - Math.max(a.z0, b.z0) + m);
+const footFree = (r, m = 0) => !FOOT.some((q) => overlapArea(r, q, m) > 0);
 let restoreK = () => {};
 // Qué hay libre en cada punto (para repartir la vegetación sin tapar nada)
 function freeMap() {
@@ -176,6 +183,41 @@ function freeMap() {
   const onHard = (x, z, m) => hard.some((r) => inRect(x, z, r, m));
   return { inside, roadD, zoneAt, blocked, nearSolid, onHard };
 }
+// Caminos: de la acera a la puerta de cada casa y edificio (baldosas), entrada de coche en los
+// chalets y senderos de tierra en el parque y el bosque. Donde el camino cruza un escalón del
+// terreno, el muro se abre y se ponen escalones (retainingWalls).
+function buildPaths() {
+  const edgeAlong = (v0, dir, lines) => { // borde de acera más cercano delante, en una dirección
+    let best = null;
+    for (const v of lines) for (const e of [v - K.SWO, v + K.SWO]) if ((e - v0) * dir > 0.2 && (best === null || Math.abs(e - v0) < Math.abs(best - v0))) best = e;
+    return best;
+  };
+  for (const d of DOORS) {
+    const fx = Math.round(Math.sin(d.ry)), fz = Math.round(Math.cos(d.ry));
+    const front = fz ? (fz > 0 ? d.z1 : d.z0) : fx > 0 ? d.x1 : d.x0;
+    const edge = fz ? edgeAlong(front, fz, ZL) : edgeAlong(front, fx, XL);
+    if (edge === null || Math.abs(edge - front) > 26) continue;
+    const strip = (lat, w, color) => { // franja de la fachada a la acera, desplazada `lat` a un lado
+      if (fz) { const cx = d.x + lat; K.paving(cx - w / 2, cx + w / 2, Math.min(front, edge), Math.max(front, edge), color, null, 1.2); PATH_ENDS.push({ x: cx, z: edge, fx: 0, fz, w }); }
+      else { const cz = d.z - lat; K.paving(Math.min(front, edge), Math.max(front, edge), cz - w / 2, cz + w / 2, color, null, 1.2); PATH_ENDS.push({ x: edge, z: cz, fx, fz: 0, w }); }
+    };
+    strip(0, 1.4, '#d6ccb8'); // a la puerta
+    if (d.house) { const half = (fz ? d.x1 - d.x0 : d.z1 - d.z0) / 2; if (half > 3.5) strip(half - 1.9, 3, '#bdb7ad'); } // entrada de coche
+  }
+  // senderos de tierra: parque (anillo alrededor de la fuente) y bosque (ruta en zigzag)
+  const trail = (pts) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[i + 1], len = Math.hypot(bx - ax, bz - az);
+      B.box('#b39b74', (ax + bx) / 2, 0, (az + bz) / 2, 1.7, 0.08, len + 0.8, Math.atan2(bx - ax, bz - az), { shadow: false, ao: 0 });
+      for (let k = 0; k <= len; k += 1.5) { const x = ax + ((bx - ax) * k) / len, z = az + ((bz - az) * k) / len; HARD.push([x - 0.9, x + 0.9, z - 0.9, z + 0.9]); }
+    }
+  };
+  const park = blockOf('parque');
+  if (park) { const r = 13, pts = []; for (let k = 0; k <= 12; k++) { const a = (k / 12) * Math.PI * 2 + 0.26; pts.push([park.cx + Math.cos(a) * r, park.cz + Math.sin(a) * r]); } trail(pts); }
+  const fo = blockOf('bosque');
+  if (fo) trail([[fo.x0 + 3, fo.z1 - 4], [fo.cx - 10, fo.cz + 10], [fo.cx + 6, fo.cz + 4], [fo.cx - 4, fo.cz - 8], [fo.x1 - 4, fo.z0 + 4]]);
+}
+
 // Muros de contención: donde el suelo da un escalón (borde de manzana contra la acera, o entre
 // dos solares a distinta altura) se levanta un muro de piedra que lo tapa, como en los pueblos
 // en cuesta. Se calcula al final, con el relieve ya completo.
@@ -191,12 +233,29 @@ function retainingWalls() {
       const t = (k + 0.5) / n, mx = x0 + (x1 - x0) * t, mz = z0 + (z1 - z0) * t;
       const hin = groundH(mx + nx * 0.25, mz + nz * 0.25), hout = groundH(mx - nx * 0.25, mz - nz * 0.25);
       if (Math.abs(hin - hout) < 0.3) continue;
+      if (PATH_ENDS.some((pe) => Math.hypot(pe.x - mx, pe.z - mz) < pe.w / 2 + 0.7)) continue; // aquí entra un camino
       const lo = Math.min(hin, hout) - 0.35, hi = Math.max(hin, hout) + 0.12, seg = len / n + 0.04;
       const g = new THREE.BoxGeometry(seg, hi - lo, 0.35);
       g.rotateY(Math.atan2(-dz, dx));
       g.translate(mx + nx * 0.1, (hi + lo) / 2, mz + nz * 0.1);
       const P = g.attributes.position, N = g.attributes.normal, uv = g.attributes.uv;
       for (let i = 0; i < P.count; i++) uv.setXY(i, Math.abs(N.getX(i)) > 0.5 ? P.getZ(i) / 3 : P.getX(i) / 3, Math.abs(N.getY(i)) > 0.5 ? P.getZ(i) / 3 : P.getY(i) / 3);
+      parts.push(g);
+    }
+  }
+  // escalones donde un camino a una puerta cruza un desnivel (en las entradas de coche, rampa)
+  for (const pe of PATH_ENDS) {
+    if (pe.w > 2) continue;
+    const dx = pe.fx, dz = pe.fz; // del edificio hacia la calle
+    const hin = groundH(pe.x - dx * 0.4, pe.z - dz * 0.4), hout = groundH(pe.x + dx * 0.4, pe.z + dz * 0.4);
+    const diff = hin - hout;
+    if (Math.abs(diff) < 0.25) continue;
+    const n = Math.ceil(Math.abs(diff) / 0.17), rise = Math.abs(diff) / n, lo = Math.min(hin, hout);
+    for (let i = 0; i < n; i++) {
+      // por el lado bajo: en la acera si la manzana está más alta, dentro si está más baja
+      const t = 0.15 + i * 0.3, sx = diff > 0 ? pe.x + dx * t : pe.x - dx * t, sz = diff > 0 ? pe.z + dz * t : pe.z - dz * t;
+      const top = lo + (n - i) * rise, g = new THREE.BoxGeometry(dx ? 0.3 : pe.w + 0.2, top - lo + 0.1, dz ? 0.3 : pe.w + 0.2);
+      g.translate(sx, (top + lo - 0.1) / 2, sz);
       parts.push(g);
     }
   }
@@ -288,13 +347,16 @@ function scatterGreens() {
 
 export function buildIsland() {
   seedN = 7;
-  F = createFurniture({ addBox: K.addBox });
-  LAWNS.length = 0; HARD.length = 0; DRAPE.length = 0; LAWN_GEO.length = 0;
+  // objetos que se nivelan con base en las cuestas (o no se ponen si es demasiado fuerte)
+  F = createFurniture({ addBox: K.addBox, removeBox, level: /^(banco|bancoParque|papelera|macetero|cabina|cartel|bici|aparcabicis|reciclaje|buzon|cajaElectrica|seto|seto3|jardin|fuenteAgua|taxi|bolardos|paradaBus|cono|vallaObra|cilindro|hidrante|noray|vallaMad|vallaMetal|caseta|sombrilla|tumbona|toalla|chiringuito|socorrista|kv_)/ });
+  LAWNS.length = 0; HARD.length = 0; DRAPE.length = 0; LAWN_GEO.length = 0; DOORS.length = 0; PATH_ENDS.length = 0; FOOT.length = 0;
+  const KB = K.building; // los edificios clásicos (fallback, mansión…) también dejan su huella
+  K.building = (o) => { FOOT.push({ x0: o.x0, x1: o.x1, z0: o.z0, z1: o.z1, tag: 'kb:' + (o.label || o.sign || o.style || '') }); return KB(o); };
   // apunta el asfalto y las baldosas que se pintan sobre la hierba (ahí no van matas)
   const A = K.asphalt, Pv = K.paving;
   K.asphalt = (...a) => { HARD.push(a.slice(0, 4)); return A(...a); };
   K.paving = (...a) => { HARD.push(a.slice(0, 4)); return Pv(...a); };
-  restoreK = () => { K.asphalt = A; K.paving = Pv; };
+  restoreK = () => { K.asphalt = A; K.paving = Pv; K.building = KB; };
   SK.setDetail(0.4); // versión ligera de los modelos para el mapa
   W.atms = [];
   W.roadsX = XL; W.roadsZ = ZL;
@@ -308,7 +370,17 @@ export function buildIsland() {
   for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) buildBlock(block(i, j));
   buildCoast();
   buildStreetFurniture();
+  buildPaths();
   restoreK();
+  // comprobación: edificios que se pisan (área común > 0,5 m²); las pruebas exigen que no haya
+  W.footprints = FOOT.slice();
+  W.pads = allPads(); // solares llanos (sus bordes con desnivel llevan muro: retainingWalls)
+  W.footOverlaps = [];
+  for (let i = 0; i < FOOT.length; i++) for (let j = i + 1; j < FOOT.length; j++) {
+    const a = overlapArea(FOOT[i], FOOT[j]);
+    if (a > 0.5) W.footOverlaps.push({ a: FOOT[i].tag, b: FOOT[j].tag, area: +a.toFixed(1), at: [+((Math.max(FOOT[i].x0, FOOT[j].x0) + Math.min(FOOT[i].x1, FOOT[j].x1)) / 2).toFixed(1), +((Math.max(FOOT[i].z0, FOOT[j].z0) + Math.min(FOOT[i].z1, FOOT[j].z1)) / 2).toFixed(1)] });
+  }
+  if (W.footOverlaps.length) console.warn('Edificios que se solapan:', W.footOverlaps);
   if (grassReady()) scatterTufts();
   scatterGreens();
   if (grassReady()) { const fr = fringeMesh(scene, fringeLines()); fr.userData.terrainDone = true; LAWN_GEO.push(fr.geometry); }
@@ -325,16 +397,71 @@ export function buildIsland() {
   tempProps();
 }
 
+// Tu piso (starterflat.js): bloque de 4 plantas con portal, escalera y el estudio en la
+// 1.ª planta. Paredes huecas con sus colisiones, suelo elevado en la escalera y el piso,
+// puertas, luces y los puntos de uso (fregadero, nevera, cama, armario).
+function starterBuilding(x, z, walkZ) {
+  if (!hasBuilding('q_Flat')) return false; // sin texturas: el edificio de relleno de antes
+  const f = starterFlat(), at = (o) => ({ x: x + o.x, z: z + o.z });
+  F.place('pisoInicial', () => f.group, x, z, 0, { solid: false });
+  for (const [x0, x1, z0, z1, h] of f.boxes) K.addBox(x + x0, x + x1, z + z0, z + z1, h);
+  // el portal, a ras de la acera (sin escalones ni muro delante)
+  const hs = groundH(x + f.portal.x, walkZ + 0.6);
+  pad(x - 7, x + 7, z - 6, z + 6, 0, 'piso', hs);
+  addPad(x + f.portal.x - 1.2, x + f.portal.x + 1.2, z + 6, walkZ - 0.4, { h: hs, m: 1.5 }); // la entrada, llana
+  K.paving(x + f.portal.x - 0.8, x + f.portal.x + 0.8, z + 6, walkZ, '#d6ccb8', null, 1.2); // camino al portal
+  let base = null; // altura del solar (se lee la primera vez, con el relieve ya montado)
+  for (const fl of f.floors) addFloor(x + fl.x0, x + fl.x1, z + fl.z0, z + fl.z1, (px, pz) => (base ??= groundH(x, z)) + fl.h(px - x, pz - z));
+  // suelo de madera (donde se colocan las macetas y las mesas)
+  for (const p of f.floorPlanes) {
+    const map = pisoWoodTex().clone(); map.needsUpdate = true;
+    map.repeat.set((p.x1 - p.x0) / 1.6, (p.z1 - p.z0) / 1.6); // tablas de ~20 cm × 1,2 m
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.x1 - p.x0, p.z1 - p.z0), new THREE.MeshStandardMaterial({ map, roughness: 0.5 }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x + (p.x0 + p.x1) / 2, FL + 0.012, z + (p.z0 + p.z1) / 2);
+    m.receiveShadow = true;
+    m.userData.prop = 'piso';
+    scene.add(m);
+    W.floors.push(m);
+  }
+  for (const d of f.doors) {
+    const door = K.makeDoor({ x: x + d.x, z: z + d.z, axis: d.axis, width: d.width, h: d.h, color: d.color, flip: d.flip, locked: d.flat ? () => !G.state.props.piso : null });
+    door.pivot.position.y += d.y; door.hit.position.y += d.y; door.hit.updateMatrixWorld();
+  }
+  for (const l of f.lights) {
+    const pl = new THREE.PointLight(l.color, l.i, l.d, 1.6);
+    pl.position.set(x + l.x, l.y, z + l.z);
+    scene.add(pl);
+    W.lights.push(pl);
+  }
+  const hit = (o, actions) => K.hitbox(x + o.x, o.y, z + o.z, o.w, o.h, o.d, { actions });
+  hit(f.acts.sink, () => [{ label: 'Rellenar regadera', fn: () => G.act.refill() }]);
+  hit(f.acts.basin, () => [{ label: 'Rellenar regadera', fn: () => G.act.refill() }]);
+  hit(f.acts.fridge, () => [{ label: 'Abrir la nevera', fn: () => { G.act.sfx?.('door'); G.act.toast('Dos cervezas, medio limón y un táper de Leo. Habrá que hacer la compra.', '🧊'); } }]);
+  hit(f.acts.bed, () => [{ label: 'Dormir', fn: () => G.act.sleep('piso') }]);
+  hit(f.acts.wardrobe, () => [{ label: 'Abrir el armario', fn: () => G.act.openBag?.() }]);
+  const r = f.flat;
+  W.props.piso = { x0: x + r.x0, x1: x + r.x1, z0: z + r.z0, z1: z + r.z1, name: 'Tu piso', spawn: { ...at(f.spawn), yaw: f.spawn.yaw }, indoor: true };
+  W.pois.piso = at(f.portal);
+  W.pisoLeo = { ...at(f.leo), yaw: f.leo.yaw };
+  W.mapRects.push({ x0: x - 7, x1: x + 7, z0: z - 6, z1: z + 6, c: '#5f7f9a' });
+  W.mapLabels.push({ x, z, t: 'Tu piso' });
+  W.spots.push({ id: 'piso', name: 'Delante de tu portal', x: x + f.portal.x, z: z + f.portal.z + 1.5 });
+  DOORS.push({ x0: x - 7, x1: x + 7, z0: z - 6, z1: z + 6, x: x + f.portal.x, z, ry: 0, house: false });
+  return true;
+}
+
 // PROVISIONAL (fase 1): propiedades y puntos que el resto del juego espera encontrar.
 // En la fase 2 se sustituyen por los locales reales (piso inicial, almacenes, etc.).
 function tempProps() {
   const a = blockOf('apartamentos'), w = blockOf('almacenBravo');
-  W.props.nave = { x0: w.x0 + 4, x1: w.x1 - 4, z0: w.cz - 8, z1: w.cz + 14, spawn: { x: w.cx, z: w.z1 + 2, yaw: Math.PI } };
+  // la nave de Leo es ahora el Almacén Bravo (se compra más adelante; no es tuya al empezar)
+  W.props.nave = { x0: w.x0 + 4, x1: w.x1 - 4, z0: w.cz - 8, z1: w.cz + 14, name: 'Almacén Bravo', spawn: { x: w.cx, z: w.z1 + 2, yaw: Math.PI } };
   W.pois.nave = { x: w.cx, z: w.z1 + 2 };
   W.pois.deadDrop = { x: w.x0 + 8, z: w.z0 + 3.2 };
   W.pois.bungalow = { x: a.cx, z: a.z1 + 2 };
-  W.pois.inicio = { x: a.cx, z: a.z1 + 2 };
-  W.worker = { x: w.cx + 3, z: w.z1 + 3, yaw: 0 };
+  W.pois.inicio = W.props.piso ? { ...W.props.piso.spawn } : { x: a.cx, z: a.z1 + 2 };
+  W.worker = W.pisoLeo || { x: w.cx + 3, z: w.z1 + 3, yaw: 0 }; // Leo te espera en tu piso
 }
 
 // ------------------------------------------------------------------
@@ -573,10 +700,12 @@ function buildStreetFurniture() {
     const b = blockOf(zone), zN = ZL[ROWS - b.j];
     let x = b.cx + 14, z = zN - WALLSIDE;
     if (hasBuilding('q_Flat')) {
-      const bx = b.x1 - 4.6, bz = b.z1 - 3.9;
+      // en la esquina noreste; si ahí ya hay un edificio, en la noroeste (nunca uno dentro de otro)
+      const spots = [[b.x1 - 4.6, b.z1 - 3.9], [b.x0 + 4.6, b.z1 - 3.9], [b.cx, b.z1 - 3.9]];
+      const [bx, bz] = spots.find(([sx, sz]) => footFree({ x0: sx - 4, x1: sx + 4, z0: sz - 3.5, z1: sz + 3.5 }, 0.3)) || spots[0];
       const info = BANK || (BANK = bankBranch()); // una sola sucursal modelo (el colocador la reutiliza)
       F.place('sucursal', () => info.group, bx, bz, 0); // (clave propia: «banco» es el banco de sentarse)
-      pad(bx - 4, bx + 4, bz - 3.5, bz + 3.5, 0);
+      pad(bx - 4, bx + 4, bz - 3.5, bz + 3.5, 0, 'sucursal:' + zone);
       W.mapRects.push({ x0: bx - 4, x1: bx + 4, z0: bz - 3.5, z1: bz + 3.5, c: '#1f5fbf' });
       x = bx + info.atm.x; z = bz + info.atm.z;
     }
@@ -671,9 +800,13 @@ const FILL = {
       return;
     }
     if (b.zone === 'apartamentos' || b.zone === 'barrioAlto') {
-      const pair = b.zone === 'apartamentos' ? [['cb_Building_5_A', 22], ['cb_Building_2_A', 14]] : [['q_Flat', 16], ['q_Flat2', 16]];
+      const pair = b.zone === 'apartamentos' ? [['cb_Building_5_A', 22], ['piso', 14]] : [['q_Flat', 16], ['q_Flat2', 16]];
       let x = b.x0 + 3, ok = true;
-      for (const [nm, w] of pair) { if (!modelBuilding(nm, x + w / 2, b.cz + 3, 0, { w, mapColor: '#b9a68a', label: x === b.x0 + 3 ? ZONE_NAMES[b.zone] : undefined })) ok = false; x += w + 4; }
+      for (const [nm, w] of pair) {
+        if (nm === 'piso') { if (!starterBuilding(x + w / 2, b.z1 - 9, b.z1)) ok = false; x += w + 4; continue; } // tu piso (portal 7)
+        if (!modelBuilding(nm, x + w / 2, b.cz + 3, 0, { w, mapColor: '#b9a68a', label: x === b.x0 + 3 ? ZONE_NAMES[b.zone] : undefined })) ok = false;
+        x += w + 4;
+      }
       if (ok) return;
       for (let k = 0; k < n; k++) {
         const x0 = b.x0 + 3 + k * 23;
@@ -693,6 +826,7 @@ const FILL = {
     const SIDE = ['q_Flat', 'cb_Building_2_A', 'q_Flat2', 'cb_Building_1_D', 'q_Shop', 'cb_Building_1_A'];
     const bankHere = ATM_ZONES.includes(b.zone); // deja la esquina noreste a la sucursal del banco
     for (const [x0, x1] of [[b.x0 + 1, b.cx - 13], [b.cx + 13, bankHere ? b.x1 - 10 : b.x1 - 1]]) {
+      if (x1 - x0 < 6) continue; // hueco demasiado estrecho (ahí va la sucursal): nada, mejor que un edificio metido en otro
       if (modelBuilding(SIDE[Math.floor(R() * SIDE.length)], (x0 + x1) / 2, b.z1 - 8, 0, { w: x1 - x0 - 0.5 })) continue;
       K.building({ x0, x1, z0: b.z1 - 14, z1: b.z1 - 2, h: rr(6.5, 10), wall: K.HOUSE_COLORS[Math.floor(R() * 10)], trim: '#f4eee2', roof: '#4d4d4d', style: R() < 0.5 ? 'brick' : 'office', front: '+z', seed: 400 + Math.floor(R() * 999), mapColor: '#b9a68a' });
     }
@@ -708,7 +842,7 @@ const FILL = {
       for (const [x0, x1, z0, z1, h] of info.boxes) K.addBox(b.cx - 1 + x0, b.cx - 1 + x1, b.cz + 6 + z0, b.cz + 6 + z1, h);
       for (const [x, z] of info.planters || []) { F.place('macetero', SKP.macetero, b.cx - 1 + x, b.cz + 6 + z, 0); F.place('palmera', () => SKP.palmera(), b.cx - 1 + x, b.cz + 6 + z, 0, { y: 0.55, s: 1.1 }); }
       W.mapRects.push({ x0: b.cx - 17, x1: b.cx + 19, z0: b.cz - 8, z1: b.cz + 8, c: '#9b6bc9' });
-      pad(b.cx - 19, b.cx + 21, b.cz - 10, b.cz + 16, 0); // la disco y su terraza, llanas
+      pad(b.cx - 19, b.cx + 21, b.cz - 10, b.cz + 16, 0, 'eclipse'); // la disco y su terraza, llanas
       W.mapLabels.push({ x: b.cx, z: b.cz, t: ZONE_NAMES[b.zone] });
       W.pois.eclipse = { x: b.cx - 1 + info.door.x, z: b.cz + 6 + info.door.z };
       for (let k = 0; k < 3; k++) K.parkedCar(b.x0 + 8 + k * 9, b.z1 - 5, Math.PI / 2);

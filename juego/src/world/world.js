@@ -9,7 +9,7 @@ import { buildBike, buildScooter } from '../entities/rideables.js';
 import { PARKING } from '../data/vehicles.js';
 import { Nav } from './nav.js';
 import { buildIsland, XL as ISLAND_XL, ZL as ISLAND_ZL, N as ISLAND_N } from './island.js';
-import { setRelief, addPad, H, T } from './terrain.js';
+import { setRelief, addPad, H, T, groundAt } from './terrain.js';
 
 // ¿Isla de Rooktown? Es el mapa normal; el antiguo (Puerto Lomas) queda con ?mapa=1 o
 // localStorage rooktown_map=1 (lo usan las pruebas de referencia de los sistemas).
@@ -51,7 +51,7 @@ export function createWorld(sc) {
     colliders: [], grid: new Map(), nav: new Nav(),
     pois: {}, homes: [], spots: [], wander: [], floors: [], mapRects: [], mapLabels: [],
     props: {}, winMats: [], doors: [], shutters: [], bulbPositions: [], lampPools: [], water: null, boxes: [], lights: [],
-    resolve, los, addBox, inProperty, update, groundAt: H,
+    resolve, los, addBox, inProperty, update, groundAt, terrainH: H,
   };
   B = new StaticBatch(120); // bloques grandes: menos llamadas de dibujo (lo que más pesa en móvil)
   TM = makeTexMats();
