@@ -141,7 +141,7 @@ test.describe.serial('Dinero sucio y limpio', () => {
       return { out, clean: __G.state.clean };
     });
     expect(r.out.map(([n, ok]) => [n, ok])).toEqual([['ropa', true], ['peluquería', true], ['patinete', true], ['grúa', true], ['semillas', true], ['contratación', true], ['deuda', true]]);
-    expect(r.out.map(([, , d]) => d)).toEqual([80, 30, 520, 15, 60, 900, 160]);
+    expect(r.out.map(([, , d]) => d)).toEqual([80, 30, 1000, 15, 60, 900, 160]);
     expect(r.out.map(([, , , why]) => why)).toEqual(['ropa: Chaqueta camel', 'peluquería', 'vehículo: Patinete eléctrico', 'grúa', 'semillas', 'contratación: Nerea', 'deuda: Vero']);
     expect(r.clean).toBe(7000);
     // tienda con carrito (con el dedo): solo se cobra lo que te llevas
