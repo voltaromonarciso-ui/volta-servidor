@@ -690,8 +690,9 @@ body.touch .staff .btn.sm { min-height: 44px; }
 #bigmap .bm-top { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #0d1b2a; font-size: 15px; font-weight: 700; }
 #bigmap .bm-top b { font-size: 22px; font-weight: 900; letter-spacing: .5px; }
 #bigmap .bm-top .bm-clock { white-space: pre; }
-#bigmap .bm-view { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #0f4f86; }
-#bigmap .bm-stage { position: relative; cursor: crosshair; }
+#bigmap .bm-view { position: relative; flex: 1; overflow: hidden; background: #0f4f86; touch-action: none; }
+#bigmap .bm-stage { position: absolute; cursor: grab; }
+#bigmap .bm-stage:active { cursor: grabbing; }
 #bigmap .bm-photo { width: 100%; height: 100%; display: block; pointer-events: none; }
 #bigmap .bm-layer { position: absolute; inset: 0; pointer-events: none; }
 #bigmap .bm-place { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
@@ -717,3 +718,5 @@ body.touch .staff .btn.sm { min-height: 44px; }
 #bigmap .bm-keys i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 6px; vertical-align: -2px; }
 #bigmap .bm-clear, #bigmap .bm-close { margin-top: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 #bigmap .bm-close { position: absolute; right: 16px; bottom: 16px; margin: 0; padding: 12px 24px; font-size: 16px; background: rgba(13,18,28,.9); border-radius: 14px; }
+#bigmap .bm-zoom { position: absolute; right: 16px; top: 62px; display: flex; flex-direction: column; gap: 8px; }
+#bigmap .bm-zoom button { width: 46px; height: 46px; border-radius: 12px; border: 1px solid rgba(255,255,255,.35); background: rgba(13,18,28,.88); color: #fff; font: inherit; font-size: 26px; font-weight: 900; cursor: pointer; }

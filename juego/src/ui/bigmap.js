@@ -111,6 +111,7 @@ function build() {
       <div class="bm-keys"><span><i style="background:#2ecc71"></i>Trato</span><span><i style="background:#f39c12"></i>Entregas</span><span><i style="background:#1e90ff"></i>Tú · Toca para marcar destino</span></div>
       <button class="bm-clear">📍 Quitar marca</button>
     </div>
+    <div class="bm-zoom"><button class="bm-zin">+</button><button class="bm-zout">−</button></div>
     <button class="bm-close">✕ Cerrar</button>`;
   document.body.appendChild(root);
   stage = root.querySelector('.bm-stage');
@@ -118,22 +119,86 @@ function build() {
   layer = root.querySelector('.bm-layer:not(.bm-fixed)');
   root.querySelector('.bm-close').onclick = closeBigMap;
   root.querySelector('.bm-clear').onclick = () => { clearWaypoint(); sfx('click'); draw(); };
-  stage.addEventListener('click', (e) => {
-    const r = stage.getBoundingClientRect();
-    const { x, z } = fromPhoto((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    setWaypoint(x, z, 'Destino');
-    sfx('click');
-    draw();
-  });
+  root.querySelector('.bm-zin').onclick = () => zoomAt(1.5);
+  root.querySelector('.bm-zout').onclick = () => zoomAt(1 / 1.5);
+  gestures(root.querySelector('.bm-view'));
   window.addEventListener('resize', () => { if (open) { fit(); drawStatic(); } });
 }
 
-// la foto entera cabe en la pantalla (como «contain»)
+// ---------------------------------------------------------------
+//  Acercar y mover. El tamaño del escenario crece con el zoom (en vez de escalarlo), así
+//  los iconos y los nombres, colocados en %, se quedan del mismo tamaño y se separan.
+// ---------------------------------------------------------------
+const ZMAX = 3; // (más cerca, la foto ya se ve borrosa)
+let base = { w: 0, h: 0 }, zoom = 1, ox = 0, oy = 0;
+function viewSize() { const v = root.querySelector('.bm-view'); return { W: v.clientWidth, H: v.clientHeight }; }
+// la foto entera cabe en la pantalla (como «contain»): es el zoom 1
 function fit() {
-  const v = root.querySelector('.bm-view'), W = v.clientWidth, H = v.clientHeight;
-  const k = Math.min(W / photo.w, H / photo.h);
-  stage.style.width = `${photo.w * k}px`;
-  stage.style.height = `${photo.h * k}px`;
+  const { W, H } = viewSize(), k = Math.min(W / photo.w, H / photo.h);
+  base = { w: photo.w * k, h: photo.h * k };
+  zoom = 1;
+  apply();
+}
+function apply() {
+  const { W, H } = viewSize(), w = base.w * zoom, h = base.h * zoom;
+  // si cabe, centrada; si no, sin dejar huecos a los lados
+  ox = w <= W ? (W - w) / 2 : Math.min(0, Math.max(W - w, ox));
+  oy = h <= H ? (H - h) / 2 : Math.min(0, Math.max(H - h, oy));
+  Object.assign(stage.style, { width: `${w}px`, height: `${h}px`, left: `${ox}px`, top: `${oy}px` });
+}
+// acerca o aleja manteniendo quieto el punto (px, py) de la pantalla del mapa
+function zoomAt(f, px, py) {
+  const { W, H } = viewSize();
+  if (px === undefined) { px = W / 2; py = H / 2; }
+  const nz = Math.max(1, Math.min(ZMAX, zoom * f)), k = nz / zoom;
+  ox = px - (px - ox) * k; oy = py - (py - oy) * k;
+  zoom = nz;
+  apply();
+}
+function gestures(view) {
+  const pts = new Map();
+  let moved = 0, pinch = null;
+  const local = (e) => { const r = view.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  view.addEventListener('wheel', (e) => { e.preventDefault(); const p = local(e); zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, p.x, p.y); }, { passive: false });
+  view.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    try { view.setPointerCapture(e.pointerId); } catch (err) { /* (sin puntero real) */ }
+    pts.set(e.pointerId, local(e));
+    if (pts.size === 1) moved = 0;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoom }; moved = 99; }
+  });
+  view.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId), p = local(e);
+    pts.set(e.pointerId, p);
+    if (pts.size === 1) { // arrastrar
+      moved += Math.abs(p.x - prev.x) + Math.abs(p.y - prev.y);
+      ox += p.x - prev.x; oy += p.y - prev.y;
+      apply();
+    } else if (pts.size === 2 && pinch) { // pellizcar
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt((pinch.z * (d / pinch.d)) / zoom, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    }
+  });
+  const up = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const p = pts.get(e.pointerId);
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    // un toque sin arrastrar: destino en ese punto
+    if (!pts.size && moved < 8) {
+      const r = stage.getBoundingClientRect(), vr = view.getBoundingClientRect();
+      const u = (p.x + vr.left - r.left) / r.width, v = (p.y + vr.top - r.top) / r.height;
+      if (u >= 0 && u <= 1 && v >= 0 && v <= 1) {
+        const { x, z } = fromPhoto(u, v);
+        setWaypoint(x, z, 'Destino');
+        sfx('click');
+        draw();
+      }
+    }
+  };
+  view.addEventListener('pointerup', up);
+  view.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId); pinch = null; moved = 99; });
 }
 
 const pos = (u, v) => `left:${(u * 100).toFixed(3)}%;top:${(v * 100).toFixed(3)}%`;
