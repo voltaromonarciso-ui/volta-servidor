@@ -158,8 +158,13 @@ export class FPArms {
         P.addScaledVector(F, -P.dot(F)).normalize();
         // el punto de agarre es donde apoya el centro de la palma: la muñeca queda detrás
         const wrist = wp(M).addScaledVector(F, -PALM_F).addScaledVector(P, -PALM_P);
-        ik(A.up, A.lo, A.hand, wrist, _d.set(wrist.x + sx * 0.45, wrist.y - 0.6, wrist.z + 0.3));
+        // el codo se busca donde el antebrazo siga la dirección de la mano (muñeca recta), algo
+        // hacia fuera y abajo como un brazo de verdad; luego la mano y su giro
+        const L2 = wp(A.lo).distanceTo(wp(A.hand));
+        const elbow = _d.copy(wrist).addScaledVector(F, -L2).add(_c.set(sx * 0.06, -0.08, 0));
+        ik(A.up, A.lo, A.hand, wrist, elbow);
         this.orient(A, F, P);
+        this.untwist(A);
         this.shape(A, HANDS[r.grip.hand], ref.solids, s === 'L' ? ref.segsR : null);
         if (s === 'R') ref.segsR = this.capsules(A);
         continue;
@@ -191,6 +196,18 @@ export class FPArms {
         this.palmR = (this.palmR || new THREE.Vector3()).copy(hp).addScaledVector(fing, kf).addScaledVector(palm, kp);
       }
     }
+  }
+  // El giro de la mano sobre el eje del antebrazo (pronación/supinación) lo hace el antebrazo
+  // entero, como en un brazo de verdad: si lo hiciera sólo la muñeca, la piel del puño se
+  // retorcería (no hay huesos de giro en este esqueleto). La mano queda igual en el mundo.
+  untwist(A) {
+    const qh = A.hand.getWorldQuaternion(new THREE.Quaternion());
+    const rel = this.bindHand.get(A.hand).clone().invert().multiply(A.hand.quaternion);
+    const tw = 2 * Math.atan2(rel.x, rel.w); // giro alrededor del eje del hueso (X en Biped)
+    A.lo.quaternion.multiply(_q.setFromAxisAngle(_t.set(1, 0, 0), tw));
+    A.lo.updateMatrixWorld(true);
+    A.hand.quaternion.copy(A.lo.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qh));
+    A.hand.updateMatrixWorld(true);
   }
   // Base de la mano: dirección de los dedos, ancho (del índice al meñique) y palma
   frame(A) {
@@ -227,6 +244,12 @@ export class FPArms {
     sk.bones.forEach((b, i) => bindW.set(b, sk.boneInverses[i].clone().invert()));
     this.bind = new Map();
     const pos = new THREE.Vector3(), sc = new THREE.Vector3();
+    this.bindHand = new Map(); // postura de reposo de cada mano respecto a su antebrazo
+    for (const A of Object.values(this.side)) {
+      const q = new THREE.Quaternion();
+      bindW.get(A.hand.parent).clone().invert().multiply(bindW.get(A.hand)).decompose(pos, q, sc);
+      this.bindHand.set(A.hand, q);
+    }
     for (const A of Object.values(this.side)) for (const ch of A.chains) for (const b of ch) {
       const q = new THREE.Quaternion();
       bindW.get(b.parent).clone().invert().multiply(bindW.get(b)).decompose(pos, q, sc);
@@ -265,7 +288,10 @@ export class FPArms {
     A.chains.forEach((ch, i) => {
       for (const b of ch) b.quaternion.copy(this.bind.get(b));
       ch[0].updateMatrixWorld(true);
-      if (i === 0 && spec.opp) { ch[0].quaternion.multiply(_q.setFromAxisAngle(Y, A.oppSign * spec.opp * D)); ch[0].updateMatrixWorld(true); }
+      if (i === 0 && (spec.opp || spec.roll)) { // base del pulgar (articulación en silla): oposición y giro
+        ch[0].quaternion.multiply(_q.setFromAxisAngle(Y, A.oppSign * (spec.opp || 0) * D)).multiply(_q.setFromAxisAngle(_t.set(1, 0, 0), A.oppSign * (spec.roll || 0) * D));
+        ch[0].updateMatrixWorld(true);
+      }
       const target = ch.map((b, j) => this.flexSign.get(b) * spec.f[i][j] * D);
       if (!solids && !segs) { ch.forEach((b, j) => { b.quaternion.multiply(_q.setFromAxisAngle(Z, target[j])); b.updateMatrixWorld(true); }); return; }
       // 1) cuánto cerrar el dedo entero (todas las falanges a la vez, como un dedo de verdad):

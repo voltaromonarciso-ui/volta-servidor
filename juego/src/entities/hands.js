@@ -459,8 +459,17 @@ export class ViewModel {
       return;
     }
 
-    this.swayX += (-lookX * 0.0009 - this.swayX) * Math.min(1, dt * 10);
-    this.swayY += (lookY * 0.0009 - this.swayY) * Math.min(1, dt * 10);
+    // física de los brazos: un muelle amortiguado. Al girar la cámara o al acelerar, lo que
+    // llevas (y con ello los brazos) se queda un poco atrás y vuelve con un leve rebote
+    const S = (this.spring ||= { x: 0, y: 0, vx: 0, vy: 0, sp: speed });
+    S.vx += -lookX * 0.012; S.vy += lookY * 0.012 - (speed - S.sp) * 0.02;
+    S.sp = speed;
+    for (let t = Math.min(dt, 0.1); t > 1e-4; t -= 1 / 120) { // pasos fijos: estable aunque vaya lento
+      const h = Math.min(t, 1 / 120);
+      S.vx += (-90 * S.x - 13 * S.vx) * h; S.vy += (-90 * S.y - 13 * S.vy) * h;
+      S.x = THREE.MathUtils.clamp(S.x + S.vx * h, -0.05, 0.05); S.y = THREE.MathUtils.clamp(S.y + S.vy * h, -0.05, 0.05);
+    }
+    this.swayX = S.x; this.swayY = S.y;
     const k = Math.min(1, speed / 5);
     const bx_ = Math.cos(bob) * 0.012 * k + this.swayX;
     const by = -Math.abs(Math.sin(bob)) * 0.014 * k + Math.sin(this.t * 1.6) * 0.003 + this.swayY - this.drop * 0.55 - crouch * 0.02;
@@ -481,6 +490,7 @@ export class ViewModel {
         if (arc) H.quaternion.premultiply(_qArc.setFromEuler(_eArc.set(-arc * 0.9, arc * 0.3, arc * 0.9)));
       }
       else { H.position.set(bx_, -0.335 + by - push * 0.03 + gk * 0.08, -0.84 + push * 0.06 - gk * 0.3); H.rotation.set(-0.12, -0.03, 0); }
+      H.quaternion.premultiply(_qArc.setFromEuler(_eArc.set(this.swayY * 2, this.swayX * 2, -this.swayX * 3))); // (el muelle también lo inclina)
       if (this.pose !== 'box') H.position.sub((this.grip || new THREE.Vector3()).clone().applyQuaternion(H.quaternion)); // el punto de agarre, en ese sitio
       this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = false;
       // con un arma blanca, la izquierda queda a la vista, relajada y algo abierta

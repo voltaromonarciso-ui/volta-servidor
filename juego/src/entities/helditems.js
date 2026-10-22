@@ -247,14 +247,18 @@ function porra() {
   add(g, once('tubo1', () => new THREE.CylinderGeometry(0.014, 0.015, 0.14, 14)), steel, 0, 0.12, 0);
   add(g, once('tubo2', () => new THREE.CylinderGeometry(0.011, 0.012, 0.13, 14)), steel, 0, 0.25, 0);
   add(g, once('punta', () => new THREE.SphereGeometry(0.016, 14, 10)), steel, 0, 0.32, 0);
+  collider(g, 0.04, 0.16, 0.04, 0, -0.03, 0); // mango
+  collider(g, 0.03, 0.3, 0.03, 0, 0.2, 0);     // tubos
   return { group: g, pose: 'gun', hold: mango, grips: handleGrip(mango, 0.0195) };
 }
 
-// Agarre de un mango vertical (eje +y; r = su medio ancho en x): la palma contra el costado
-// derecho, los dedos lo rodean por detrás y vuelven por el lado izquierdo, el pulgar encima
+// Agarre de un mango vertical (eje +y; r = su medio ancho): la palma por detrás y a la derecha
+// del mango, el antebrazo llega desde abajo a la derecha (la muñeca recta) y los dedos lo
+// rodean por la izquierda hasta la cara que mira a la cámara, con el pulgar cerrado encima
 function handleGrip(mango, r) {
-  const gR = new THREE.Object3D(); gR.position.set(r + 0.002, 0.004, 0); mango.add(gR);
-  return { R: { obj: gR, F: [-0.3, 0, 1], P: [-1, 0, -0.3], hand: 'gun' } }; // (los nudillos hacia la cámara: se ven los dedos cerrados)
+  const P = new THREE.Vector3(-0.85, 0, 0.5).normalize();
+  const gR = new THREE.Object3D(); gR.position.copy(P).multiplyScalar(-(r + 0.002)).setY(-0.012); mango.add(gR); // (el índice justo bajo la guarda)
+  return { R: { obj: gR, F: [-0.5, 0.1, -0.85], P: P.toArray(), hand: 'gun' } };
 }
 // --- móvil con pantalla encendida, taza de café y bolsa de la compra ---
 const phoneTex = () => tex('pantallaMovil', 128, 256, (c, w, h) => {
@@ -338,6 +342,10 @@ function machete() {
   for (const y of [-0.055, -0.02, 0.015]) add(g, rb(0.032, 0.006, 0.026, 0.003), std('anilloGoma', { color: '#1a1b1d', roughness: 0.95 }), 0, y, 0); // estrías para los dedos
   add(g, rb(0.034, 0.018, 0.026, 0.006), std('guardaNegra'), 0, -0.088, 0);
   add(g, once('cordel', () => new THREE.TorusGeometry(0.009, 0.0025, 6, 14)), std('cordelVerde', { color: '#4b5a3a', roughness: 0.95 }), 0, -0.104, 0, 0, Math.PI / 2, 0);
+  // cajas de colisión con su forma (mango, guarda y hoja) para que los dedos no la atraviesen
+  collider(g, 0.03, 0.12, 0.024, 0, -0.02, 0);
+  collider(g, 0.072, 0.012, 0.022, 0, 0.045, 0);
+  collider(g, 0.044, 0.3, 0.005, 0, 0.2, 0);
   g.scale.setScalar(0.65);
   // (sin giros propios: la orientación en la vista la pone hands.js)
   return { group: g, pose: 'gun', hold: mango, grips: handleGrip(mango, 0.015) }; // empuñado por el mango
