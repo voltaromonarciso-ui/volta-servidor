@@ -189,8 +189,9 @@ function pistola() {
   add(g, rb(0.004, 0.016, 0.006, 0.001), steel, 0, -0.018, -0.012);          // gatillo
   add(g, rb(0.006, 0.006, 0.006, 0.001), std('mira', { color: '#ececec' }), 0, 0.041, -0.125); // mira
   // se empuña: la mano se cierra alrededor de la cacha (hold) con el cañón al frente
-  const hold = new THREE.Object3D(); hold.position.y = 0.022; grip.add(hold); // la parte alta de la cacha, bajo la corredera
-  return { group: g, pose: 'gun', hold };
+  const hold = new THREE.Object3D(); hold.position.y = 0.008; grip.add(hold); // la parte alta de la cacha, bajo la corredera
+  g.scale.setScalar(1.2); // a la vista, como en los shooters
+  return { group: g, pose: 'pistol', hold };
 }
 function porra() {
   const g = new THREE.Group();

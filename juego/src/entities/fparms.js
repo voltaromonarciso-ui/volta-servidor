@@ -11,6 +11,16 @@ import * as THREE from 'three';
 import { makeAvatar } from './avatar.js';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const _e = new THREE.Vector3();
+// Distancia mínima entre los segmentos p1-q1 y p2-q2 (para que los brazos no se atraviesen)
+function segDist(p1, q1, p2, q2) {
+  const d1 = q1.clone().sub(p1), d2 = q2.clone().sub(p2), r = p1.clone().sub(p2);
+  const a = d1.dot(d1), e = d2.dot(d2), f = d2.dot(r), c = d1.dot(r), b = d1.dot(d2), den = a * e - b * b;
+  let s = den > 1e-9 ? THREE.MathUtils.clamp((b * f - c * e) / den, 0, 1) : 0;
+  let t = (b * s + f) / e;
+  if (t < 0) { t = 0; s = THREE.MathUtils.clamp(-c / a, 0, 1); } else if (t > 1) { t = 1; s = THREE.MathUtils.clamp((b - c) / a, 0, 1); }
+  return p1.clone().addScaledVector(d1, s).distanceTo(p2.clone().addScaledVector(d2, t));
+}
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
 const wp = (o, v = new THREE.Vector3()) => o.getWorldPosition(v);
 
@@ -105,15 +115,30 @@ export class FPArms {
         ik(A.up, A.lo, A.hand, _c.set(sx * 0.28, -0.95, 0.05), _d.set(sx * 0.6, -0.2, 0.3));
         continue;
       }
-      ik(A.up, A.lo, A.hand, r.position, _d.set(r.position.x + sx * 0.5, r.position.y - 0.6, r.position.z + 0.25));
+      const tgt = _e.copy(r.position);
+      if (s === 'L' && ref.R?.visible) tgt.x = Math.min(tgt.x, ref.R.position.x - 0.07); // la izquierda nunca pasa al otro lado
+      ik(A.up, A.lo, A.hand, tgt, _d.set(tgt.x + sx * 0.5, tgt.y - 0.6, tgt.z + 0.25));
+      // colisión entre brazos: si el antebrazo izquierdo toca el derecho, se aparta hacia fuera
+      if (s === 'L' && ref.R?.visible) {
+        const R = this.side.R;
+        for (let k = 0; k < 4; k++) {
+          const d = segDist(wp(A.lo), wp(A.hand), wp(R.lo), wp(R.hand)) - 0.075;
+          const d2 = segDist(wp(A.up), wp(A.lo), wp(R.lo), wp(R.hand)) - 0.075;
+          const m = Math.min(d, d2);
+          if (m >= 0) break;
+          tgt.x += m - 0.01;
+          ik(A.up, A.lo, A.hand, tgt, _d.set(tgt.x - 0.5, tgt.y - 0.6, tgt.z + 0.25));
+        }
+      }
       // cómo va la mano (en el espacio de la cámara): dedos y palma
-      const G_ = GRIPS[GRIPS[pose] ? pose : 'one'];
+      // pistola a dos manos: la derecha empuña, la izquierda la abraza por debajo
+      const G_ = GRIPS[pose === 'pistol' ? (s === 'R' ? 'gun' : 'support') : GRIPS[pose] ? pose : 'one'];
       this.orient(A, _a.set(sx * G_.f[0], G_.f[1], G_.f[2]).normalize(), _b.set(sx * G_.p[0], G_.p[1], G_.p[2]).normalize());
       this.curl(A, G_.grip);
       if (s === 'R') { // centro de la palma (ahí se apoya lo que llevas en la mano)
         const hp = wp(A.hand), { fing, palm } = this.frame(A);
         // (empuñando, el mango queda dentro del puño: más cerca de la palma)
-        const [kf, kp] = pose === 'gun' ? [0.055, 0.025] : [0.07, 0.045];
+        const [kf, kp] = pose === 'gun' || pose === 'pistol' ? [0.055, 0.025] : [0.07, 0.045];
         this.palmR = (this.palmR || new THREE.Vector3()).copy(hp).addScaledVector(fing, kf).addScaledVector(palm, kp);
       }
     }
@@ -154,6 +179,7 @@ const GRIPS = {
   box: { f: [-0.1, 0.35, -1], p: [-1, 0.55, 0], grip: 0.3 },
   fist: { f: [-0.15, 0.1, -1], p: [-0.2, -1, 0], grip: 1.15 },        // puño cerrado, nudillos al frente
   gun: { f: [-0.55, 0.05, -0.8], p: [-1, -0.1, 0.25], grip: 1.05 },   // empuñando: palma hacia el mango, dedos alrededor
+  support: { f: [-0.6, 0.15, -0.75], p: [-0.7, 0.65, 0.1], grip: 0.85 }, // mano de apoyo (izquierda): palma arriba, dedos sobre la otra
 };
 // Aplica un giro en el espacio del mundo a un hueso (y a sus hijos)
 function rotWorld(bone, q) {

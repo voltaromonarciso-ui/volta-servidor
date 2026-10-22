@@ -462,14 +462,21 @@ export class ViewModel {
       this.placeHand(this.Rh, base.x + w + 0.012, base.y - 0.09, base.z + d - 0.01, 0.85, -0.75, -0.15, 0.55);
       this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = true;
     } else {
-      // una mano: derecha, objeto en la palma
-      const hx = 0.2 + bx_ - gk * 0.12, hy = -0.26 + by - push * 0.04 + gk * 0.1, hz = -0.46 + push * 0.08 - gk * 0.3;
+      // una mano: derecha, objeto en la palma. Pistola: a dos manos, centrada, como en los
+      // shooters (retroceso al disparar). Porra/machete: inclinados, golpe en arco.
+      const pistol = this.pose === 'pistol';
+      const kick = this.strikeKind === 'shot' ? sk : 0;
+      const arc = this.strikeKind === 'swing' && this.pose === 'gun' ? sk : 0;
+      let hx = 0.2 + bx_ - gk * 0.12, hy = -0.26 + by - push * 0.04 + gk * 0.1, hz = -0.46 + push * 0.08 - gk * 0.3;
+      if (pistol) { hx = 0.12 + bx_; hy = -0.2 + by + kick * 0.02; hz = -0.5 + kick * 0.05; }
+      if (arc) { hx -= arc * 0.2; hy -= arc * 0.03; hz -= arc * 0.14; }
       this.placeHand(this.Rh, hx, hy, hz, 1.6, 2.1, -1.5708, 0.75);
       this.Rh.updateMatrix();
       this.itemHolder.position.copy(new THREE.Vector3(-0.07, 0.065, 0).applyMatrix4(this.Rh.matrix));
-      if (this.pose === 'gun') this.itemHolder.rotation.set(0.04, 0.1, 0); // el cañón hacia el punto de mira
+      if (pistol) this.itemHolder.rotation.set(kick * 0.35, 0.22, 0); // el cañón al punto de mira; salta al disparar
+      else if (this.pose === 'gun') this.itemHolder.rotation.set(-arc * 0.9, 0, -arc * 1.3); // recto; al golpear barre de derecha a izquierda
       else this.itemHolder.rotation.set(0.25, -0.6, 0.05);
-      this.L.visible = this.sleeveL.visible = false;
+      this.L.visible = this.sleeveL.visible = pistol;
       this.Rh.visible = this.sleeveR.visible = true;
     }
     this.fitSleeve(this.sleeveL, this.L, -0.34);
@@ -478,6 +485,7 @@ export class ViewModel {
       // las manos de referencia marcan dónde va cada muñeca; se ven las del personaje
       const vis = { R: this.Rh.visible, L: this.L.visible };
       if (this.pose !== 'box') this.Rh.position.add(new THREE.Vector3(-0.02, 0.07, -0.03)); // algo más arriba, como la referencia
+      if (this.pose === 'pistol') this.L.position.copy(this.Rh.position).add(new THREE.Vector3(-0.085, -0.05, 0.02)); // la izquierda sujeta por debajo, desde su lado
       if (this.pose === 'box') { // la caja, agarrada por los lados desde abajo
         const b = this.itemHolder.position, s = this.itemHolder.children[0];
         const w = s ? new THREE.Box3().setFromObject(s).getSize(new THREE.Vector3()).x / 2 : 0.21;
@@ -490,7 +498,7 @@ export class ViewModel {
         L: { position: this.L.position, quaternion: this.L.quaternion, visible: vis.L, side: 1 },
       });
       // lo que llevas en una mano se apoya en la palma de verdad
-      if (this.pose !== 'box' && this.arms.palmR) {
+      if (this.pose !== 'box' && this.arms.palmR) { // (también la pistola: la derecha en la cacha)
         const g = (this.grip || new THREE.Vector3()).clone().applyEuler(this.itemHolder.rotation);
         this.itemHolder.position.copy(this.arms.palmR).sub(g);
       }
