@@ -81,6 +81,17 @@ export function createFurniture({ addBox, removeBox, level = null, keep = null }
   const api = {
     count: () => list.length,
     items: () => list.map((it) => ({ key: it.key, x: it.x, z: it.z })), // (para pruebas: qué hay en cada sitio)
+    // Quita lo que haya dentro de un rectángulo (para dejar libre un callejón); cuántos quitó
+    clear({ x0, x1, z0, z1 }) {
+      let n = 0;
+      for (let i = list.length - 1; i >= 0; i--) {
+        const it = list[i];
+        if (it.x < x0 || it.x > x1 || it.z < z0 || it.z > z1) continue;
+        for (const col of it.cols) col && removeBox?.(col);
+        it.p.n--; list.splice(i, 1); n++;
+      }
+      return n;
+    },
     // vértices por modelo (copias × vértices de una copia), para medir el coste
     report: () => [...used].map((p) => [p.key, p.n, p.n * p.parts.reduce((a, q) => a + q.geo.attributes.position.count, 0)]).sort((a, b) => b[2] - a[2]),
     // key: nombre único del modelo; fn: función de streetkit; ry: giro (el frente del modelo mira a +z)

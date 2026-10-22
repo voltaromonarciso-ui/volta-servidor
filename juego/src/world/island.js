@@ -22,6 +22,7 @@ import { addPad, addFloor, drapeGeometry, allPads, H as groundH, Hlow, coastOutl
 import { starterFlat, FL, pisoWoodTex } from './starterflat.js';
 import { pbrMat } from './buildingkit.js';
 import { arbolCopa, arbusto, plantaHojas, flores, roca } from './vegetation.js';
+import * as AL from './alleys.js';
 import * as CO from './coast.js';
 
 // líneas de calle (centro de la calzada)
@@ -111,6 +112,150 @@ function modelBuilding(name, x, z, ry, { w, mapColor = '#b9a68a', label } = {}) 
   W.mapRects.push({ ...r, c: mapColor });
   if (label) W.mapLabels.push({ x, z, t: label });
   return r;
+}
+// ------------------------------------------------------------------
+//  Callejones (uno por barrio): el hueco estrecho entre dos edificios o, si el barrio tiene un
+//  solo edificio grande, el paso de servicio pegado a su pared trasera
+// ------------------------------------------------------------------
+const NO_ALLEY = new Set(['bosque', 'parque']);
+function findAlleys() {
+  const out = [];
+  const isHouse = (t) => /^(h_house|ks_)/.test(t);
+  const hits = (r, except) => FOOT.some((q) => !except.includes(q) && q.x0 < r.x1 && q.x1 > r.x0 && q.z0 < r.z1 && q.z1 > r.z0);
+  for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+    const b = block(i, j);
+    if (NO_ALLEY.has(b.zone)) continue;
+    const inB = FOOT.filter((r) => r.x0 >= b.x0 - 1 && r.x1 <= b.x1 + 1 && r.z0 >= b.z0 - 1 && r.z1 <= b.z1 + 1 && (r.x1 - r.x0) * (r.z1 - r.z0) > 30);
+    if (!inB.length) continue;
+    // 1) entre dos edificios (no entre casas: eso son jardines)
+    let best = null;
+    for (const a of inB) for (const c of inB) {
+      if (a === c || (isHouse(a.tag) && isHouse(c.tag))) continue;
+      const gx = c.x0 - a.x1, oz = Math.min(a.z1, c.z1) - Math.max(a.z0, c.z0);
+      if (gx >= 3 && gx <= 10 && oz >= 8) {
+        const r = { x0: a.x1, x1: c.x0, z0: Math.max(a.z0, c.z0), z1: Math.min(a.z1, c.z1) };
+        if (!hits(r, [a, c]) && (!best || oz > best.len)) best = { ...r, run: 'z', len: oz, walls: [{ x: a.x1, f: 1 }, { x: c.x0, f: -1 }], kind: 'entre' };
+      }
+      const gz = c.z0 - a.z1, ox = Math.min(a.x1, c.x1) - Math.max(a.x0, c.x0);
+      if (gz >= 3 && gz <= 10 && ox >= 8) {
+        const r = { z0: a.z1, z1: c.z0, x0: Math.max(a.x0, c.x0), x1: Math.min(a.x1, c.x1) };
+        if (!hits(r, [a, c]) && (!best || ox > best.len)) best = { ...r, run: 'x', len: ox, walls: [{ z: a.z1, f: 1 }, { z: c.z0, f: -1 }], kind: 'entre' };
+      }
+    }
+    // 2) detrás del edificio más grande: el lado con sitio (4 m o más) y menos cosas puestas
+    if (!best) {
+      const big = inB.reduce((p, q) => ((q.x1 - q.x0) * (q.z1 - q.z0) > (p.x1 - p.x0) * (p.z1 - p.z0) ? q : p));
+      const W_ = 5;
+      // (nunca por la fachada: el lado de la puerta, según hacia dónde mira el edificio)
+      const d = DOORS.find((q) => overlapArea(q, big) > 0.6 * (big.x1 - big.x0) * (big.z1 - big.z0));
+      const front = d ? (Math.abs(Math.cos(d.ry)) > 0.5 ? (Math.cos(d.ry) > 0 ? 'N' : 'S') : (Math.sin(d.ry) > 0 ? 'E' : 'O')) : null;
+      const sides = [
+        { k: 'N', r: { x0: big.x0, x1: big.x1, z0: big.z1, z1: Math.min(b.z1, big.z1 + W_) }, run: 'x', walls: [{ z: big.z1, f: 1 }] },
+        { k: 'S', r: { x0: big.x0, x1: big.x1, z0: Math.max(b.z0, big.z0 - W_), z1: big.z0 }, run: 'x', walls: [{ z: big.z0, f: -1 }] },
+        { k: 'E', r: { x0: big.x1, x1: Math.min(b.x1, big.x1 + W_), z0: big.z0, z1: big.z1 }, run: 'z', walls: [{ x: big.x1, f: 1 }] },
+        { k: 'O', r: { x0: Math.max(b.x0, big.x0 - W_), x1: big.x0, z0: big.z0, z1: big.z1 }, run: 'z', walls: [{ x: big.x0, f: -1 }] },
+      ].filter((s) => s.k !== front && (s.run === 'x' ? s.r.z1 - s.r.z0 : s.r.x1 - s.r.x0) >= 4 && !hits(s.r, [big]));
+      const crowd = (r) => F.items().filter((t) => t.x > r.x0 && t.x < r.x1 && t.z > r.z0 && t.z < r.z1).length;
+      sides.sort((p, q) => crowd(p.r) - crowd(q.r));
+      const s = sides[0];
+      if (s) {
+        const len = s.run === 'x' ? s.r.x1 - s.r.x0 : s.r.z1 - s.r.z0;
+        // como mucho 26 m de largo, centrado
+        if (len > 26) { const k = (len - 26) / 2; if (s.run === 'x') { s.r.x0 += k; s.r.x1 -= k; } else { s.r.z0 += k; s.r.z1 -= k; } }
+        best = { ...s.r, run: s.run, len: Math.min(len, 26), walls: s.walls, kind: 'detras' };
+      }
+    }
+    if (best) out.push({ ...best, zone: b.zone, block: [i, j] });
+  }
+  return out;
+}
+// El césped es una sola malla de cuadros de 2 m que sigue el relieve: un cuadro que cae a
+// caballo entre el callejón y el edificio más alto se inclina y asoma sobre las losas junto a
+// la pared. Se quitan los cuadros del callejón y los de sus paredes (no los de los extremos,
+// por donde se entra desde el césped).
+function cutLawnFromAlleys() {
+  const rects = (W.alleys || []).map((a) => (a.run === 'z' ? { x0: a.x0 - 1.2, x1: a.x1 + 1.2, z0: a.z0, z1: a.z1 } : { x0: a.x0, x1: a.x1, z0: a.z0 - 1.2, z1: a.z1 + 1.2 }));
+  if (!rects.length) return;
+  const inside = (x, z) => rects.some((r) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1);
+  for (const g of LAWN_GEO) {
+    const P = g.attributes.position;
+    if (g.index) {
+      const I = g.index.array, keep = [];
+      for (let t = 0; t < I.length; t += 3) {
+        const cx = (P.getX(I[t]) + P.getX(I[t + 1]) + P.getX(I[t + 2])) / 3, cz = (P.getZ(I[t]) + P.getZ(I[t + 1]) + P.getZ(I[t + 2])) / 3;
+        if (!inside(cx, cz)) keep.push(I[t], I[t + 1], I[t + 2]);
+      }
+      g.setIndex(keep);
+    } else {
+      const n = P.count, ok = [];
+      for (let t = 0; t < n; t += 3) {
+        const cx = (P.getX(t) + P.getX(t + 1) + P.getX(t + 2)) / 3, cz = (P.getZ(t) + P.getZ(t + 1) + P.getZ(t + 2)) / 3;
+        if (!inside(cx, cz)) ok.push(t);
+      }
+      for (const name of Object.keys(g.attributes)) {
+        const A = g.attributes[name], k = A.itemSize, out = new A.array.constructor(ok.length * 3 * k);
+        ok.forEach((t, j) => { for (let v = 0; v < 3; v++) for (let c = 0; c < k; c++) out[(j * 3 + v) * k + c] = A.array[(t + v) * k + c]; });
+        g.setAttribute(name, new THREE.BufferAttribute(out, k, A.normalized));
+      }
+    }
+  }
+}
+function buildAlleys() {
+  W.alleys = []; W.alleyPeople = [];
+  let tag = 0;
+  for (const a of findAlleys()) {
+    F.clear(a); // fuera árboles, bancos o farolas que hubiera en el paso
+    const along = a.run === 'z', L0 = along ? a.z0 : a.x0, L1 = along ? a.z1 : a.x1, len = L1 - L0;
+    const at = (t, w) => (along ? { x: w.x + w.f * 0.6, z: L0 + t * len } : { x: L0 + t * len, z: w.z + w.f * 0.6 });
+    // (frente de lo que va contra una pared: hacia el centro del callejón)
+    const face = (w) => (along ? (w.f > 0 ? Math.PI / 2 : -Math.PI / 2) : (w.f > 0 ? 0 : Math.PI));
+    const wallAt = (t, w, off) => (along ? { x: w.x + w.f * off, z: L0 + t * len } : { x: L0 + t * len, z: w.z + w.f * off });
+    // suelo llano: un solar propio que se toca con el del edificio de al lado, así queda a su
+    // misma altura (sin los baches del terreno natural que había entre los dos edificios)
+    // (a la altura del edificio más bajo de los dos, como un callejón de verdad: el más alto
+    // queda sobre su muro de contención)
+    const hs = a.walls.map((w) => (along ? groundH(w.x - w.f * 1.5, (a.z0 + a.z1) / 2) : groundH((a.x0 + a.x1) / 2, w.z - w.f * 1.5)));
+    addPad(a.x0, a.x1, a.z0, a.z1, { h: Math.min(...hs) });
+    // las losas: junto a un edificio más alto (con su muro de contención delante), unos
+    // centímetros antes del borde, que es de los dos solares y tomaría su altura; junto a uno a
+    // la misma altura, hasta el borde (si no, asomaría el césped)
+    const hA = Math.min(...hs), gap = hs.map((h) => (h - hA > 0.05 ? 0.06 : 0));
+    const lo = along ? a.x0 : a.z0, hi = along ? a.x1 : a.z1;
+    const side = (w, i) => (w.f > 0 ? [gap[i], 0] : [0, gap[i]]); // (la pared con f>0 es la del lado bajo de la coordenada)
+    let g0 = 0, g1 = 0;
+    a.walls.forEach((w, i) => { const [p0, p1] = side(w, i); g0 = Math.max(g0, p0); g1 = Math.max(g1, p1); });
+    if (along) K.paving(lo + g0, hi - g1, a.z0, a.z1, '#86827a', null, 1.1); else K.paving(a.x0, a.x1, lo + g0, hi - g1, '#86827a', null, 1.1); // suelo de losas gastadas
+    const g = 0.06;
+    // y hasta la pared de verdad: la huella del edificio incluye el alero, así que entre el
+    // callejón y la pared queda una franja de su solar (a su altura) que también lleva losas
+    for (const w of a.walls) {
+      if (along) K.paving(w.f > 0 ? w.x - 0.9 : w.x + g, w.f > 0 ? w.x - g : w.x + 0.9, a.z0, a.z1, '#86827a', null, 1.1);
+      else K.paving(a.x0, a.x1, w.f > 0 ? w.z - 0.9 : w.z + g, w.f > 0 ? w.z - g : w.z + 0.9, '#86827a', null, 1.1);
+    }
+    const w0 = a.walls[0], w1 = a.walls[1] || a.walls[0];
+    let p = at(0.18, w0); F.place('aContenedor', () => SK.contenedor('#2f4f3a'), p.x, p.z, face(w0));
+    p = at(0.3, w0); F.place('aBolsas', () => AL.bolsasBasura(3), p.x, p.z, R() * 6.28, { solid: false });
+    p = at(0.62, w1); F.place('aCartones', AL.cartones, p.x, p.z, face(w1), { solid: false });
+    p = at(0.78, w1); F.place('aPalet', AL.palet, wallAt(0.78, w1, 0.15).x, wallAt(0.78, w1, 0.15).z, face(w1), { solid: false });
+    p = at(0.86, w0); F.place('aCaja', () => SK.cajaMadera(0.8), p.x, p.z, R() * 6.28);
+    p = at(0.89, w0); F.place('aCaja2', () => SK.cajaMadera(0.6), p.x + 0.3, p.z + 0.3, R() * 6.28);
+    for (const [t, c] of [[0.07, '#2f9a3d'], [0.1, '#2b6cb0']]) { const q = at(t, w0); F.place('aCubo' + c, () => SK.cuboReciclaje(c), q.x, q.z, face(w0)); }
+    { const q = wallAt(0.38, w1, 0.02); F.place('aAire', AL.aireAcondicionado, q.x, q.z, face(w1), { solid: false }); }
+    { const q = wallAt(0.7, w0, 0.02); F.place('aAire', AL.aireAcondicionado, q.x, q.z, face(w0), { solid: false }); }
+    { const q = wallAt(0.55, w0, 0.27); F.place('aCajaElec', SK.cajaElectrica, q.x, q.z, face(w0)); } // (armario eléctrico de pie contra la pared)
+    p = at(0.92, w0); F.place('aBolsas2', () => AL.bolsasBasura(2), p.x, p.z, R() * 6.28, { solid: false });
+    for (let k = 0; k < 2; k++) { const t = 0.35 + k * 0.3 + R() * 0.08; const c = { x: (a.x0 + a.x1) / 2, z: (a.z0 + a.z1) / 2 }; F.place('aCharco', () => AL.charco(), along ? c.x + (R() - 0.5) : L0 + t * len, along ? L0 + t * len : c.z + (R() - 0.5), R() * 6.28, { solid: false }); }
+    // grafitis en las paredes y el farol en medio
+    for (const [t, w] of [[0.45, w0], [0.25, w1]]) { const q = wallAt(t, w, 0.02); const n = tag++ % 4; F.place('aTag' + n, () => AL.grafiti(n), q.x, q.z, face(w), { solid: false }); }
+    const lq = wallAt(0.5, w1, 0.02); F.place('aFarol', AL.farolPared, lq.x, lq.z, face(w1), { solid: false });
+    // escalera de incendios en la pared de un edificio de varias plantas
+    if (a.kind === 'entre' && len > 14) { const q = wallAt(0.62, w0, 0.02); F.place('aEscalera', () => AL.escaleraIncendios(3), q.x, q.z, face(w0), { solid: false }); }
+    // gente haciendo tiempo: uno apoyado en la pared con el móvil y, en uno de cada dos
+    // callejones, otro delante charlando con él
+    { const q = wallAt(0.44, w1, 0.42); W.alleyPeople.push({ x: q.x, z: q.z, yaw: face(w1) + (R() - 0.5) * 0.5, pose: R() < 0.6 ? 'phone' : null });
+      if (W.alleys.length % 2 === 0) { const o = wallAt(0.47, w1, 1.45); W.alleyPeople.push({ x: o.x, z: o.z, yaw: Math.atan2(q.x - o.x, q.z - o.z), pose: null }); } }
+    W.alleys.push({ x0: a.x0, x1: a.x1, z0: a.z0, z1: a.z1, cx: (a.x0 + a.x1) / 2, cz: (a.z0 + a.z1) / 2, run: a.run, zone: a.zone, kind: a.kind });
+  }
 }
 // Solar llano para un edificio (relieve) a la altura de la acera delante de su fachada, con
 // un zócalo de piedra por debajo que tapa la junta con el talud alrededor
@@ -385,6 +530,7 @@ export function buildIsland() {
   buildCoast();
   buildStreetFurniture();
   buildPaths();
+  buildAlleys();
   restoreK();
   // comprobación: edificios que se pisan (área común > 0,5 m²); las pruebas exigen que no haya
   W.footprints = FOOT.slice();
@@ -399,6 +545,7 @@ export function buildIsland() {
   scatterGreens();
   if (grassReady()) { const fr = fringeMesh(scene, fringeLines()); fr.userData.terrainDone = true; LAWN_GEO.push(fr.geometry); }
   const res = F.build(scene);
+  cutLawnFromAlleys();
   for (const g of DRAPE) drapeGeometry(g); // calzadas y arena, sobre el relieve
   for (const g of LAWN_GEO) drapeGeometry(g, 0, Hlow); // el césped, por debajo en los escalones
   retainingWalls();

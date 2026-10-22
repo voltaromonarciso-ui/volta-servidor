@@ -93,6 +93,16 @@ function spawnClerks() {
     scene.add(h.group);
     clerks.push(h);
   });
+  // gente en los callejones (como los dependientes: quietos y sólo animados de cerca)
+  (G.world.alleyPeople || []).forEach((c, i) => {
+    if (!pool.length) return;
+    const h = makeRealHuman(pool[(i * 7 + 1) % pool.length]);
+    h.group.position.set(c.x, G.world.groundAt(c.x, c.z), c.z);
+    h.group.rotation.y = c.yaw;
+    h.pose = c.pose;
+    scene.add(h.group);
+    clerks.push(h);
+  });
 }
 
 // Leo, tu primo, trabajando en el banco de la nave

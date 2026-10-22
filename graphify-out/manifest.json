@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/hands.js": {
-    "mtime": 1792672287.9772964,
-    "seen": 1792673357.8772101,
-    "ast_hash": "755d4983aa6acd077bacd2ba02da0831",
+    "mtime": 1792684239.2193577,
+    "seen": 1792688862.1066244,
+    "ast_hash": "55563fb8ff9a203e76d9d80d444dc1ca",
     "semantic_hash": ""
   },
   "juego/src/entities/human.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792646879.8521087,
-    "seen": 1792647496.661805,
-    "ast_hash": "ff5fd9c68d43e281a78646b22e8a9c2d",
+    "mtime": 1792688539.4918401,
+    "seen": 1792688862.1068132,
+    "ast_hash": "b665e1c4a40b1c6103f631015bf8e0ad",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792620122.145804,
-    "seen": 1792620398.9885418,
-    "ast_hash": "6128e21249f42b194df8d1b5c880d14c",
+    "mtime": 1792688539.4912243,
+    "seen": 1792688862.107606,
+    "ast_hash": "354ad015c841e043ef5cc1a3a4745f2d",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1638,9 +1638,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/streetfurniture.js": {
-    "mtime": 1792617136.384532,
-    "seen": 1792618491.6206157,
-    "ast_hash": "46644d64dfee52704edf9fa414b1bd36",
+    "mtime": 1792684544.7185385,
+    "seen": 1792688862.1077313,
+    "ast_hash": "5a643290bb60aaa520141402a86061e6",
     "semantic_hash": ""
   },
   "juego/src/systems/atm.js": {
@@ -2058,9 +2058,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/fparms.js": {
-    "mtime": 1792672040.0557563,
-    "seen": 1792673357.8771827,
-    "ast_hash": "c9231a55b13f123e2f13958c709a10dd",
+    "mtime": 1792684239.2193577,
+    "seen": 1792688862.1065927,
+    "ast_hash": "6aa47fb04afe8fa7696ecb33250c455f",
     "semantic_hash": ""
   },
   "juego/src/systems/combat.js": {
@@ -2070,9 +2070,15 @@
     "semantic_hash": ""
   },
   "juego/src/entities/helditems.js": {
-    "mtime": 1792672742.2593222,
-    "seen": 1792673357.8772125,
-    "ast_hash": "4f12be2a4581d616d8b2f8c92038a2e4",
+    "mtime": 1792684239.223968,
+    "seen": 1792688862.1066267,
+    "ast_hash": "1ba6013b6384145c05ff60581d98c97b",
+    "semantic_hash": ""
+  },
+  "juego/src/world/alleys.js": {
+    "mtime": 1792684916.8544095,
+    "seen": 1792688862.1074243,
+    "ast_hash": "07519d3062909e9e24680f731ca1e63c",
     "semantic_hash": ""
   }
 }
