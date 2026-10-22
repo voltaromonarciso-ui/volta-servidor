@@ -14,7 +14,7 @@ import { W, B, TM, scene, K, removeBox } from './world.js';
 import * as SK from './streetkit.js';
 import { createFurniture } from './streetfurniture.js';
 import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
-import { shopBuilding, warehouseBuilding, bankBranch } from './realbuilding.js';
+import { shopBuilding, warehouseBuilding, bankBranch, ownedWarehouse, naveFloorMat, FH } from './realbuilding.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
@@ -619,6 +619,7 @@ export function buildIsland() {
   SK.setDetail(1);
   K.buildMountains(); // (sin el skyline de la ciudad antigua: en la isla quedaba flotando sobre el mar)
   tempProps();
+  if (Object.keys(WAREHOUSES).some((k) => W.props[k])) warehouseLights();
 }
 
 // Tu piso (starterflat.js): bloque de 4 plantas con portal, escalera y el estudio en la
@@ -680,8 +681,10 @@ function starterBuilding(x, z, walkZ) {
 function tempProps() {
   const a = blockOf('apartamentos'), w = blockOf('almacenBravo');
   // la nave de Leo es ahora el Almacén Bravo (se compra más adelante; no es tuya al empezar)
-  W.props.nave = { x0: w.x0 + 4, x1: w.x1 - 4, z0: w.cz - 8, z1: w.cz + 14, name: 'Almacén Bravo', spawn: { x: w.cx, z: w.z1 + 2, yaw: Math.PI } };
-  W.pois.nave = { x: w.cx, z: w.z1 + 2 };
+  if (!W.props.almacenBravo) { // (sin el almacén de verdad, la nave provisional de antes)
+    W.props.nave = { x0: w.x0 + 4, x1: w.x1 - 4, z0: w.cz - 8, z1: w.cz + 14, name: 'Almacén Bravo', spawn: { x: w.cx, z: w.z1 + 2, yaw: Math.PI } };
+    W.pois.nave = { x: w.cx, z: w.z1 + 2 };
+  }
   W.pois.deadDrop = { x: w.x0 + 8, z: w.z0 + 3.2 };
   W.pois.bungalow = { x: a.cx, z: a.z1 + 2 };
   W.pois.inicio = W.props.piso ? { ...W.props.piso.spawn } : { x: a.cx, z: a.z1 + 2 };
@@ -1014,6 +1017,89 @@ function alley(b) {
   W.spots.push({ id: `callejon-${b.zone}`, name: `Callejón de ${ZONE_NAMES[b.zone]}`, x: (b.x0 + b.x1) / 2, z: z0 + 2.5, discreet: true, zone: b.zone });
 }
 
+// ------------------------------------------------------------------
+//  Almacenes que se pueden comprar (app Inmobiliaria del móvil): nave hueca con su interior,
+//  puerta de la oficina (cerrada con llave si no es tuyo), suelo de hormigón donde se
+//  colocan macetas y mesas, estanterías al fondo para guardar mercancía.
+// ------------------------------------------------------------------
+export const WAREHOUSES = {
+  almacenDelta: { w: 30, level: 0, price: 6000, blurb: 'El más pequeño: buena nave para empezar a cultivar en serio.' },
+  almacenBravo: { level: 1, price: 12000, blurb: 'Nave mediana con estanterías al fondo y sitio de sobra para mesas.' },
+  almacenAlfa: { level: 2, price: 20000, blurb: 'La más grande de la isla: para montar un negocio con empleados.' },
+};
+function warehouseFor(b) {
+  if (!hasBuilding('q_Flat')) return false; // sin texturas: la nave de relleno de siempre
+  const spec = WAREHOUSES[b.zone], id = b.zone, name = ZONE_NAMES[id];
+  const w = spec.w || b.x1 - b.x0 - 8, d = 22, x = b.cx, z = b.cz + 3;
+  const r = ownedWarehouse({ w, d, h: 9, sign: name.toUpperCase(), signBg: '#34495e', doors: 2, level: spec.level });
+  F.place('real:' + id, () => r.group, x, z, 0, { solid: false });
+  pad(x - w / 2 - 0.3, x + w / 2 + 0.3, z - d / 2 - 0.3, z + d / 2 + 0.3, 0, id);
+  // colisiones con nivel (entreplanta): 'up' sólo arriba, 'down' sólo abajo, 'low' a ras de suelo
+  const gy = groundH(x, z);
+  for (const [x0, x1, z0, z1, h, lv] of r.boxes) {
+    const c = K.addBox(x + x0, x + x1, z + z0, z + z1, h);
+    if (lv === 'up') c.yMin = gy + FH - 0.6;
+    else if (lv === 'down') c.yMax = gy + FH - 0.8;
+    else if (lv === 'low') c.yMax = gy + 0.45;
+  }
+  // suelos de arriba: la entreplanta y la escalera (sólo se pisan llegando desde arriba)
+  for (const f of r.floors) addFloor(x + f.x0, x + f.x1, z + f.z0, z + f.z1, (px, pz) => gy + f.h(px - x, pz - z), { upper: true });
+  W.mapRects.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, c: '#8a9aa6' });
+  W.mapLabels.push({ x, z, t: name });
+  DOORS.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, x, z, ry: 0, house: false });
+  // carretilla, transpaleta y palés sueltos dentro de la nave
+  const ge = r.gear;
+  if (ge.forklift) { K.forklift(x + ge.forklift.x, z + ge.forklift.z, ge.forklift.ry); K.addBox(x + ge.forklift.x - 0.7, x + ge.forklift.x + 0.7, z + ge.forklift.z - 1.4, z + ge.forklift.z + 1.4, 2.2); }
+  K.palletJack(x + ge.jack.x, z + ge.jack.z, ge.jack.ry);
+  for (const [px, pz, n] of ge.pallets) K.pallet(x + px, z + pz, 0, n); // (cada palé ya lleva su colisión)
+  // la puerta de la oficina: sólo se abre si el almacén es tuyo
+  K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.25, color: '#5d6670', locked: () => !G.state.props[id] });
+  // suelo de hormigón (es el que recibe macetas y mesas)
+  const f = r.floor, fw = f.x1 - f.x0, fd = f.z1 - f.z0;
+  const geo = new THREE.PlaneGeometry(fw, fd);
+  const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * fw) / 6, (uv.getY(i) * fd) / 6); // (cuadros de 6 m)
+  const fm = new THREE.Mesh(geo, naveFloorMat());
+  fm.rotation.x = -Math.PI / 2;
+  fm.position.set(x + (f.x0 + f.x1) / 2, 0.02, z + (f.z0 + f.z1) / 2);
+  fm.receiveShadow = true;
+  fm.userData.prop = id;
+  scene.add(fm);
+  W.floors.push(fm);
+  const i = r.inside, rk = r.rack;
+  W.props[id] = {
+    x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, name, price: spec.price, blurb: spec.blurb, warehouse: true, indoor: true,
+    spawn: { x: x + r.entry.x, z: z + r.entry.z, yaw: Math.PI }, area: Math.round((i.x1 - i.x0) * (i.z1 - i.z0)),
+    rack: { x0: x + rk.x0, x1: x + rk.x1, z0: z + rk.z0, z1: z + rk.z1 }, lamps: r.lamps.map((l) => ({ x: x + l.x, y: l.y, z: z + l.z })),
+  };
+  W.pois[id] = { x: x + r.door.x, z: z + r.door.z };
+  return true;
+}
+// Luz de dentro: dos luces para todos los almacenes, que se van al almacén en el que estás
+// y se apagan fuera (siempre las mismas dos: cambiar el número de luces recompila los shaders)
+function warehouseLights() {
+  const L = [0, 1].map(() => { const l = new THREE.PointLight('#ffe6c0', 0, 34, 1.15); l.userData.terrainDone = true; scene.add(l); return l; });
+  let at = null;
+  W.onUpdate = () => {
+    const p = G.player?.pos;
+    const id = p && Object.keys(WAREHOUSES).find((k) => { const r = W.props[k]; return r && p.x > r.x0 - 1 && p.x < r.x1 + 1 && p.z > r.rack.z0 - 1 && p.z < r.z1 + 2; });
+    if (id === at) return;
+    at = id;
+    if (!id) { for (const l of L) l.intensity = 0; return; }
+    const r = W.props[id], cx = (r.x0 + r.x1) / 2, y = groundH(cx, (r.z0 + r.z1) / 2) + 6.5;
+    L[0].position.set(r.x0 + (r.x1 - r.x0) * 0.27, y, (r.rack.z0 + r.z1) / 2);
+    L[1].position.set(r.x0 + (r.x1 - r.x0) * 0.73, y, (r.rack.z0 + r.z1) / 2);
+    for (const l of L) l.intensity = 22;
+  };
+}
+// el patio delantero: asfalto, valla con hueco, palés y la carretilla
+function warehouseYard(b) {
+  K.asphalt(b.x0 + 2, b.x1 - 2, b.cz + 14, b.z1 - 1, '#5a5d61');
+  K.chainFence(b.x0 + 1, b.z1 - 0.5, b.cx - 4, b.z1 - 0.5);
+  K.chainFence(b.cx + 4, b.z1 - 0.5, b.x1 - 1, b.z1 - 0.5);
+  for (let k = 0; k < 3; k++) K.pallet(b.x0 + 6 + k * 2.2, b.cz + 17, 0, k % 3);
+  K.forklift(b.x1 - 10, b.cz + 18, 0.4);
+}
+
 const FILL = {
   residencial(b) {
     // casas alrededor de una calle interior en U (Bungalós, Barrio Alto, Cabañas, Apartamentos, Mansión)
@@ -1082,12 +1168,9 @@ const FILL = {
     for (const x of [b.x0 + 3, b.x1 - 3]) (R() < 0.5 ? palm(x, b.cz, rr(8, 11)) : tree(x, b.cz, 1, 1));
   },
   industrial(b) {
+    if (WAREHOUSES[b.zone] && warehouseFor(b)) { warehouseYard(b); return; }
     if (!realAt(b.zone, () => warehouseBuilding({ w: b.x1 - b.x0 - 8, d: 22, h: 9, sign: ZONE_NAMES[b.zone].toUpperCase(), signBg: '#34495e', doors: 2 }), b.cx, b.cz + 3, 0, { label: ZONE_NAMES[b.zone], mapColor: '#8a9aa6' })) K.building({ x0: b.x0 + 4, x1: b.x1 - 4, z0: b.cz - 8, z1: b.cz + 14, h: 9, wall: '#8a949e', trim: '#d0d6dc', roof: '#4d4d4d', style: 'warehouse', front: '+z', sign: ZONE_NAMES[b.zone].toUpperCase(), signBg: '#34495e', seed: 900 + b.i, mapColor: '#8a9aa6', label: ZONE_NAMES[b.zone] });
-    K.asphalt(b.x0 + 2, b.x1 - 2, b.cz + 14, b.z1 - 1, '#5a5d61');
-    K.chainFence(b.x0 + 1, b.z1 - 0.5, b.cx - 4, b.z1 - 0.5);
-    K.chainFence(b.cx + 4, b.z1 - 0.5, b.x1 - 1, b.z1 - 0.5);
-    for (let k = 0; k < 3; k++) K.pallet(b.x0 + 6 + k * 2.2, b.cz + 17, 0, k % 3);
-    K.forklift(b.x1 - 10, b.cz + 18, 0.4);
+    warehouseYard(b);
   },
   verde(b) {
     if (b.zone === 'bosque') {

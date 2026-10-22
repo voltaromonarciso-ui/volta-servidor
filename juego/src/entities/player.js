@@ -59,12 +59,12 @@ export class Player {
 
     // la posición es absoluta: el suelo está a groundAt(x, z) (relieve); las colisiones
     // miran la altura sobre el suelo
-    const g0 = G.world.groundAt(this.pos.x, this.pos.z);
+    const g0 = G.world.groundAt(this.pos.x, this.pos.z, this.pos.y);
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
     G.world.resolve(this.pos, R, this.pos.y - g0);
     for (const car of G.cars) car.pushOut(this.pos, R);
-    const gy = G.world.groundAt(this.pos.x, this.pos.z);
+    const gy = G.world.groundAt(this.pos.x, this.pos.z, this.pos.y);
     this.vy -= GRAV * dt;
     this.pos.y += this.vy * dt;
     // cuesta abajo se sigue pegado al suelo (sin ir dando saltitos)

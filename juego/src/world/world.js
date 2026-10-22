@@ -166,6 +166,7 @@ function resolve(pos, r, y = 0) {
   for (let pass = 0; pass < 2; pass++) {
     for (const c of nearby(pos.x - r, pos.x + r, pos.z - r, pos.z + r)) {
       if (!c.on || y > c.h - 0.05) continue;
+      if ((c.yMin !== undefined && pos.y < c.yMin) || (c.yMax !== undefined && pos.y > c.yMax)) continue; // (sólo arriba o sólo abajo de una entreplanta)
       const px = Math.max(c.x0, Math.min(pos.x, c.x1));
       const pz = Math.max(c.z0, Math.min(pos.z, c.z1));
       const dx = pos.x - px, dz = pos.z - pz;
@@ -738,6 +739,7 @@ function update(dt) {
   }
   if (W.water) W.water.position.y = -0.35 + Math.sin(G.time * 0.6) * 0.04;
   updateTrafficLights();
+  W.onUpdate?.(dt);
 }
 
 // Habitación hueca (bungalow).

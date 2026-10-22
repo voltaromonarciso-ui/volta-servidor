@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/player.js": {
-    "mtime": 1792624103.5322154,
-    "seen": 1792624883.9516187,
-    "ast_hash": "620524a9d61644e7cd596ce17d4bc1ef",
+    "mtime": 1792705759.14686,
+    "seen": 1792709264.5525687,
+    "ast_hash": "f4427a214c78e811ea45507353639adf",
     "semantic_hash": ""
   },
   "juego/src/game.js": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/world.js": {
-    "mtime": 1792617087.7083948,
-    "seen": 1792618491.6207912,
-    "ast_hash": "d544639e2641bc531a4975f066ba0812",
+    "mtime": 1792705759.1458607,
+    "seen": 1792709264.553583,
+    "ast_hash": "064a69e985834b4926f4f9b119bdc7e1",
     "semantic_hash": ""
   },
   "juego/vite.config.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792694855.8073869,
-    "seen": 1792695264.9390004,
-    "ast_hash": "a89cd17f899ccc306be6c275279212db",
+    "mtime": 1792708158.9317098,
+    "seen": 1792709264.5534034,
+    "ast_hash": "3f1867c010514f0e51b7ed42e9f0820d",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792610238.7432268,
-    "seen": 1792614056.4511786,
-    "ast_hash": "18b9c3e4bb1b5feed9e42dc8dd73beaf",
+    "mtime": 1792708167.2932878,
+    "seen": 1792709264.5534492,
+    "ast_hash": "d1065f8209b7e81aabe3599e12c7c513",
     "semantic_hash": ""
   },
   "juego/docs/avances-18-apart.png": {
@@ -2022,9 +2022,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/terrain.js": {
-    "mtime": 1792617060.8944993,
-    "seen": 1792618491.6207027,
-    "ast_hash": "d738faf3bb13bdc6d1660fd3c66baa8a",
+    "mtime": 1792705759.1441748,
+    "seen": 1792709264.5535393,
+    "ast_hash": "e212b373c85fc7149f93f620733c1962",
     "semantic_hash": ""
   },
   "juego/src/world/vegetation.js": {

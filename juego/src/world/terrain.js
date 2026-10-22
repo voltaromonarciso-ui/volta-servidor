@@ -197,14 +197,22 @@ export function slope(x, z, e = 0.8) {
 
 // Suelos elevados dentro de los edificios (escaleras, plantas altas): donde los hay, el
 // jugador y los objetos pisan esa altura en vez del terreno. h(x, z) da la altura absoluta.
+// Con { upper: true } es una planta con hueco debajo (entreplanta, escalera): sólo se pisa si
+// se llega desde arriba (los pies a menos de medio metro por debajo); quien va por debajo
+// sigue en el suelo de abajo. Sin `y` (otros usos: objetos, cámara…) no cuentan.
 const floors = [];
-export function addFloor(x0, x1, z0, z1, h) { floors.push({ x0, x1, z0, z1, h }); }
-export function floorAt(x, z) {
-  for (const f of floors) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) return f.h(x, z);
+export function addFloor(x0, x1, z0, z1, h, { upper = false } = {}) { floors.push({ x0, x1, z0, z1, h, upper }); }
+export function floorAt(x, z, y) {
+  for (const f of floors) {
+    if (x < f.x0 || x > f.x1 || z < f.z0 || z > f.z1) continue;
+    const fh = f.h(x, z);
+    if (f.upper && (y === undefined || y < fh - 0.5)) continue;
+    return fh;
+  }
   return null;
 }
 // Altura donde se pisa: el suelo elevado si lo hay, si no el terreno
-export const groundAt = (x, z) => (floors.length ? floorAt(x, z) ?? H(x, z) : H(x, z));
+export const groundAt = (x, z, y) => (floors.length ? floorAt(x, z, y) ?? H(x, z) : H(x, z));
 
 // Solares registrados (para levantar muros de contención en sus bordes)
 export const allPads = () => pads;
