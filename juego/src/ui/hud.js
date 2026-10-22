@@ -225,8 +225,6 @@ function drawMinimap() {
   }
   g.fillStyle = '#5c6874';
   for (const r of G.world.mapRects) if (r.road) g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0);
-  g.fillStyle = '#4a4f57'; // callejones
-  for (const a of G.world.alleys || []) g.fillRect(a.x0, a.z0, a.x1 - a.x0, a.z1 - a.z0);
   g.restore();
 
   // iconos (sin rotar el propio icono)

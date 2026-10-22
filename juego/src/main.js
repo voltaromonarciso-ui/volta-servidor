@@ -40,6 +40,7 @@ import { openCreator } from './ui/creator.js';
 import { applyLayout, fitHud, openLayoutEditor } from './ui/layout.js';
 import * as ECON from './systems/economy.js';
 import { initPhone, openPhone, closePhone, togglePhone, phoneOpen, tickPhone, settingsPanel } from './ui/phone.js';
+import { openBigMap, closeBigMap, bigMapOpen, tickBigMap } from './ui/bigmap.js';
 
 // ------------------------------------------------------------------
 //  Render
@@ -222,6 +223,7 @@ on('btn', (b) => {
     if (G.station) return exitStation();
     if (dressingOpen()) return closeDressing();
     if (!G.uiOpen && placement.moving) return cancelPlacement();
+    if (bigMapOpen()) return closeBigMap();
     if (phoneOpen()) return closePhone();
     if (P.panelOpen()) return P.closePanel();
     return pauseMenu();
@@ -529,6 +531,7 @@ function frame() {
   updateHUD(target, dt);
   phoneT -= dt;
   if (phoneT <= 0) { phoneT = 0.5; tickPhone(); }
+  tickBigMap(dt);
   renderFrame(!G.uiOpen && !riding());
   frames++; fpsT += dt;
   if (fpsT > 1) {

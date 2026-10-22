@@ -5,6 +5,7 @@ import { STRAINS, RANKS } from '../data/items.js';
 const nego = {}; // precio propuesto en cada negociación abierta
 import { PEOPLE } from '../data/people.js';
 import { QUESTS } from '../data/quests.js';
+import { openBigMap } from './bigmap.js';
 import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew, orderDrop } from '../systems/economy.js';
 import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotiateDeal, orderSeeds, acceptChance, marketChance, priceLabel, trustLabel, addictionLabel, REP_TIERS, repTier } from '../systems/economy.js';
 import { clock, dayName } from '../systems/time.js';
@@ -76,6 +77,7 @@ export function closePhone() {
 export function togglePhone() { open ? closePhone() : openPhone(); }
 
 function go(app, arg = null) {
+  if (app === 'map' && G.world.bounds) { closePhone(); if (openBigMap()) return; } // la isla: mapa a pantalla completa
   view = { app, arg };
   render();
 }
@@ -292,7 +294,7 @@ function map() {
   mapCanvas = document.createElement('canvas');
   wrap.appendChild(mapCanvas);
   if (G.world.bounds) MB = G.world.bounds;
-  const legend = h('div', 'map-legend small', '🟢 Trato · 📦 Entregas · 🟣 Callejón · 🔵 Tú · Toca el mapa para marcar un destino');
+  const legend = h('div', 'map-legend small', '🟢 Trato · 📦 Entregas · 🔵 Tú · Toca el mapa para marcar un destino');
   const clr = h('button', 'btn sm ghost', 'Quitar marca');
   clr.onclick = () => { clearWaypoint(); drawMap(); };
   screen.append(wrap, legend, clr);
@@ -327,15 +329,12 @@ function drawMap() {
       g.beginPath(); G.world.coastPoly[r.coast].forEach(([x, z], i) => (i ? g.lineTo(X(x), Y(z)) : g.moveTo(X(x), Y(z)))); g.closePath(); g.fill();
     } else g.fillRect(X(r.x0), Y(r.z1), (r.x1 - r.x0) * sx, (r.z1 - r.z0) * sz);
   }
-  g.fillStyle = '#4a4f57'; // callejones
-  for (const a of G.world.alleys || []) g.fillRect(X(a.x0), Y(a.z1), (a.x1 - a.x0) * sx, (a.z1 - a.z0) * sz);
   const dot = (x, z, color, r = W / 70, txt) => {
     g.fillStyle = color; g.beginPath(); g.arc(X(x), Y(z), r, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
     if (txt) { g.fillStyle = '#fff'; g.font = `bold ${Math.round(r * 1.2)}px sans-serif`; g.fillText(txt, X(x), Y(z) + r * 0.45); }
   };
   g.textAlign = 'center';
-  for (const s of G.world.spots) if (s.alley) dot(s.x, s.z, '#6c5ce7', W / 80); // puntos de encuentro
   for (const a of G.world.atms || []) dot(a.x, a.z, '#1e6fd9', W / 70, '$'); // cajeros
   for (const d of G.state.deals.filter((x) => x.status === 'accepted')) {
     const s = G.world.spots.find((x) => x.id === d.spot);

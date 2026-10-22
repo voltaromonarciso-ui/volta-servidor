@@ -683,3 +683,37 @@ body.touch .staff .btn.sm { min-height: 44px; }
 .receipt { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .receipt i { font-style: normal; width: 56px; height: 56px; line-height: 56px; border-radius: 50%; background: var(--acc); color: var(--btnfg); font-size: 28px; }
 .receipt ul { list-style: none; padding: 0; margin: 4px 0; color: var(--mut); }
+
+/* Mapa a pantalla completa (ui/bigmap.js) */
+#bigmap { position: fixed; inset: 0; z-index: 60; display: none; flex-direction: column; background: #0b2a4a; color: #fff; }
+#bigmap.open { display: flex; }
+#bigmap .bm-top { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #0d1b2a; font-size: 15px; font-weight: 700; }
+#bigmap .bm-top b { font-size: 22px; font-weight: 900; letter-spacing: .5px; }
+#bigmap .bm-top .bm-clock { white-space: pre; }
+#bigmap .bm-view { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #0f4f86; }
+#bigmap .bm-stage { position: relative; cursor: crosshair; }
+#bigmap .bm-photo { width: 100%; height: 100%; display: block; pointer-events: none; }
+#bigmap .bm-layer { position: absolute; inset: 0; pointer-events: none; }
+#bigmap .bm-place { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+#bigmap .bm-place .ic { width: 30px; height: 30px; border-radius: 50%; background: rgba(13,18,28,.88); border: 2px solid rgba(255,255,255,.85); display: grid; place-items: center; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+#bigmap .bm-place .tx { margin-top: 2px; padding: 1px 7px; border-radius: 6px; background: rgba(13,18,28,.85); font-size: 11px; font-weight: 800; line-height: 1.15; text-align: center; max-width: 92px; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+#bigmap .bm-dot { position: absolute; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-size: 10px; font-weight: 900; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+#bigmap .bm-dot.atm { background: #1e6fd9; width: 14px; height: 14px; font-size: 9px; }
+#bigmap .bm-dot.home { background: #2b3540; }
+#bigmap .bm-dot.deal { background: #2ecc71; width: 22px; height: 22px; font-size: 13px; }
+#bigmap .bm-dot.drop { background: #f39c12; width: 24px; height: 24px; font-size: 12px; }
+#bigmap .bm-dot.wp { background: #f1c40f; color: #3a2a00; width: 20px; height: 20px; font-size: 12px; }
+#bigmap .bm-dot.cop { background: #e74c3c; width: 10px; height: 10px; }
+#bigmap .bm-me { position: absolute; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 22px solid #1e90ff; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
+#bigmap .bm-compass { position: absolute; left: 16px; top: 62px; width: 84px; height: 84px; border-radius: 50%; background: rgba(13,18,28,.85); border: 2px solid rgba(255,255,255,.7); pointer-events: none; }
+#bigmap .bm-compass span { position: absolute; font-weight: 900; font-size: 13px; }
+#bigmap .bm-compass .n { top: 4px; left: 50%; transform: translateX(-50%); }
+#bigmap .bm-compass .s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+#bigmap .bm-compass .e { right: 7px; top: 50%; transform: translateY(-50%); }
+#bigmap .bm-compass .o { left: 7px; top: 50%; transform: translateY(-50%); }
+#bigmap .bm-compass i { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 26px solid #fff; transform: translate(-50%, -80%); }
+#bigmap .bm-legend { position: absolute; left: 16px; bottom: 16px; padding: 10px 14px; border-radius: 12px; background: rgba(13,18,28,.88); border: 1px solid rgba(255,255,255,.18); max-width: calc(100% - 180px); }
+#bigmap .bm-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; font-weight: 600; }
+#bigmap .bm-keys i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 6px; vertical-align: -2px; }
+#bigmap .bm-clear, #bigmap .bm-close { margin-top: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+#bigmap .bm-close { position: absolute; right: 16px; bottom: 16px; margin: 0; padding: 12px 24px; font-size: 16px; background: rgba(13,18,28,.9); border-radius: 14px; }
