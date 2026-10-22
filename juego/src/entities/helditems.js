@@ -231,8 +231,13 @@ function pistola() {
   collider(g, 0.021, 0.03, 0.006, 0, -0.019, -0.079);
   // se empuña por la parte alta de la cacha, bajo la corredera
   const hold = new THREE.Object3D(); hold.position.set(0, -0.034, 0.018); g.add(hold);
+  // puntos de agarre (agarre alto, la mano paralela al cañón): la cacha cruza la palma en
+  // diagonal, con los nudillos delante de la cacha para que los dedos la rodeen y la base de
+  // la mano por detrás; la izquierda, por fuera de los dedos de la derecha
+  const gR = new THREE.Object3D(); gR.position.set(0.0115, -0.047, 0.035); g.add(gR);
+  const gL = new THREE.Object3D(); gL.position.set(-0.045, -0.06, -0.002); g.add(gL);
   g.scale.setScalar(1.15); // a la vista, como en los shooters
-  return { group: g, pose: 'pistol', hold };
+  return { group: g, pose: 'pistol', hold, grips: { R: { obj: gR, F: [-0.25, 0, -1], P: [-1, 0, -0.25], hand: 'trigger' }, L: { obj: gL, F: [0.25, 0.1, -1], P: [1, 0, -0.25], hand: 'support' } } };
 }
 function porra() {
   const g = new THREE.Group();
@@ -242,10 +247,15 @@ function porra() {
   add(g, once('tubo1', () => new THREE.CylinderGeometry(0.014, 0.015, 0.14, 14)), steel, 0, 0.12, 0);
   add(g, once('tubo2', () => new THREE.CylinderGeometry(0.011, 0.012, 0.13, 14)), steel, 0, 0.25, 0);
   add(g, once('punta', () => new THREE.SphereGeometry(0.016, 14, 10)), steel, 0, 0.32, 0);
-  g.rotation.x = -0.5;
-  return { group: g, pose: 'gun', hold: mango };
+  return { group: g, pose: 'gun', hold: mango, grips: handleGrip(mango, 0.0195) };
 }
 
+// Agarre de un mango vertical (eje +y; r = su medio ancho en x): la palma contra el costado
+// derecho, los dedos lo rodean por detrás y vuelven por el lado izquierdo, el pulgar encima
+function handleGrip(mango, r) {
+  const gR = new THREE.Object3D(); gR.position.set(r + 0.002, 0.004, 0); mango.add(gR);
+  return { R: { obj: gR, F: [-0.3, 0, 1], P: [-1, 0, -0.3], hand: 'gun' } }; // (los nudillos hacia la cámara: se ven los dedos cerrados)
+}
 // --- móvil con pantalla encendida, taza de café y bolsa de la compra ---
 const phoneTex = () => tex('pantallaMovil', 128, 256, (c, w, h) => {
   const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1f6fd9'); gr.addColorStop(1, '#7a3ccf'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
@@ -307,29 +317,30 @@ const woodTex = () => tex('madera', 64, 256, (c, w, h) => {
   for (let i = 0; i < 26; i++) { c.strokeStyle = `rgba(${Math.random() < 0.5 ? '30,18,8' : '120,80,45'},0.35)`; c.lineWidth = 1 + Math.random() * 2; c.beginPath(); let x = Math.random() * w; c.moveTo(x, 0); for (let y = 0; y < h; y += 16) { x += (Math.random() - 0.5) * 4; c.lineTo(x, y); } c.stroke(); }
 });
 function machete() {
-  // machete táctico: hoja negra mate con el filo afilado en plata, sierra en el lomo y
-  // mango de goma negra con textura antideslizante
+  // cuchillo de combate táctico: hoja recta negra mate con punta de lanza, filo afilado en
+  // plata, sierra en la mitad baja del lomo, guarda ancha y mango de goma con estrías
   const g = new THREE.Group();
   const shape = (pts) => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); for (const p of pts.slice(1)) p.length === 4 ? sh.quadraticCurveTo(...p) : sh.lineTo(...p); return sh; };
   const ext = (k, sh, depth, bevel) => once(k, () => { const e = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: bevel, bevelThickness: bevel * 0.5, bevelSegments: 2, curveSegments: 24 }); e.translate(0, 0, -depth / 2); return e; });
   const negro = std('hojaNegra', { map: stoneTex(), color: '#3a3d42', metalness: 0.45, roughness: 0.5 });
   const filo = phys('filoPlata', { color: '#d9dee3', metalness: 0.6, roughness: 0.16, clearcoat: 0.7 });
   // cuerpo de la hoja
-  add(g, ext('hojaT', shape([[-0.022, 0], [0.012, 0], [0.026, 0.2, 0.008, 0.335], [-0.012, 0.36, -0.022, 0.3], [-0.022, 0]]), 0.0034, 0.0014), negro, 0, 0.05, 0);
+  add(g, ext('hojaRecta', shape([[-0.021, 0], [0.021, 0], [0.021, 0.16], [0.022, 0.25, 0.002, 0.3], [-0.019, 0.26, -0.021, 0.19], [-0.021, 0]]), 0.0034, 0.0014), negro, 0, 0.05, 0);
   // filo: franja plateada a lo largo del lado cortante hasta la punta
-  add(g, ext('filoT', shape([[0.006, 0], [0.021, 0], [0.038, 0.2, 0.012, 0.345], [-0.004, 0.352], [0.018, 0.2, 0.006, 0]]), 0.0022, 0.0012), filo, 0, 0.05, 0);
+  add(g, ext('filoRecto', shape([[0.012, 0.004], [0.021, 0.004], [0.021, 0.16], [0.022, 0.25, 0.002, 0.3], [-0.001, 0.288], [0.013, 0.24, 0.012, 0.16], [0.012, 0.004]]), 0.0024, 0.0012), filo, 0, 0.05, 0);
   // sierra en el lomo
   const diente = once('diente', () => new THREE.ConeGeometry(0.0035, 0.008, 4));
-  for (let k = 0; k < 9; k++) add(g, diente, negro, -0.025, 0.07 + k * 0.012, 0, 0, Math.PI / 4, Math.PI / 2 + 0.35);
+  for (let k = 0; k < 8; k++) add(g, diente, negro, -0.0225, 0.065 + k * 0.011, 0, 0, Math.PI / 4, Math.PI / 2 + 0.35);
   // guarda, mango con textura y pomo con agujero para el cordón
-  add(g, rb(0.054, 0.012, 0.022, 0.004), std('guardaNegra', { color: '#141518', metalness: 0.5, roughness: 0.5 }), 0, 0.045, 0);
+  add(g, rb(0.072, 0.012, 0.022, 0.005), std('guardaNegra', { color: '#141518', metalness: 0.5, roughness: 0.5 }), 0, 0.045, 0);
   const goma = std('mangoGoma', { map: gripTex(), color: '#2b2d30', roughness: 0.92 });
   const mango = add(g, rb(0.03, 0.12, 0.024, 0.01), goma, 0, -0.02, 0);
   for (const y of [-0.055, -0.02, 0.015]) add(g, rb(0.032, 0.006, 0.026, 0.003), std('anilloGoma', { color: '#1a1b1d', roughness: 0.95 }), 0, y, 0); // estrías para los dedos
   add(g, rb(0.034, 0.018, 0.026, 0.006), std('guardaNegra'), 0, -0.088, 0);
   add(g, once('cordel', () => new THREE.TorusGeometry(0.009, 0.0025, 6, 14)), std('cordelVerde', { color: '#4b5a3a', roughness: 0.95 }), 0, -0.104, 0, 0, Math.PI / 2, 0);
-  g.rotation.x = -0.35; g.rotation.y = -0.5; // la punta hacia delante y el filo a la vista
-  return { group: g, pose: 'gun', hold: mango }; // empuñado por el mango
+  g.scale.setScalar(0.65);
+  // (sin giros propios: la orientación en la vista la pone hands.js)
+  return { group: g, pose: 'gun', hold: mango, grips: handleGrip(mango, 0.015) }; // empuñado por el mango
 }
 // acero con acabado arenado (moteado fino)
 const stoneTex = () => tex('arenado', 128, 256, (c, w, h) => { c.fillStyle = '#8a8d92'; c.fillRect(0, 0, w, h); grain(c, w, h, 0.18, 6000); });

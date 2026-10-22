@@ -5,7 +5,7 @@ import { ITEMS, STRAINS } from '../data/items.js';
 import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
 import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile } from './goods.js';
-import { FPArms } from './fparms.js';
+import { FPArms, collectSolids } from './fparms.js';
 import { HELD } from './helditems.js';
 import { MODELS } from './models.js';
 
@@ -148,12 +148,21 @@ function productColor(s) {
 
 const cardMat = () => (mats.card ||= new THREE.MeshStandardMaterial({ map: cardboardTex(), roughness: 0.9 }));
 
+// Postura de reposo del arma blanca en la vista: la hoja (eje +y del modelo) de pie, con la
+// cara plana hacia la cámara, la sierra del lomo a la izquierda y el filo (+x) a la derecha
+export const MELEE_Q = (() => {
+  const D = new THREE.Vector3(0.02, 1, -0.08).normalize();
+  const E = new THREE.Vector3(1, 0, 0.3); E.addScaledVector(D, -E.dot(D)).normalize(); // (el puño algo girado hacia la cámara)
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(E, D, new THREE.Vector3().crossVectors(E, D)));
+})();
+const _qArc = new THREE.Quaternion(), _eArc = new THREE.Euler();
+
 export function buildItem(s) {
   // modelos realistas con texturas (helditems.js); el resto, los de aquí y los de goods.js
   if (HELD[s.id]) {
     const r = HELD[s.id](s);
     r.group.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
-    return { group: r.group, pose: r.pose, hold: r.hold };
+    return { group: r.group, pose: r.pose, hold: r.hold, grips: r.grips };
   }
   const g = new THREE.Group();
   const it = ITEMS[s.id] || {};
@@ -390,8 +399,9 @@ export class ViewModel {
   applyPending() {
     this.itemHolder.clear();
     if (!this.pending) { this.pose = 'none'; return; }
-    const { group, pose, hold } = buildItem(this.pending);
+    const { group, pose, hold, grips } = buildItem(this.pending);
     this.pose = pose;
+    this.grips = grips || null;
     // punto de agarre: el centro de la base del objeto (se apoya sobre la palma, no la atraviesa);
     // se mide antes de colgarlo del soporte, en las coordenadas del propio soporte
     group.updateMatrixWorld(true);
@@ -399,6 +409,14 @@ export class ViewModel {
     // lo que se empuña, por su mango (aún sin padre: su «mundo» es el soporte)
     const held = hold && hold.getWorldPosition(new THREE.Vector3());
     this.itemHolder.add(group);
+    if (pose === 'box') { // la caja (o lo que sea grande): una palma contra cada lado, algo por debajo del centro
+      const c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+      const at = (x) => { const o = new THREE.Object3D(); o.position.set(x, c.y - sz.y * 0.18, c.z + sz.z * 0.12); this.itemHolder.add(o); return o; };
+      this.grips = {
+        R: { obj: at(bb.max.x + 0.012), F: [0, -0.15, -1], P: [-1, 0, 0], hand: 'box' },
+        L: { obj: at(bb.min.x - 0.012), F: [0, -0.15, -1], P: [1, 0, 0], hand: 'box' },
+      };
+    }
     if (held) { this.grip = held; return; }
     this.grip = new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.min.y + 0.01, (bb.min.z + bb.max.z) / 2);
   }
@@ -449,6 +467,36 @@ export class ViewModel {
     const push = Math.sin(Math.min(1, swing) * Math.PI);
     const gk = this.giveK || 0;
 
+    if (this.arms && this.grips) {
+      // Se coloca el objeto en la vista (como el arma en un shooter) y las manos van a sus
+      // puntos de agarre: la muñeca por cinemática inversa y los dedos lo rodean sin atravesarlo
+      const kick = this.strikeKind === 'shot' ? sk : 0, arc = this.strikeKind === 'swing' ? sk : 0;
+      const H = this.itemHolder;
+      if (this.pose === 'pistol') { H.position.set(0.085 + bx_, -0.115 + by + kick * 0.015, -0.38 + kick * 0.04); H.rotation.set(kick * 0.3, 0.18, -0.05); }
+      else if (this.pose === 'gun') {
+        // arma blanca: la hoja sube hacia el centro y adelante, con el filo al frente; al
+        // golpear, la muñeca barre en arco de arriba a la derecha hacia abajo a la izquierda
+        H.position.set(0.177 + bx_ - arc * 0.16, -0.195 + by + arc * 0.03 - push * 0.03, -0.45 - arc * 0.1);
+        H.quaternion.copy(MELEE_Q);
+        if (arc) H.quaternion.premultiply(_qArc.setFromEuler(_eArc.set(-arc * 0.9, arc * 0.3, arc * 0.9)));
+      }
+      else { H.position.set(bx_, -0.335 + by - push * 0.03 + gk * 0.08, -0.84 + push * 0.06 - gk * 0.3); H.rotation.set(-0.12, -0.03, 0); }
+      if (this.pose !== 'box') H.position.sub((this.grip || new THREE.Vector3()).clone().applyQuaternion(H.quaternion)); // el punto de agarre, en ese sitio
+      this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = false;
+      // con un arma blanca, la izquierda queda a la vista, relajada y algo abierta
+      let freeL = null;
+      if (this.pose === 'gun') {
+        if (!this.freeL) { this.freeL = new THREE.Object3D(); H.parent.add(this.freeL); }
+        this.freeL.position.set(-0.01 + bx_ * 0.6, -0.15 + by, -0.38);
+        freeL = { obj: this.freeL, F: [0.75, 0.12, -0.65], P: [0, -1, 0.15], hand: 'relax' };
+      }
+      this.arms.update(dt, this.pose, {
+        R: { visible: true, grip: this.grips.R },
+        L: this.grips.L ? { visible: true, grip: this.grips.L } : freeL ? { visible: true, grip: freeL } : { visible: false },
+        solids: collectSolids(H),
+      });
+      return;
+    }
     if (this.pose === 'box') {
       // (con los brazos del personaje, la caja algo más lejos y abajo: se ven las manos a los lados)
       const far = this.arms ? 0.12 : 0, low = this.arms ? 0.1 : 0;
@@ -501,8 +549,6 @@ export class ViewModel {
       if (this.pose !== 'box' && this.arms.palmR) { // (también la pistola: la derecha en la cacha)
         const g = (this.grip || new THREE.Vector3()).clone().applyEuler(this.itemHolder.rotation);
         this.itemHolder.position.copy(this.arms.palmR).sub(g);
-        // lo que se empuña: los dedos lo rodean hasta tocarlo, sin atravesarlo
-        if (this.pose === 'pistol' || this.pose === 'gun') this.arms.grasp(this.itemHolder, this.pose);
       }
     }
   }
