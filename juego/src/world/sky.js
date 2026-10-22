@@ -18,11 +18,14 @@ const KEYS = [
   [6,    C('#4a5c9c'), C('#ffa877'), C('#ffb37a'), 1.4, 0.66, C('#e2a888')],
   [7.6,  C('#3f88d4'), C('#cfe5f2'), C('#fff0d6'), 2.7, 0.98, C('#cddde6')],
   [15,   C('#3b84d0'), C('#d5e8f1'), C('#fff1da'), 2.8, 1.02, C('#d0dde2')],
-  [16.4, C('#3d7fd0'), C('#f9dcb0'), C('#ffdcaa'), 2.8, 0.95, C('#e2dccb')],
-  [17.4, C('#4677c8'), C('#ffcb94'), C('#ffcf94'), 2.7, 0.9, C('#ead3b4')],
-  [18.4, C('#4a5fb0'), C('#ffa46e'), C('#ffa864'), 2.25, 0.74, C('#e2a98c')],
-  [19.4, C('#363170'), C('#d8628a'), C('#ff7f5e'), 0.95, 0.5, C('#a5607f')],
-  [20.4, C('#151839'), C('#4f3666'), C('#a08cff'), 0.32, 0.36, C('#3c2d54')],
+  // tarde dorada larga: de las 17:00 a las 20:30 el sol baja despacio, dorado y luego
+  // naranja, con sombras largas; se pone hacia las 20:20 (ver sunDirection)
+  [16.4, C('#3d7fd0'), C('#f9dcb0'), C('#ffe0b0'), 2.8, 0.95, C('#e2dccb')],
+  [17.2, C('#4479c6'), C('#ffc888'), C('#ffbe6e'), 2.9, 0.9, C('#efd0a6')],
+  [18.4, C('#4c72bc'), C('#ffb370'), C('#ffa955'), 2.8, 0.84, C('#f0c193')],
+  [19.4, C('#4c62ae'), C('#ff9c64'), C('#ff9a54'), 2.35, 0.74, C('#e8a886')],
+  [20.1, C('#3a3a80'), C('#e06a78'), C('#ff7a52'), 1.25, 0.55, C('#b56b7c')],
+  [20.8, C('#151839'), C('#4f3666'), C('#a08cff'), 0.32, 0.36, C('#3c2d54')],
   [24,   C('#070b1e'), C('#1b1d3c'), C('#7d8cff'), 0.18, 0.3, C('#1a1c34')],
 ];
 
@@ -159,7 +162,7 @@ let envHour = -99;
 const _dir = new THREE.Vector3();
 
 export function sunDirection(hour, out = _dir) {
-  const a = ((hour - 6) / 12.6) * Math.PI;
+  const a = ((hour - 6) / 14.3) * Math.PI; // sale a las 6:00 y se pone hacia las 20:20
   return out.set(Math.cos(a), Math.sin(a) * 0.82, -0.55 * Math.sin(a) + 0.5 * Math.abs(Math.cos(a))).normalize();
 }
 
@@ -175,6 +178,9 @@ function updateSky(dt) {
   hemi.intensity = k.hemiI * 1.15;
   // cielo algo más blanco que el cénit y rebote del suelo cálido y verdoso (césped, piedra)
   hemi.color.copy(k.top).lerp(C('#ffffff'), 0.5);
+  // en la tarde dorada, el cielo también ilumina cálido (no azul)
+  const golden = clamp((hour - 16.4) / 1.2, 0, 1) * clamp((20.6 - hour) / 0.8, 0, 1);
+  hemi.color.lerp(k.sunC, golden * 0.4);
   hemi.groundColor.copy(k.bot).lerp(C('#7a7048'), 0.65);
   sun.color.copy(k.sunC);
   sun.intensity = k.sunI;
@@ -203,9 +209,9 @@ function updateSky(dt) {
   dome.position.copy(G.camera.position);
   stars.position.copy(G.camera.position);
 
-  nightFactor = clamp(hour < 12 ? (6 - hour) / 1.5 : (hour - 19) / 1.5, 0, 1);
+  nightFactor = clamp(hour < 12 ? (6 - hour) / 1.5 : (hour - 20.2) / 1.2, 0, 1);
   stars.material.opacity = nightFactor;
-  const dusk = clamp(hour < 12 ? 0 : (hour - 17.5) / 1.5, 0, 1);
+  const dusk = clamp(hour < 12 ? 0 : (hour - 18.8) / 1.6, 0, 1);
   LIT.value = 0.16 + dusk * 0.12 + nightFactor * 0.16;
   setPropsLight(0.18 + dusk * 0.15 + nightFactor * 0.2);
   setCarLights(Math.max(nightFactor, (dusk - 0.5) * 2));

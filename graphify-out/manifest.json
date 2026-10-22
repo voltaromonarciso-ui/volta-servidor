@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/sky.js": {
-    "mtime": 1792624639.5506177,
-    "seen": 1792624883.9525168,
-    "ast_hash": "0339d53e3f9e6f2334115725ef9280ff",
+    "mtime": 1792700376.053681,
+    "seen": 1792700957.7324252,
+    "ast_hash": "dd899e260c2cb6fecb5bdf45e504006b",
     "semantic_hash": ""
   },
   "juego/src/world/textures.js": {
