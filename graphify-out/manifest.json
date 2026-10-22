@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792609645.7269938,
-    "seen": 1792614056.4511352,
-    "ast_hash": "fa913ece4c4b92e7b7c11c7f0aac01a1",
+    "mtime": 1792698649.9489293,
+    "seen": 1792698770.7101622,
+    "ast_hash": "77d325e8ed32a40aae23ad4c078c6ba6",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {

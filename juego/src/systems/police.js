@@ -53,7 +53,9 @@ export function updatePolice(dt) {
     // cambiarse de ropa o de pelo no corta la persecución, pero si ya no encajas
     // con la descripción, te pierden antes
     const fit = recognition() < 0.45 ? 1.3 : 1;
-    wanted.unseen = seen ? 0 : wanted.unseen + step * (inside ? 3 : 1) * fit;
+    // metido en un callejón (fuera de su vista) te pierden el doble de rápido
+    const hid = inAlley(p.x, p.z) ? 2 : 1;
+    wanted.unseen = seen ? 0 : wanted.unseen + step * (inside ? 3 : 1) * fit * hid;
     if (wanted.unseen >= wanted.escape) {
       wanted.level = 0;
       wanted.unseen = 0;
@@ -106,6 +108,7 @@ export function updatePolice(dt) {
 }
 
 const recognized = () => recognition() >= RECOG_LEVEL;
+export const inAlley = (x, z) => (G.world.alleys || []).some((a) => x > a.x0 - 0.5 && x < a.x1 + 0.5 && z > a.z0 - 0.5 && z < a.z1 + 0.5);
 
 // Probabilidad de que una patrulla te pare al verte (sin toque de queda). Si
 // encajas con la descripción de un incidente reciente, te paran casi seguro.
