@@ -8,7 +8,7 @@ import { inv } from '../core/state.js';
 import { clock, dayName } from '../systems/time.js';
 import { input } from '../core/input.js';
 import { wanted, curfew } from '../systems/police.js';
-import { CONTACTS, dealAt, hhmm, inCurfew } from '../systems/economy.js';
+import { CONTACTS, dealAt, hhmm, inCurfew, orderDrop } from '../systems/economy.js';
 import { sfx } from '../core/audio.js';
 import { ridingInfo } from '../systems/riding.js';
 import { placingMode } from '../systems/objects.js';
@@ -225,6 +225,8 @@ function drawMinimap() {
   }
   g.fillStyle = '#5c6874';
   for (const r of G.world.mapRects) if (r.road) g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0);
+  g.fillStyle = '#4a4f57'; // callejones
+  for (const a of G.world.alleys || []) g.fillRect(a.x0, a.z0, a.x1 - a.x0, a.z1 - a.z0);
   g.restore();
 
   // iconos (sin rotar el propio icono)
@@ -252,7 +254,7 @@ function drawMinimap() {
   if (G.state.props.bungalow) at(P.bungalow, '#2e7d4f', '⌂');
   at(P.ferreteria, '#b0302a', '⚒', false);
   at(P.gasolinera, '#2e86de', '⛽', false);
-  if (G.state.orders.length) at(P.deadDrop, '#c77d2a', '▣');
+  for (const o of G.state.orders) { const d = orderDrop(o); icon(d.x, d.z, '#c77d2a', '▣'); }
   for (const a of W.atms || []) icon(a.x, a.z, '#1e6fd9', '$', false); // cajeros (solo los que caen dentro)
   for (const d of G.state.deals) {
     if (d.status !== 'accepted') continue;

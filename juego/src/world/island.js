@@ -200,8 +200,58 @@ function cutLawnFromAlleys() {
     }
   }
 }
+// El césped es una rejilla del tamaño de la caja de la isla: lo que cae fuera de la orilla
+// taparía la arena. Se quitan los triángulos que quedan del todo fuera y los vértices que
+// asoman se llevan a la orilla (así el borde sigue la costa en vez de ir a escalones).
+function trimLawnAtShore(g) {
+  const P = g.attributes.position, n = P.count, sd = new Float32Array(n);
+  for (let i = 0; i < n; i++) sd[i] = shoreDist(P.getX(i), P.getZ(i));
+  if (g.index) {
+    const I = g.index.array, keep = [];
+    for (let t = 0; t < I.length; t += 3) if (sd[I[t]] >= 0 || sd[I[t + 1]] >= 0 || sd[I[t + 2]] >= 0) keep.push(I[t], I[t + 1], I[t + 2]);
+    g.setIndex(keep);
+  }
+  const e = 0.5;
+  for (let i = 0; i < n; i++) {
+    if (sd[i] >= 0) continue;
+    const x = P.getX(i), z = P.getZ(i);
+    const gx = (shoreDist(x + e, z) - shoreDist(x - e, z)) / (2 * e), gz = (shoreDist(x, z + e) - shoreDist(x, z - e)) / (2 * e), gl = Math.hypot(gx, gz) || 1;
+    P.setX(i, x - (gx / gl) * sd[i]); P.setZ(i, z - (gz / gl) * sd[i]);
+  }
+  P.needsUpdate = true;
+}
+// Para que los peatones (y los clientes que van a una cita) entren al callejón: un nodo en
+// el punto de encuentro, otro en cada boca y, desde la boca, uno en la línea de la acera que
+// se engancha a las dos esquinas de ese tramo. Sólo las bocas que se ven libres desde la acera.
+function linkAlleyNav(a, sp) {
+  const Nv = W.nav, along = a.run === 'z', cx = (a.x0 + a.x1) / 2, cz = (a.z0 + a.z1) / 2;
+  const lines = (along ? ZL : XL).flatMap((v) => [v - K.SWC, v + K.SWC]);
+  let sNode = -1;
+  let ok = false;
+  for (const end of [-1, 1]) {
+    const e = along ? { x: cx, z: end < 0 ? a.z0 : a.z1 } : { x: end < 0 ? a.x0 : a.x1, z: cz };
+    const ev = along ? e.z : e.x;
+    const cand = lines.filter((v) => (end < 0 ? v < ev + 0.5 : v > ev - 0.5)).sort((p, q) => Math.abs(p - ev) - Math.abs(q - ev))[0];
+    if (cand === undefined || Math.abs(cand - ev) > 20) continue;
+    const sw = along ? { x: cx, z: cand } : { x: cand, z: cz };
+    if (!W.los(sp.x, sp.z, e.x, e.z) || !W.los(e.x, e.z, sw.x, sw.z)) continue;
+    // las dos esquinas de la acera a cada lado de la boca
+    const onLine = Nv.nodes.map((n, i) => [n, i]).filter(([n]) => Math.abs((along ? n.z : n.x) - cand) < 0.01);
+    const pos = (n) => (along ? n.x : n.z), c0 = along ? cx : cz;
+    const lo = onLine.filter(([n]) => pos(n) < c0).sort((p, q) => pos(q[0]) - pos(p[0]))[0];
+    const hi = onLine.filter(([n]) => pos(n) > c0).sort((p, q) => pos(p[0]) - pos(q[0]))[0];
+    if (!lo && !hi) continue;
+    if (sNode < 0) sNode = Nv.add(sp.x, sp.z);
+    const eN = Nv.add(e.x, e.z), wN = Nv.add(sw.x, sw.z);
+    Nv.link(sNode, eN); Nv.link(eN, wN);
+    if (lo) Nv.link(wN, lo[1]);
+    if (hi) Nv.link(wN, hi[1]);
+    ok = true;
+  }
+  return ok;
+}
 function buildAlleys() {
-  W.alleys = []; W.alleyPeople = [];
+  W.alleys = []; W.alleyPeople = []; W.drops = [];
   let tag = 0;
   for (const a of findAlleys()) {
     F.clear(a); // fuera árboles, bancos o farolas que hubiera en el paso
@@ -254,6 +304,19 @@ function buildAlleys() {
     // callejones, otro delante charlando con él
     { const q = wallAt(0.44, w1, 0.42); W.alleyPeople.push({ x: q.x, z: q.z, yaw: face(w1) + (R() - 0.5) * 0.5, pose: R() < 0.6 ? 'phone' : null });
       if (W.alleys.length % 2 === 0) { const o = wallAt(0.47, w1, 1.45); W.alleyPeople.push({ x: o.x, z: o.z, yaw: Math.atan2(q.x - o.x, q.z - o.z), pose: null }); } }
+    // punto de encuentro: el cliente espera junto a la otra pared, lejos de los que charlan; el
+    // del barrio (el que ya usaban los tratos) se muda aquí y, si hay un segundo callejón, otro
+    const sp = wallAt(0.68, w0, 0.6), sid = `callejon-${a.zone}`, old = W.spots.find((q) => q.id === sid);
+    const navOk = linkAlleyNav(a, sp);
+    if (navOk) {
+      const name = `Callejón de ${ZONE_NAMES[a.zone] || a.zone}`;
+      if (old && !old.alley) Object.assign(old, { x: sp.x, z: sp.z, name, alley: true });
+      else W.spots.push({ id: old ? `${sid}-2` : sid, name, x: sp.x, z: sp.z, discreet: true, zone: a.zone, alley: true });
+      // y el contenedor sirve de buzón para los pedidos del proveedor
+      const c = at(0.18, w0), id = `drop-${W.drops.length}`;
+      W.drops.push({ id, name, x: c.x, z: c.z, zone: a.zone });
+      K.hitbox(c.x, 0.7, c.z, 1.9, 1.4, 1.9, { actions: () => G.act.deadDropActions(id), info: () => `Contenedor · ${name}` });
+    }
     W.alleys.push({ x0: a.x0, x1: a.x1, z0: a.z0, z1: a.z1, cx: (a.x0 + a.x1) / 2, cz: (a.z0 + a.z1) / 2, run: a.run, zone: a.zone, kind: a.kind });
   }
 }
@@ -649,7 +712,7 @@ function buildLandAndSea() {
   };
   // arena (borde de toda la isla) y hierba encima
   flat(islandShape(10), 0xe2cf9a, -0.06);
-  if (grassReady()) { const lawn = islandLawn(scene, islandShape(0), -0.05); lawn.userData.terrainDone = true; LAWN_GEO.push(lawn.geometry); } // césped realista en toda la isla
+  if (grassReady()) { const lawn = islandLawn(scene, islandShape(0), -0.05); lawn.userData.terrainDone = true; trimLawnAtShore(lawn.geometry); LAWN_GEO.push(lawn.geometry); } // césped realista en toda la isla
   else {
     const gt = K.TX.groundTex('#7d9a4c', 3);
     gt.repeat.set(0.18, 0.18);

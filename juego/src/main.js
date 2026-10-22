@@ -127,7 +127,7 @@ function leoTip() {
       'Abre la caja, primo. Te he metido lo básico para empezar.',
       'Pon la maceta en el suelo, en el hueco libre del salón. Cabe de sobra.',
       'La tierra la venden en la ferretería. Míralo en el mapa del móvil.',
-      'Rubio te deja las semillas en el contenedor verde junto al Almacén Bravo.',
+      'Rubio te deja las semillas en el contenedor verde de un callejón. Te dice cuál por mensaje.',
       'Primero la tierra, luego la semilla. No tiene más misterio.',
       'El fregadero de la cocina sirve para llenar la regadera. El del baño también.',
       'Si estás cansado, la cama es toda tuya. Yo duermo en el sofá de mi colega.',

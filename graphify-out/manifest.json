@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   "juego/src/data/quests.js": {
-    "mtime": 1792624351.7675245,
-    "seen": 1792624883.9513125,
-    "ast_hash": "81ea955d91274308fd87bfbc42e5ceb6",
+    "mtime": 1792690883.2821248,
+    "seen": 1792695264.937833,
+    "ast_hash": "cb5ff358f7bd49cfc12ef6c4fe886c74",
     "semantic_hash": ""
   },
   "juego/src/entities/cars.js": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792688539.4918401,
-    "seen": 1792688862.1068132,
-    "ast_hash": "b665e1c4a40b1c6103f631015bf8e0ad",
+    "mtime": 1792690883.2857203,
+    "seen": 1792695264.9382586,
+    "ast_hash": "58266b9ff09c3f1a2648ea590a236e6e",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -204,9 +204,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/economy.js": {
-    "mtime": 1792618009.6928203,
-    "seen": 1792618491.6197941,
-    "ast_hash": "91341cce168d5b58a07a2802e0460528",
+    "mtime": 1792690883.279286,
+    "seen": 1792695264.938389,
+    "ast_hash": "09f04c884a158caebb184eb66069d8f0",
     "semantic_hash": ""
   },
   "juego/src/systems/interact.js": {
@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/hud.js": {
-    "mtime": 1792649986.564604,
-    "seen": 1792653290.9517288,
-    "ast_hash": "bdcdc5dcb2b3712916ffe081e71362f5",
+    "mtime": 1792690895.290036,
+    "seen": 1792695264.9386778,
+    "ast_hash": "db23c71d006978040b07dd67b7ba6771",
     "semantic_hash": ""
   },
   "juego/src/ui/layout.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792624619.1047592,
-    "seen": 1792624883.9521399,
-    "ast_hash": "17bd6b9b068cfba73832df27c76bc356",
+    "mtime": 1792693794.4697292,
+    "seen": 1792695264.9387536,
+    "ast_hash": "bea543456bd0756bd9b787006a445ef7",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792688539.4912243,
-    "seen": 1792688862.107606,
-    "ast_hash": "354ad015c841e043ef5cc1a3a4745f2d",
+    "mtime": 1792694855.8073869,
+    "seen": 1792695264.9390004,
+    "ast_hash": "a89cd17f899ccc306be6c275279212db",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {

@@ -645,18 +645,34 @@ export function orderSeeds(strain, qty) {
   if (h < 7 || h >= 23) return { ok: false, msg: 'Rubio no contesta a estas horas (de 7:00 a 23:00).' };
   const paid = spend('dirty', cost, 'semillas');
   if (!paid.ok) return { ok: false, msg: paid.msg };
-  G.state.orders.push({ items: [{ id: 'semilla', p: strain, q: qty }], ready: absNow() + 45 });
+  // Rubio lo deja en el contenedor de un callejón (uno de los tres más cercanos a ti); si ya
+  // tienes un pedido pendiente, en el mismo sitio
+  const drop = G.state.orders.find((o) => o.drop)?.drop || pickDrop();
+  G.state.orders.push({ items: [{ id: 'semilla', p: strain, q: qty }], ready: absNow() + 45, drop });
+  const d = orderDrop({ drop });
   myMsg('rubio', `Quiero ${qty} semillas de ${st.name}.`);
-  setTimeout(() => sendMsg('rubio', `Hecho. ${money(cost)} cobrados. En menos de una hora lo tienes en el contenedor verde del polígono.`), 800);
-  G.act.setWaypoint?.(G.world.pois.deadDrop.x, G.world.pois.deadDrop.z, 'Contenedor de entregas');
+  setTimeout(() => sendMsg('rubio', `Hecho. ${money(cost)} cobrados. En menos de una hora lo tienes en el contenedor verde del ${d.name || 'polígono'}.`), 800);
+  G.act.setWaypoint?.(d.x, d.z, 'Contenedor de entregas');
   return { ok: true };
 }
 
-export function deadDropActions() {
+function pickDrop() {
+  const ds = G.world.drops || [];
+  if (!ds.length) return null;
+  const p = G.player.pos;
+  return pick([...ds].sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)).slice(0, 3)).id;
+}
+// dónde está el pedido: su contenedor de callejón (los pedidos antiguos, el de siempre)
+export function orderDrop(o) {
+  return (o.drop && (G.world.drops || []).find((d) => d.id === o.drop)) || { ...G.world.pois.deadDrop, name: 'polígono' };
+}
+
+export function deadDropActions(dropId) {
   const now = absNow();
-  const ready = G.state.orders.filter((o) => now >= o.ready);
+  const here = (o) => !dropId || !o.drop || o.drop === dropId; // (los pedidos antiguos, en cualquiera)
+  const ready = G.state.orders.filter((o) => here(o) && now >= o.ready);
   if (!ready.length) {
-    const pending = G.state.orders.length;
+    const pending = G.state.orders.filter(here).length;
     return [{ label: pending ? 'Contenedor (tu pedido aún no ha llegado)' : 'Contenedor de basura', fn: () => G.act.toast(pending ? 'Vuelve en un rato.' : 'Solo hay basura.') }];
   }
   return [{

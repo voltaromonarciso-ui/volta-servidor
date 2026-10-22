@@ -5,7 +5,7 @@ import { STRAINS, RANKS } from '../data/items.js';
 const nego = {}; // precio propuesto en cada negociación abierta
 import { PEOPLE } from '../data/people.js';
 import { QUESTS } from '../data/quests.js';
-import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew } from '../systems/economy.js';
+import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew, orderDrop } from '../systems/economy.js';
 import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotiateDeal, orderSeeds, acceptChance, marketChance, priceLabel, trustLabel, addictionLabel, REP_TIERS, repTier } from '../systems/economy.js';
 import { clock, dayName } from '../systems/time.js';
 import { save, wipe, absNow } from '../core/state.js';
@@ -285,12 +285,14 @@ function products() {
 
 // ------------------------------------------------------------------
 let mapCanvas = null;
-const MB = { x0: -118, x1: 118, z0: -118, z1: 132 };
+// límites del mapa: los de la isla (con sus cabos y el puerto); el mapa antiguo, los suyos
+let MB = { x0: -118, x1: 118, z0: -118, z1: 132 };
 function map() {
   const wrap = h('div', 'ph-map');
   mapCanvas = document.createElement('canvas');
   wrap.appendChild(mapCanvas);
-  const legend = h('div', 'map-legend small', '🟢 Trato · 📦 Entregas · 🔵 Tú · Toca el mapa para marcar un destino');
+  if (G.world.bounds) MB = G.world.bounds;
+  const legend = h('div', 'map-legend small', '🟢 Trato · 📦 Entregas · 🟣 Callejón · 🔵 Tú · Toca el mapa para marcar un destino');
   const clr = h('button', 'btn sm ghost', 'Quitar marca');
   clr.onclick = () => { clearWaypoint(); drawMap(); };
   screen.append(wrap, legend, clr);
@@ -317,33 +319,41 @@ function drawMap() {
   const W = mapCanvas.width, H = mapCanvas.height;
   const sx = W / (MB.x1 - MB.x0), sz = H / (MB.z1 - MB.z0);
   const X = (x) => (x - MB.x0) * sx, Y = (z) => (MB.z1 - z) * sz;
-  g.fillStyle = '#6aa84f'; g.fillRect(0, 0, W, H);
-  g.fillStyle = '#2f8fb3'; g.fillRect(0, 0, W, Y(105));
+  if (G.world.bounds) { g.fillStyle = '#2f8fb3'; g.fillRect(0, 0, W, H); } // la isla: todo mar y encima la tierra
+  else { g.fillStyle = '#6aa84f'; g.fillRect(0, 0, W, H); g.fillStyle = '#2f8fb3'; g.fillRect(0, 0, W, Y(105)); }
   for (const r of G.world.mapRects) {
     g.fillStyle = r.c;
     if (r.coast && G.world.coastPoly) { // la orilla con sus cabos
       g.beginPath(); G.world.coastPoly[r.coast].forEach(([x, z], i) => (i ? g.lineTo(X(x), Y(z)) : g.moveTo(X(x), Y(z)))); g.closePath(); g.fill();
     } else g.fillRect(X(r.x0), Y(r.z1), (r.x1 - r.x0) * sx, (r.z1 - r.z0) * sz);
   }
-  g.font = `bold ${Math.round(W / 34)}px sans-serif`;
-  g.textAlign = 'center';
-  for (const l of G.world.mapLabels) {
-    g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillText(l.t, X(l.x) + 1, Y(l.z) + 1);
-    g.fillStyle = '#fff'; g.fillText(l.t, X(l.x), Y(l.z));
-  }
+  g.fillStyle = '#4a4f57'; // callejones
+  for (const a of G.world.alleys || []) g.fillRect(X(a.x0), Y(a.z1), (a.x1 - a.x0) * sx, (a.z1 - a.z0) * sz);
   const dot = (x, z, color, r = W / 70, txt) => {
     g.fillStyle = color; g.beginPath(); g.arc(X(x), Y(z), r, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
     if (txt) { g.fillStyle = '#fff'; g.font = `bold ${Math.round(r * 1.2)}px sans-serif`; g.fillText(txt, X(x), Y(z) + r * 0.45); }
   };
+  g.textAlign = 'center';
+  for (const s of G.world.spots) if (s.alley) dot(s.x, s.z, '#6c5ce7', W / 80); // puntos de encuentro
   for (const a of G.world.atms || []) dot(a.x, a.z, '#1e6fd9', W / 70, '$'); // cajeros
   for (const d of G.state.deals.filter((x) => x.status === 'accepted')) {
     const s = G.world.spots.find((x) => x.id === d.spot);
     dot(s.x, s.z, '#27ae60', W / 50, '$');
   }
-  if (G.state.orders.length) dot(G.world.pois.deadDrop.x, G.world.pois.deadDrop.z, '#e67e22', W / 55, '📦');
   const wp = getWaypoint();
   if (wp) dot(wp.x, wp.z, '#f1c40f', W / 70, '★');
+  for (const o of G.state.orders) { const d = orderDrop(o); dot(d.x, d.z, '#e67e22', W / 55, '📦'); }
+  // nombres encima de los puntos, para que se lean
+  g.font = `bold ${Math.round(W / (G.world.bounds ? 52 : 34))}px sans-serif`; // (la isla es más grande: letra más pequeña)
+  g.textAlign = 'center';
+  const seen = new Set();
+  for (const l of G.world.mapLabels) {
+    if (seen.has(l.t)) continue; // (algunos sitios se rotulan dos veces)
+    seen.add(l.t);
+    g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillText(l.t, X(l.x) + 1, Y(l.z) + 1);
+    g.fillStyle = '#fff'; g.fillText(l.t, X(l.x), Y(l.z));
+  }
   // jugador
   const p = G.player.pos;
   g.save();
