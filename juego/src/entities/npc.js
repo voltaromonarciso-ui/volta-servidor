@@ -61,6 +61,20 @@ export class Walker {
 
   lookAt(x, z) { this.face = Math.atan2(x - this.pos.x, z - this.pos.z); }
 
+  // Golpes (systems/combat.js): cae de espaldas y se queda en el suelo `sec` segundos
+  knockOut(sec) { this.ko = sec; this.path = []; this.moving = 0; this.g.rotation.order = 'YXZ'; }
+  // Mientras está en el suelo no hace nada más (devuelve true)
+  koUpdate(dt) {
+    if (!(this.ko > 0) && !this._koK) return false;
+    this.ko -= dt;
+    const want = this.ko > 0.8 ? 1 : 0;
+    this._koK = Math.max(0, Math.min(1, (this._koK || 0) + (want ? dt * 4 : -dt * 2)));
+    this.g.rotation.x = (-Math.PI / 2) * this._koK;
+    this.pos.y = G.world.groundAt(this.pos.x, this.pos.z) + 0.12 * this._koK;
+    if (this.ko <= 0 && this._koK <= 0) { this.ko = 0; this._koK = 0; this.hp = undefined; this.g.rotation.x = 0; return false; }
+    return true;
+  }
+
   animate(dt) {
     this.pos.y = G.world.groundAt(this.pos.x, this.pos.z); // de pie sobre el relieve
     let diff = this.face - this.g.rotation.y;
@@ -210,6 +224,7 @@ export class NPC extends Walker {
   }
 
   update(dt, gameDt) {
+    if (this.koUpdate(dt)) return;
     const deal = this.deal;
     this.setMarker(deal && (this.mode === 'wait' || this.mode === 'walk') ? '$' : null, '#27ae60');
     if (this.anim) { this.phonePose(false); this.updateAnim(dt); this.animate(dt); return; }
@@ -270,6 +285,7 @@ export class Cop extends Walker {
   }
 
   update(dt) {
+    if (this.koUpdate(dt)) return;
     this.friskCooldown -= dt;
     const p = G.player.pos;
     switch (this.mode) {

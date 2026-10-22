@@ -33,6 +33,7 @@ export function initInput() {
     if (e.code === 'Tab' || e.code === 'KeyP') { emit('btn', 'phone'); e.preventDefault(); }
     if (e.code === 'KeyI') emit('btn', 'bag');
     if (e.code === 'KeyV') emit('btn', 'cam');
+    if (e.code === 'KeyF') emit('btn', 'attack');
     if (e.code === 'KeyC' || e.code === 'ControlLeft') input.crouch = !input.crouch;
     if (e.code === 'Escape') emit('btn', 'escape');
     if (e.code.startsWith('Digit')) {
@@ -50,6 +51,8 @@ export function initInput() {
   document.addEventListener('pointerlockchange', () => {
     input.locked = document.pointerLockElement === G.renderer.domElement;
   });
+  // clic izquierdo con el ratón capturado: golpear / disparar
+  document.addEventListener('mousedown', (e) => { if (input.locked && e.button === 0) emit('btn', 'attack'); });
   document.addEventListener('mousemove', (e) => {
     if (input.locked) { input.lookX += e.movementX; input.lookY += e.movementY; }
   });

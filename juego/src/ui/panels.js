@@ -127,7 +127,7 @@ const SHOP_CATS = [
   { id: 'envasado', name: 'Envasado', ic: '📦', items: ['bolsita', 'bolsa_ss', 'tarro_v', 'mesa_emp', 'envasadora'] },
   { id: 'quimica', name: 'Química', ic: '⚗️', items: ['catalizador', 'hornillo', 'azucar', 'colorante'] },
   { id: 'muebles', name: 'Muebles', ic: '🛋️', items: ['cama', 'armario', 'caja_fuerte', 'estante'] },
-  { id: 'defensa', name: 'Defensa', ic: '🛡️', items: ['spray', 'porra', 'pistola', 'machete'] },
+  { id: 'defensa', name: 'Defensa', ic: '🛡️', items: ['spray', 'porra', 'machete', 'pistola', 'balas'] },
 ];
 const SHOP_THEME = { ferreteria: 't-ferreteria', gasolinera: 't-gasolinera', muebles: 't-muebles', armeria: 't-armeria', cartel: 't-cartel' };
 const SHOP_HELLO = {

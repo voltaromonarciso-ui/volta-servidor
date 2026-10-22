@@ -228,6 +228,28 @@ export function buildItem(s) {
       grip.rotation.x = -0.25;
       break;
     }
+    case 'machete': {
+      // hoja curva con filo claro, mango de madera con remaches
+      const blade = new THREE.Shape();
+      blade.moveTo(-0.022, 0); blade.lineTo(0.02, 0); blade.quadraticCurveTo(0.034, 0.2, 0.012, 0.34); blade.quadraticCurveTo(-0.01, 0.36, -0.022, 0.3); blade.lineTo(-0.022, 0);
+      const bg = new THREE.ExtrudeGeometry(blade, { depth: 0.004, bevelEnabled: true, bevelSize: 0.002, bevelThickness: 0.002, bevelSegments: 1 });
+      bg.translate(0, 0, -0.002);
+      mesh(bg, M('#aab2ba', { roughness: 0.25, metalness: 0.85 }), 0, 0.05, 0, g);
+      mesh(bx(0.03, 0.12, 0.022, 0.008), M('#5a3a22', { roughness: 0.75 }), 0, -0.02, 0, g);
+      for (const y of [-0.05, 0.01]) mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.026, 8), M('#c9b27a', { metalness: 0.8, roughness: 0.3 }), 0, y, 0, g).rotation.x = Math.PI / 2;
+      mesh(bx(0.05, 0.012, 0.026, 0.003), M('#2b2e33', { metalness: 0.6, roughness: 0.4 }), 0, 0.045, 0, g); // guarda
+      g.rotation.x = -0.45;
+      break;
+    }
+    case 'balas': {
+      // caja de munición de cartón con balas de latón asomando
+      mesh(bx(0.08, 0.05, 0.06, 0.004), M('#3d4a2e', { roughness: 0.8 }), 0, 0, 0, g);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
+        mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.02, 8), M('#c9a24a', { metalness: 0.85, roughness: 0.3 }), -0.027 + i * 0.018, 0.033, -0.015 + j * 0.015, g);
+        mesh(new THREE.SphereGeometry(0.0045, 8, 6), M('#b0714a', { metalness: 0.8, roughness: 0.35 }), -0.027 + i * 0.018, 0.044, -0.015 + j * 0.015, g);
+      }
+      break;
+    }
     case 'sobre_vacio': {
       // sobre de papel vacío, abierto por arriba
       const pk = mesh(bx(0.09, 0.12, 0.012, 0.004), M('#cbbd9f', { roughness: 0.9 }), 0, 0, 0, g);
@@ -324,6 +346,21 @@ export class ViewModel {
   // Animación de entregar lo que llevas en la mano.
   give() { this.giveT = 1; }
 
+  // Golpe (combat.js): 'punch' = puñetazo (se ve el puño aunque no lleves nada), 'swing' =
+  // golpe con lo que llevas, 'shot' = disparo con fogonazo
+  strike(kind) {
+    this.strikeT = 1; this.strikeKind = kind;
+    if (kind === 'shot') {
+      if (!this.flash3) {
+        this.flash3 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.95 }));
+        this.flash3.scale.set(1, 1, 2.2);
+      }
+      this.itemHolder.children[0]?.add(this.flash3);
+      this.flash3.position.set(0, 0.03, -0.17);
+      this.flash3.visible = true;
+    }
+  }
+
   // Muestra un objeto temporal en la palma (p. ej. el dinero que te dan).
   flash(id, sec = 1.5) {
     this.flashT = sec;
@@ -373,9 +410,24 @@ export class ViewModel {
       this.drop = Math.min(1, this.drop + dt * 6);
       if (this.drop >= 1) { this.applyPending(); this.swapping = false; }
     } else this.drop = Math.max(0, this.drop - dt * 4.5);
-    const vis = this.pose !== 'none' || this.swapping;
+    // golpe en curso
+    this.strikeT = Math.max(0, (this.strikeT || 0) - dt * 3.2);
+    const sk = Math.sin((1 - this.strikeT) * Math.PI) * (this.strikeT > 0 ? 1 : 0);
+    if (this.flash3) this.flash3.visible = this.strikeKind === 'shot' && this.strikeT > 0.75;
+    const punching = this.strikeKind === 'punch' && this.strikeT > 0 && this.pose === 'none' && !this.swapping;
+    const vis = this.pose !== 'none' || this.swapping || punching;
     this.root.visible = vis;
     if (!vis) return;
+    if (punching) { // puño derecho que sale hacia delante y vuelve
+      this.Rh.position.set(0.16 - sk * 0.1, -0.24 + sk * 0.1, -0.32 - sk * 0.3);
+      this.Rh.rotation.set(0.2, 0, 0);
+      this.Rh.visible = true; this.L.visible = false;
+      if (this.arms) {
+        this.L.visible = this.Rh.visible = this.sleeveL.visible = this.sleeveR.visible = false;
+        this.arms.update(dt, 'fist', { R: { position: this.Rh.position, quaternion: this.Rh.quaternion, visible: true, side: -1 }, L: { visible: false } });
+      } else { curl(this.Rh, 1); this.Rh.visible = this.sleeveR.visible = true; this.L.visible = this.sleeveL.visible = false; this.fitSleeve(this.sleeveR, this.Rh, 0.34); }
+      return;
+    }
 
     this.swayX += (-lookX * 0.0009 - this.swayX) * Math.min(1, dt * 10);
     this.swayY += (lookY * 0.0009 - this.swayY) * Math.min(1, dt * 10);

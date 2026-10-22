@@ -32,6 +32,7 @@ import { updateInteract, runAction } from './systems/interact.js';
 import { updateTime, advanceTime, sleep, checkQuests } from './systems/time.js';
 import { spawnPolice, updatePolice, arrest } from './systems/police.js';
 import { updateGangs, clearGangs } from './systems/gangs.js';
+import { attack, updateCombat } from './systems/combat.js';
 import { addXP, sendMsg, deadDropActions, unlockStartingCustomers } from './systems/economy.js';
 import { initHUD, updateHUD, toast, bigToast, notify, setWaypoint, clearWaypoint } from './ui/hud.js';
 import * as P from './ui/panels.js';
@@ -216,6 +217,7 @@ on('btn', (b) => {
     return pauseMenu();
   }
   if (b === 'phone') return togglePhone();
+  if (b === 'attack') { if (!G.uiOpen && !riding()) attack(); return; }
   if (b === 'cam') { // primera / tercera persona
     if (!G.avatar) return toast('No disponible con este personaje.', '⚠️');
     G.state.settings.cam3 = !G.state.settings.cam3; save();
@@ -495,6 +497,7 @@ function frame() {
   for (const n of G.npcs) n.update(dt, gdt);
   updatePolice(dt);
   updateGangs(dt);
+  updateCombat(dt);
   for (const c of G.cars) c.update(dt);
   updateObjects(dt);
   G.world.update(dt);

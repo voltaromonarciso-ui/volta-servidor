@@ -4,6 +4,7 @@ let knownT = 0;
 import { G, on, emit, money } from '../game.js';
 import { ITEMS, RANKS, STRAINS } from '../data/items.js';
 import { QUESTS } from '../data/quests.js';
+import { inv } from '../core/state.js';
 import { clock, dayName } from '../systems/time.js';
 import { input } from '../core/input.js';
 import { wanted, curfew } from '../systems/police.js';
@@ -63,6 +64,7 @@ export function initHUD() {
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) br.addEventListener(ev, () => { br.classList.remove('on'); emit('btn', 'brake-off'); });
   btn('btn-pause', () => emit('btn', 'escape'));
   btn('btn-cam', () => emit('btn', 'cam'));
+  btn('btn-attack', () => emit('btn', 'attack'));
   btn('minimap', () => G.act.openPhone('map'));
   // en móvil se interactúa tocando la etiqueta de acción (la principal o la secundaria)
   els.prompt.addEventListener('pointerdown', (e) => {
@@ -114,6 +116,13 @@ export function updateHUD(target, dt = 0.016) {
     if (d.dataset.q !== q) { d.dataset.q = q; d.querySelector('.q').textContent = q; }
   });
   const held = s.inv[s.sel];
+  // botón de golpear: puño, o bala con las que quedan si llevas la pistola en la mano
+  const gun = held?.id === 'pistola', atk = els.attack ||= $('btn-attack');
+  if (atk) {
+    atk.classList.toggle('gun', gun);
+    const n = gun ? String(inv.count('balas')) : '';
+    if (atk._n !== n) { atk._n = n; atk.querySelector('.ammo').textContent = n; atk.classList.toggle('empty', gun && n === '0'); }
+  }
   els.water.style.display = held && held.id === 'regadera' ? '' : 'none';
   txt(els.water, `💧 ${s.water}/6`);
 

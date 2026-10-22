@@ -215,6 +215,13 @@ const DRAW = {
   porra: () => shadow(32, 56, 20) + `<g transform="rotate(-40 32 32)"><rect x="29.5" y="4" width="5" height="22" rx="2.5" fill="#4a4f55" stroke="${OL}" stroke-width="${W}"/>` +
     `<rect x="28.8" y="24" width="6.4" height="14" rx="2" fill="#5d636a" stroke="${OL}" stroke-width="${W}"/><rect x="27.5" y="37" width="9" height="20" rx="3.5" fill="#1d1f22" stroke="${OL}" stroke-width="${W}"/>` +
     `<path d="M28.5 42h7M28.5 46h7M28.5 50h7" stroke="#3a3d42" stroke-width="1.4"/><circle cx="32" cy="4.5" r="3.2" fill="#6b7178" stroke="${OL}" stroke-width="1.2"/></g>`,
+  // machete: hoja curva plateada con filo claro y mango de madera con remaches
+  machete: () => shadow(32, 56, 20) + `<g transform="rotate(-38 32 32)"><path d="M28 6q10 2 8 30h-8z" fill="#c3cad1" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
+    `<path d="M34.5 10q2 10 0 25" stroke="#eef2f5" stroke-width="1.6" fill="none"/><rect x="25" y="35" width="14" height="4" rx="1.5" fill="#2b2e33" stroke="${OL}" stroke-width="1.4"/>` +
+    `<rect x="28" y="39" width="8" height="19" rx="3" fill="#5a3a22" stroke="${OL}" stroke-width="${W}"/><circle cx="32" cy="44" r="1.4" fill="#e0c27a"/><circle cx="32" cy="52" r="1.4" fill="#e0c27a"/></g>`,
+  // balas: caja de munición verde con cartuchos de latón
+  balas: () => shadow(32, 56, 20) + `<rect x="12" y="30" width="40" height="22" rx="3" fill="#3d4a2e" stroke="${OL}" stroke-width="${W}"/><rect x="18" y="37" width="28" height="8" rx="1.5" fill="#d9c58a" opacity=".85"/>` +
+    [16, 24, 32, 40].map((x) => `<rect x="${x}" y="17" width="6" height="14" rx="1" fill="#d8ac4a" stroke="${OL}" stroke-width="1.2"/><path d="M${x} 20q3 -7 6 0z" fill="#b0714a" stroke="${OL}" stroke-width="1.2"/>`).join(''),
   // pistola de perfil
   pistola: () => shadow(32, 54, 22) + `<g transform="rotate(-6 32 32)"><path d="M10 20h40a3 3 0 0 1 3 3v6a2 2 0 0 1 -2 2H31l-2 3H24l-1 -3H10z" fill="#2b2e33" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +
     `<path d="M23 31l-5 18a2 2 0 0 0 2 2.5h7a2 2 0 0 0 2 -1.6l3 -10" fill="#3a2a1e" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>` +

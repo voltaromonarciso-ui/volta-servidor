@@ -113,6 +113,14 @@ body.touch.ingame #actions { display: block; }
 #btn-crouch { right: calc(38px + var(--safe-r)); bottom: calc(24px + var(--safe-b)); }
 #alt-label { position: absolute; top: 100%; margin-top: 4px; font-size: 10px; font-weight: 700; white-space: nowrap; text-shadow: 0 1px 3px #000; }
 #btn-jump { right: calc(126px + var(--safe-r)); bottom: calc(30px + var(--safe-b)); }
+/* golpear (encima de saltar): puño; con la pistola en la mano, una bala y las que quedan */
+#btn-attack { right: calc(117px + var(--safe-r)); bottom: calc(96px + var(--safe-b)); width: 66px; height: 66px; }
+#btn-attack .ic-bullet, #btn-attack .ammo { display: none; }
+#btn-attack.gun .ic-fist { display: none; }
+#btn-attack.gun .ic-bullet { display: block; }
+#btn-attack.gun .ammo { display: block; position: absolute; right: 6px; bottom: 4px; font-size: 12px; font-weight: 900; text-shadow: 0 1px 2px #000; }
+#btn-attack.empty { opacity: 0.55; }
+#btn-attack:active { transform: scale(0.92); }
 body.touch #prompt { top: calc(50% + 22px); }
 /* como la referencia: objetos arriba en el centro, su nombre debajo y luego el destino */
 #hotbar { top: calc(8px + var(--safe-t)); bottom: auto; left: 50%; }

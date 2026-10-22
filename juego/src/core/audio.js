@@ -146,6 +146,11 @@ const SFX = {
   level: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, { type: 'triangle', vol: 0.18, delay: i * 0.12 })); },
   whistle: () => { tone(2200, 0.25, { vol: 0.15 }); tone(2200, 0.35, { vol: 0.15, delay: 0.3 }); },
   jump: () => tone(300, 0.08, { vol: 0.06, slide: 120 }),
+  // pelea: golpe seco, golpe al aire, disparo y pistola sin balas
+  punch: () => { noise(0.09, { vol: 0.32, freq: 900 }); tone(110, 0.1, { type: 'triangle', vol: 0.22, slide: -40 }); },
+  swing: () => noise(0.14, { vol: 0.07, freq: 2200 }),
+  shot: () => { noise(0.25, { vol: 0.5, freq: 3200 }); tone(90, 0.22, { type: 'square', vol: 0.18, slide: -50 }); },
+  empty: () => tone(1400, 0.03, { type: 'square', vol: 0.09 }),
 };
 
 export function sfx(name) { try { if (!REC[name]?.()) SFX[name]?.(); } catch (e) { /* audio no disponible */ } }

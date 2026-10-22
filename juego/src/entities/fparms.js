@@ -107,7 +107,7 @@ export class FPArms {
       }
       ik(A.up, A.lo, A.hand, r.position, _d.set(r.position.x + sx * 0.5, r.position.y - 0.6, r.position.z + 0.25));
       // cómo va la mano (en el espacio de la cámara): dedos y palma
-      const G_ = GRIPS[pose === 'box' ? 'box' : 'one'];
+      const G_ = GRIPS[pose === 'box' ? 'box' : pose === 'fist' ? 'fist' : 'one'];
       this.orient(A, _a.set(sx * G_.f[0], G_.f[1], G_.f[2]).normalize(), _b.set(sx * G_.p[0], G_.p[1], G_.p[2]).normalize());
       this.curl(A, G_.grip);
       if (s === 'R') { // centro de la palma (ahí se apoya lo que llevas en la mano)
@@ -149,7 +149,8 @@ export class FPArms {
 // Cómo se coge cada cosa (mano derecha; la izquierda es su espejo): dedos, palma y cierre
 const GRIPS = {
   one: { f: [-0.3, 0.3, -0.9], p: [-0.45, 0.88, 0.1], grip: 0.5 },    // objeto pequeño sobre la palma
-  box: { f: [-0.1, 0.35, -1], p: [-1, 0.55, 0], grip: 0.3 },          // caja: las palmas contra los lados, por abajo
+  box: { f: [-0.1, 0.35, -1], p: [-1, 0.55, 0], grip: 0.3 },
+  fist: { f: [-0.15, 0.1, -1], p: [-0.2, -1, 0], grip: 1.15 },        // puño cerrado, nudillos al frente          // caja: las palmas contra los lados, por abajo
 };
 // Aplica un giro en el espacio del mundo a un hueso (y a sus hijos)
 function rotWorld(bone, q) {

@@ -117,6 +117,15 @@ export function clearGangs() {
   if (crew) for (const th of crew.thugs) th.remove();
   crew = null;
 }
+// Atracadores (para los golpes) y qué pasa al golpear a uno: si cae, los demás se largan
+export const gangThugs = () => (crew ? crew.thugs : []);
+export function crewHit(th, down) {
+  if (!crew || crew.phase === 'leave') return;
+  if (down || Math.random() < 0.35) {
+    G.act.toast?.(down ? `${GANG.name}: «¡Vámonos, que este va en serio!»` : `${GANG.name} se lo piensan mejor y se largan.`, '😮‍💨');
+    endCrew('pelea');
+  }
+}
 export const gangState = () => crew && { phase: crew.phase, id: crew.id, n: crew.thugs.length, d: Math.sqrt(Math.min(...crew.thugs.map((t) => dist2(t.pos, G.player.pos)))), at: { x: crew.thugs[0].pos.x, z: crew.thugs[0].pos.z } };
 
 export function updateGangs(dt) {
@@ -148,6 +157,7 @@ export function updateGangs(dt) {
     }
     crew.repath -= dt;
     for (const th of crew.thugs) {
+      if (th.koUpdate(dt)) continue;
       if (crew.repath <= 0) th.goTo(pl.x, pl.z);
       th.speed = dmin < 14 ? 3.0 : 1.6;
       if (dist2(th.pos, pl) > 1.6 * 1.6) th.stepPath(dt); else { th.moving = 0; th.lookAt(pl.x, pl.z); }
@@ -162,11 +172,11 @@ export function updateGangs(dt) {
     return;
   }
   if (crew.phase === 'confront') {
-    for (const th of crew.thugs) { th.lookAt(pl.x, pl.z); th.animate(dt); }
+    for (const th of crew.thugs) { if (th.koUpdate(dt)) continue; th.lookAt(pl.x, pl.z); th.animate(dt); }
     return;
   }
   // se van: desaparecen al alejarse o pasados unos segundos fuera de la vista
-  for (const th of crew.thugs) { th.stepPath(dt); th.animate(dt); }
+  for (const th of crew.thugs) { if (th.koUpdate(dt)) continue; th.stepPath(dt); th.animate(dt); }
   if (crew.t > 25 || dmin > 60) clearGangs();
 }
 

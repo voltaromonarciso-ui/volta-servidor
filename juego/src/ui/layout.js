@@ -9,6 +9,7 @@ export const CONTROLS = [
   { id: 'crouch', sel: '#btn-crouch', label: 'Agacharse' },
   { id: 'run', sel: '#btn-run', label: 'Correr' },
   { id: 'jump', sel: '#btn-jump', label: 'Saltar' },
+  { id: 'attack', sel: '#btn-attack', label: 'Golpear' },
   { id: 'hotbar', sel: '#hotbar', label: 'Objetos' },
   { id: 'map', sel: '#tl', label: 'Mapa' },
   { id: 'menu', sel: '#tr .tr-btns', label: 'Móvil' },
