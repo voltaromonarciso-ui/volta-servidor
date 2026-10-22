@@ -175,22 +175,63 @@ function azucar() {
 }
 
 // --- armas ---
+// Perfil lateral (u = hacia delante, v = arriba) extruido a lo ancho: piezas con su silueta real
+function profile(k, outline, holes, width, bevel = 0.0012) {
+  return once('perfil' + k, () => {
+    const sh = new THREE.Shape(outline.map(([u, v]) => new THREE.Vector2(u, v)));
+    for (const h of holes) sh.holes.push(new THREE.Path(h.map(([u, v]) => new THREE.Vector2(u, v))));
+    const e = new THREE.ExtrudeGeometry(sh, { depth: width - 2 * bevel, bevelEnabled: true, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 2, curveSegments: 10 });
+    e.translate(0, 0, -(width - 2 * bevel) / 2);
+    e.rotateY(Math.PI / 2); // u → -z (al frente), el ancho → x
+    return e;
+  });
+}
+// caja invisible que marca por dónde no pueden pasar los dedos
+function collider(g, w, h, d, x, y, z, rx = 0) {
+  const m = add(g, once(`col${w},${h},${d}`, () => new THREE.BoxGeometry(w, h, d)), once('mCol', () => new THREE.MeshBasicMaterial()), x, y, z, rx);
+  m.visible = false; m.userData.collider = true;
+  return m;
+}
+const stippleTex = () => tex('punteado', 128, 128, (c, w, h) => {
+  c.fillStyle = '#8a8a8a'; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 2600; i++) { c.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.25)'; c.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5); }
+});
 function pistola() {
+  // pistola semiautomática tipo «Glock»: corredera de acero con estrías y ventana de expulsión,
+  // armazón de polímero con guardamonte hueco, cacha inclinada punteada, gatillo y miras
   const g = new THREE.Group();
-  const steel = phys('pistAcero', { color: '#2a2d31', metalness: 0.55, roughness: 0.32, clearcoat: 0.3 });
-  const poly = std('pistPolimero', { color: '#1c1d20', roughness: 0.75 });
-  add(g, rb(0.03, 0.032, 0.18, 0.006), steel, 0, 0.022, -0.045);             // corredera
-  for (let i = 0; i < 6; i++) add(g, rb(0.031, 0.026, 0.003, 0.001), poly, 0, 0.024, 0.02 + i * 0.006); // estrías
-  add(g, rb(0.026, 0.02, 0.15, 0.005), poly, 0, -0.004, -0.035);              // armazón
-  add(g, once('canon', () => new THREE.CylinderGeometry(0.007, 0.007, 0.012, 12)), std('negro', { color: '#0d0d0f' }), 0, 0.02, -0.136, Math.PI / 2);
-  const grip = add(g, rb(0.028, 0.1, 0.045, 0.008), std('cacha', { color: '#2a211a', roughness: 0.85 }), 0, -0.055, 0.03, -0.22);
-  for (let i = 0; i < 4; i++) add(grip, rb(0.029, 0.004, 0.04, 0.001), std('cachaR', { color: '#1a1410', roughness: 0.9 }), 0, -0.03 + i * 0.018, 0);
-  add(g, once('guarda', () => new THREE.TorusGeometry(0.018, 0.0035, 6, 14, Math.PI)), poly, 0, -0.016, -0.012, 0, Math.PI / 2, Math.PI);
-  add(g, rb(0.004, 0.016, 0.006, 0.001), steel, 0, -0.018, -0.012);          // gatillo
-  add(g, rb(0.006, 0.006, 0.006, 0.001), std('mira', { color: '#ececec' }), 0, 0.041, -0.125); // mira
-  // se empuña: la mano se cierra alrededor de la cacha (hold) con el cañón al frente
-  const hold = new THREE.Object3D(); hold.position.y = 0.008; grip.add(hold); // la parte alta de la cacha, bajo la corredera
-  g.scale.setScalar(1.2); // a la vista, como en los shooters
+  const steel = phys('pistAcero2', { color: '#50545b', metalness: 0.5, roughness: 0.3, clearcoat: 0.35 });
+  const poly = std('pistPolimero2', { color: '#33363b', roughness: 0.65 });
+  const dark = std('pistNegro', { color: '#0b0b0c', roughness: 0.6 });
+  // corredera (con el frente biselado)
+  add(g, profile('corredera', [[-0.035, 0.013], [0.152, 0.013], [0.156, 0.02], [0.156, 0.034], [0.148, 0.042], [-0.03, 0.042], [-0.035, 0.036]], [], 0.024), steel);
+  for (let i = 0; i < 7; i++) add(g, rb(0.0245, 0.022, 0.0016, 0.0005), dark, 0, 0.028, 0.026 - i * 0.0045); // estrías de amartillar
+  add(g, rb(0.004, 0.009, 0.034, 0.001), dark, 0.0105, 0.034, -0.045);    // ventana de expulsión
+  add(g, once('canon2', () => new THREE.CylinderGeometry(0.0062, 0.0062, 0.006, 14)), steel, 0, 0.026, -0.155, Math.PI / 2);
+  add(g, once('anima', () => new THREE.CircleGeometry(0.0042, 12)), dark, 0, 0.026, -0.1585, Math.PI);
+  add(g, rb(0.004, 0.006, 0.005, 0.001), std('miraBlanca', { color: '#f2f2f2' }), 0, 0.045, -0.142); // mira delantera
+  add(g, rb(0.018, 0.006, 0.006, 0.001), dark, 0, 0.045, 0.026);                                    // alza
+  // armazón + guardamonte (hueco) + cacha inclinada
+  const frame = [[-0.034, 0.013], [0.138, 0.013], [0.138, 0.0], [0.08, -0.002], [0.082, -0.024], [0.074, -0.036], [0.034, -0.037], [0.02, -0.03],
+    [0.012, -0.045], [0.006, -0.06], [0.0, -0.075], [-0.004, -0.086], [-0.042, -0.086], [-0.041, -0.079], [-0.035, -0.05], [-0.03, -0.012], [-0.044, -0.004], [-0.042, 0.004]];
+  const guard = [[0.072, -0.007], [0.074, -0.026], [0.068, -0.031], [0.034, -0.031], [0.026, -0.024], [0.03, -0.007]];
+  add(g, profile('armazon', frame, [guard], 0.021), poly);
+  // paneles punteados de la cacha (a cada lado) y base del cargador
+  const panel = [[0.004, -0.04], [-0.001, -0.062], [-0.005, -0.077], [-0.037, -0.077], [-0.032, -0.055], [-0.027, -0.026], [0.006, -0.03]];
+  const pm = std('cachaPunteada', { map: stippleTex(), color: '#4a4c51', roughness: 0.95 });
+  pm.map.wrapS = pm.map.wrapT = THREE.RepeatWrapping; pm.map.repeat.set(30, 30);
+  add(g, profile('panel', panel, [], 0.0225, 0.0005), pm);
+  add(g, profile('base', [[-0.003, -0.084], [-0.044, -0.084], [-0.045, -0.091], [-0.002, -0.091]], [], 0.023), dark);
+  add(g, profile('gatillo', [[0.05, -0.006], [0.054, -0.006], [0.05, -0.018], [0.046, -0.027], [0.042, -0.027], [0.046, -0.017]], [], 0.006, 0.0008), dark);
+  add(g, profile('palanca', [[0.016, 0.004], [0.04, 0.004], [0.04, 0.0], [0.016, 0.0]], [], 0.0225, 0.0004), dark); // retén de la corredera
+  // por dónde no pasan los dedos: la corredera, la cacha (inclinada) y el guardamonte
+  collider(g, 0.024, 0.03, 0.19, 0, 0.028, -0.06);
+  collider(g, 0.021, 0.078, 0.036, 0, -0.047, 0.02, -0.2);
+  collider(g, 0.021, 0.007, 0.046, 0, -0.034, -0.054);
+  collider(g, 0.021, 0.03, 0.006, 0, -0.019, -0.079);
+  // se empuña por la parte alta de la cacha, bajo la corredera
+  const hold = new THREE.Object3D(); hold.position.set(0, -0.034, 0.018); g.add(hold);
+  g.scale.setScalar(1.15); // a la vista, como en los shooters
   return { group: g, pose: 'pistol', hold };
 }
 function porra() {
@@ -266,18 +307,37 @@ const woodTex = () => tex('madera', 64, 256, (c, w, h) => {
   for (let i = 0; i < 26; i++) { c.strokeStyle = `rgba(${Math.random() < 0.5 ? '30,18,8' : '120,80,45'},0.35)`; c.lineWidth = 1 + Math.random() * 2; c.beginPath(); let x = Math.random() * w; c.moveTo(x, 0); for (let y = 0; y < h; y += 16) { x += (Math.random() - 0.5) * 4; c.lineTo(x, y); } c.stroke(); }
 });
 function machete() {
+  // machete táctico: hoja negra mate con el filo afilado en plata, sierra en el lomo y
+  // mango de goma negra con textura antideslizante
   const g = new THREE.Group();
-  const blade = new THREE.Shape();
-  blade.moveTo(-0.022, 0); blade.lineTo(0.02, 0); blade.quadraticCurveTo(0.036, 0.2, 0.012, 0.34); blade.quadraticCurveTo(-0.01, 0.365, -0.022, 0.3); blade.lineTo(-0.022, 0);
-  const bg = once('hoja', () => { const e = new THREE.ExtrudeGeometry(blade, { depth: 0.003, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.0015, bevelSegments: 2 }); e.translate(0, 0, -0.0015); return e; });
-  add(g, bg, phys('hoja', { color: '#b9c1c8', metalness: 0.55, roughness: 0.18, clearcoat: 0.4 }), 0, 0.05, 0);
-  add(g, once('lomo', () => new THREE.BoxGeometry(0.004, 0.27, 0.0045)), std('lomo', { color: '#4a4e53', metalness: 0.7, roughness: 0.5 }), -0.02, 0.18, 0);
-  const mango = add(g, rb(0.03, 0.12, 0.022, 0.009), std('mangoMadera', { map: woodTex(), roughness: 0.7 }), 0, -0.02, 0);
-  for (const y of [-0.05, 0.01]) add(g, once('remache', () => new THREE.CylinderGeometry(0.004, 0.004, 0.025, 10)), phys('remache', { color: '#c9b27a', metalness: 0.55, roughness: 0.25 }), 0, y, 0, Math.PI / 2);
-  add(g, rb(0.05, 0.012, 0.026, 0.003), phys('guarda', { color: '#2b2e33', metalness: 0.8, roughness: 0.35 }), 0, 0.045, 0);
-  g.rotation.x = -0.45;
+  const shape = (pts) => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); for (const p of pts.slice(1)) p.length === 4 ? sh.quadraticCurveTo(...p) : sh.lineTo(...p); return sh; };
+  const ext = (k, sh, depth, bevel) => once(k, () => { const e = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: bevel, bevelThickness: bevel * 0.5, bevelSegments: 2, curveSegments: 24 }); e.translate(0, 0, -depth / 2); return e; });
+  const negro = std('hojaNegra', { map: stoneTex(), color: '#3a3d42', metalness: 0.45, roughness: 0.5 });
+  const filo = phys('filoPlata', { color: '#d9dee3', metalness: 0.6, roughness: 0.16, clearcoat: 0.7 });
+  // cuerpo de la hoja
+  add(g, ext('hojaT', shape([[-0.022, 0], [0.012, 0], [0.026, 0.2, 0.008, 0.335], [-0.012, 0.36, -0.022, 0.3], [-0.022, 0]]), 0.0034, 0.0014), negro, 0, 0.05, 0);
+  // filo: franja plateada a lo largo del lado cortante hasta la punta
+  add(g, ext('filoT', shape([[0.006, 0], [0.021, 0], [0.038, 0.2, 0.012, 0.345], [-0.004, 0.352], [0.018, 0.2, 0.006, 0]]), 0.0022, 0.0012), filo, 0, 0.05, 0);
+  // sierra en el lomo
+  const diente = once('diente', () => new THREE.ConeGeometry(0.0035, 0.008, 4));
+  for (let k = 0; k < 9; k++) add(g, diente, negro, -0.025, 0.07 + k * 0.012, 0, 0, Math.PI / 4, Math.PI / 2 + 0.35);
+  // guarda, mango con textura y pomo con agujero para el cordón
+  add(g, rb(0.054, 0.012, 0.022, 0.004), std('guardaNegra', { color: '#141518', metalness: 0.5, roughness: 0.5 }), 0, 0.045, 0);
+  const goma = std('mangoGoma', { map: gripTex(), color: '#2b2d30', roughness: 0.92 });
+  const mango = add(g, rb(0.03, 0.12, 0.024, 0.01), goma, 0, -0.02, 0);
+  for (const y of [-0.055, -0.02, 0.015]) add(g, rb(0.032, 0.006, 0.026, 0.003), std('anilloGoma', { color: '#1a1b1d', roughness: 0.95 }), 0, y, 0); // estrías para los dedos
+  add(g, rb(0.034, 0.018, 0.026, 0.006), std('guardaNegra'), 0, -0.088, 0);
+  add(g, once('cordel', () => new THREE.TorusGeometry(0.009, 0.0025, 6, 14)), std('cordelVerde', { color: '#4b5a3a', roughness: 0.95 }), 0, -0.104, 0, 0, Math.PI / 2, 0);
+  g.rotation.x = -0.35; g.rotation.y = -0.5; // la punta hacia delante y el filo a la vista
   return { group: g, pose: 'gun', hold: mango }; // empuñado por el mango
 }
+// acero con acabado arenado (moteado fino)
+const stoneTex = () => tex('arenado', 128, 256, (c, w, h) => { c.fillStyle = '#8a8d92'; c.fillRect(0, 0, w, h); grain(c, w, h, 0.18, 6000); });
+// goma con rombos en relieve
+const gripTex = () => tex('gomaRombos', 64, 256, (c, w, h) => {
+  c.fillStyle = '#9a9a9a'; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 2;
+  for (let k = -h; k < h * 2; k += 10) { c.beginPath(); c.moveTo(0, k); c.lineTo(w, k + w); c.moveTo(0, k + w); c.lineTo(w, k); c.stroke(); }
+});
 // --- sobre de semillas vacío: papel kraft impreso, abierto por arriba ---
 function sobreVacio() {
   const g = new THREE.Group();

@@ -468,12 +468,12 @@ export class ViewModel {
       const kick = this.strikeKind === 'shot' ? sk : 0;
       const arc = this.strikeKind === 'swing' && this.pose === 'gun' ? sk : 0;
       let hx = 0.2 + bx_ - gk * 0.12, hy = -0.26 + by - push * 0.04 + gk * 0.1, hz = -0.46 + push * 0.08 - gk * 0.3;
-      if (pistol) { hx = 0.12 + bx_; hy = -0.2 + by + kick * 0.02; hz = -0.5 + kick * 0.05; }
+      if (pistol) { hx = 0.15 + bx_; hy = -0.2 + by + kick * 0.02; hz = -0.5 + kick * 0.05; }
       if (arc) { hx -= arc * 0.2; hy -= arc * 0.03; hz -= arc * 0.14; }
       this.placeHand(this.Rh, hx, hy, hz, 1.6, 2.1, -1.5708, 0.75);
       this.Rh.updateMatrix();
       this.itemHolder.position.copy(new THREE.Vector3(-0.07, 0.065, 0).applyMatrix4(this.Rh.matrix));
-      if (pistol) this.itemHolder.rotation.set(kick * 0.35, 0.22, 0); // el cañón al punto de mira; salta al disparar
+      if (pistol) this.itemHolder.rotation.set(kick * 0.35, 0.42, -0.08); // de tres cuartos: se ve el costado // el cañón al punto de mira; salta al disparar
       else if (this.pose === 'gun') this.itemHolder.rotation.set(-arc * 0.9, 0, -arc * 1.3); // recto; al golpear barre de derecha a izquierda
       else this.itemHolder.rotation.set(0.25, -0.6, 0.05);
       this.L.visible = this.sleeveL.visible = pistol;
@@ -501,6 +501,8 @@ export class ViewModel {
       if (this.pose !== 'box' && this.arms.palmR) { // (también la pistola: la derecha en la cacha)
         const g = (this.grip || new THREE.Vector3()).clone().applyEuler(this.itemHolder.rotation);
         this.itemHolder.position.copy(this.arms.palmR).sub(g);
+        // lo que se empuña: los dedos lo rodean hasta tocarlo, sin atravesarlo
+        if (this.pose === 'pistol' || this.pose === 'gun') this.arms.grasp(this.itemHolder, this.pose);
       }
     }
   }

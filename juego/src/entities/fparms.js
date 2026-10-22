@@ -21,6 +21,13 @@ function segDist(p1, q1, p2, q2) {
   if (t < 0) { t = 0; s = THREE.MathUtils.clamp(-c / a, 0, 1); } else if (t > 1) { t = 1; s = THREE.MathUtils.clamp((b - c) / a, 0, 1); }
   return p1.clone().addScaledVector(d1, s).distanceTo(p2.clone().addScaledVector(d2, t));
 }
+const FINGER_R = 0.0085; // grosor (radio) de un dedo
+// Distancia de un punto al segmento a-b
+function pointSeg(v, a, b) {
+  const ab = _f.copy(b).sub(a), t = THREE.MathUtils.clamp(_g.copy(v).sub(a).dot(ab) / (ab.lengthSq() || 1), 0, 1);
+  return _g.copy(a).addScaledVector(ab, t).distanceTo(v);
+}
+const _f = new THREE.Vector3(), _g = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
 const wp = (o, v = new THREE.Vector3()) => o.getWorldPosition(v);
 
@@ -160,6 +167,66 @@ export class FPArms {
     const qb = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(F, Pn, new THREE.Vector3().crossVectors(F, Pn)));
     rotWorld(A.hand, qb.multiply(qa.invert()));
   }
+  // Empuñar con colisión: con lo que se sujeta ya colocado (`holder`), cada dedo se cierra
+  // falange a falange (primero la de la base, luego la media y la punta) y cada una se para
+  // al tocar lo que sujeta o los dedos de la otra mano: así lo rodean sin atravesarlo.
+  // Con la pistola, el índice queda estirado sobre el gatillo.
+  grasp(holder, pose) {
+    holder.updateMatrixWorld(true);
+    const solids = [];
+    let marked = false;
+    holder.traverse((o) => { if (o.isMesh && o.userData.collider) marked = true; });
+    holder.traverse((o) => {
+      if (!o.isMesh) return;
+      if (marked ? !o.userData.collider : (!o.visible || o.material?.transparent)) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const sc = o.getWorldScale(_e).x || 1;
+      solids.push({ inv: o.matrixWorld.clone().invert(), box: o.geometry.boundingBox.clone().expandByScalar(FINGER_R / sc) });
+    });
+    const pistol = pose === 'pistol';
+    this.fitFingers(this.side.R, GRIPS.gun.grip, solids, [], pistol);
+    if (pistol) { // la izquierda abraza por debajo: choca con la pistola y con la mano derecha
+      const R = this.side.R, segs = [];
+      for (const ch of R.chains) {
+        const pts = [wp(R.hand), ...ch.map((b) => wp(b))];
+        pts.push(pts.at(-1).clone().sub(pts.at(-2)).multiplyScalar(0.8).add(pts.at(-1)));
+        for (let k = 1; k < pts.length; k++) segs.push([pts[k - 1], pts[k]]);
+      }
+      this.fitFingers(this.side.L, GRIPS.support.grip, solids, segs, false);
+    }
+  }
+  fitFingers(A, amt, solids, segs, trigger) {
+    for (const ch of A.chains) for (const b of ch) b.quaternion.copy(this.rest.get(b));
+    A.hand.updateMatrixWorld(true);
+    const { fing, palm } = this.frame(A);
+    const axis = new THREE.Vector3().crossVectors(fing, palm).normalize();
+    const p = new THREE.Vector3(), tip = new THREE.Vector3();
+    const hit = (v) => solids.some((s) => s.box.containsPoint(p.copy(v).applyMatrix4(s.inv)))
+      || segs.some(([a, b]) => pointSeg(v, a, b) < FINGER_R * 2);
+    // puntos que mueve la falange j: las articulaciones siguientes y la yema (y medio camino)
+    const pointsFrom = (ch, j) => {
+      const pts = ch.map((b) => wp(b));
+      const last = pts.at(-1), prev = pts.at(-2) || wp(A.hand);
+      pts.push(tip.copy(last).sub(prev).multiplyScalar(0.8).add(last));
+      const out = [];
+      for (let k = j + 1; k < pts.length; k++) out.push(pts[k], pts[k].clone().add(pts[k - 1]).multiplyScalar(0.5));
+      return out;
+    };
+    const count = (ch, j) => pointsFrom(ch, j).filter(hit).length;
+    const W = [0.75, 1.05, 0.7], N = 8;
+    A.chains.forEach((ch, i) => {
+      const total = amt * (i === 0 ? 0.45 : 1) * (trigger && i === 1 ? 0.5 : 1);
+      ch.forEach((b, j) => {
+        const start = count(ch, j); // (lo que ya tocaba con el dedo estirado no cuenta)
+        for (let n = 0; n < N; n++) {
+          const saved = b.quaternion.clone();
+          rotWorld(b, _q.setFromAxisAngle(axis, (total * W[j]) / N));
+          if (count(ch, j) > start) { b.quaternion.copy(saved); b.updateMatrixWorld(true); break; }
+        }
+      });
+    });
+  }
+
   // Cierra los dedos hacia la palma (0 = abierta, 1 = puño); el pulgar, menos
   curl(A, amt) {
     for (const ch of A.chains) for (const b of ch) b.quaternion.copy(this.rest.get(b));
