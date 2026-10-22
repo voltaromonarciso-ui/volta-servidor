@@ -118,6 +118,7 @@ export function updateHUD(target, dt = 0.016) {
   const held = s.inv[s.sel];
   // botón de golpear: puño, o bala con las que quedan si llevas la pistola en la mano
   const gun = held?.id === 'pistola', atk = els.attack ||= $('btn-attack');
+  if (document.body.classList.contains('gun') !== gun) document.body.classList.toggle('gun', gun); // punto de mira
   if (atk) {
     atk.classList.toggle('gun', gun);
     const n = gun ? String(inv.count('balas')) : '';

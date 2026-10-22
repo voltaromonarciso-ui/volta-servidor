@@ -6,6 +6,7 @@ import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
 import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile } from './goods.js';
 import { FPArms } from './fparms.js';
+import { HELD } from './helditems.js';
 import { MODELS } from './models.js';
 
 // Brazos y manos en primera persona (escena aparte, nunca atraviesan paredes).
@@ -148,6 +149,12 @@ function productColor(s) {
 const cardMat = () => (mats.card ||= new THREE.MeshStandardMaterial({ map: cardboardTex(), roughness: 0.9 }));
 
 export function buildItem(s) {
+  // modelos realistas con texturas (helditems.js); el resto, los de aquí y los de goods.js
+  if (HELD[s.id]) {
+    const r = HELD[s.id](s);
+    r.group.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+    return { group: r.group, pose: r.pose, hold: r.hold };
+  }
   const g = new THREE.Group();
   const it = ITEMS[s.id] || {};
   let pose = 'one';
@@ -383,11 +390,16 @@ export class ViewModel {
   applyPending() {
     this.itemHolder.clear();
     if (!this.pending) { this.pose = 'none'; return; }
-    const { group, pose } = buildItem(this.pending);
-    this.itemHolder.add(group);
+    const { group, pose, hold } = buildItem(this.pending);
     this.pose = pose;
-    // punto de agarre: el centro de la base del objeto (se apoya sobre la palma, no la atraviesa)
+    // punto de agarre: el centro de la base del objeto (se apoya sobre la palma, no la atraviesa);
+    // se mide antes de colgarlo del soporte, en las coordenadas del propio soporte
+    group.updateMatrixWorld(true);
     const bb = new THREE.Box3().setFromObject(group);
+    // lo que se empuña, por su mango (aún sin padre: su «mundo» es el soporte)
+    const held = hold && hold.getWorldPosition(new THREE.Vector3());
+    this.itemHolder.add(group);
+    if (held) { this.grip = held; return; }
     this.grip = new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.min.y + 0.01, (bb.min.z + bb.max.z) / 2);
   }
 
@@ -439,7 +451,7 @@ export class ViewModel {
 
     if (this.pose === 'box') {
       // (con los brazos del personaje, la caja algo más lejos y abajo: se ven las manos a los lados)
-      const far = this.arms ? 0.12 : 0, low = this.arms ? 0.05 : 0;
+      const far = this.arms ? 0.12 : 0, low = this.arms ? 0.1 : 0;
       const base = new THREE.Vector3(bx_, -0.235 - low + by - push * 0.03 + gk * 0.08, -0.72 - far + push * 0.06 - gk * 0.3);
       this.itemHolder.position.copy(base);
       this.itemHolder.rotation.set(-0.12, -0.03, 0);
@@ -455,7 +467,8 @@ export class ViewModel {
       this.placeHand(this.Rh, hx, hy, hz, 1.6, 2.1, -1.5708, 0.75);
       this.Rh.updateMatrix();
       this.itemHolder.position.copy(new THREE.Vector3(-0.07, 0.065, 0).applyMatrix4(this.Rh.matrix));
-      this.itemHolder.rotation.set(0.25, -0.6, 0.05);
+      if (this.pose === 'gun') this.itemHolder.rotation.set(0.04, 0.1, 0); // el cañón hacia el punto de mira
+      else this.itemHolder.rotation.set(0.25, -0.6, 0.05);
       this.L.visible = this.sleeveL.visible = false;
       this.Rh.visible = this.sleeveR.visible = true;
     }
