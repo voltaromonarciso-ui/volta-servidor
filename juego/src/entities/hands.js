@@ -349,6 +349,9 @@ export class ViewModel {
     const { group, pose } = buildItem(this.pending);
     this.itemHolder.add(group);
     this.pose = pose;
+    // punto de agarre: el centro de la base del objeto (se apoya sobre la palma, no la atraviesa)
+    const bb = new THREE.Box3().setFromObject(group);
+    this.grip = new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.min.y + 0.01, (bb.min.z + bb.max.z) / 2);
   }
 
   update(dt, { bob = 0, speed = 0, lookX = 0, lookY = 0, swing = 0, crouch = 0 }) {
@@ -383,7 +386,9 @@ export class ViewModel {
     const gk = this.giveK || 0;
 
     if (this.pose === 'box') {
-      const base = new THREE.Vector3(bx_, -0.235 + by - push * 0.03 + gk * 0.08, -0.72 + push * 0.06 - gk * 0.3);
+      // (con los brazos del personaje, la caja algo más lejos y abajo: se ven las manos a los lados)
+      const far = this.arms ? 0.12 : 0, low = this.arms ? 0.05 : 0;
+      const base = new THREE.Vector3(bx_, -0.235 - low + by - push * 0.03 + gk * 0.08, -0.72 - far + push * 0.06 - gk * 0.3);
       this.itemHolder.position.copy(base);
       this.itemHolder.rotation.set(-0.12, -0.03, 0);
       const s = this.itemHolder.children[0];
@@ -420,7 +425,10 @@ export class ViewModel {
         L: { position: this.L.position, quaternion: this.L.quaternion, visible: vis.L, side: 1 },
       });
       // lo que llevas en una mano se apoya en la palma de verdad
-      if (this.pose !== 'box' && this.arms.palmR) this.itemHolder.position.copy(this.arms.palmR);
+      if (this.pose !== 'box' && this.arms.palmR) {
+        const g = (this.grip || new THREE.Vector3()).clone().applyEuler(this.itemHolder.rotation);
+        this.itemHolder.position.copy(this.arms.palmR).sub(g);
+      }
     }
   }
 
