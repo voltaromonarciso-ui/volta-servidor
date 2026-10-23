@@ -1025,15 +1025,15 @@ function alley(b) {
 //  colocan macetas y mesas, estanterías al fondo para guardar mercancía.
 // ------------------------------------------------------------------
 export const WAREHOUSES = {
-  almacenDelta: { w: 24, d: 16, level: 0, price: 6000, blurb: 'El más pequeño: buena nave para empezar a cultivar en serio.' },
-  almacenBravo: { w: 34, d: 18, level: 1, price: 12000, blurb: 'Nave mediana con estanterías al fondo y sitio de sobra para mesas.' },
-  almacenAlfa: { w: 38, d: 18, level: 2, price: 20000, blurb: 'La más grande de la isla: para montar un negocio con empleados.' },
+  almacenDelta: { w: 20, d: 14, doors: 1, level: 0, price: 6000, blurb: 'El más pequeño: buena nave para empezar a cultivar en serio.' },
+  almacenBravo: { w: 26, d: 16, doors: 2, level: 1, price: 12000, blurb: 'Nave mediana con estanterías al fondo y sitio de sobra para mesas.' },
+  almacenAlfa: { w: 30, d: 16, doors: 2, level: 2, price: 20000, blurb: 'La más grande de la isla: para montar un negocio con empleados.' },
 };
 function warehouseFor(b) {
   if (!hasBuilding('q_Flat')) return false; // sin texturas: la nave de relleno de siempre
   const spec = WAREHOUSES[b.zone], id = b.zone, name = ZONE_NAMES[id];
   const w = spec.w, d = spec.d, x = b.cx, z = b.cz + 3 + (22 - d) / 2; // (la fachada sigue en el mismo sitio)
-  const r = ownedWarehouse({ w, d, h: 9, sign: name.toUpperCase(), signBg: '#34495e', doors: 2, level: spec.level });
+  const r = ownedWarehouse({ w, d, h: 9, sign: name.toUpperCase(), signBg: '#34495e', doors: spec.doors, level: spec.level });
   F.place('real:' + id, () => r.group, x, z, 0, { solid: false });
   pad(x - w / 2 - 0.3, x + w / 2 + 0.3, z - d / 2 - 0.3, z + d / 2 + 0.3, 0, id);
   // colisiones con nivel (entreplanta): 'up' sólo arriba, 'down' sólo abajo, 'low' a ras de suelo
@@ -1054,7 +1054,7 @@ function warehouseFor(b) {
   // carretilla, transpaleta y palés sueltos dentro de la nave
   const ge = r.gear;
   if (ge.forklift) { K.forklift(x + ge.forklift.x, z + ge.forklift.z, ge.forklift.ry); K.addBox(x + ge.forklift.x - 0.7, x + ge.forklift.x + 0.7, z + ge.forklift.z - 1.4, z + ge.forklift.z + 1.4, 2.2); }
-  K.palletJack(x + ge.jack.x, z + ge.jack.z, ge.jack.ry);
+  if (ge.jack) K.palletJack(x + ge.jack.x, z + ge.jack.z, ge.jack.ry);
   for (const [px, pz, n] of ge.pallets) K.pallet(x + px, z + pz, 0, n); // (cada palé ya lleva su colisión)
   // la puerta de la oficina: sólo se abre si el almacén es tuyo
   K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.25, color: '#5d6670', locked: () => !G.state.props[id] });

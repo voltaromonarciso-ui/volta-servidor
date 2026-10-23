@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792709945.1394553,
-    "seen": 1792715592.0009942,
-    "ast_hash": "453608437966c17eddcbd22378e13ac1",
+    "mtime": 1792733269.0294929,
+    "seen": 1792742534.1876495,
+    "ast_hash": "7139a67a0cb337c182705c53cfa99196",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792711353.323852,
-    "seen": 1792715592.0010414,
-    "ast_hash": "a98dfb549780da9032bfbf52055a6ebf",
+    "mtime": 1792735251.4256194,
+    "seen": 1792742534.1877048,
+    "ast_hash": "4750d47718afcdcc32db84e44635f9ad",
     "semantic_hash": ""
   },
   "juego/docs/avances-18-apart.png": {
@@ -2088,9 +2088,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/interior.js": {
-    "mtime": 1792711353.3218315,
-    "seen": 1792715592.0009923,
-    "ast_hash": "2b2852babb130af89dac295f8aa12882",
+    "mtime": 1792733239.0661244,
+    "seen": 1792742534.1876454,
+    "ast_hash": "ce05344191fd0ca4034f9be2bcfc8667",
     "semantic_hash": ""
   },
   "juego/src/assets/interior/LICENSE.txt": {

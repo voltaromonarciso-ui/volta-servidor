@@ -383,13 +383,13 @@ export function ownedWarehouse(o) {
       let yy = py;
       for (let r = 0; r < rows; r++) { let hh = 0; for (const [ox, oz] of [[-0.3, -0.28], [0.3, -0.28], [-0.3, 0.28], [0.3, 0.28]]) { const d = put('furniture/cardboardBoxClosed', x + ox, yy, zc + oz, (r + k) % 2 ? 0.08 : 0, 1.15, null); if (d) hh = d[1]; } yy += hh; }
       if (t < 0.2) slab(g, filmW, x - 0.62, x + 0.62, py, yy + 0.02, zc - 0.6, zc + 0.6); // envuelto en film
-    } else if (t < 0.68) for (const ox of [-0.3, 0.3]) put('survival/box-large', x + ox, py, zc, Math.PI / 2, 1.0, null);
-    else if (t < 0.86) for (const [ox, oz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) put('survival/barrel', x + ox, py, zc + oz, ox + oz, 0.95, null);
+    } else if (t < 0.68) { let yy = py; for (let r = 0; r < 2; r++) { let hh = 0; for (const ox of [-0.3, 0.3]) { const d = put('furniture/cardboardBoxClosed', x + ox, yy, zc, Math.PI / 2 + r * 0.06, 1.5, null); if (d) hh = d[1]; } yy += hh; } } // cajas grandes de cartón
+    else if (t < 0.86) { let q = 0; for (const [ox, oz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) drum(g, x + ox, py, zc + oz, k + (q++ > 1 ? 1 : 0), 0.95); }
     else for (let r = 0; r < 3; r++) for (const ox of [-0.27, 0.27]) rb(g, sackM, 0.5, 0.17, 0.85, x + ox, py + 0.09 + r * 0.17, zc + (r % 2 ? 0.04 : -0.04), 0.07, (r % 2) * 0.05);
   }
   boxes.push([rx0 - 0.1, rx0 + nb * bayW + 0.1, rz0 - 0.1, rz0 + rackD + 0.1, 4.6]);
   // oficina acristalada junto a la entrada y las cosas de la nave (más cuanto más grande)
-  const office = warehouseOffice(g, { x0: ix1 - [9, 11, 12][level], x1: ix1, z1: iz1, level }, boxes, put);
+  const office = warehouseOffice(g, { x0: ix1 - [8, 9.5, 10.5][level], x1: ix1, z1: iz1, level }, boxes, put);
   warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX: (D0 + D1) / 2, level, office, put, rolls }, boxes);
   warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office, put }, boxes);
   return {
@@ -401,8 +401,8 @@ export function ownedWarehouse(o) {
     // dónde van la carretilla, la transpaleta y los palés sueltos (piezas del mundo)
     gear: {
       forklift: level >= 1 ? { x: ix1 - 3.2, z: rz1 + 2.2, ry: Math.PI } : null,
-      jack: { x: ix0 + 4.6, z: rz1 + 1.1, ry: Math.PI / 2 },
-      pallets: [[ix0 + 1.0, iz1 - 1.0, 0], [ix0 + 1.0, iz1 - 2.3, 1], ...(level >= 2 ? [[ix0 + 1.0, iz1 - 3.6, 2]] : [])], // (n = capas de cajas encima)
+      jack: level >= 1 ? { x: ix0 + 4.6, z: rz1 + 1.1, ry: Math.PI / 2 } : null,
+      pallets: level >= 1 ? [[ix0 + 1.0, iz1 - 1.0, 0], [ix0 + 1.0, iz1 - 2.3, 1], ...(level >= 2 ? [[ix0 + 1.0, iz1 - 3.6, 2]] : [])] : [], // (n = capas de cajas encima)
     },
   };
 }
@@ -440,6 +440,23 @@ const hatchTex = () => canvasTex('rayado', 256, 192, (c, w, h) => {
   c.strokeStyle = '#e3b51c'; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, h - 12);
 });
 
+// Bidón metálico de 200 l: cuerpo con dos aros de rodadura, rebordes arriba y abajo, tapa
+// algo hundida con sus dos tapones. Colores sobrios (azul, gris o negro).
+const DRUM_COL = ['#2d5d8f', '#6f7a83', '#2b2f33', '#2d5d8f'];
+const drumGeo = {};
+function drum(g, x, y, z, k = 0, s = 1) {
+  const m = mat('bidon' + DRUM_COL[k % 4], { color: DRUM_COL[k % 4], roughness: 0.45, metalness: 0.55 });
+  const r = 0.29 * s, h = 0.88 * s;
+  drumGeo.body ??= new THREE.CylinderGeometry(1, 1, 1, 28, 1, true);
+  drumGeo.ring ??= new THREE.TorusGeometry(1, 0.035, 8, 32);
+  drumGeo.lid ??= new THREE.CircleGeometry(1, 28);
+  const body = new THREE.Mesh(drumGeo.body, m); body.scale.set(r, h, r); body.position.set(x, y + h / 2, z); body.castShadow = body.receiveShadow = true; g.add(body);
+  for (const t of [0.015, 0.33, 0.67, 0.985]) { const ring = new THREE.Mesh(drumGeo.ring, m); ring.rotation.x = Math.PI / 2; ring.scale.set(r * 1.01, r * 1.01, s * (t === 0.33 || t === 0.67 ? 0.8 : 1)); ring.position.set(x, y + h * t, z); g.add(ring); }
+  const lid = new THREE.Mesh(drumGeo.lid, m); lid.rotation.x = -Math.PI / 2; lid.scale.setScalar(r * 0.97); lid.position.set(x, y + h - 0.012 * s, z); g.add(lid);
+  const cap = mat('taponBidon', { color: '#b9bec2', roughness: 0.35, metalness: 0.7 });
+  cy(g, cap, 0.035 * s, 0.035 * s, 0.025 * s, x + r * 0.55, y + h - 0.005 * s, z, 10);
+  cy(g, cap, 0.022 * s, 0.022 * s, 0.025 * s, x - r * 0.55, y + h - 0.005 * s, z, 10);
+}
 // Esfera de reloj de pared (la usan la nave y la oficina)
 const clockMat = () => mat('pint-reloj', { map: canvasTex('pint-reloj', 128, 128, (c, w, hh) => { c.fillStyle = '#fafafa'; c.beginPath(); c.arc(64, 64, 62, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#222'; c.lineWidth = 6; c.stroke(); for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; c.fillStyle = '#222'; c.fillRect(64 + Math.sin(a) * 48 - 2, 64 - Math.cos(a) * 48 - 5, 4, 10); } c.lineWidth = 5; c.beginPath(); c.moveTo(64, 64); c.lineTo(64, 30); c.stroke(); c.lineWidth = 3; c.beginPath(); c.moveTo(64, 64); c.lineTo(96, 70); c.stroke(); }) });
 // Caja con esquinas redondeadas (muebles)
@@ -459,7 +476,7 @@ const signTex = (txt, bg, fg = '#fff', icon = '') => (c, w, h) => {
 // barandilla delante y cristalera hacia la nave. Arriba: zona de estar (tele en la pared del
 // lado, sofá, sillones, mesita, alfombra), escritorios con ordenador y silla de ruedas, mesa
 // de reuniones (en la grande), office con nevera y cafetera, archivadores, pizarra y plantas.
-// Debajo: zona de taquillas y descanso (banco, máquina de vending, mesa, fuente de agua).
+// Debajo queda libre (sólo los pilares).
 // Las colisiones van con nivel: 'up' sólo cuenta arriba, 'down' sólo abajo, 'low' sólo a ras
 // de suelo (bajo la escalera). Devuelve también los suelos de arriba (entreplanta y escalera).
 export const FH = 3.3; // altura del suelo de la entreplanta
@@ -598,41 +615,7 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes, put) {
   frame(mx0 + 1.6, wz - 0.03, 0.9, 0.6, 'cuadroPuerto', (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#f6b26b'); gr.addColorStop(0.6, '#e06666'); gr.addColorStop(0.61, '#3d85c6'); gr.addColorStop(1, '#1c4587'); c.fillStyle = gr; c.fillRect(0, 0, w, hh); c.fillStyle = '#20124d'; c.fillRect(20, 40, 8, 18); c.fillRect(30, 30, 6, 28); c.fillRect(70, 48, 40, 10); });
   frame(mx0 + 3.0, wz - 0.03, 0.5, 0.6, 'cuadroIsla', (c, w, hh) => { c.fillStyle = '#cfe2f3'; c.fillRect(0, 0, w, hh); c.fillStyle = '#6aa84f'; c.beginPath(); c.ellipse(w / 2, hh / 2, w * 0.35, hh * 0.3, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffe599'; c.fillRect(w * 0.3, hh * 0.45, w * 0.4, 4); });
   const clk = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), clockMat()); clk.position.set(mx0 + 0.16, Y + 2.3, cz); clk.rotation.y = Math.PI / 2; g.add(clk);
-  // --- debajo: zona de taquillas y descanso (contra el frente, dejando libre la entrada) ---
-  const lockM = mat('taquilla', { color: level === 2 ? '#2f5fa8' : '#6d7c87', roughness: 0.45, metalness: 0.5 }), galva = mat('galvanizado', { color: '#c4c9cd', roughness: 0.35, metalness: 0.75 });
-  const nL = 4 + level * 2, lx0 = mx0 + 0.6;
-  for (let k = 0; k < nL; k++) {
-    const x = lx0 + k * 0.48;
-    rb(g, lockM, 0.45, 1.85, 0.5, x, 0.93, mz1 - 0.27, 0.01);
-    for (let j = 0; j < 4; j++) slab(g, dark, x - 0.12, x + 0.12, 1.45 + j * 0.04, 1.47 + j * 0.04, mz1 - 0.525, mz1 - 0.515);
-    slab(g, galva, x + 0.14, x + 0.16, 0.95, 1.12, mz1 - 0.53, mz1 - 0.515);
-  }
-  boxes.push([lx0 - 0.25, lx0 + nL * 0.48 - 0.22, mz1 - 0.55, mz1, 1.9, 'down']);
-  // banco delante de las taquillas, máquina de vending, nevera de bebidas, fuente de agua,
-  // mesa redonda con sillas y una mesita con la tele vieja y la radio
-  const dn = (name, x, z, ry = 0, s = 1, solid = true, y = 0) => put(name, x, y, z, ry, s, solid ? 'down' : null);
-  dn('furniture/bench', lx0 + (nL * 0.48) / 2 - 0.24, mz1 - 1.15, 0);
-  const vx = lx0 + nL * 0.48 + 0.4;
-  rb(g, mat('vending', { color: '#b0221f', roughness: 0.4, metalness: 0.2 }), 0.9, 1.85, 0.8, vx, 0.93, mz1 - 0.45, 0.03);
-  const vf = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 1.2), paintMat('vendingFrente', 128, 256, (c, w, h) => {
-    c.fillStyle = '#1a1d22'; c.fillRect(0, 0, w, h);
-    for (let r = 0; r < 5; r++) for (let k = 0; k < 4; k++) { c.fillStyle = ['#e74c3c', '#f1c40f', '#3498db', '#2ecc71', '#e67e22'][(r + k) % 5]; c.fillRect(10 + k * 28, 14 + r * 46, 20, 30); c.fillStyle = '#ccc'; c.fillRect(10 + k * 28, 46 + r * 46, 20, 3); }
-  }, { emissive: '#ffffff', emissiveIntensity: 0.45 }));
-  vf.position.set(vx - 0.1, 1.15, mz1 - 0.86); vf.rotation.y = Math.PI; g.add(vf);
-  boxes.push([vx - 0.46, vx + 0.46, mz1 - 0.86, mz1, 1.9, 'down']);
-  const fr = dn('market/freezers-standing', vx + 1.05, mz1 - 0.45, Math.PI);
-  const fx = vx + 1.05 + (fr ? fr[0] / 2 : 0.6) + 0.4;
-  rb(g, mat('fuenteAgua', { color: '#eceeef', roughness: 0.4 }), 0.35, 1.0, 0.35, fx, 0.5, mz1 - 0.3, 0.03);
-  cy(g, mat('garrafa', { color: '#7fb6e0', roughness: 0.1, transparent: true, opacity: 0.7 }), 0.15, 0.15, 0.45, fx, 1.25, mz1 - 0.3, 14);
-  boxes.push([fx - 0.2, fx + 0.2, mz1 - 0.5, mz1, 1.4, 'down']);
-  const tx = mx0 + 3.2, tz = mz0 + 1.5; // (delante, entre los pilares: la entrada queda libre)
-  {
-    dn('furniture/tableRound', tx, tz, 0);
-    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2; dn('furniture/chair', tx + Math.sin(a) * 0.85, tz + Math.cos(a) * 0.85, a + Math.PI, 1, false); }
-    dn('furniture/trashcan', tx + 1.1, mz1 - 0.35, 0, 1, false);
-  }
-  const sd = dn('furniture/sideTable', lx0 - 0.1, mz0 + 1.4, Math.PI / 2);
-  if (sd) { dn('furniture/televisionVintage', lx0 - 0.1, mz0 + 1.4, Math.PI / 2, 1, false, sd[1]); }
+  // (debajo de la entreplanta no se pone nada: queda libre, sólo los pilares)
   return { x0: mx0, x1: mx1, z0: mz0, z1: mz1, floors, stair: { x0: sx0, x1: sx1, z0: zs, z1: mz0 } };
 }
 
@@ -676,10 +659,12 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
   rb(g, mat('botiquin', { color: '#f4f4f4', roughness: 0.5 }), 0.12, 0.3, 0.4, ix1 - 0.08, 1.5, iz1 - 3.3, 0.02); // (de canto contra la pared derecha)
   const cross = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), paintMat('cruz', 64, 64, (c, w, h) => { c.fillStyle = '#f4f4f4'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e8449'; c.fillRect(24, 8, 16, 48); c.fillRect(8, 24, 48, 16); }));
   cross.position.set(ix1 - 0.145, 1.5, iz1 - 3.3); cross.rotation.y = -Math.PI / 2; g.add(cross);
-  // bidones en la esquina del fondo izquierda (modelo), y montones de cajas
+  // en el pequeño (Delta) la nave se deja casi libre: sólo estanterías, banco y lo de las paredes
+  if (level === 0) return;
+  // bidones en la esquina del fondo izquierda, y montones de cajas
   const drums = [[0, 0], [0.66, 0], [0, 0.66], [0.66, 0.66], [1.32, 0.33], [0.33, 1.32]].slice(0, 3 + level * 1.5 | 0);
   const dx0 = ix0 + 0.6, dz0 = rz1 + 0.9;
-  for (const [ox, oz] of drums) put('survival/barrel', dx0 + ox, 0, dz0 + oz, ox * 3 + oz, 1, null);
+  drums.forEach(([ox, oz], k) => drum(g, dx0 + ox, 0, dz0 + oz, k));
   boxes.push([dx0 - 0.33, dx0 + 1.65, dz0 - 0.33, dz0 + 1.65, 0.9]);
   // montón de cajas de cartón (cerradas y alguna abierta), apiladas con un leve giro
   const stack = (x, z, n) => {
@@ -781,6 +766,7 @@ function warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes
   fan(ix0 + 0.02, 4.6, (rz1 + iz1) / 2 + 3, Math.PI / 2);
   fan(ix0 + 0.02, 4.6, (rz1 + iz1) / 2 - 3, Math.PI / 2);
   if (level >= 2) fan(0, 5.2, iz0 + 0.02, 0);
+  if (level >= 1) {
   // carro de limpieza con fregona y señal de suelo mojado, escalera de tijera y manguera
   const bz = (rz1 + iz1) / 2 - 1;
   const cartX = ix0 + 0.7, cartZ = bz - 2.4;
@@ -796,10 +782,11 @@ function warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes
     const hz = bz + 3.4, reel = cy(g, mat('devanadera', { color: '#c0392b', roughness: 0.4 }), 0.32, 0.32, 0.18, ix0 + 0.12, 1.5, hz, 18); reel.rotation.z = Math.PI / 2;
     const hose = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.035, 8, 24), mat('manguera', { color: '#d35400', roughness: 0.6 })); hose.position.set(ix0 + 0.24, 1.5, hz); hose.rotation.y = Math.PI / 2; g.add(hose);
   }
+  }
   // cajas de plástico apiladas cerca de las estanterías
   const crate = (x, z, n, c) => { for (let k = 0; k < n; k++) { rb(g, mat('cajaPl' + c, { color: c, roughness: 0.6 }), 0.6, 0.3, 0.4, x, 0.15 + k * 0.31, z, 0.02); slab(g, dark, x - 0.12, x + 0.12, 0.2 + k * 0.31, 0.24 + k * 0.31, z - 0.205, z - 0.2); } boxes.push([x - 0.32, x + 0.32, z - 0.22, z + 0.22, n * 0.31]); };
   const cz0 = rz1 + 0.9;
-  crate(ix0 + 6.5, cz0, 4, '#1f5fbf'); crate(ix0 + 7.2, cz0, 3, '#c0392b');
+  if (level >= 1) { crate(ix0 + 6.5, cz0, 4, '#1f5fbf'); crate(ix0 + 7.2, cz0, 3, '#c0392b'); } // (en Delta, nave libre)
   if (level >= 1) { crate(ix0 + 7.9, cz0, 5, '#27ae60'); crate(ix0 + 6.85, cz0 + 0.5, 2, '#1f5fbf'); }
   if (level >= 2) { crate(ix1 - 6, cz0, 4, '#e67e22'); crate(ix1 - 6.7, cz0, 4, '#1f5fbf'); crate(ix1 - 7.4, cz0, 3, '#27ae60'); }
   // detalles de vida: pósters, calendario y tablón de avisos en las paredes

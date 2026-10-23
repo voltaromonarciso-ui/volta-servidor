@@ -15,7 +15,7 @@ const TEX = import.meta.glob('../assets/interior/*/Textures/*.png', { query: '?u
 const KIT_SCALE = { furniture: 2, market: 1.15, survival: 2.6, cars: 1.75, retro: 1.2, factory: 1 };
 const MODELS = {};
 // el Furniture Kit trae la tapicería rosa: en la oficina, gris oscuro y azul pizarra
-const TINT = { carpet: '#4a5361', carpetDarker: '#3a414c', carpetWhite: '#c9cdd2' };
+const TINT = { carpet: '#3f4650', carpetDarker: '#30363e', carpetWhite: '#c4c8cc', wood: '#6e5340', woodDark: '#4a3729', metal: '#8a939b', metalLight: '#c2c7cc', metalMedium: '#5d666e', metalDark: '#3a4047' }; // (tonos sobrios: madera oscura, metal gris)
 let items = [];
 
 export const interiorReady = () => Object.keys(MODELS).length > 0;

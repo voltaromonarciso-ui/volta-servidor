@@ -30,7 +30,7 @@
   "28": "Three.js Skills for Claude Code",
   "29": "mock-server.js",
   "30": "panels.js",
-  "31": "buildCoast",
+  "31": "hud.js",
   "32": "routes/auth.js",
   "33": "common.sh",
   "34": "db.js",
@@ -64,9 +64,9 @@
   "62": "generator_template.js",
   "63": "Creation Log: Systematic Debugging Skill",
   "64": "algorithmic-art/SKILL.md",
-  "65": "actionsFor",
+  "65": "building",
   "66": "LEEME.md",
-  "67": "three",
+  "67": "interact.js",
   "68": "Root Cause Tracing",
   "69": "Systematic Debugging",
   "70": "world.js",
@@ -118,6 +118,5 @@
   "119": "terrain.js",
   "120": "audio.js",
   "123": "layout.js",
-  "126": "Nav",
-  "127": "streetfurniture.js"
+  "126": "Nav"
 }
