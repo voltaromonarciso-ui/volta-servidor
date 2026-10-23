@@ -28,7 +28,7 @@ import { Player } from './entities/player.js';
 import { NPC } from './entities/npc.js';
 import { setTraffic } from './entities/cars.js';
 import { PEOPLE } from './data/people.js';
-import { spawnObject, placeObject, updateObjects, hideGhost, furnitureModel, placement, placingMode, rotatePlacement, cancelPlacement, storeMoving } from './systems/objects.js';
+import { spawnObject, placeObject, updateObjects, hideGhost, furnitureModel, placement, placingMode, rotatePlacement, cancelPlacement, storeMoving, labStart, labCollect, packNow } from './systems/objects.js';
 import { updateInteract, runAction } from './systems/interact.js';
 import { updateTime, advanceTime, sleep, checkQuests } from './systems/time.js';
 import { spawnPolice, updatePolice, arrest } from './systems/police.js';
@@ -168,7 +168,7 @@ Object.assign(G.act, {
     G.avatar?.apply(st);
     G.player.vm.useAvatar?.(look?.model, st); // brazos en primera persona del propio personaje
     if (look) G.player.applyLook?.({ ...look, shirt: sleeveFor(look, st.worn) || look.shirt });
-  }, openShelf: P.openShelf, openCartelShop: () => P.openShop('cartel'), cartelBoss: () => openBoss(),
+  }, openShelf: P.openShelf, openCartelShop: () => P.openShop('cartel'), openLab: P.openLab, openAutopack: P.openAutopack, labStart, labCollect, packNow, cartelBoss: () => openBoss(),
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),

@@ -1,5 +1,5 @@
 import { G, rand, randi, pick, clamp, money, emit } from '../game.js';
-import { ITEMS, STRAINS, RANKS, RESPECT } from '../data/items.js';
+import { ITEMS, STRAINS, RANKS, RESPECT, formsOf, rawOf } from '../data/items.js';
 import { EFFECTS, productValue } from '../data/effects.js';
 import { PEOPLE, STARTING_CUSTOMERS } from '../data/people.js';
 import { inv, absNow, save } from '../core/state.js';
@@ -273,13 +273,16 @@ function makeDeal(person, c, urgent = false) {
   const night = inCurfew(at);
   // envase preferido: los cristales solo van en bolsas Sweet Shards; los tarros
   // solo se piden si ya tienes con qué hacerlos
-  const form = p.strain === 'shards' ? 'shards' : person.form === 'tarro' && !G.state.flags.jars ? 'bolsa' : person.form;
+  // (cada producto, en sus envases: a quien le gustan los tarros le pides el envase grande)
+  const fs = formsOf(rawOf(p.strain));
+  const form = rawOf(p.strain) === 'cogollo' ? (person.form === 'tarro' && !G.state.flags.jars ? 'bolsa' : person.form)
+    : (person.form === 'tarro' ? fs[fs.length - 1] : fs[0])?.id || fs[0]?.id;
   const deal = {
     id: `d${Date.now().toString(36)}${dealSeq++}`, npc: person.id, product: p.id, qty, price: qty * p.price,
     spot: spot.id, status: 'offer', created: absNow(), expires: Math.min(absNow() + 75, at - 15), form, at,
   };
   G.state.deals.push(deal);
-  const fm = ITEMS[person.form].form;
+  const fm = ITEMS[form].form;
   const when = whenLabel(at);
   const extra = night ? ` Es en pleno toque de queda: te pago un ${Math.round(DELIVERY.curfewBonus * 100)}% más por el riesgo.` : '';
   const lines = urgent ? [
@@ -420,7 +423,7 @@ export function completeDeal(deal, given) {
 // - Si aún no es cliente: puede engancharse y darte su número.
 // - Si ya lo es: gana confianza y algo de adicción.
 // En ambos casos sube un poco tu reputación. Una vez al día por persona.
-export const GIFTABLE = ['cogollo', 'bolsa', 'tarro', 'cristal', 'shards'];
+export const GIFTABLE = Object.keys(ITEMS).filter((k) => ITEMS[k].product);
 export function canGift(npc) { return customer(npc.id).sampleDay !== G.state.day; }
 // Reacciones variadas: no se repite la última frase de cada tipo.
 const LINES = {

@@ -262,9 +262,9 @@ function complete(e, task) {
       d.water = 1; refreshPot(o); return 0;
     case 'harvest': {
       if (!d.strain || d.growth < 1) return false;
-      const n = harvestYield(o), pid = ensureBaseProduct(d.strain);
-      if (store.room('cogollo', pid) < n) { e.status = 'espacio'; e.reason = `No caben ${n} cogollos en las estanterías.`; return false; }
-      store.add('cogollo', n, pid);
+      const n = harvestYield(o), leaf = STRAINS[d.strain]?.leaf, item = leaf ? 'hoja' : 'cogollo', pid = leaf ? undefined : ensureBaseProduct(d.strain);
+      if (store.room(item, pid) < n) { e.status = 'espacio'; e.reason = `No caben ${n} ${leaf ? 'hojas' : 'cogollos'} en las estanterías.`; return false; }
+      store.add(item, n, pid);
       emptyPot(o);
       return n;
     }

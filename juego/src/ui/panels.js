@@ -1,5 +1,5 @@
 import { G, money, clamp } from '../game.js';
-import { ITEMS, SHOPS, STRAINS, RANKS, FORMS, RESPECT } from '../data/items.js';
+import { ITEMS, SHOPS, STRAINS, RANKS, FORMS, RESPECT, LAB } from '../data/items.js';
 import { cartelLevel } from '../systems/economy.js';
 export { FORMS };
 import { EFFECTS } from '../data/effects.js';
@@ -125,14 +125,15 @@ export function meter(label, v01, text, color = 'var(--acc)') {
 // Categorías de las tiendas (el orden es el de la pantalla de inicio)
 const SHOP_CATS = [
   { id: 'cultivo', name: 'Cultivo', ic: '🌱', items: ['maceta', 'tierra', 'tierra_plus', 'fertil', 'regadera', 'lampara', 'humidificador'] },
-  { id: 'envasado', name: 'Envasado', ic: '📦', items: ['bolsita', 'bolsa_ss', 'tarro_v', 'mesa_emp', 'envasadora'] },
+  { id: 'envasado', name: 'Envasado', ic: '📦', items: ['bolsita', 'bolsa_ss', 'tarro_v', 'vial_v', 'blister_v', 'frasco_v', 'gotero_v', 'mesa_emp', 'envasadora'] },
+  { id: 'labo', name: 'Ingredientes', ic: '⚗️', items: ['reactivo', 'aglutinante', 'disolvente'] },
   { id: 'quimica', name: 'Química', ic: '⚗️', items: ['catalizador', 'hornillo', 'azucar', 'colorante'] },
   { id: 'muebles', name: 'Muebles', ic: '🛋️', items: ['cama', 'armario', 'caja_fuerte', 'estante'] },
   { id: 'defensa', name: 'Defensa', ic: '🛡️', items: ['spray', 'porra', 'machete', 'pistola', 'balas'] },
   { id: 'luz', name: 'Luz y aire', ic: '🔆', items: ['panel_led', 'extractor'] },
   { id: 'abonos', name: 'Abonos', ic: '🧪', items: ['abono_grow', 'abono_bloom', 'ph_corr'] },
   { id: 'premium', name: 'Semillas premium', ic: '🌱', items: ['sem_roja', 'sem_negra'] },
-  { id: 'estaciones', name: 'Estaciones', ic: '🏭', items: ['mesa_emp', 'envasadora', 'hornillo_pro'] },
+  { id: 'estaciones', name: 'Estaciones', ic: '🏭', items: ['mesa_emp', 'envasadora', 'hornillo_pro', 'mesa_polvo', 'maq_pastillas', 'est_liquidos', 'empacadora'] },
 ];
 const SHOP_THEME = { ferreteria: 't-ferreteria', gasolinera: 't-gasolinera', muebles: 't-muebles', armeria: 't-armeria', cartel: 't-cartel' };
 const SHOP_HELLO = {
@@ -475,6 +476,88 @@ function productStacks(id) {
 }
 
 // ------------------------------------------------------------------
+//  Estaciones del cártel: producir una tanda y envasar lo suelto
+// ------------------------------------------------------------------
+export function openLab(o) {
+  const type = o.entry.type, L = LAB[type];
+  const p = openPanel({ title: L.name, wide: true, cls: 'lab' });
+  const render = () => {
+    p.body.innerHTML = ''; p.foot.innerHTML = '';
+    // 1) producir
+    const sec = h('div', 'lab-sec', `<div class="label">Producir</div>`);
+    const row = h('div', 'lab-recipe');
+    for (const [k, n] of Object.entries(L.make)) {
+      const have = inv.count(k), ok = have >= n;
+      row.appendChild(h('div', 'lab-ing' + (ok ? '' : ' miss'), `${ii(k)}<b>${n}× ${ITEMS[k].name}</b><small>tienes ${have}</small>`));
+    }
+    row.appendChild(h('div', 'lab-arrow', '➜'));
+    row.appendChild(h('div', 'lab-ing out', `${ii(L.out)}<b>${L.n}× ${ITEMS[L.out].name}</b><small>${Math.floor(L.min / 60)} h ${String(L.min % 60).padStart(2, '0')} min</small>`));
+    sec.appendChild(row);
+    const b = o.entry.data.batch;
+    if (b) sec.appendChild(h('div', 'small muted', absNow() >= b.ready ? '¡La tanda está lista! Recógela.' : `Trabajando: quedan ${Math.ceil(b.ready - absNow())} min de juego.`));
+    const go = h('button', 'btn', b ? (absNow() >= b.ready ? `Recoger ${b.n}` : 'Trabajando…') : 'Poner tanda');
+    go.onclick = () => {
+      if (b) { if (absNow() >= b.ready && G.act.labCollect(o)) render(); return; }
+      const r = G.act.labStart(o);
+      if (!r.ok) return fail(r.msg);
+      G.act.toast(r.msg, '⚗️'); render();
+    };
+    sec.appendChild(go);
+    p.body.appendChild(sec);
+    // 2) envasar lo suelto de esta estación
+    const forms = FORMS.filter((f) => f.at === type);
+    const stacks = productStacks(L.out);
+    const pk = h('div', 'lab-sec', `<div class="label">Envasar</div>`);
+    if (!stacks.length) pk.appendChild(h('div', 'small muted', `No llevas ${ITEMS[L.out].name.toLowerCase()} suelto para envasar.`));
+    for (const st of stacks) for (const F of forms) {
+      const max = Math.min(Math.floor(st.q / F.per), inv.count(F.pack));
+      const card = h('div', 'lab-pack', `${ii(F.id)}<div><b>${ITEMS[F.id].name}</b><small>${product(st.p)?.name || ''} · ${F.per} ${F.per > 1 ? 'unidades' : 'unidad'} + 1 ${ITEMS[F.pack].name.toLowerCase().replace(/s$/, '').replace(/es$/, '')} · tienes ${inv.count(F.pack)} envases</small></div>`);
+      const bt = h('button', 'btn sm' + (max ? '' : ' dim'), max ? `Envasar ${max}` : 'Faltan envases');
+      bt.onclick = () => { if (!max) return fail(`Te faltan ${ITEMS[F.pack].name.toLowerCase()} (en El Cartel) o producto.`); const n = G.act.packNow(F, st.p, max); G.act.toast(`Has envasado ${n} ${ITEMS[F.id].name.toLowerCase()}.`, '📦'); render(); };
+      card.appendChild(bt); pk.appendChild(card);
+    }
+    p.body.appendChild(pk);
+  };
+  render();
+}
+
+// Empacadora avanzada: envasa sola todo lo suelto que llevas, cada producto en el envase más
+// grande del que tengas (y lo que sobre, en el pequeño)
+export function openAutopack() {
+  const p = openPanel({ title: 'Empacadora avanzada', wide: true, cls: 'lab' });
+  const plan = () => {
+    const out = [];
+    const raws = [...new Set(FORMS.map((f) => f.src))];
+    const packs = new Map(); const left = new Map();
+    const cnt = (id, pp) => (left.has(id + '|' + pp) ? left.get(id + '|' + pp) : inv.count(id, pp));
+    const pk = (id) => (packs.has(id) ? packs.get(id) : inv.count(id));
+    for (const raw of raws) for (const st of productStacks(raw)) {
+      for (const F of FORMS.filter((f) => f.src === raw && (f.id !== 'tarro' || G.state.flags.jars || true)).sort((a, b) => b.per - a.per)) {
+        const n = Math.min(Math.floor(cnt(raw, st.p) / F.per), pk(F.pack));
+        if (n > 0) { out.push({ F, p: st.p, n }); left.set(raw + '|' + st.p, cnt(raw, st.p) - n * F.per); packs.set(F.pack, pk(F.pack) - n); }
+      }
+    }
+    return out;
+  };
+  const render = () => {
+    p.body.innerHTML = ''; p.foot.innerHTML = '';
+    const list = plan();
+    p.body.appendChild(h('div', 'small muted', 'Mete lo suelto y los envases: la máquina lo envasa todo sola, en el envase más grande que tengas.'));
+    if (!list.length) p.body.appendChild(h('div', 'lab-sec', '<div class="small muted">No hay nada que envasar: necesitas producto suelto (cogollos, cristales, polvo, pastillas o extracto) y sus envases.</div>'));
+    for (const it of list) p.body.appendChild(h('div', 'lab-pack', `${ii(it.F.id)}<div><b>${it.n}× ${ITEMS[it.F.id].name}</b><small>${product(it.p)?.name || ''} · usa ${it.n * it.F.per} ${ITEMS[it.F.src].name.toLowerCase()} y ${it.n} envases</small></div>`));
+    const go = h('button', 'btn' + (list.length ? '' : ' dim'), 'Envasar todo');
+    go.onclick = () => {
+      if (!list.length) return fail('No hay nada que envasar.');
+      let total = 0;
+      for (const it of list) total += G.act.packNow(it.F, it.p, it.n);
+      G.act.toast(`La empacadora ha envasado ${total} envases.`, '🏭'); render();
+    };
+    p.foot.appendChild(go);
+  };
+  render();
+}
+
+// ------------------------------------------------------------------
 //  Estantería (transferir objetos)
 // ------------------------------------------------------------------
 // ------------------------------------------------------------------
@@ -670,7 +753,7 @@ const stacksOf = (ids) => {
   for (const s of G.state.inv) if (s && ids.includes(s.id) && s.p) map.set(s.id + '|' + s.p, { id: s.id, p: s.p, q: (map.get(s.id + '|' + s.p)?.q || 0) + s.q });
   return [...map.values()];
 };
-const PACKED = ['bolsa', 'tarro', 'shards'];
+const PACKED = Object.keys(ITEMS).filter((k) => ITEMS[k].packed);
 
 export function npcActions(npc) {
   const deal = npc.deal;
@@ -872,7 +955,7 @@ export function openHandover(npc, deal) {
   const autoFill = () => {
     offer.clear();
     let need = deal.qty;
-    const order = [...new Set([deal.form, 'tarro', 'shards', 'bolsa'])].filter(Boolean);
+    const order = [...new Set([deal.form, ...PACKED.slice().sort((a, b) => ITEMS[b].units - ITEMS[a].units)])].filter(Boolean);
     for (const id of order) {
       if (need <= 0) break;
       const u = ITEMS[id].units;

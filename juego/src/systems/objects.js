@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { G, clamp, randi } from '../game.js';
-import { ITEMS, STRAINS } from '../data/items.js';
+import { ITEMS, STRAINS, LAB } from '../data/items.js';
 import { inv, slotsCount, save, takeSeed } from '../core/state.js';
 import { removeBox } from '../world/world.js';
 import { mat } from '../entities/human.js';
@@ -9,16 +9,19 @@ import { sfx } from '../core/audio.js';
 import { ensureBaseProduct } from './economy.js';
 import { absNow } from '../core/state.js';
 import { buildPacker, buildJarPacker, buildStove } from '../world/benches.js';
+import { buildCrystalTable, buildPowderTable, buildPillMachine, buildLiquidStation, buildAutoPacker } from '../world/labs.js';
 import { buildFabricPot, buildPlant, refreshPlant } from '../entities/plant.js';
 
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
 export const FOOT = {
   pot: [0.8, 0.8], packer: [1.6, 0.9], lamp: [0.6, 0.6], shelf: [1.6, 0.6], jarpacker: [1.3, 0.8], stove: [1.2, 0.75],
   bed: [1.1, 2.1], locker: [1.2, 0.6], safe: [0.7, 0.7], humid: [0.5, 0.5], panel: [1.3, 0.6], extractor: [0.7, 0.7],
+  crystal: [2.0, 0.85], powder: [2.0, 0.85], pills: [1.9, 0.9], liquid: [2.0, 0.85], autopack: [2.4, 0.95],
 };
-const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo', bed: 'cama', locker: 'armario', safe: 'caja_fuerte', humid: 'humidificador', panel: 'panel_led', extractor: 'extractor' };
+const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo', bed: 'cama', locker: 'armario', safe: 'caja_fuerte', humid: 'humidificador', panel: 'panel_led', extractor: 'extractor', crystal: 'hornillo_pro', powder: 'mesa_polvo', pills: 'maq_pastillas', liquid: 'est_liquidos', autopack: 'empacadora' };
 // altura de la caja de colisión / selección de cada objeto
-const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.9, panel: 2.1, extractor: 1.1 };
+const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.9, panel: 2.1, extractor: 1.1, crystal: 1.9, powder: 1.9, pills: 1.8, liquid: 1.9, autopack: 1.9 };
+export const LAB_TYPES = ['crystal', 'powder', 'pills', 'liquid'];
 const SLOTS = { shelf: 12, locker: 24 };
 // Abonos del cártel que se echan a una planta: objeto → [marca en la maceta, nombre]
 const ADDS = { abono_grow: ['grow', 'abono Grow'], abono_bloom: ['bloom', 'abono Bloom'], ph_corr: ['ph', 'corrector de pH'] };
@@ -106,6 +109,7 @@ export function pickBlock(o) {
   if (e.type === 'safe' && d.cash > 0) return 'Saca el dinero de la caja fuerte antes de guardarla.';
   if (e.type === 'pot' && (d.soil || d.strain)) return 'La maceta tiene tierra: usa «Mover» para cambiarla de sitio sin perderla.';
   if (e.type === 'stove' && d.batch) return 'El hornillo está ocupado.';
+  if (LAB_TYPES.includes(e.type) && d.batch) return 'La estación está trabajando: recoge la tanda antes de moverla.';
   return null;
 }
 
@@ -125,7 +129,7 @@ export function placeObject(type, x, z, r, item = null) {
   if (type === 'pot') entry.data = { soil: 0, strain: null, growth: 0, water: 0, fert: 0 };
   if (SLOTS[type]) entry.data = { slots: Array(SLOTS[type]).fill(null) };
   if (type === 'safe') entry.data = { cash: 0 };
-  if (type === 'stove') entry.data = { batch: null };
+  if (type === 'stove' || LAB_TYPES.includes(type)) entry.data = { batch: null };
   if (item && ITEMS[item]?.data) Object.assign(entry.data, ITEMS[item].data, { item }); // variantes (hornillo industrial)
   if (type === 'jarpacker') G.state.flags.jars = true;
   G.state.objects.push(entry);
@@ -145,6 +149,7 @@ const BUILD = {
   packer: buildPacker,
   jarpacker: buildJarPacker,
   stove: buildStove,
+  crystal: buildCrystalTable, powder: buildPowderTable, pills: buildPillMachine, liquid: buildLiquidStation, autopack: buildAutoPacker,
   lamp(o) {
     const g = o.group;
     mesh(cyl, '#2c3e50', 0.5, 0.06, 0.5, 0, 0.03, 0, g);
@@ -378,6 +383,14 @@ function actionsFor(o) {
       return [{ label: 'Abrir armario', fn: () => G.act.openShelf(o) }, pick];
     case 'safe':
       return [{ label: 'Abrir caja fuerte', fn: () => G.act.openSafe(o) }, pick];
+    case 'crystal': case 'powder': case 'pills': case 'liquid': {
+      const L = LAB[e.type], b = d.batch;
+      const left = b ? Math.ceil(b.ready - absNow()) : 0;
+      const lab = { label: !b ? `Usar ${L.name.toLowerCase()}` : left > 0 ? `Trabajando… ${Math.floor(left / 60)}h ${String(left % 60).padStart(2, '0')}min` : `Recoger ${b.n} ${ITEMS[L.out].name.toLowerCase()}`, fn: () => (b && left <= 0 ? labCollect(o) : G.act.openLab(o)) };
+      return [lab, ...(b ? [] : [pick])];
+    }
+    case 'autopack':
+      return [{ label: 'Usar la empacadora avanzada', fn: () => G.act.openAutopack(o) }, pick];
     case 'panel':
       return [{ label: 'Panel LED (encendido)', fn: () => G.act.toast('Las plantas a menos de 2,5 m crecen el doble de rápido.', '🔆') }, pick];
     case 'extractor':
@@ -388,6 +401,55 @@ function actionsFor(o) {
       return [{ label: 'Dormir', fn: () => G.act.sleep(G.world.inProperty(e.x, e.z), { wake: 6 * 60 }) }, pick];
   }
   return [];
+}
+
+// ---- Estaciones del cártel (cristales, polvos, pastillas, líquidos) ----
+export function labMissing(type) {
+  const L = LAB[type];
+  return Object.entries(L.make).filter(([k, n]) => inv.count(k) < n).map(([k, n]) => `${n}× ${ITEMS[k].name}`);
+}
+// Pone una tanda: gasta los ingredientes (los cogollos de la estación de líquidos, de la
+// variedad que más tengas) y deja la tanda en marcha
+export function labStart(o) {
+  const L = LAB[o.entry.type];
+  const miss = labMissing(o.entry.type);
+  if (miss.length) return { ok: false, msg: `Te falta: ${miss.join(', ')}.` };
+  for (const [k, n] of Object.entries(L.make)) {
+    if (k === 'cogollo' || ITEMS[k].product) { // de lo que más tengas
+      let need = n;
+      const by = new Map(); for (const s of G.state.inv) if (s && s.id === k) by.set(s.p, (by.get(s.p) || 0) + s.q);
+      for (const [p] of [...by].sort((a, b) => b[1] - a[1])) { const t = Math.min(need, inv.count(k, p)); inv.remove(k, t, p); need -= t; if (!need) break; }
+    } else inv.remove(k, n);
+  }
+  o.entry.data.batch = { ready: absNow() + L.min, n: L.n };
+  G.player.use();
+  sfx('mix');
+  save();
+  return { ok: true, msg: `Tanda en marcha: ${L.n} ${ITEMS[L.out].name.toLowerCase()} en ${Math.floor(L.min / 60)} h ${String(L.min % 60).padStart(2, '0')} min.` };
+}
+export function labCollect(o) {
+  const L = LAB[o.entry.type], b = o.entry.data.batch;
+  if (!b || absNow() < b.ready) return false;
+  const pid = ensureBaseProduct(L.strain);
+  if (inv.room(L.out, pid) < b.n) { G.act.toast('No tienes hueco en el inventario.'); return false; }
+  inv.add(L.out, b.n, pid);
+  o.entry.data.batch = null;
+  sfx('harvest');
+  G.act.toast(`Has recogido ${b.n} ${ITEMS[L.out].name.toLowerCase()}. Envásalos en la propia estación.`, '✨');
+  G.act.addXP(10);
+  save();
+  return true;
+}
+// Envasar en la estación (o en la empacadora): F = forma de FORMS; n = cuántos envases
+export function packNow(F, p, n) {
+  const can = Math.min(n, Math.floor(inv.count(F.src, p) / F.per), inv.count(F.pack));
+  let made = 0;
+  for (let k = 0; k < can; k++) {
+    if (inv.room(F.id, p) < 1) break;
+    inv.remove(F.src, F.per, p); inv.remove(F.pack, 1); inv.add(F.id, 1, p); made++;
+  }
+  if (made) { sfx('pop'); save(); }
+  return made;
 }
 
 // ---- Hornillo de cristalización ----
@@ -443,6 +505,14 @@ function harvest(o) {
   const d = o.entry.data;
   const s = STRAINS[d.strain];
   const n = harvestYield(o);
+  if (s.leaf) { // Nevada: hojas para la mesa de polvos
+    if (inv.room('hoja') < n) return G.act.toast(`Necesitas hueco para ${n} hojas.`);
+    inv.add('hoja', n);
+    emptyPot(o); G.player.use(); sfx('harvest');
+    G.act.toast(`Has cosechado ${n} hojas de Nevada. Conviértelas en polvo en la mesa de preparación de polvos.`, '🍃');
+    G.act.addXP(10);
+    return;
+  }
   const pid = ensureBaseProduct(d.strain);
   if (inv.room('cogollo', pid) < n) return G.act.toast(`Necesitas hueco para ${n} cogollos.`);
   inv.add('cogollo', n, pid);

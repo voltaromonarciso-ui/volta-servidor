@@ -376,7 +376,7 @@ function supplier() {
     const locked = st.rank > G.state.rank;
     const card = h('div', 'ph-card' + (locked ? ' locked' : ''));
     card.innerHTML = `<div class="rowsp"><b>🌰 ${st.name}</b><span class="money">${money(st.seed)}</span></div><div class="chips">${chips([st.effect])}</div>
-      <div class="small muted">Precio base del producto: ${money(st.base)} · Cosecha ${st.yield[0]}–${st.yield[1]} cogollos</div>`;
+      <div class="small muted">${st.leaf ? `Da ${st.yield[0]}–${st.yield[1]} hojas para hacer polvo (Nieve) en la mesa de polvos` : `Precio base del producto: ${money(st.base)} · Cosecha ${st.yield[0]}–${st.yield[1]} cogollos`}</div>`;
     if (locked) card.appendChild(h('div', 'small', `🔒 Requiere rango ${RANKS[st.rank].name}`));
     else {
       let q = 3;
