@@ -474,8 +474,8 @@ const signTex = (txt, bg, fg = '#fff', icon = '') => (c, w, h) => {
 // Oficina en entreplanta, contra el frente de la nave (encima de la entrada): forjado de acero
 // sobre pilares a 3,3 m, escalera metálica recta con barandilla amarilla, pasillo con
 // barandilla delante y cristalera hacia la nave. Arriba: zona de estar (tele en la pared del
-// lado, sofá, sillones, mesita, alfombra), escritorios con ordenador y silla de ruedas, mesa
-// de reuniones (en la grande), office con nevera y cafetera, archivadores, pizarra y plantas.
+// lado, sofá, sillones, mesita, alfombra), escritorios con ordenador y silla de ruedas,
+// office con nevera y cafetera, archivadores, pizarra y plantas.
 // Debajo queda libre (sólo los pilares).
 // Las colisiones van con nivel: 'up' sólo cuenta arriba, 'down' sólo abajo, 'low' sólo a ras
 // de suelo (bajo la escalera). Devuelve también los suelos de arriba (entreplanta y escalera).
@@ -555,7 +555,7 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes, put) {
     c.strokeStyle = '#c0392b'; c.beginPath(); c.moveTo(150, 110); c.lineTo(180, 80); c.lineTo(205, 95); c.lineTo(235, 50); c.stroke();
   }));
   // --- arriba: muebles (modelos Kenney): zona de estar a la izquierda, escritorios en el
-  // centro, estanterías, office a la derecha, reuniones en la grande ---
+  // centro, estanterías y office a la derecha ---
   const Y = FH, cz = (oz0 + mz1) / 2, wz = mz1 - 0.14; // (wz: cara del panel del fondo)
   const up = (name, x, z, ry = 0, s = 1, solid = true, y = Y) => put(name, x, y, z, ry, s, solid ? 'up' : null);
   up('furniture/rugRectangle', mx0 + 2.3, cz, Math.PI / 2, 1.1, false);
@@ -604,12 +604,6 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes, put) {
   up('furniture/kitchenFridgeSmall', kx, oz0 + 2.9, -Math.PI / 2);
   up('furniture/trashcan', kx - 0.1, wz - 0.4, 0, 1, false);
   up('furniture/radio', kx + 0.05, oz0 + 1.3, -Math.PI / 2, 1, false, kh);
-  // mesa de reuniones (Alfa)
-  if (level >= 2) {
-    const mx = dx0 + 1.0, mzz = oz0 + 1.25;
-    up('furniture/tableRound', mx, mzz, 0);
-    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2 + Math.PI / 4; up('furniture/chairCushion', mx + Math.sin(a) * 0.95, mzz + Math.cos(a) * 0.95, a + Math.PI, 1, false); }
-  }
   // cuadros y reloj en la pared de panel de la zona de estar
   const frame = (x, z, wd, ht, key, draw) => { rb(g, mat('marcoCuadro', { color: '#2b2622', roughness: 0.6 }), wd + 0.08, ht + 0.08, 0.04, x, Y + 1.65, z, 0.01); const pic = new THREE.Mesh(new THREE.PlaneGeometry(wd, ht), paintMat(key, 128, 96, draw)); pic.position.set(x, Y + 1.65, z - 0.025); pic.rotation.y = Math.PI; g.add(pic); };
   frame(mx0 + 1.6, wz - 0.03, 0.9, 0.6, 'cuadroPuerto', (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#f6b26b'); gr.addColorStop(0.6, '#e06666'); gr.addColorStop(0.61, '#3d85c6'); gr.addColorStop(1, '#1c4587'); c.fillStyle = gr; c.fillRect(0, 0, w, hh); c.fillStyle = '#20124d'; c.fillRect(20, 40, 8, 18); c.fillRect(30, 30, 6, 28); c.fillRect(70, 48, 40, 10); });
@@ -662,7 +656,7 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
   // en el pequeño (Delta) la nave se deja casi libre: sólo estanterías, banco y lo de las paredes
   if (level === 0) return;
   // bidones en la esquina del fondo izquierda, y montones de cajas
-  const drums = [[0, 0], [0.66, 0], [0, 0.66], [0.66, 0.66], [1.32, 0.33], [0.33, 1.32]].slice(0, 3 + level * 1.5 | 0);
+  const drums = [[0, 0], [0.66, 0], [0.33, 0.6]]; // (tres bidones: la nave ordenada, sin amontonar)
   const dx0 = ix0 + 0.6, dz0 = rz1 + 0.9;
   drums.forEach(([ox, oz], k) => drum(g, dx0 + ox, 0, dz0 + oz, k));
   boxes.push([dx0 - 0.33, dx0 + 1.65, dz0 - 0.33, dz0 + 1.65, 0.9]);
@@ -673,8 +667,7 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
     boxes.push([x - top / 2 - 0.05, x + top / 2 + 0.05, z - top / 2 - 0.05, z + top / 2 + 0.05, y]);
   };
   stack(ix1 - 0.7, rz1 + 2.6, 3);
-  if (level >= 1) { stack(ix1 - 1.5, rz1 + 2.7, 2); stack(ix1 - 0.7, rz1 + 3.5, 2); }
-  if (level >= 2) { stack(ix0 + 2.4, rz1 + 1.0, 4); stack(ix0 + 3.2, rz1 + 1.1, 3); }
+  if (level >= 2) stack(ix1 - 1.5, rz1 + 2.7, 2);
   // zona de carga en la persiana de la izquierda: la furgoneta de reparto dentro (de morro a la
   // persiana), una cinta de rodillos detrás, palés con cajas al lado, conos y un poste
   const r0 = rolls[0];
@@ -687,13 +680,10 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
     for (let l = 0; l < layers; l++) { let hgt = 0; for (const [ox, oz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) { const d = put('furniture/cardboardBoxClosed', x + ox, y, z + oz, (l % 2) * 0.1, 1.15, null); if (d) hgt = d[1]; } y += hgt; }
     boxes.push([x - 0.62, x + 0.62, z - 0.62, z + 0.62, y]);
   };
-  palletStack(r0 + 2.4, iz1 - 2.2, 2);
-  palletStack(r0 + 2.4, iz1 - 3.6, 1 + level);
-  if (level >= 1) palletStack(r0 - 2.6, iz1 - 4.6, 2);
+  palletStack(r0 + 2.4, iz1 - 2.6, 2);
+  if (level >= 2) palletStack(r0 + 2.4, iz1 - 4.0, 1);
   for (const [cx2, cz2] of [[r0 - 1.7, iz1 - 0.8], [r0 + 1.7, iz1 - 0.8]]) put('factory/cone', cx2, 0, cz2, 0, 1, null);
   put('factory/warning-traffic', r0 + 1.6, 0, iz1 - 5.6, 0, 1, null);
-  put('furniture/chair', r0 + 1.0, 0, iz1 - 6.6, 2.4, 1, null);
-  put('survival/bucket', r0 - 1.2, 0, iz1 - 6.2, 0, 1, null);
   const film = mat('filmRollo', { color: '#d9dde2', roughness: 0.25, transparent: true, opacity: 0.9 });
   for (let k = 0; k < 2 + level; k++) { const r = cy(g, film, 0.12, 0.12, 0.5, ix1 - 0.4, 0.12, rz1 + 1.0 + k * 0.28, 12); r.rotation.x = Math.PI / 2; }
   // contenedores IBC (depósito blanco dentro de una jaula de acero sobre palé), en Bravo y Alfa
@@ -786,9 +776,7 @@ function warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes
   // cajas de plástico apiladas cerca de las estanterías
   const crate = (x, z, n, c) => { for (let k = 0; k < n; k++) { rb(g, mat('cajaPl' + c, { color: c, roughness: 0.6 }), 0.6, 0.3, 0.4, x, 0.15 + k * 0.31, z, 0.02); slab(g, dark, x - 0.12, x + 0.12, 0.2 + k * 0.31, 0.24 + k * 0.31, z - 0.205, z - 0.2); } boxes.push([x - 0.32, x + 0.32, z - 0.22, z + 0.22, n * 0.31]); };
   const cz0 = rz1 + 0.9;
-  if (level >= 1) { crate(ix0 + 6.5, cz0, 4, '#1f5fbf'); crate(ix0 + 7.2, cz0, 3, '#c0392b'); } // (en Delta, nave libre)
-  if (level >= 1) { crate(ix0 + 7.9, cz0, 5, '#27ae60'); crate(ix0 + 6.85, cz0 + 0.5, 2, '#1f5fbf'); }
-  if (level >= 2) { crate(ix1 - 6, cz0, 4, '#e67e22'); crate(ix1 - 6.7, cz0, 4, '#1f5fbf'); crate(ix1 - 7.4, cz0, 3, '#27ae60'); }
+  if (level >= 1) { crate(ix0 + 6.5, cz0, 3, '#1f5fbf'); crate(ix0 + 7.2, cz0, 2, '#7f8c8d'); } // (dos montones; en Delta, nada)
   // detalles de vida: pósters, calendario y tablón de avisos en las paredes
   const poster = (key, x, y, z, ry, w, h, draw) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintMat(key, 128, Math.round((128 * h) / w), draw)); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); };
   const lw = ix0 + 0.045; // pared izquierda (cara hacia dentro)
