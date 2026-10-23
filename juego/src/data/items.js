@@ -40,6 +40,16 @@ export const ITEMS = {
   pistola:   { name: 'Pistola', icon: '🔫', stack: 1, price: 1400, rank: 3, illegal: true, desc: 'Nadie te atraca si la enseñas. Con ella en la mano, el botón de golpear dispara (gasta balas). Ilegal sin licencia: si la policía te cachea, te la quita y la multa es mayor.' },
   machete:   { name: 'Machete', icon: '🔪', stack: 1, price: 160, rank: 1, desc: 'Golpe rápido y fuerte con el botón de golpear. Pegar a alguien delante de la policía es delito.' },
   balas:     { name: 'Balas', icon: '🟡', stack: 60, price: 4, rank: 3, illegal: true, desc: 'Munición para la pistola: una por disparo.' },
+  // El Cartel (cuartel del cártel): material que no venden en otro sitio. `respect`: nivel de
+  // respeto del cártel que hace falta (0 Conocido, 1 De confianza, 2 Socio)
+  panel_led: { name: 'Panel LED de cultivo', icon: '🔆', stack: 2, price: 900, place: 'panel', desc: 'Panel colgante en su soporte: las plantas a menos de 2,5 m crecen el doble de rápido (no se suma a la lámpara).' },
+  extractor: { name: 'Extractor con filtro', icon: '🌀', stack: 2, price: 650, respect: 1, place: 'extractor', desc: 'Aire fresco: las plantas a menos de 3 m crecen un 15 % más rápido. Se suma a la luz.' },
+  abono_grow:{ name: 'Abono Grow', icon: '🟩', stack: 10, price: 40, desc: 'Échaselo a una planta que está creciendo: crece un 25 % más rápido.' },
+  abono_bloom:{ name: 'Abono Bloom', icon: '🟪', stack: 10, price: 55, respect: 1, desc: 'Échaselo a una planta: +4 cogollos al cosechar.' },
+  ph_corr:   { name: 'Corrector de pH', icon: '💧', stack: 10, price: 25, desc: 'Échaselo a una planta: el agua le dura el doble.' },
+  sem_roja:  { name: 'Semilla Lumaflor Roja', icon: '🌱', stack: 10, price: 110, illegal: true, gives: { id: 'semilla', p: 'roja' }, desc: 'Variedad del cártel: cogollos muy cotizados. Crece algo más despacio.' },
+  sem_negra: { name: 'Semilla Lumaflor Negra', icon: '🌱', stack: 10, price: 160, illegal: true, respect: 2, gives: { id: 'semilla', p: 'negra' }, desc: 'La mejor de la isla: la pagan carísima. Solo para socios del cártel.' },
+  hornillo_pro:{ name: 'Hornillo industrial', icon: '🔥', stack: 1, price: 2200, respect: 1, place: 'stove', data: { pro: true }, desc: 'Como el hornillo, pero cada tanda tarda 1 h 15 min y saca 9 cristales.' },
   humidificador:{ name: 'Humidificador', icon: '💨', stack: 2, price: 220, place: 'humid', desc: 'Las macetas a menos de 2,5 m pierden el agua un 40 % más despacio.' },
 };
 
@@ -48,6 +58,9 @@ export const STRAINS = {
   niebla: { name: 'Lumaflor Violeta', seed: 45, base: 48, effect: 'sueno',    color: 0x8b5cc7, speed: 0.9,  yield: [8, 12],  rank: 2 },
   trueno: { name: 'Lumaflor Dorada',  seed: 65, base: 62, effect: 'energia',  color: 0xd8b23a, speed: 0.8,  yield: [9, 12],  rank: 3 },
   marea:  { name: 'Lumaflor Azul',    seed: 90, base: 80, effect: 'enfoque',  color: 0x3aa0d8, speed: 0.75, yield: [10, 13], rank: 4 },
+  // del cártel (solo en su tienda, nunca en el Rubio)
+  roja:   { name: 'Lumaflor Roja',    seed: 110, base: 98, effect: 'energia', color: 0xd8463a, speed: 0.75, yield: [10, 14], rank: 2, cartel: true },
+  negra:  { name: 'Lumaflor Negra',   seed: 160, base: 135, effect: 'relajado', color: 0x3a2a4a, speed: 0.7, yield: [11, 15], rank: 2, cartel: true },
   // cristales: no se cultivan, se cocinan en el hornillo
   shards: { name: 'Sweet Shards',     seed: 0,  base: 70, effect: 'euforia',  color: 0xb06cff, rank: 2, noSeed: true },
 };
@@ -69,6 +82,12 @@ export const SHOPS = {
     open: [10, 20],
     stock: ['spray', 'porra', 'machete', 'pistola', 'balas'],
     greet: ['Buenas. Aquí todo con papeles... casi todo.', 'Con lo que se ve por el barrio de noche, mejor ir preparado.', '¿Algo para dormir tranquilo?'],
+  },
+  cartel: {
+    name: 'El Cartel',
+    open: [0, 24],
+    stock: ['panel_led', 'extractor', 'abono_grow', 'abono_bloom', 'ph_corr', 'sem_roja', 'sem_negra', 'mesa_emp', 'envasadora', 'hornillo_pro', 'machete', 'porra', 'pistola', 'balas'],
+    greet: ['Aquí no hay ticket ni preguntas. Elige.', 'El jefe dice que te atienda bien. No le hagas quedar mal.', 'Material de primera. Lo que no ves aquí, no existe en la isla.'],
   },
   gasolinera: {
     name: 'Gas&Go 24h',
@@ -92,4 +111,11 @@ export const FORMS = [
   { id: 'bolsa', src: 'cogollo', pack: 'bolsita', per: 1, at: 'packer' },
   { id: 'shards', src: 'cristal', pack: 'bolsa_ss', per: 1, at: 'packer' },
   { id: 'tarro', src: 'cogollo', pack: 'tarro_v', per: 5, at: 'jarpacker' },
+];
+
+// Respeto del cártel (sube con los encargos del jefe): desbloquea productos de su tienda
+export const RESPECT = [
+  { name: 'Conocido', xp: 0 },
+  { name: 'De confianza', xp: 100 },
+  { name: 'Socio', xp: 300 },
 ];

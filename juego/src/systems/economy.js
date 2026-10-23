@@ -1,5 +1,5 @@
 import { G, rand, randi, pick, clamp, money, emit } from '../game.js';
-import { ITEMS, STRAINS, RANKS } from '../data/items.js';
+import { ITEMS, STRAINS, RANKS, RESPECT } from '../data/items.js';
 import { EFFECTS, productValue } from '../data/effects.js';
 import { PEOPLE, STARTING_CUSTOMERS } from '../data/people.js';
 import { inv, absNow, save } from '../core/state.js';
@@ -68,7 +68,7 @@ export function addXP(n) {
     sfx('level');
     const unlocks = [
       ...Object.entries(ITEMS).filter(([, it]) => it.rank === s.rank).map(([, it]) => it.name),
-      ...Object.values(STRAINS).filter((st) => st.rank === s.rank && !st.noSeed).map((st) => 'Semillas de ' + st.name),
+      ...Object.values(STRAINS).filter((st) => st.rank === s.rank && !st.noSeed && !st.cartel).map((st) => 'Semillas de ' + st.name),
     ];
     G.act.bigToast?.(`¡Nuevo rango: ${RANKS[s.rank].name}!`, unlocks.length ? 'Desbloqueado: ' + unlocks.join(', ') : 'Tus clientes te respetan más.');
   }
@@ -692,3 +692,11 @@ export function deadDropActions(dropId) {
 }
 
 export { EFFECTS };
+
+// Respeto del cártel: puntos que dan los encargos del jefe; el nivel desbloquea su tienda
+export const cartelXP = () => G.state.cartel?.xp || 0;
+export function cartelLevel() {
+  let lv = 0;
+  RESPECT.forEach((r, i) => { if (cartelXP() >= r.xp) lv = i; });
+  return lv;
+}

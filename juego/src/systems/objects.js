@@ -14,15 +14,19 @@ import { buildFabricPot, buildPlant, refreshPlant } from '../entities/plant.js';
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
 export const FOOT = {
   pot: [0.8, 0.8], packer: [1.6, 0.9], lamp: [0.6, 0.6], shelf: [1.6, 0.6], jarpacker: [1.3, 0.8], stove: [1.2, 0.75],
-  bed: [1.1, 2.1], locker: [1.2, 0.6], safe: [0.7, 0.7], humid: [0.5, 0.5],
+  bed: [1.1, 2.1], locker: [1.2, 0.6], safe: [0.7, 0.7], humid: [0.5, 0.5], panel: [1.3, 0.6], extractor: [0.7, 0.7],
 };
-const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo', bed: 'cama', locker: 'armario', safe: 'caja_fuerte', humid: 'humidificador' };
+const ITEM_OF = { pot: 'maceta', packer: 'mesa_emp', lamp: 'lampara', shelf: 'estante', jarpacker: 'envasadora', stove: 'hornillo', bed: 'cama', locker: 'armario', safe: 'caja_fuerte', humid: 'humidificador', panel: 'panel_led', extractor: 'extractor' };
 // altura de la caja de colisión / selección de cada objeto
-const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.9 };
+const HEIGHT = { shelf: 1.8, lamp: 2, locker: 2, bed: 0.7, safe: 0.85, humid: 0.9, panel: 2.1, extractor: 1.1 };
 const SLOTS = { shelf: 12, locker: 24 };
+// Abonos del cártel que se echan a una planta: objeto → [marca en la maceta, nombre]
+const ADDS = { abono_grow: ['grow', 'abono Grow'], abono_bloom: ['bloom', 'abono Bloom'], ph_corr: ['ph', 'corrector de pH'] };
 // Hornillo: receta y tiempo de cada tanda de cristales
 export const RECIPE = { azucar: 2, colorante: 1, catalizador: 1 };
 export const COOK_MIN = 120, COOK_OUT = 6;
+// hornillo industrial (El Cartel): más rápido y saca más
+export const COOK_PRO = { min: 75, out: 9 };
 const GROW_MIN = 10 * 60;     // minutos de juego para crecer del todo (≈ 7 min reales)
 const DRAIN_MIN = 10 * 60;    // minutos que dura el agua
 
@@ -106,7 +110,7 @@ export function pickBlock(o) {
 }
 
 function pickUp(o) {
-  const id = ITEM_OF[o.entry.type];
+  const id = o.entry.data?.item || ITEM_OF[o.entry.type];
   const why = pickBlock(o);
   if (why) { sfx('error'); G.act.toast(why, '⚠️'); return false; }
   if (inv.room(id) < 1) { G.act.toast('No tienes hueco en el inventario.'); return false; }
@@ -116,12 +120,13 @@ function pickUp(o) {
   return true;
 }
 
-export function placeObject(type, x, z, r) {
+export function placeObject(type, x, z, r, item = null) {
   const entry = { uid: G.state.nextUid++, type, x, z, r, data: {} };
   if (type === 'pot') entry.data = { soil: 0, strain: null, growth: 0, water: 0, fert: 0 };
   if (SLOTS[type]) entry.data = { slots: Array(SLOTS[type]).fill(null) };
   if (type === 'safe') entry.data = { cash: 0 };
   if (type === 'stove') entry.data = { batch: null };
+  if (item && ITEMS[item]?.data) Object.assign(entry.data, ITEMS[item].data, { item }); // variantes (hornillo industrial)
   if (type === 'jarpacker') G.state.flags.jars = true;
   G.state.objects.push(entry);
   return spawnObject(entry);
@@ -146,6 +151,36 @@ const BUILD = {
     mesh(cyl, '#95a5a6', 0.05, 1.8, 0.05, 0, 0.9, 0, g);
     mesh(bx, '#34495e', 0.7, 0.1, 0.4, 0, 1.85, 0.25, g);
     mesh(bx, new THREE.MeshBasicMaterial({ color: 0xff8ef0 }), 0.6, 0.03, 0.32, 0, 1.79, 0.25, g);
+  },
+  // Panel LED colgante (como el de cultivo de las naves): carcasa negra con aletas, luz cálida
+  // hacia abajo, colgado de dos cables de un soporte de dos patas
+  panel(o) {
+    const g = o.group;
+    const black = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.45, metalness: 0.5 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x5d646c, roughness: 0.4, metalness: 0.7 });
+    for (const x of [-0.6, 0.6]) { mesh(cyl, steel, 0.04, 2.05, 0.04, x, 1.03, 0, g); mesh(bx, steel, 0.08, 0.04, 0.55, x, 0.02, 0, g); }
+    mesh(cyl, steel, 0.035, 1.24, 0.035, 0, 2.03, 0, g).rotation.z = Math.PI / 2;
+    for (const x of [-0.4, 0.4]) mesh(cyl, black, 0.008, 0.42, 0.008, x, 1.82, 0, g);
+    mesh(rbx(1.0, 0.12, 0.42, 0.025), black, 1, 1, 1, 0, 1.56, 0, g);
+    for (let k = -3; k <= 3; k++) mesh(bx, black, 0.02, 0.05, 0.36, k * 0.12, 1.645, 0, g); // aletas
+    o.glowPanel = mesh(bx, new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffd27a, emissiveIntensity: 1.6 }), 0.9, 0.012, 0.34, 0, 1.495, 0, g);
+    mesh(bx, new THREE.MeshStandardMaterial({ color: 0xe0b020, roughness: 0.4 }), 0.12, 0.05, 0.02, -0.32, 1.56, 0.215, g); // etiqueta
+  },
+  // Extractor con filtro de carbón: cilindro del filtro, ventilador en línea y tubo
+  extractor(o) {
+    const g = o.group;
+    const grey = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.35, metalness: 0.6 });
+    const black = new THREE.MeshStandardMaterial({ color: 0x24272b, roughness: 0.5, metalness: 0.4 });
+    mesh(cyl, black, 0.5, 0.05, 0.5, 0, 0.025, 0, g);
+    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x2f3337, roughness: 0.9 }), 0.44, 0.6, 0.44, 0, 0.35, 0, g); // filtro
+    for (const y of [0.07, 0.63]) mesh(cyl, grey, 0.46, 0.04, 0.46, 0, y, 0, g);
+    const fan = mesh(cyl, black, 0.36, 0.28, 0.36, 0, 0.82, 0, g);
+    mesh(bx, new THREE.MeshStandardMaterial({ color: 0xe0b020, roughness: 0.4 }), 0.1, 0.06, 0.02, 0, 0.84, 0.18, g);
+    mesh(cyl, grey, 0.22, 0.2, 0.22, 0, 1.03, 0, g);
+    o.spin = new THREE.Group(); o.spin.position.y = 0.97; g.add(o.spin);
+    for (let k = 0; k < 4; k++) { const b = mesh(bx, grey, 0.16, 0.01, 0.05, 0, 0, 0, o.spin); b.rotation.y = (k * Math.PI) / 2; b.position.set(Math.cos(k * Math.PI / 2) * 0.08, 0, Math.sin(k * Math.PI / 2) * 0.08); }
+    void fan;
+    o.busy = true; // (gira siempre)
   },
   bed(o) {
     // formas redondeadas (sin que cueste mucho: pocas piezas y geometrías compartidas)
@@ -215,10 +250,14 @@ export function refreshPot(o) {
 }
 
 function lampBoost(o) {
+  let k = 1, air = 1;
   for (const other of G.objects.values()) {
-    if (other.entry.type === 'lamp' && Math.hypot(other.entry.x - o.entry.x, other.entry.z - o.entry.z) < 2.6) return 1.5;
+    const t = other.entry.type, d = Math.hypot(other.entry.x - o.entry.x, other.entry.z - o.entry.z);
+    if (t === 'panel' && d < 2.6) k = 2;
+    else if (t === 'lamp' && d < 2.6) k = Math.max(k, 1.5);
+    else if (t === 'extractor' && d < 3) air = 1.15;
   }
-  return 1;
+  return k * air * (o.entry.data.grow ? 1.25 : 1);
 }
 
 // Humidificador cerca: el agua dura más (1 / 0,6).
@@ -235,7 +274,7 @@ export function simulateObjects(min) {
   for (const o of G.objects.values()) {
     if (o.entry.type !== 'pot') continue;
     const d = o.entry.data;
-    const drain = DRAIN_MIN / drainK(o);
+    const drain = (DRAIN_MIN / drainK(o)) * (o.entry.data.ph ? 2 : 1);
     if (!d.strain || d.growth >= 1) { if (d.water > 0) d.water = Math.max(0, d.water - min / drain); continue; }
     const wet = Math.min(min, (d.water * drain));
     const rate = (STRAINS[d.strain].speed * (d.soil === 2 ? 1.25 : 1) * lampBoost(o)) / GROW_MIN;
@@ -271,7 +310,8 @@ function potInfo(d) {
   const s = STRAINS[d.strain];
   const w = Math.round(d.water * 100);
   if (d.growth >= 1) return `${s.name} · ¡Lista para cosechar!`;
-  return `${s.name} · Crecimiento ${Math.floor(d.growth * 100)}% · Agua ${w}%${w === 0 ? ' ⚠️' : ''}`;
+  const extra = [d.grow && 'Grow', d.bloom && 'Bloom', d.ph && 'pH'].filter(Boolean);
+  return `${s.name} · Crecimiento ${Math.floor(d.growth * 100)}% · Agua ${w}%${w === 0 ? ' ⚠️' : ''}${extra.length ? ' · ' + extra.join(', ') : ''}`;
 }
 
 function infoFor(o) {
@@ -313,6 +353,7 @@ function actionsFor(o) {
       } else {
         if (hid === 'regadera') acts.push({ label: 'Regar', fn: () => water(o) });
         else if (hid === 'fertil') acts.push({ label: d.fert ? 'Ya tiene fertilizante' : 'Echar fertilizante', fn: () => { if (d.fert) return; inv.remove('fertil', 1); d.fert = 1; G.player.use(); sfx('pop'); } });
+        else if (ADDS[hid]) { const [k, txt] = ADDS[hid]; acts.push({ label: d[k] ? `Ya tiene ${txt}` : `Echar ${txt}`, fn: () => { if (d[k]) return; inv.remove(hid, 1); d[k] = 1; G.player.use(); sfx('pop'); } }); }
         else acts.push({ label: d.water < 0.3 ? 'Necesita agua (coge la regadera)' : 'Creciendo...', fn: () => G.act.toast(potInfo(d)) });
         acts.push(pick);
       }
@@ -337,6 +378,10 @@ function actionsFor(o) {
       return [{ label: 'Abrir armario', fn: () => G.act.openShelf(o) }, pick];
     case 'safe':
       return [{ label: 'Abrir caja fuerte', fn: () => G.act.openSafe(o) }, pick];
+    case 'panel':
+      return [{ label: 'Panel LED (encendido)', fn: () => G.act.toast('Las plantas a menos de 2,5 m crecen el doble de rápido.', '🔆') }, pick];
+    case 'extractor':
+      return [{ label: 'Extractor (en marcha)', fn: () => G.act.toast('Aire fresco: las plantas a menos de 3 m crecen un 15 % más rápido.', '🌀') }, pick];
     case 'humid':
       return [{ label: 'Humidificador (encendido)', fn: () => G.act.toast('Las macetas a menos de 2,5 m pierden el agua un 40 % más despacio.', '💨') }, pick];
     case 'bed':
@@ -350,10 +395,11 @@ function cook(o) {
   const miss = Object.entries(RECIPE).filter(([k, n]) => inv.count(k) < n).map(([k, n]) => `${n}× ${ITEMS[k].name}`);
   if (miss.length) return G.act.toast(`Te falta: ${miss.join(', ')}. Azúcar y colorante en Gas&Go; catalizador en la ferretería.`, '⚠️');
   for (const [k, n] of Object.entries(RECIPE)) inv.remove(k, n);
-  o.entry.data.batch = { ready: absNow() + COOK_MIN, n: COOK_OUT };
+  const pro = o.entry.data.pro, mins = pro ? COOK_PRO.min : COOK_MIN, out = pro ? COOK_PRO.out : COOK_OUT;
+  o.entry.data.batch = { ready: absNow() + mins, n: out };
   G.player.use();
   sfx('mix');
-  G.act.toast(`Tanda en marcha: ${COOK_OUT} cristales en ${COOK_MIN / 60} horas.`, '🔥');
+  G.act.toast(`Tanda en marcha: ${out} cristales en ${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, '0')} min.`, '🔥');
   G.act.flag('cooked');
 }
 function collect(o) {
@@ -385,10 +431,11 @@ export function harvestYield(o) {
   let n = randi(s.yield[0], s.yield[1]);
   if (d.soil === 2) n = Math.round(n * 1.4);
   if (d.fert) n += 3;
+  if (d.bloom) n += 4;
   return n;
 }
 export function emptyPot(o) {
-  Object.assign(o.entry.data, { soil: 0, strain: null, growth: 0, water: 0, fert: 0 });
+  Object.assign(o.entry.data, { soil: 0, strain: null, growth: 0, water: 0, fert: 0, grow: 0, bloom: 0, ph: 0 });
   refreshPot(o);
 }
 
@@ -554,7 +601,7 @@ export function updatePlacement() {
   const name = ITEMS[ITEM_OF[type]].name.toLowerCase();
   const place = m
     ? { label: ok ? 'Dejar aquí' : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); placement.moving = null; settle(m.o, x, z, r); setGhost(null); sfx('pop'); G.player.use(); G.act.pokeStaff?.(); save(); } }
-    : { label: ok ? `Colocar ${name}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r); sfx('pop'); G.player.use(); G.act.pokeStaff?.(); save(); } };
+    : { label: ok ? `Colocar ${name}` : 'No cabe aquí', fn: () => { if (!ok) return sfx('error'); inv.remove(held.id, 1); placeObject(type, x, z, r, held.id); sfx('pop'); G.player.use(); G.act.pokeStaff?.(); save(); } };
   return { actions: [place, rotate] };
 }
 

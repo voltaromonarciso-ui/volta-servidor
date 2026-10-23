@@ -372,7 +372,7 @@ function drawMap() {
 function supplier() {
   const box = h('div', 'ph-list');
   box.appendChild(h('div', 'ph-card', '<b>Rubio</b><div class="small muted">«Semillas de calidad, sin preguntas. Te lo dejo en el contenedor verde del polígono.» (7:00–23:00)</div>'));
-  for (const [id, st] of Object.entries(STRAINS).filter(([, x]) => !x.noSeed)) {
+  for (const [id, st] of Object.entries(STRAINS).filter(([, x]) => !x.noSeed && !x.cartel)) {
     const locked = st.rank > G.state.rank;
     const card = h('div', 'ph-card' + (locked ? ' locked' : ''));
     card.innerHTML = `<div class="rowsp"><b>🌰 ${st.name}</b><span class="money">${money(st.seed)}</span></div><div class="chips">${chips([st.effect])}</div>

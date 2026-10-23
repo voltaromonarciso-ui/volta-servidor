@@ -1,5 +1,6 @@
 import { G, money, clamp } from '../game.js';
-import { ITEMS, SHOPS, STRAINS, RANKS, FORMS } from '../data/items.js';
+import { ITEMS, SHOPS, STRAINS, RANKS, FORMS, RESPECT } from '../data/items.js';
+import { cartelLevel } from '../systems/economy.js';
 export { FORMS };
 import { EFFECTS } from '../data/effects.js';
 import { ii } from './icons.js';
@@ -128,6 +129,10 @@ const SHOP_CATS = [
   { id: 'quimica', name: 'Química', ic: '⚗️', items: ['catalizador', 'hornillo', 'azucar', 'colorante'] },
   { id: 'muebles', name: 'Muebles', ic: '🛋️', items: ['cama', 'armario', 'caja_fuerte', 'estante'] },
   { id: 'defensa', name: 'Defensa', ic: '🛡️', items: ['spray', 'porra', 'machete', 'pistola', 'balas'] },
+  { id: 'luz', name: 'Luz y aire', ic: '🔆', items: ['panel_led', 'extractor'] },
+  { id: 'abonos', name: 'Abonos', ic: '🧪', items: ['abono_grow', 'abono_bloom', 'ph_corr'] },
+  { id: 'premium', name: 'Semillas premium', ic: '🌱', items: ['sem_roja', 'sem_negra'] },
+  { id: 'estaciones', name: 'Estaciones', ic: '🏭', items: ['mesa_emp', 'envasadora', 'hornillo_pro'] },
 ];
 const SHOP_THEME = { ferreteria: 't-ferreteria', gasolinera: 't-gasolinera', muebles: 't-muebles', armeria: 't-armeria', cartel: 't-cartel' };
 const SHOP_HELLO = {
@@ -147,7 +152,10 @@ export function openShop(id) {
   const greet = pick(shop.greet || SHOP_HELLO[id] || SHOP_HELLO.gasolinera);
   const cart = new Map();
   // categorías con stock en esta tienda (lo que no encaja en ninguna va a «Otros»)
-  const cats = SHOP_CATS.map((c) => ({ ...c, items: c.items.filter((k) => shop.stock.includes(k)) })).filter((c) => c.items.length);
+  // (un producto que está en dos categorías sale solo en la última: p. ej. las mesas, en «Estaciones» del cártel)
+  const seen = new Set();
+  const cats = SHOP_CATS.map((c) => ({ ...c, items: c.items.filter((k) => shop.stock.includes(k)) })).reverse()
+    .map((c) => ({ ...c, items: c.items.filter((k) => !seen.has(k) && seen.add(k)) })).reverse().filter((c) => c.items.length);
   const rest = shop.stock.filter((k) => !cats.some((c) => c.items.includes(k)));
   if (rest.length) cats.push({ id: 'otros', name: 'Otros', ic: '🧰', items: rest });
   const total = () => [...cart].reduce((a, [k, q]) => a + ITEMS[k].price * q, 0);
@@ -193,11 +201,12 @@ export function openShop(id) {
     const grid = h('div', 'shop-grid');
     for (const itemId of cat.items) {
       const it = ITEMS[itemId];
-      const locked = (it.rank || 0) > G.state.rank;
+      const noRespect = (it.respect || 0) > cartelLevel();
+      const locked = (it.rank || 0) > G.state.rank || noRespect;
       const inCart = cart.get(itemId) || 0;
       const card = h('div', 'card' + (locked ? ' locked' : '') + (inCart ? ' in' : ''));
-      card.innerHTML = `<div class="c-ic">${ii(itemId)}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + RANKS[it.rank].name : money(it.price)}</span></div><div class="c-d">${inCart ? `<b>En el carrito: ${inCart}</b> · ` : ''}${it.desc || ''}</div></div>`;
-      card.onclick = () => { if (locked) return fail(`Necesitas el rango ${RANKS[it.rank].name}.`); sfx('pop'); qty(itemId, () => list(cat, back)); };
+      card.innerHTML = `<div class="c-ic">${ii(itemId)}</div><div class="c-info"><div class="c-n">${it.name} <span class="c-p">${locked ? '🔒 ' + (noRespect ? 'Respeto: ' + RESPECT[it.respect].name : RANKS[it.rank].name) : money(it.price)}</span></div><div class="c-d">${inCart ? `<b>En el carrito: ${inCart}</b> · ` : ''}${it.desc || ''}</div></div>`;
+      card.onclick = () => { if (locked) return fail(noRespect ? `El cártel aún no se fía de ti: necesitas el respeto «${RESPECT[it.respect].name}». Haz encargos para el jefe.` : `Necesitas el rango ${RANKS[it.rank].name}.`); sfx('pop'); qty(itemId, () => list(cat, back)); };
       grid.appendChild(card);
     }
     sc.appendChild(grid);
@@ -258,14 +267,15 @@ export function openShop(id) {
     let refund = 0;
     const bought = [], added = [];
     for (const [k, q] of cart) {
-      const left = inv.add(k, q);
+      const gv = ITEMS[k].gives; // (las semillas del cártel entran como sobres de su variedad)
+      const left = gv ? inv.add(gv.id, q, gv.p) : inv.add(k, q);
       refund += left * ITEMS[k].price;
       if (q - left > 0) { bought.push(`${q - left}× ${ITEMS[k].name}`); added.push([k, q - left]); }
     }
     // solo se cobra lo que de verdad te llevas; si el cobro fallara, se devuelve la mercancía
     if (t - refund > 0) {
       const r = spend('dirty', t - refund, `tienda: ${shop.name}`);
-      if (!r.ok) { for (const [k, q] of added) inv.remove(k, q); return fail(r.msg); }
+      if (!r.ok) { for (const [k, q] of added) { const gv = ITEMS[k].gives; gv ? inv.remove(gv.id, q, gv.p) : inv.remove(k, q); } return fail(r.msg); }
     }
     sfx('cash');
     if (refund) G.act.toast(`No te cabía todo en la mochila: te devuelven ${money(refund)}.`, '🎒');

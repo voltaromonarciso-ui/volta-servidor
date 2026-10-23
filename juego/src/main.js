@@ -167,7 +167,7 @@ Object.assign(G.act, {
     G.avatar?.apply(st);
     G.player.vm.useAvatar?.(look?.model, st); // brazos en primera persona del propio personaje
     if (look) G.player.applyLook?.({ ...look, shirt: sleeveFor(look, st.worn) || look.shirt });
-  }, openShelf: P.openShelf,
+  }, openShelf: P.openShelf, openCartelShop: () => P.openShop('cartel'),
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),
