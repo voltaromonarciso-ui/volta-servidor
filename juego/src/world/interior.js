@@ -46,7 +46,7 @@ export async function loadInterior() {
         // (Quaternius, convertidos de FBX: vienen transparentes y con el color oscurecido dos veces)
         mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
         mat.color.convertLinearToSRGB();
-        if (/light/i.test(m.name) && !/metal/i.test(m.name)) mat.emissive.set('#ffd9a0'), (mat.emissiveIntensity = 1.4);
+        if (/^light$/i.test(m.name)) mat.emissive.set('#ffd9a0'), (mat.emissiveIntensity = 1.4);
         else mat.emissive.set(0);
       }
       mat.roughness = Math.max(0.45, mat.roughness ?? 0.7); mat.metalness = Math.min(0.3, mat.metalness ?? 0);
