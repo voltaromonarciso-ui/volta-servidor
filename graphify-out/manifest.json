@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792697026.9646213,
-    "seen": 1792697612.235717,
-    "ast_hash": "735ffbc77b33b2a17864caec0c3824cf",
+    "mtime": 1792746106.8193867,
+    "seen": 1792747305.2035835,
+    "ast_hash": "0780d5bb21f0d1738fd2e3d410762c89",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {

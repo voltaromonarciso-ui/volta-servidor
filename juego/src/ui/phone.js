@@ -6,7 +6,7 @@ const nego = {}; // precio propuesto en cada negociación abierta
 import { PEOPLE } from '../data/people.js';
 import { QUESTS } from '../data/quests.js';
 import { openBigMap } from './bigmap.js';
-import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew, orderDrop } from '../systems/economy.js';
+import { DELIVERY, dealAt, dealDue, whenLabel, hhmm, inCurfew, orderDrop, spend, balance } from '../systems/economy.js';
 import { CONTACTS, customer, product, prodValue, acceptDeal, rejectDeal, negotiateDeal, orderSeeds, acceptChance, marketChance, priceLabel, trustLabel, addictionLabel, REP_TIERS, repTier } from '../systems/economy.js';
 import { clock, dayName } from '../systems/time.js';
 import { save, wipe, absNow } from '../core/state.js';
@@ -26,6 +26,7 @@ const APPS = [
   { id: 'map', name: 'Mapa', icon: '🗺️', color: '#16a085' },
   { id: 'supplier', name: 'Proveedor', icon: '🌱', color: '#2e7d32' },
   { id: 'staff', name: 'Personal', icon: '👷', color: '#8e6e53' },
+  { id: 'realty', name: 'Inmobiliaria', icon: '🏭', color: '#b8860b' },
   { id: 'quests', name: 'Objetivos', icon: '📋', color: '#e67e22' },
   { id: 'stats', name: 'Perfil', icon: '📊', color: '#34495e' },
   { id: 'settings', name: 'Ajustes', icon: '⚙️', color: '#7f8c8d' },
@@ -99,7 +100,7 @@ function render() {
   screen.scrollTop = 0;
   const app = APPS.find((a) => a.id === view.app);
   title.textContent = view.app === 'chat' ? CONTACTS[view.arg].name : app ? app.name : '';
-  ({ msgs, chat, clients, deliveries, products, map, supplier, staff, quests, stats, settings }[view.app] || home)();
+  ({ msgs, chat, clients, deliveries, products, map, supplier, realty, staff, quests, stats, settings }[view.app] || home)();
 }
 
 // ------------------------------------------------------------------
@@ -399,6 +400,49 @@ function supplier() {
   }
   const pending = G.state.orders.length;
   if (pending) box.appendChild(h('div', 'muted small center', `📦 Tienes ${pending} pedido(s) pendiente(s) de recoger.`));
+  screen.appendChild(box);
+}
+
+// ------------------------------------------------------------------
+//  Inmobiliaria: almacenes del polígono en venta (se pagan con dinero limpio)
+// ------------------------------------------------------------------
+function realty() {
+  const box = h('div', 'ph-list');
+  box.appendChild(h('div', 'ph-card', `<b>Naves Lomas</b><div class="small muted">«Almacenes en el polígono, escrituras en regla. Solo transferencia: dinero limpio.»</div>
+    <div class="rowsp small"><span>Tu saldo limpio</span><span class="money">${money(balance('clean'))}</span></div>`));
+  const list = Object.entries(G.world.props).filter(([, p]) => p.warehouse).sort((a, b) => a[1].price - b[1].price);
+  for (const [id, p] of list) {
+    const owned = !!G.state.props[id];
+    const card = h('div', 'ph-card realty' + (owned ? ' owned' : ''));
+    card.innerHTML = `<div class="rowsp"><b>🏭 ${p.name}</b>${owned ? '<span class="tag-own">✔ Tuyo</span>' : `<span class="money">${money(p.price)}</span>`}</div>
+      <div class="small muted">${p.blurb || ''}</div><div class="small">📐 ${p.area} m² · oficina en altillo · ${p.price >= 12000 ? 'dos portones' : 'un portón'}</div>`;
+    const row = h('div', 'rowsp');
+    const wp = h('button', 'btn sm ghost', '📍 Marcar');
+    wp.onclick = () => { const q = G.world.pois[id]; if (q) { setWaypoint(q.x, q.z, p.name); sfx('click'); G.act.toast(`Destino: ${p.name}`, '📍'); } };
+    row.appendChild(wp);
+    if (!owned) {
+      const short = balance('clean') < p.price;
+      const buy = h('button', 'btn sm', short ? `Faltan ${money(p.price - balance('clean'))}` : 'Comprar');
+      if (short) buy.disabled = true;
+      buy.onclick = () => confirmDialog(`Comprar ${p.name}`, `<p>${p.blurb || ''}</p><p>${p.area} m² · Precio: <b>${money(p.price)}</b> · se paga con dinero limpio.</p><p class="small">Podrás entrar por la puerta de la oficina, cultivar, montar mesas de trabajo, almacenar y asignar empleados.</p>`, 'Comprar', () => {
+        if (G.state.props[id]) return;
+        const r = spend('clean', p.price, id, { key: 'prop:' + id });
+        if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
+        G.state.props[id] = true;
+        sfx('level');
+        G.act.bigToast(`¡${p.name} es tuyo!`, 'La puerta de la oficina ya está abierta. Te lo he marcado en el mapa.');
+        const q = G.world.pois[id];
+        if (q) setWaypoint(q.x, q.z, p.name);
+        save();
+        render();
+      });
+      row.appendChild(buy);
+    }
+    card.appendChild(row);
+    box.appendChild(card);
+  }
+  if (!list.length) box.appendChild(h('div', 'muted small center', 'No hay almacenes en venta en esta zona.'));
+  box.appendChild(h('div', 'muted small center', '💡 Blanquea efectivo en el cajero para tener dinero limpio.'));
   screen.appendChild(box);
 }
 
