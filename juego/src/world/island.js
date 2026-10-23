@@ -1131,8 +1131,8 @@ function warehouseLights() {
     if (id === at) return;
     at = id;
     if (id === 'cartel') {
-      const y = groundH((C.x0 + C.x1) / 2, (C.z0 + C.z1) / 2) + 3.3;
-      C.lights.forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 9; });
+      const y = groundH((C.x0 + C.x1) / 2, (C.z0 + C.z1) / 2) + 2.6; // (bajas: que no quemen el techo)
+      C.lights.forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 6; });
       return;
     }
     for (const l of L) l.color.set('#ffe6c0');
