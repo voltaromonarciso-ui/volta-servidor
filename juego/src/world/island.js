@@ -1130,7 +1130,7 @@ function mansionFor(b) {
   if (!hasBuilding('q_Flat')) return false;
   const r = mansionHQ(), x = b.cx, z = b.cz - 2, id = 'mansion';
   F.place('real:mansion', () => r.group, x, z, 0, { solid: false });
-  pad(x - 20, x + 20, z - 18, z + 20, 0, id);
+  pad(x - 23.3, x + 23.3, z - 21.3, z + 25.3, 0, id);
   // colisiones con nivel: 'up' sólo en la planta alta, 'down' sólo abajo, 'low' a ras de suelo
   const gy = groundH(x, z);
   for (const [x0, x1, z0, z1, h, lv] of r.boxes) {
@@ -1209,7 +1209,7 @@ const FILL = {
     const z = b.z1 - 9;
     const n = b.zone === 'barrioAlto' || b.zone === 'apartamentos' ? 2 : 3;
     if (b.zone === 'mansion') {
-      if (mansionFor(b)) { K.asphalt(b.cx - 3, b.cx + 3, b.cz + 17, b.z1, '#c9c2b4'); return; }
+      if (mansionFor(b)) return;
       addPad(b.cx - 8, b.cx + 8, b.cz - 15, b.cz - 7); // piscina a nivel
       K.building({ x0: b.cx - 13, x1: b.cx + 13, z0: b.cz - 4, z1: b.cz + 10, h: 9, wall: '#f2e6cf', trim: '#ffffff', roof: '#8c4a32', style: 'house', front: '+z', roofType: 'gable', seed: 951, mapColor: '#d8c8a8', label: 'Mansión' });
       K.asphalt(b.cx - 2.5, b.cx + 2.5, b.cz + 10, b.z1, '#c9c2b4');

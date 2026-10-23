@@ -46,6 +46,7 @@ export const PBR = {
   enfoscado: ['plastered_wall_02', 3], blanco: ['white_plaster_02', 3], beige: ['beige_wall_001', 3], claro: ['painted_plaster_wall', 3],
   hormigon: ['concrete_wall_008', 3], tejas: ['clay_roof_tiles_02', 2.5], pizarra: ['roof_slates_02', 2.5], chapa: ['corrugated_iron_02', 2],
   madera: ['wood_planks', 2], metal: ['metal_plate', 1.5],
+  estuco: ['white_stucco_02', 3], sillar: ['white_sandstone_blocks_02', 2], losa: ['precast_stone_paving', 1.6], yesoInt: ['plastered_wall_04', 3], cesped: ['cesped', 3],
 };
 export function pbrMat(key, tint) {
   const k = key + (tint || '');
