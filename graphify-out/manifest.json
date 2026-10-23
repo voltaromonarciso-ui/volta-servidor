@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792761899.360719,
-    "seen": 1792764097.0709362,
-    "ast_hash": "7ecfc1294aa9c6799f66303eeece82cd",
+    "mtime": 1792769810.1266263,
+    "seen": 1792769886.2016096,
+    "ast_hash": "8a0b4af60049db63e7fbde6a39036fd8",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -2070,9 +2070,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/helditems.js": {
-    "mtime": 1792767973.1066382,
-    "seen": 1792767988.3785913,
-    "ast_hash": "5b7e50bf0df5a1508639e7b36aa0e27e",
+    "mtime": 1792769872.2456856,
+    "seen": 1792769886.2013881,
+    "ast_hash": "b592cbea6e075865e0c63266e0684a18",
     "semantic_hash": ""
   },
   "juego/src/world/alleys.js": {
@@ -2208,9 +2208,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/craft.js": {
-    "mtime": 1792762355.8814745,
-    "seen": 1792764097.0711217,
-    "ast_hash": "0c30173d3289bf25d23ea94170069e47",
+    "mtime": 1792769810.128175,
+    "seen": 1792769886.2017746,
+    "ast_hash": "5bab7ee9c23b50d887dd9345b7e467f9",
     "semantic_hash": ""
   },
   "juego/src/entities/detail.js": {
@@ -2220,9 +2220,57 @@
     "semantic_hash": ""
   },
   "juego/src/entities/furniture.js": {
-    "mtime": 1792767798.981204,
-    "seen": 1792767841.7666523,
-    "ast_hash": "8129c6e3fd1b628a4f904d3fa24f0056",
+    "mtime": 1792769687.9582968,
+    "seen": 1792769886.2012906,
+    "ast_hash": "c854fd04a5c85f5a5664073ad2ec3be5",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/realprops.js": {
+    "mtime": 1792769779.801896,
+    "seen": 1792769886.2015262,
+    "ast_hash": "e958f6360c77083b6408adebde8c69ac",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/LICENSE.txt": {
+    "mtime": 1792769859.8116498,
+    "seen": 1792769886.2057068,
+    "ast_hash": "8fe69cc46ffc2f2d2cedfae2eb3b9365",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura2_arm.jpg": {
+    "mtime": 1792769586.2254329,
+    "seen": 1792769886.2087674,
+    "ast_hash": "487eb6049243c08ab48c947b2f6859ef",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura2_diff.jpg": {
+    "mtime": 1792769586.162069,
+    "seen": 1792769886.2087698,
+    "ast_hash": "e0de4108f69f0b05d5d9c728cc6b48dc",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura2_nor.jpg": {
+    "mtime": 1792769586.1934328,
+    "seen": 1792769886.2087715,
+    "ast_hash": "eec280a4715d23b5a6bdb5d57a8d3664",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura_arm.jpg": {
+    "mtime": 1792769586.1334329,
+    "seen": 1792769886.2087734,
+    "ast_hash": "662323c6784e5702342a2711fd933f59",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura_diff.jpg": {
+    "mtime": 1792769586.0627038,
+    "seen": 1792769886.2087746,
+    "ast_hash": "2daa584416fcd80006e1e3a97b0a50b7",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/props/tex/pintura_nor.jpg": {
+    "mtime": 1792769586.099809,
+    "seen": 1792769886.2087762,
+    "ast_hash": "edd75c427f381f9c1ce090d52c28ae57",
     "semantic_hash": ""
   }
 }

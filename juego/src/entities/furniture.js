@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { G, M, mesh, rbox, canvasTex, labelTex, cardboardTex, wearTex, perforatedTex, screw, screws4, vent, ribbedCap, lathe, cable, decal } from './detail.js';
 import { metalize } from '../world/labs.js';
+import { prop, wornPaint } from './realprops.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const cyl = (r0, r1, h, n = 20, open = false) => G(`fcyl${r0}|${r1}|${h}|${n}|${open}`, () => new THREE.CylinderGeometry(r0, r1, h, n, 1, open));
@@ -14,82 +15,45 @@ const chrome = () => M('fChrome', { color: '#dfe3e6', roughness: 0.15, metalness
 const yellowTag = () => labelTex('fTag', { bg: '#f2c230', band: '#1d2126', title: 'ROOK', sub: 'Pro series', barcode: false, w: 128, h: 64 });
 const late = (g) => queueMicrotask(() => metalize(g));
 
-// Foco de cultivo: base lastrada, mástil telescópico, campana reflectora, bombilla y balastro
+// Foco de cultivo: lámpara industrial real (Poly Haven) colgada de un pie con brazo
 export function buildLamp(o) {
-  const g = o.group;
-  mesh(g, lathe('lampBase', [[0, 0], [0.24, 0], [0.25, 0.015], [0.23, 0.045], [0.06, 0.06], [0.04, 0.07], [0, 0.07]], 32), blackMetal());
+  const g = o.group, base = wornPaint('#2a2d31', { kind: 'pintura2' });
+  mesh(g, lathe('lampBase', [[0, 0], [0.24, 0], [0.25, 0.015], [0.23, 0.045], [0.06, 0.06], [0.04, 0.07], [0, 0.07]], 32), base);
   for (let k = 0; k < 3; k++) { const a = (k / 3) * Math.PI * 2; mesh(g, cyl(0.03, 0.03, 0.012, 12), rubber(), Math.cos(a) * 0.19, 0.004, Math.sin(a) * 0.19); }
-  mesh(g, cyl(0.022, 0.022, 1.1, 14), chrome(), 0, 0.62, 0);
-  mesh(g, cyl(0.016, 0.016, 0.8, 14), chrome(), 0, 1.5, 0);
-  mesh(g, cyl(0.03, 0.03, 0.05, 14), blackMetal(), 0, 1.16, 0);                 // abrazadera
-  mesh(g, cyl(0.012, 0.012, 0.05, 8), blackMetal(), 0.04, 1.16, 0, 0, 0, Math.PI / 2);
-  mesh(g, lathe('lampKnob', [[0, 0], [0.018, 0], [0.02, 0.012], [0.012, 0.02], [0, 0.02]], 12), rubber(), 0.065, 1.16, 0, 0, 0, -Math.PI / 2);
-  // brazo y campana
-  const arm = mesh(g, cyl(0.014, 0.014, 0.3, 10), chrome(), 0, 1.9, 0.14, Math.PI / 2, 0, 0);
-  void arm;
-  const hood = new THREE.Group(); hood.position.set(0, 1.86, 0.28); g.add(hood);
-  const prof = [[0.03, 0.12], [0.06, 0.11], [0.16, 0.04], [0.2, 0]];
-  mesh(hood, lathe('hoodOut', prof, 36), M('hoodOut', { color: '#1f2226', roughness: 0.45, metalness: 0.6, side: THREE.DoubleSide }));
-  mesh(hood, lathe('hoodIn', prof.map(([r, y]) => [r * 0.985, y - 0.003]).reverse(), 36), M('hoodIn', { color: '#e9ecef', roughness: 0.12, metalness: 1, side: THREE.DoubleSide }));
-  mesh(hood, tor(0.2, 0.006), blackMetal(), 0, 0, 0, Math.PI / 2);
-  mesh(hood, cyl(0.035, 0.035, 0.05, 16), blackMetal(), 0, 0.13, 0);
-  mesh(hood, lathe('bulb', [[0, -0.1], [0.025, -0.095], [0.045, -0.06], [0.045, -0.01], [0.03, 0.03], [0.02, 0.05], [0, 0.05]], 20), new THREE.MeshStandardMaterial({ color: 0xffd9f6, emissive: 0xff7ee8, emissiveIntensity: 2.2, roughness: 0.2 }), 0, 0.03, 0);
-  // balastro en el mástil y su cable a la campana
-  const bal = new THREE.Group(); bal.position.set(0, 0.5, 0.06); g.add(bal);
-  mesh(bal, rbox(0.12, 0.2, 0.07, 0.008), blackMetal());
-  vent(bal, 0, 0.03, 0.036, 0.09, 0.08, 0, 5);
-  decal(bal, yellowTag(), 0.08, 0.04, 0, -0.06, 0.036);
-  screws4(bal, 0, 0, 0.036, 0.12, 0.2);
-  mesh(bal, cyl(0.004, 0.004, 0.012, 10), new THREE.MeshBasicMaterial({ color: 0x2ecc71 }), 0.04, -0.06, 0.04, Math.PI / 2);
-  cable(g, V(0, 0.61, 0.08), V(0.0, 1.98, 0.28), 0.04, 0.005);
-  cable(g, V(0, 0.4, 0.06), V(0.35, 0.005, 0.2), 0.02, 0.005);
-  late(g);
+  mesh(g, cyl(0.022, 0.022, 1.9, 14), base, 0, 1.0, 0);
+  mesh(g, cyl(0.03, 0.03, 0.05, 14), blackMetal(), 0, 1.16, 0);
+  mesh(g, cyl(0.016, 0.016, 0.42, 10), base, 0, 1.95, 0.19, Math.PI / 2, 0, 0);       // brazo
+  mesh(g, tor(0.018, 0.004), chrome(), 0, 1.93, 0.38);
+  prop(g, 'hanging_industrial_lamp', { y: 1.93 - 0.95, z: 0.38, h: 0.95, onload: (m) => m.traverse((c) => { if (c.isMesh && c.material.emissiveMap) { c.material = c.material.clone(); c.material.emissive.set('#ffd6f4'); c.material.emissiveIntensity = 2; } }) });
+  cable(g, V(0, 1.2, 0.03), V(0.35, 0.005, 0.2), 0.04, 0.005);
 }
 
-// Panel LED de cultivo colgado de un pórtico: placa con matriz de LEDs, disipador con aletas,
-// driver con rejilla y etiqueta, colgadores de trinquete y cable al enchufe
+// Panel de cultivo: pantalla de tubos fluorescentes real (Poly Haven) colgada de un pórtico
+// con cadenas, y la luz cálida de los tubos encendidos
 export function buildPanel(o) {
-  const g = o.group, s = steel(), b = blackMetal();
+  const g = o.group, s = wornPaint('#9aa1a8', { kind: 'pintura', metalness: 0.6 }), b = blackMetal();
   for (const x of [-0.6, 0.6]) {
     mesh(g, rbox(0.04, 2.05, 0.04, 0.006), s, x, 1.03, 0);
     mesh(g, rbox(0.08, 0.035, 0.55, 0.01), s, x, 0.018, 0);
     for (const z of [-0.25, 0.25]) mesh(g, cyl(0.025, 0.025, 0.012, 12), rubber(), x, 0.006, z);
-    mesh(g, rbox(0.06, 0.06, 0.06, 0.008), b, x, 2.03, 0);                       // esquina
+    mesh(g, rbox(0.06, 0.06, 0.06, 0.008), b, x, 2.03, 0);
     screw(g, x, 2.03, 0.031);
-    // tirante diagonal
     const br = mesh(g, rbox(0.018, 0.5, 0.018, 0.004), s, x, 0.24, 0.13); br.rotation.x = -0.75;
   }
   mesh(g, rbox(1.24, 0.035, 0.035, 0.006), s, 0, 2.03, 0);
-  const board = new THREE.Group(); board.position.y = 1.56; g.add(board);
-  for (const x of [-0.4, 0.4]) {
-    mesh(g, cyl(0.004, 0.004, 0.38, 6), M('cuerda', { color: '#111', roughness: 0.7 }), x, 1.83, 0);
-    mesh(g, rbox(0.03, 0.05, 0.02, 0.006), M('trinquete', { color: '#2b2d31', roughness: 0.4, metalness: 0.4 }), x, 1.74, 0);
-    mesh(g, tor(0.012, 0.003), chrome(), x, 2.0, 0);
-  }
-  mesh(board, rbox(1.0, 0.04, 0.42, 0.012), b);
-  for (let k = -6; k <= 6; k++) mesh(board, rbox(0.012, 0.06, 0.38, 0.003), b, k * 0.07, 0.05, 0); // aletas
-  const leds = canvasTex('ledGrid', 512, 192, (c, w, h) => {
-    c.fillStyle = '#f1f1ef'; c.fillRect(0, 0, w, h);
-    for (let y = 8; y < h; y += 12) for (let x = 8; x < w; x += 12) { const r = (x * 7 + y * 3) % 11 === 0; c.fillStyle = r ? '#ff5a4a' : '#fffbe8'; c.beginPath(); c.arc(x, y, 3.2, 0, Math.PI * 2); c.fill(); c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(x - 4, y + 3.5, 8, 1); }
-    c.fillStyle = '#d9d9d6'; c.fillRect(w / 2 - 2, 0, 4, h);
-  });
-  o.glowPanel = mesh(board, G('ledPlane', () => new THREE.PlaneGeometry(0.94, 0.36)), new THREE.MeshStandardMaterial({ map: leds, emissive: 0xffe2a8, emissiveMap: leds, emissiveIntensity: 1.5, roughness: 0.6 }), 0, -0.021, 0, Math.PI / 2);
-  // driver encima
-  const drv = new THREE.Group(); drv.position.set(0, 0.1, 0); board.add(drv);
-  mesh(drv, rbox(0.3, 0.06, 0.12, 0.008), M('driver', { color: '#3a3f45', roughness: 0.35, metalness: 0.7 }));
-  for (let k = -5; k <= 5; k++) mesh(drv, rbox(0.006, 0.015, 0.11, 0.002), b, k * 0.025, 0.035, 0);
-  decal(drv, labelTex('drvLab', { bg: '#e8e8e4', band: '#d4a017', title: '640W', sub: 'LED driver', barcode: true, w: 192, h: 96 }), 0.12, 0.04, 0, 0, 0.061);
-  mesh(drv, cyl(0.03, 0.03, 0.012, 16), M('dimmer', { color: '#c9a227', roughness: 0.3, metalness: 0.8 }), 0.12, 0, 0.065, Math.PI / 2);
-  cable(g, V(0.15, 1.66, 0.04), V(0.6, 1.9, 0.03), 0.06, 0.005);
+  for (const x of [-0.4, 0.4]) { mesh(g, cyl(0.004, 0.004, 0.42, 6), chrome(), x, 1.82, 0); mesh(g, tor(0.012, 0.003), chrome(), x, 2.0, 0); }
+  const tube = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff0d0, emissiveIntensity: 1.8, roughness: 0.3 });
+  o.glowPanel = { material: tube };
+  prop(g, 'mounted_fluorescent_lights', { y: 1.61, w: 1.05, onload: (m) => m.traverse((c) => { if (c.isMesh && /glass/.test(c.material.name)) c.material = tube; }) });
+  cable(g, V(0.4, 1.62, 0.02), V(0.6, 1.9, 0.03), 0.06, 0.005);
   cable(g, V(0.6, 0.35, 0.03), V(0.75, 0.005, 0.25), 0.02, 0.005);
   mesh(g, cyl(0.0055, 0.0055, 1.55, 6), M('cable#1b1d20', { color: '#1b1d20', roughness: 0.6 }), 0.625, 1.12, 0.03);
-  late(g);
 }
 
 // Extractor con filtro de carbón: chapa perforada, bridas atornilladas, ventilador en línea,
 // tubo flexible anillado y regulador de velocidad
 export function buildExtractor(o) {
-  const g = o.group, b = blackMetal(), s = steel();
+  const g = o.group, b = wornPaint('#2a2d31', { kind: 'pintura2', metalness: 0.4 }), s = steel();
   mesh(g, rbox(0.5, 0.04, 0.5, 0.01), b, 0, 0.02, 0);
   const perf = perforatedTex('filtro', '#4b5259'); perf.repeat.set(10, 4);
   mesh(g, cyl(0.21, 0.21, 0.56, 40, true), M('filtroPerf', { map: perf, roughness: 0.6, metalness: 0.5, side: THREE.DoubleSide }), 0, 0.33, 0);
@@ -119,45 +83,20 @@ export function buildExtractor(o) {
   late(g);
 }
 
-// Taquilla metálica de dos puertas: lamas, bisagras, tarjetero, cierre con candado y patas
+// Armario: cajonera de acero y madera real (Poly Haven)
 export function buildLocker(o) {
-  const g = o.group;
-  const paint = M('lockPaint', { color: '#5f7180', roughness: 0.5, metalness: 0.45, roughnessMap: wearTex() });
-  const door = M('lockDoor', { color: '#71889a', roughness: 0.45, metalness: 0.45, roughnessMap: wearTex() });
-  mesh(g, rbox(1.2, 1.88, 0.6, 0.02), paint, 0, 1.0, 0);
-  mesh(g, rbox(1.22, 0.04, 0.62, 0.01), paint, 0, 1.955, 0);
-  for (const x of [-0.56, 0.56]) for (const z of [-0.26, 0.26]) { mesh(g, cyl(0.02, 0.025, 0.06, 10), blackMetal(), x, 0.03, z); mesh(g, cyl(0.03, 0.03, 0.008, 12), rubber(), x, 0.004, z); }
-  for (const sx of [-1, 1]) {
-    const x = sx * 0.295;
-    const d = new THREE.Group(); d.position.set(x, 1.0, 0.302); g.add(d);
-    mesh(d, rbox(0.57, 1.82, 0.02, 0.008), door);
-    mesh(d, rbox(0.5, 0.012, 0.004, 0.002), M('pliegue', { color: '#5d7282', roughness: 0.5, metalness: 0.4 }), 0, 0.2, 0.011);
-    vent(d, 0, 0.72, 0.011, 0.34, 0.2, 0, 6);
-    vent(d, 0, -0.75, 0.011, 0.34, 0.14, 0, 4);
-    decal(d, canvasTex('tarjetero' + sx, 128, 48, (c, w, h) => { c.fillStyle = '#f4f4ef'; c.fillRect(0, 0, w, h); c.fillStyle = '#222'; c.font = 'bold 26px Arial'; c.fillText(sx < 0 ? 'Nº 1' : 'Nº 2', 34, 33); }), 0.09, 0.034, 0, 0.5, 0.012);
-    mesh(d, rbox(0.1, 0.042, 0.006, 0.003), chrome(), 0, 0.5, 0.011);
-    // asa y cierre con candado
-    const hx = -sx * 0.22;
-    mesh(d, rbox(0.03, 0.16, 0.03, 0.008), chrome(), hx, 0.05, 0.022);
-    mesh(d, rbox(0.04, 0.03, 0.014, 0.004), chrome(), hx, -0.06, 0.018);
-    const lock = new THREE.Group(); lock.position.set(hx, -0.1, 0.03); d.add(lock);
-    mesh(lock, rbox(0.04, 0.035, 0.016, 0.006), M('candado', { color: '#c79a2c', roughness: 0.3, metalness: 0.9 }));
-    mesh(lock, tor(0.012, 0.0028, Math.PI), chrome(), 0, 0.018, 0);
-    // bisagras
-    for (const y of [0.7, -0.7]) mesh(g, cyl(0.008, 0.008, 0.08, 8), chrome(), sx * 0.585, 1.0 + y, 0.31);
-  }
-  late(g);
+  prop(o.group, 'drawer_cabinet', { w: 1.2 });
 }
 
 // Caja fuerte: puerta empotrada con bisagras, rueda de tres radios, dial graduado, placa y pernos
 export function buildSafe(o) {
   const g = o.group;
-  const body = M('safeBody', { color: '#39424b', roughness: 0.4, metalness: 0.65, roughnessMap: wearTex() });
+  const body = wornPaint('#3d464f', { kind: 'pintura', metalness: 0.5 });
   mesh(g, rbox(0.7, 0.78, 0.7, 0.04), body, 0, 0.43, 0);
   mesh(g, rbox(0.72, 0.05, 0.72, 0.015), blackMetal(), 0, 0.025, 0);
   mesh(g, rbox(0.6, 0.66, 0.012, 0.004), M('safeGap', { color: '#0d0f11', roughness: 1 }), 0, 0.43, 0.346);
   const d = new THREE.Group(); d.position.set(0, 0.43, 0.352); g.add(d);
-  mesh(d, rbox(0.58, 0.64, 0.035, 0.012), M('safeDoor', { color: '#47515b', roughness: 0.35, metalness: 0.7, roughnessMap: wearTex() }));
+  mesh(d, rbox(0.58, 0.64, 0.035, 0.012), wornPaint('#4b555f', { kind: 'pintura', metalness: 0.5, rep: 1.3 }));
   mesh(d, rbox(0.5, 0.56, 0.006, 0.004), M('safeInset', { color: '#3e4750', roughness: 0.45, metalness: 0.6 }), 0, 0, 0.019);
   for (const y of [0.21, -0.21]) { mesh(g, cyl(0.016, 0.016, 0.09, 12), chrome(), -0.3, 0.43 + y, 0.36); }
   for (const [x, y] of [[-0.22, 0.25], [0.22, 0.25], [-0.22, -0.25], [0.22, -0.25]]) screw(d, x, y, 0.022, 'z', 0.009);
@@ -210,34 +149,23 @@ export function buildHumid(o) {
   o.mist.scale.set(0.22, 0.3, 0.22); o.mist.position.y = 0.95; g.add(o.mist);
 }
 
-// Estantería de acero: montantes en L perforados, baldas con pestaña, tirantes en cruz y cajas
+// Estantería: dos estanterías metálicas reales con su desgaste (Poly Haven), con cajas de
+// cartón y cajas de plástico de verdad en las baldas
 export function buildShelf(o) {
-  const g = o.group;
-  const paint = M('shelfPaint', { color: '#4f6170', roughness: 0.45, metalness: 0.55, roughnessMap: wearTex() });
-  const perf = canvasTex('slotted', 32, 256, (c, w, h) => { c.fillStyle = '#4f6170'; c.fillRect(0, 0, w, h); c.fillStyle = '#0e1114'; for (let y = 6; y < h; y += 16) c.fillRect(w * 0.35, y, w * 0.3, 8); }, { repeat: true });
-  perf.repeat.set(1, 4);
-  const up = M('shelfUp', { map: perf, roughness: 0.45, metalness: 0.55 });
-  for (const x of [-0.775, 0.775]) for (const z of [-0.275, 0.275]) {
-    mesh(g, rbox(0.05, 1.8, 0.005, 0.002), up, x, 0.9, z + Math.sign(z) * 0.0225);
-    mesh(g, rbox(0.005, 1.8, 0.05, 0.002), up, x + Math.sign(x) * 0.0225, 0.9, z);
-    mesh(g, rbox(0.06, 0.015, 0.06, 0.004), rubber(), x, 0.0075, z);
-  }
-  for (const y of [0.12, 0.62, 1.12, 1.62]) {
-    mesh(g, rbox(1.56, 0.018, 0.56, 0.004), M('shelfBoard', { color: '#8a959e', roughness: 0.5, metalness: 0.5, roughnessMap: wearTex() }), 0, y, 0);
-    for (const z of [-0.278, 0.278]) mesh(g, rbox(1.56, 0.045, 0.006, 0.002), paint, 0, y - 0.015, z);
-    for (const x of [-0.77, 0.77]) for (const z of [-0.27, 0.27]) screw(g, x, y - 0.015, z + Math.sign(z) * 0.012, z > 0 ? 'z' : '-z', 0.005);
-  }
-  for (const d of [1, -1]) { const t = mesh(g, rbox(0.012, 1.7, 0.004, 0.002), paint, 0, 0.9, -0.283); t.rotation.z = d * 0.84; }
-  // cajas de cartón y cubetas
+  const g = o.group, k = 0.87;
+  for (const x of [-0.4, 0.4]) prop(g, 'worn_metal_rack', { x, s: k });
   o.boxes = [];
-  const card = M('shelfCard', { map: cardboardTex('estante'), roughness: 0.85 });
-  const card2 = M('shelfCard2', { map: cardboardTex('estante2', { tape: true, print: 'ROOK' }), roughness: 0.85 });
-  const bin = M('shelfBin', { color: '#2f6fb2', roughness: 0.55 });
-  const L = [[-0.52, 0.13, 0.42, 0.3, 0.38, card], [-0.02, 0.13, 0.36, 0.26, 0.4, card2], [0.48, 0.13, 0.44, 0.34, 0.4, card], [-0.5, 0.63, 0.38, 0.18, 0.42, bin], [0.0, 0.63, 0.34, 0.28, 0.36, card2], [0.5, 0.63, 0.4, 0.22, 0.38, card]];
-  L.forEach(([x, y, w, h, dd, m], i) => {
-    const b = mesh(g, rbox(w, h, dd, m === bin ? 0.02 : 0.006), m, x, y + 0.009 + h / 2, 0, 0, (i % 2 ? 0.04 : -0.03), 0);
-    if (m === bin) { mesh(b, rbox(w * 0.9, 0.005, dd * 0.9, 0.002), M('binIn', { color: '#1c4a7a', roughness: 0.8 }), 0, h / 2 - 0.004, 0); mesh(b, rbox(0.1, 0.04, 0.01, 0.004), M('binLabel', { color: '#f3f3ee', roughness: 0.7 }), 0, 0, dd / 2 + 0.003); }
-    o.boxes.push(b);
-  });
-  late(g);
+  const lv = [0.43, 0.92, 1.41].map((y) => y * k + 0.004);
+  const put = (name, x, y, opt) => o.boxes.push(prop(g, name, { x, y, ...opt }));
+  put('cardboard_box_01', -0.6, 0.004, { h: 0.3, ry: 0.1 });
+  put('plastic_crate_02', -0.2, 0.004, { w: 0.36, ry: Math.PI / 2 });
+  put('cardboard_box_01', 0.4, 0.004, { h: 0.33, ry: Math.PI / 2 - 0.08 });
+  put('plastic_crate_03', -0.45, lv[0], { w: 0.55 });
+  put('cardboard_box_01', 0.25, lv[0], { h: 0.28, ry: -0.12 });
+  put('plastic_crate_02', 0.6, lv[0], { w: 0.3, ry: Math.PI / 2 });
+  put('cardboard_box_01', -0.55, lv[1], { h: 0.25, ry: Math.PI / 2 + 0.1 });
+  put('plastic_bottle_gallon', 0.3, lv[1], { h: 0.27, ry: 0.5 });
+  put('bleach_bottle', 0.5, lv[1], { h: 0.26, ry: -0.3 });
+  put('compost_bag_02', -0.3, lv[2], { h: 0.3 });
+  put('cardboard_box_01', 0.45, lv[2], { h: 0.24, ry: 0.15 });
 }

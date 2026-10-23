@@ -1,0 +1,6 @@
+Modelos y texturas fotoescaneados de Poly Haven (https://polyhaven.com), licencia CC0 (dominio público).
+Modelos: worn_metal_rack, drawer_cabinet, mounted_fluorescent_lights, hanging_industrial_lamp, cardboard_box_01,
+plastic_crate_02, plastic_crate_03, bleach_bottle, plastic_bottle_gallon, metal_jerrycan, multi_cleaner_bottle,
+compost_bag_02, korean_fire_extinguisher_01, power_box_01, magnifying_glass_01, lubricant_spray, spray_paint_bottles,
+trashbag, medical_box. Texturas (tex/): blue_metal_plate, green_metal_rust (pasadas a gris para teñirlas).
+Convertidos a .glb con las texturas reducidas a 512–1024 px.

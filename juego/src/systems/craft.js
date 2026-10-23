@@ -118,8 +118,8 @@ function ingredient(id, small = false) {
   if (id === 'polvo') { g = powderPile(); g.scale.setScalar(small ? 0.5 : 1.2); return g; }
   g = buildItem({ id }).group;
   g.scale.setScalar(small ? 1.2 : 1.6);
-  const box = new THREE.Box3().setFromObject(g); g.position.y = 0; // apoyado en el platillo
-  const w = new THREE.Group(); g.position.y = -box.min.y; w.add(g);
+  const box = new THREE.Box3().setFromObject(g); // apoyado en el platillo
+  const w = new THREE.Group(); g.position.y = box.isEmpty() ? 0.06 : -box.min.y; w.add(g);
   return w;
 }
 function product(n) {
