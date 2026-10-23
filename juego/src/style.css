@@ -561,6 +561,8 @@ body.touch.placing:not(.moving) .moveb { display: none; }
 /* --- App Personal (empleados) --- */
 .staff button.chip { --c: #cfd6dd; cursor: pointer; min-height: 34px; padding: 4px 12px; font-size: 12px; }
 .staff button.chip.on { --c: #7ee26a; }
+.re-tabs { margin: 4px 0 8px; }
+.re-tabs .chip.on { background: #f2c94c; color: #1d2126; border-color: #f2c94c; font-weight: 700; }
 body.touch .staff button.chip { min-height: 44px; min-width: 44px; }
 .staff .neg { color: #ff7b72; }
 .staff .label { font-weight: 800; margin: 6px 2px 0; color: var(--mut); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }

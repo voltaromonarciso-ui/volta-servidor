@@ -175,7 +175,7 @@ export function mansionHQ() {
   };
   const P = (name, x, y, z, ry = 0, h = null, lv = 'down') => {
     const sz = SZ[name], s = h ? h / sz[1] : 1;
-    later.push(() => prop(g, name, { x, y, z, ry, s })); // (se cargan al acercarse)
+    later.push((t) => prop(t, name, { x, y, z, ry, s })); // (se cargan al acercarse, en un grupo vivo de la escena)
     if (lv) {
       const turned = Math.abs(Math.sin(ry)) > 0.5, hw = ((turned ? sz[2] : sz[0]) * s) / 2, hd = ((turned ? sz[0] : sz[2]) * s) / 2;
       box(x - hw, x + hw, z - hd, z + hd, y + sz[1] * s - (lv === 'up' ? UP : 0), lv);
@@ -383,6 +383,20 @@ export function mansionHQ() {
   const marbleFloor = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), marble()); m.material.map.repeat.set(4, 4); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0.02, (z0 + z1) / 2); m.receiveShadow = true; g.add(m); };
   marbleFloor(ci.x0, ci.x1, ci.z0, ci.z1);
   marbleFloor(-WX + T, -CX, -WZ + T, WZ - T); marbleFloor(CX, WX - T, -WZ + T, WZ - T);
+  // umbrales: el suelo sigue por el grosor de la pared en cada paso (si no, asoma el césped)
+  for (const s2 of [-1, 1]) marbleFloor(s2 < 0 ? -CX - 0.01 : CX - T - 0.01, s2 < 0 ? -CX + T + 0.01 : CX + 0.01, -1.05, 1.05);
+  marbleFloor(-1.0, 1.0, CZ - T - 0.01, CZ + 0.01);
+  // por dentro de las alas, yeso liso (no el estuco rugoso de la fachada)
+  for (const s2 of [-1, 1]) {
+    const a = s2 < 0 ? -WX + T : CX, b = s2 < 0 ? -CX : WX - T, e = s2 < 0 ? -WX + T : WX - T - 0.02;
+    slab(g, M.inner, a, b, 0, TOPW - 0.42, WZ - T - 0.02, WZ - T); slab(g, M.inner, a, b, 0, TOPW - 0.42, -WZ + T, -WZ + T + 0.02);
+    slab(g, M.inner, e, e + 0.02, 0, TOPW - 0.42, -WZ + T, WZ - T);
+    // la cara de la pared del cuerpo central que da al ala (a los lados del paso)
+    const c = s2 < 0 ? -CX - 0.02 : CX;
+    slab(g, M.inner, c, c + 0.02, 0, TOPW - 0.42, -WZ + T, -1.0); slab(g, M.inner, c, c + 0.02, 0, TOPW - 0.42, 1.0, WZ - T);
+  }
+  // y en el cuerpo central, las caras de dentro de los costados
+  for (const c of [ci.x0, ci.x1 - 0.02]) { slab(g, M.inner, c, c + 0.02, 0, UP - 0.22, ci.z0, -1.0); slab(g, M.inner, c, c + 0.02, 0, UP - 0.22, 1.0, ci.z1); }
   slab(g, M.wood, CX + 0.02, WX - T, 0.02, 0.04, -WZ + T, WZ - T);                   // parqué en el despacho
   const ceil = mat('mTecho', { color: '#fbf8f2', roughness: 0.9 });
   slab(g, ceil, ci.x0, ci.x1, UP - 0.22, UP - 0.2, ci.z0, ci.z1);
@@ -590,7 +604,7 @@ export function mansionHQ() {
   hang('lantern_chandelier_01', lbx, 0, 0.8, UH);
 
   return {
-    group: g, boxes, items, floors: floorsUp, load: () => { for (const f of later.splice(0)) f(); },
+    group: g, boxes, items, floors: floorsUp, load: (target) => { for (const f of later.splice(0)) f(target); },
     door: { x: 0, z: PZ + 1.6 }, trees: [[-10.5, 13.5, 'tree'], [10.5, 13.5, 'tree'], [-17.5, 1, 'palm'], [17.5, 1, 'palm'], [-10, -16.5, 'tree'], [16, -14, 'palm'], [-16.5, 16, 'palm'], [16.5, 16, 'palm']],                         // delante de la escalinata
     leaf: { x: -0.95, z: CZ - T / 2, width: 1.9 },
     officeLeaf: { x: CX - T / 2, z: -1.0, width: 2.0 },

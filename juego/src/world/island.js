@@ -1141,7 +1141,10 @@ function mansionFor(b) {
   }
   for (const it of r.items) INT.place(it.name, x + it.x, it.y, z + it.z, it.ry, it.s);
   for (const f of r.floors) addFloor(x + f.x0, x + f.x1, z + f.z0, z + f.z1, (px, pz) => gy + f.h(px - x, pz - z), { upper: true });
-  nearLoad(x, z, 95, r.load);
+  // los muebles fotoescaneados van en un grupo propio de la escena (el edificio se funde al
+  // colocarlo y lo que se le añade después no se vería)
+  const live = new THREE.Group(); live.position.set(x, gy, z); live.userData.terrainDone = true; scene.add(live);
+  nearLoad(x, z, 95, () => r.load(live));
   for (const [tx, tz, k] of r.trees) (k === 'palm' ? palm(x + tx, z + tz, rr(8, 10)) : tree(x + tx, z + tz, 1.1, 1));
   const mine = () => !!G.state.props[id];
   K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.7, color: '#3b2518', locked: () => !mine(),

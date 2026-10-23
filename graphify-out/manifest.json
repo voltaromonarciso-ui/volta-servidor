@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792775761.592167,
-    "seen": 1792785879.6675093,
-    "ast_hash": "3ddf7fc93896298b6c39f4bfdd77f18b",
+    "mtime": 1792789461.7904408,
+    "seen": 1792789492.5295107,
+    "ast_hash": "50775237cb1736e87482c7ba2328ad7e",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -2286,9 +2286,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/mansion.js": {
-    "mtime": 1792778726.3529673,
-    "seen": 1792785879.6675634,
-    "ast_hash": "d24dfd931db6942d25587f9cdda5ec06",
+    "mtime": 1792789435.3259964,
+    "seen": 1792789492.5295446,
+    "ast_hash": "1aacb13dd37c9a663d9a02d0cb451e45",
     "semantic_hash": ""
   },
   "juego/tests/mansion.spec.js": {

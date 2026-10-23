@@ -1,17 +1,17 @@
 # Graph Report - volta-servidor  (2026-10-23)
 
 ## Corpus Check
-- 208 files · ~2,316,316 words
+- 208 files · ~2,316,643 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 283 file(s) not represented in the graph (top: .glb 250, (none) 10, .xml 10)
 
 ## Summary
-- 3053 nodes · 8380 edges · 130 communities (112 shown, 18 thin omitted)
+- 3053 nodes · 8381 edges · 130 communities (112 shown, 18 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 209 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d4af434c`
+- Built from commit: `53e5d503`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -140,7 +140,7 @@
 - streetfurniture.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `three` - 445 edges
+1. `three` - 446 edges
 2. `sfx` - 116 edges
 3. `mat()` - 67 edges
 4. `save()` - 63 edges
