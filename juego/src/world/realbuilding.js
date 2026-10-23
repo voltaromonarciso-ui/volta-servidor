@@ -400,9 +400,8 @@ export function ownedWarehouse(o) {
     leaf: { x: D0, z: zf - T / 2, width: D1 - D0 }, entry: { x: (D0 + D1) / 2, z: iz1 - 1.2 }, lamps, office, floors: office.floors, items,
     // dónde van la carretilla, la transpaleta y los palés sueltos (piezas del mundo)
     gear: {
-      forklift: level >= 1 ? { x: ix1 - 3.2, z: rz1 + 2.2, ry: Math.PI } : null,
-      jack: level >= 1 ? { x: ix0 + 4.6, z: rz1 + 1.1, ry: Math.PI / 2 } : null,
-      pallets: level >= 1 ? [[ix0 + 1.0, iz1 - 1.0, 0], [ix0 + 1.0, iz1 - 2.3, 1], ...(level >= 2 ? [[ix0 + 1.0, iz1 - 3.6, 2]] : [])] : [], // (n = capas de cajas encima)
+      // (sin carretilla ni transpaleta dentro, ni palés sueltos: el suelo queda libre para mesas y macetas)
+      forklift: null, jack: null, pallets: [],
     },
   };
 }
@@ -649,25 +648,11 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
   sign('salida', 'SALIDA', '#1e8449', '🚪', doorX, 2.65, iz1 - 0.01, Math.PI, 0.7, 0.32);
   sign('nofumar', 'PROHIBIDO FUMAR', '#c0392b', '🚭', ix0 + 0.02, 2.4, (rz1 + iz1) / 2 + 2.5, Math.PI / 2);
   sign('casco', 'USO OBLIGATORIO DE CASCO', '#1f5fbf', '⛑️', ix1 - 0.02, 2.4, (rz1 + iz1) / 2, -Math.PI / 2);
-  if (level >= 1) sign('carretillas', 'ATENCIÓN CARRETILLAS', '#e0a21a', '⚠️', ix0 + 0.02, 2.4, rz1 + 1.5, Math.PI / 2);
   rb(g, mat('botiquin', { color: '#f4f4f4', roughness: 0.5 }), 0.12, 0.3, 0.4, ix1 - 0.08, 1.5, iz1 - 3.3, 0.02); // (de canto contra la pared derecha)
   const cross = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), paintMat('cruz', 64, 64, (c, w, h) => { c.fillStyle = '#f4f4f4'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e8449'; c.fillRect(24, 8, 16, 48); c.fillRect(8, 24, 48, 16); }));
   cross.position.set(ix1 - 0.145, 1.5, iz1 - 3.3); cross.rotation.y = -Math.PI / 2; g.add(cross);
   // en el pequeño (Delta) la nave se deja casi libre: sólo estanterías, banco y lo de las paredes
   if (level === 0) return;
-  // bidones en la esquina del fondo izquierda, y montones de cajas
-  const drums = [[0, 0], [0.66, 0], [0.33, 0.6]]; // (tres bidones: la nave ordenada, sin amontonar)
-  const dx0 = ix0 + 0.6, dz0 = rz1 + 0.9;
-  drums.forEach(([ox, oz], k) => drum(g, dx0 + ox, 0, dz0 + oz, k));
-  boxes.push([dx0 - 0.33, dx0 + 1.65, dz0 - 0.33, dz0 + 1.65, 0.9]);
-  // montón de cajas de cartón (cerradas y alguna abierta), apiladas con un leve giro
-  const stack = (x, z, n) => {
-    let y = 0, top = 0;
-    for (let k = 0; k < n; k++) { const d = put(k === n - 1 && n > 1 ? 'furniture/cardboardBoxOpen' : 'furniture/cardboardBoxClosed', x + (k % 2) * 0.04, y, z, k * 0.25 - 0.2, 1.25, null); if (!d) return; y += d[1]; top = Math.max(top, d[0]); }
-    boxes.push([x - top / 2 - 0.05, x + top / 2 + 0.05, z - top / 2 - 0.05, z + top / 2 + 0.05, y]);
-  };
-  stack(ix1 - 0.7, rz1 + 2.6, 3);
-  if (level >= 2) stack(ix1 - 1.5, rz1 + 2.7, 2);
   // zona de carga en la persiana de la izquierda: la furgoneta de reparto dentro (de morro a la
   // persiana), una cinta de rodillos detrás, palés con cajas al lado, conos y un poste
   const r0 = rolls[0];
@@ -684,21 +669,6 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put,
   if (level >= 2) palletStack(r0 + 2.4, iz1 - 4.0, 1);
   for (const [cx2, cz2] of [[r0 - 1.7, iz1 - 0.8], [r0 + 1.7, iz1 - 0.8]]) put('factory/cone', cx2, 0, cz2, 0, 1, null);
   put('factory/warning-traffic', r0 + 1.6, 0, iz1 - 5.6, 0, 1, null);
-  const film = mat('filmRollo', { color: '#d9dde2', roughness: 0.25, transparent: true, opacity: 0.9 });
-  for (let k = 0; k < 2 + level; k++) { const r = cy(g, film, 0.12, 0.12, 0.5, ix1 - 0.4, 0.12, rz1 + 1.0 + k * 0.28, 12); r.rotation.x = Math.PI / 2; }
-  // contenedores IBC (depósito blanco dentro de una jaula de acero sobre palé), en Bravo y Alfa
-  if (level >= 1) {
-    const tank = mat('ibc', { color: '#eef0ec', roughness: 0.4, transparent: true, opacity: 0.92 }), cage = mat('jaulaIbc', { color: '#a7adb3', roughness: 0.4, metalness: 0.8 });
-    for (let k = 0; k < level; k++) {
-      const cx = ix0 + 3.2 + k * 1.3; // (contra la pared delantera, a la izquierda)
-      slab(g, mat('paletIbc', { color: '#7f8a93', roughness: 0.6 }), cx - 0.55, cx + 0.55, 0, 0.15, iz1 - 1.7, iz1 - 0.6);
-      rb(g, tank, 1.0, 1.0, 1.0, cx, 0.66, iz1 - 1.15, 0.06);
-      for (const t of [-0.5, -0.17, 0.17, 0.5]) { slab(g, cage, cx + t - 0.015, cx + t + 0.015, 0.15, 1.18, iz1 - 1.67, iz1 - 1.64); slab(g, cage, cx + t - 0.015, cx + t + 0.015, 0.15, 1.18, iz1 - 0.66, iz1 - 0.63); }
-      for (const y of [0.5, 0.85, 1.17]) { slab(g, cage, cx - 0.52, cx + 0.52, y, y + 0.03, iz1 - 1.67, iz1 - 1.64); slab(g, cage, cx - 0.52, cx + 0.52, y, y + 0.03, iz1 - 0.66, iz1 - 0.63); }
-      cy(g, mat('tapaIbc', { color: '#2b2f35', roughness: 0.5 }), 0.12, 0.12, 0.06, cx, 1.18, iz1 - 1.15, 12);
-      boxes.push([cx - 0.56, cx + 0.56, iz1 - 1.72, iz1 - 0.58, 1.2]);
-    }
-  }
 }
 
 // Suelo de nave: hormigón pulido con sus juntas de dilatación (cuadros de 6 m), manchas de
@@ -757,26 +727,13 @@ function warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes
   fan(ix0 + 0.02, 4.6, (rz1 + iz1) / 2 - 3, Math.PI / 2);
   if (level >= 2) fan(0, 5.2, iz0 + 0.02, 0);
   if (level >= 1) {
-  // carro de limpieza con fregona y señal de suelo mojado, escalera de tijera y manguera
+  // manguera en su devanadera, colgada de la pared
   const bz = (rz1 + iz1) / 2 - 1;
-  const cartX = ix0 + 0.7, cartZ = bz - 2.4;
-  rb(g, mat('cubeta', { color: '#f1c40f', roughness: 0.6 }), 0.45, 0.32, 0.55, cartX, 0.25, cartZ, 0.04);
-  cy(g, mat('palo', { color: '#2f5fa8', roughness: 0.5 }), 0.014, 0.014, 1.3, cartX + 0.1, 0.9, cartZ - 0.12, 6).rotation.z = 0.12;
-  const wet = new THREE.Group(); wet.position.set(cartX + 0.7, 0, cartZ + 0.1); g.add(wet);
-  for (const s2 of [-1, 1]) { const pnl = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.6), mat('pint-mojado', { map: canvasTex('pint-mojado', 96, 192, (c, w, hh) => { c.fillStyle = '#f1c40f'; c.fillRect(0, 0, w, hh); c.fillStyle = '#111'; c.font = 'bold 50px sans-serif'; c.textAlign = 'center'; c.fillText('⚠', w / 2, 70); c.font = 'bold 15px sans-serif'; c.fillText('SUELO', w / 2, 120); c.fillText('MOJADO', w / 2, 142); }), side: THREE.DoubleSide })); pnl.position.set(0, 0.3, s2 * 0.08); pnl.rotation.x = s2 * 0.25; wet.add(pnl); }
-  boxes.push([cartX - 0.3, cartX + 0.3, cartZ - 0.32, cartZ + 0.32, 0.5]);
-  const ladder = new THREE.Group(); ladder.position.set(ix0 + 0.25, 0, bz - 3.6); ladder.rotation.z = -0.12; g.add(ladder);
-  for (const zz of [-0.25, 0.25]) slab(ladder, galva, -0.03, 0.03, 0, 2.2, zz - 0.02, zz + 0.02);
-  for (let y = 0.3; y < 2.1; y += 0.3) slab(ladder, galva, -0.04, 0.04, y, y + 0.03, -0.25, 0.25);
   if (level >= 1) {
     const hz = bz + 3.4, reel = cy(g, mat('devanadera', { color: '#c0392b', roughness: 0.4 }), 0.32, 0.32, 0.18, ix0 + 0.12, 1.5, hz, 18); reel.rotation.z = Math.PI / 2;
     const hose = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.035, 8, 24), mat('manguera', { color: '#d35400', roughness: 0.6 })); hose.position.set(ix0 + 0.24, 1.5, hz); hose.rotation.y = Math.PI / 2; g.add(hose);
   }
   }
-  // cajas de plástico apiladas cerca de las estanterías
-  const crate = (x, z, n, c) => { for (let k = 0; k < n; k++) { rb(g, mat('cajaPl' + c, { color: c, roughness: 0.6 }), 0.6, 0.3, 0.4, x, 0.15 + k * 0.31, z, 0.02); slab(g, dark, x - 0.12, x + 0.12, 0.2 + k * 0.31, 0.24 + k * 0.31, z - 0.205, z - 0.2); } boxes.push([x - 0.32, x + 0.32, z - 0.22, z + 0.22, n * 0.31]); };
-  const cz0 = rz1 + 0.9;
-  if (level >= 1) { crate(ix0 + 6.5, cz0, 3, '#1f5fbf'); crate(ix0 + 7.2, cz0, 2, '#7f8c8d'); } // (dos montones; en Delta, nada)
   // detalles de vida: pósters, calendario y tablón de avisos en las paredes
   const poster = (key, x, y, z, ry, w, h, draw) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintMat(key, 128, Math.round((128 * h) / w), draw)); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); };
   const lw = ix0 + 0.045; // pared izquierda (cara hacia dentro)
