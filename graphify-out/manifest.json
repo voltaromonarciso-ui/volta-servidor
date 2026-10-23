@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792789461.7904408,
-    "seen": 1792789492.5295107,
-    "ast_hash": "50775237cb1736e87482c7ba2328ad7e",
+    "mtime": 1792792756.0547853,
+    "seen": 1792793030.7722692,
+    "ast_hash": "02eb34a86634a7d9ea8824c5ea7ccf55",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -2286,15 +2286,15 @@
     "semantic_hash": ""
   },
   "juego/src/world/mansion.js": {
-    "mtime": 1792789435.3259964,
-    "seen": 1792789492.5295446,
-    "ast_hash": "1aacb13dd37c9a663d9a02d0cb451e45",
+    "mtime": 1792794890.418221,
+    "seen": 1792795145.2063289,
+    "ast_hash": "94411cae6195aff90f3f44b038bdc35e",
     "semantic_hash": ""
   },
   "juego/tests/mansion.spec.js": {
-    "mtime": 1792785847.8008788,
-    "seen": 1792785879.674175,
-    "ast_hash": "9ad89997203bdce8b4ed6b030a5b1b7a",
+    "mtime": 1792795114.376645,
+    "seen": 1792795145.207138,
+    "ast_hash": "68529eb7ede2deb4add845e3f44310e0",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/cesped_c.jpg": {
@@ -2322,9 +2322,9 @@
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/precast_stone_paving_c.jpg": {
-    "mtime": 1792775708.9056582,
-    "seen": 1792785879.6807737,
-    "ast_hash": "bbfa816e2d13139f8094be09734c2164",
+    "mtime": 1792792735.1263561,
+    "seen": 1792793030.7793932,
+    "ast_hash": "b6a2336386fd438592a753d9939b32bd",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/precast_stone_paving_n.jpg": {

@@ -62,6 +62,27 @@ test.describe.serial('Mansión y blanqueo', () => {
     await ev(page, async () => (await import('/src/ui/panels.js')).closePanel());
   });
 
+  test('la escalera del recibidor se sube andando (por el costado de los primeros peldaños)', async () => {
+    const r = await ev(page, async () => {
+      const { input } = await import('/src/core/input.js');
+      const P = __G.player, MN = __G.world.mansion, cx = (MN.x0 + MN.x1) / 2, cz = (MN.z0 + MN.z1) / 2;
+      const walk = (n, yaw) => { P.yaw = yaw; for (let i = 0; i < n; i++) { input.my = 1; input.mx = 0; P.update(1 / 30); } input.my = 0; };
+      P.teleport(cx - 2.2, cz - 4.2, 0);
+      const g0 = P.pos.y;
+      walk(37, 0);             // hacia el fondo: se pisa el primer peldaño
+      const foot = P.pos.y - g0;
+      walk(140, -Math.PI / 2); // escalera arriba
+      const top = P.pos.y - g0;
+      walk(40, Math.PI);       // al rellano de la galería
+      return { foot, top, landing: P.pos.y - g0, z: P.pos.z - cz };
+    });
+    expect(r.foot).toBeGreaterThan(0.1);
+    expect(r.foot).toBeLessThan(0.6);
+    expect(r.top).toBeCloseTo(3.6, 1);
+    expect(r.landing).toBeCloseTo(3.6, 1);
+    expect(r.z).toBeGreaterThan(-4.9);
+  });
+
   test('negocios tapadera: se compran, blanquean cada mañana con comisión y sólo una vez al día', async () => {
     await ev(page, () => { __G.state.clean = 15000; __G.state.money = 5000; });
     await at(page, 2, 8 * 60);

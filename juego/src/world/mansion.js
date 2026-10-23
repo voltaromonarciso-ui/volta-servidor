@@ -166,8 +166,8 @@ export function mansionHQ() {
     Chandelier_01: [0.75, 0.8, 0.82], Chandelier_02: [0.68, 0.85, 0.62], Chandelier_03: [0.78, 1.04, 0.79], ClassicConsole_01: [1.54, 0.95, 0.59], ClassicNightstand_01: [0.57, 0.7, 0.42],
     CoffeeTable_01: [1.54, 0.52, 0.97], GothicBed_01: [1.49, 1.53, 2.04], GothicCabinet_01: [1.72, 2.36, 1.13], ArmChair_01: [0.85, 1.07, 0.77], Ottoman_01: [0.88, 0.62, 0.62], Sofa_01: [1.57, 0.8, 0.66],
     sofa_02: [1.81, 0.71, 0.82], sofa_03: [2.73, 1.12, 0.93], antique_ceramic_vase_01: [0.26, 0.44, 0.26], brass_vase_01: [0.23, 0.69, 0.23], ceramic_vase_01: [0.2, 0.4, 0.2], book_encyclopedia_set_01: [0.55, 0.24, 0.16],
-    dining_chair_02: [0.43, 0.97, 0.58], dining_table: [2.26, 0.88, 1.39], fancy_picture_frame_01: [0.6, 0.46, 0.02], fancy_picture_frame_02: [0.66, 0.77, 0.09], hanging_picture_frame_01: [0.59, 0.84, 0.02],
-    hanging_picture_frame_02: [0.75, 0.5, 0.03], marble_bust_01: [0.27, 0.51, 0.3], mantel_clock_01: [0.34, 0.16, 0.13], mid_century_lounge_chair: [1.01, 1.17, 1.19], ornate_mirror_01: [0.49, 0.74, 0.03],
+    dining_chair_02: [0.43, 0.97, 0.58], dining_table: [2.26, 0.88, 1.39], fancy_picture_frame_01: [0.6, 0.46, 0.02],
+    marble_bust_01: [0.27, 0.51, 0.3], mantel_clock_01: [0.34, 0.16, 0.13], mid_century_lounge_chair: [1.01, 1.17, 1.19], ornate_mirror_01: [0.49, 0.74, 0.03],
     outdoor_table_chair_set_01: [0.78, 0.86, 1.83], potted_plant_01: [0.59, 1.35, 0.63], potted_plant_02: [0.7, 0.84, 0.66], potted_plant_04: [0.17, 0.27, 0.18], shrub_02: [6.57, 2.55, 2.54],
     side_table_tall_01: [0.38, 0.76, 0.38], vintage_grandfather_clock_01: [0.63, 2.19, 0.43], wine_bottles_01: [0.68, 0.33, 0.08], bar_chair_round_01: [0.48, 0.75, 0.49], coffee_table_round_01: [1.3, 0.49, 1.3],
     street_lamp_02: [0.39, 1.68, 0.81], brass_candleholders: [1.05, 0.84, 0.36], lantern_chandelier_01: [0.58, 0.88, 0.57],
@@ -241,11 +241,14 @@ export function mansionHQ() {
       slab(g, M.stone, s < 0 ? xo - 0.04 : xo - L, s < 0 ? xo + L : xo + 0.04, y, y + 0.36, zc > 0 ? zc - 0.02 : zc - 0.04, zc > 0 ? zc + 0.04 : zc + 0.02);
     }
     slab(g, M.trim, Math.min(xa, xb) - (s < 0 ? 0.25 : 0), Math.max(xa, xb) + (s > 0 ? 0.25 : 0), TOPW - 0.05, TOPW + 0.18, -WZ - 0.25, WZ + 0.25); // cornisa
-    hipRoof(g, M.tiles, Math.min(xa, xb), Math.max(xa, xb), -WZ, WZ, TOPW + 0.18, 1.6, 0.45);
+    // (por el lado de dentro el alero acaba en la pared del cuerpo central: si no, asoma dentro
+    // de la planta alta como una tira de teja junto al suelo)
+    hipRoof(g, M.tiles, Math.min(xa, xb) + (s > 0 ? 0.45 : 0), Math.max(xa, xb) - (s < 0 ? 0.45 : 0), -WZ, WZ, TOPW + 0.18, 1.6, 0.45);
   }
   // --- zócalo, impostas, cornisas y sillares del cuerpo central ---
-  slab(g, M.base, -WX - 0.06, WX + 0.06, 0, 0.5, WZ, WZ + 0.06); slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, CZ, CZ + 0.06);
-  slab(g, M.base, -WX - 0.06, WX + 0.06, 0, 0.5, -WZ - 0.06, -WZ); slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, -CZ - 0.06, -CZ);
+  // (el de las alas sólo por fuera de cada ala: si cruzara el cuerpo central, saldría dentro)
+  for (const [x0, x1] of [[-WX - 0.06, -CX], [CX, WX + 0.06]]) { slab(g, M.base, x0, x1, 0, 0.5, WZ, WZ + 0.06); slab(g, M.base, x0, x1, 0, 0.5, -WZ - 0.06, -WZ); }
+  slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, CZ, CZ + 0.06); slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, -CZ - 0.06, -CZ);
   for (const z of [CZ, -CZ]) slab(g, M.trim, -CX - 0.12, CX + 0.12, UP - 0.2, UP + 0.02, z > 0 ? z : z - 0.12, z > 0 ? z + 0.12 : z);   // imposta entre plantas
   slab(g, M.trim, -CX - 0.3, CX + 0.3, TOP1 - 0.06, TOP1 + 0.12, -CZ - 0.3, CZ + 0.3);
   slab(g, M.trim, -CX - 0.42, CX + 0.42, TOP1 + 0.12, TOP1 + 0.24, -CZ - 0.42, CZ + 0.42);
@@ -386,11 +389,15 @@ export function mansionHQ() {
   // umbrales: el suelo sigue por el grosor de la pared en cada paso (si no, asoma el césped)
   for (const s2 of [-1, 1]) marbleFloor(s2 < 0 ? -CX - 0.01 : CX - T - 0.01, s2 < 0 ? -CX + T + 0.01 : CX + 0.01, -1.05, 1.05);
   marbleFloor(-1.0, 1.0, CZ - T - 0.01, CZ + 0.01);
+  // forros de yeso con los mismos huecos que el muro (puertas y ventanas)
+  const gaps = (holes) => holes.map(([a, b2, y0, y1]) => [a, b2, y0, y1, 'gap']);
   // por dentro de las alas, yeso liso (no el estuco rugoso de la fachada)
   for (const s2 of [-1, 1]) {
     const a = s2 < 0 ? -WX + T : CX, b = s2 < 0 ? -CX : WX - T, e = s2 < 0 ? -WX + T : WX - T - 0.02;
-    slab(g, M.inner, a, b, 0, TOPW - 0.42, WZ - T - 0.02, WZ - T); slab(g, M.inner, a, b, 0, TOPW - 0.42, -WZ + T, -WZ + T + 0.02);
-    slab(g, M.inner, e, e + 0.02, 0, TOPW - 0.42, -WZ + T, WZ - T);
+    const fw = s2 < 0 ? [winF(-12.6, -11.0), winF(-10.2, -8.6)] : [winF(8.6, 10.2), winF(11.0, 12.6)];
+    const bw = s2 < 0 ? [[-12.9, -9.1, 0.12, 2.9, 'win']] : [winF(9.4, 12.6)];
+    wallAlong(g, M.inner, 'x', WZ - T - 0.02, WZ - T, a, b, 0, TOPW - 0.42, gaps(fw)); wallAlong(g, M.inner, 'x', -WZ + T, -WZ + T + 0.02, a, b, 0, TOPW - 0.42, gaps(bw));
+    wallAlong(g, M.inner, 'z', e, e + 0.02, -WZ + T, WZ - T, 0, TOPW - 0.42, gaps([winF(-2.6, -0.8), winF(0.8, 2.6)]));
     // la cara de la pared del cuerpo central que da al ala (a los lados del paso)
     const c = s2 < 0 ? -CX - 0.02 : CX;
     slab(g, M.inner, c, c + 0.02, 0, TOPW - 0.42, -WZ + T, -1.0); slab(g, M.inner, c, c + 0.02, 0, TOPW - 0.42, 1.0, WZ - T);
@@ -402,10 +409,14 @@ export function mansionHQ() {
   slab(g, ceil, ci.x0, ci.x1, UP - 0.22, UP - 0.2, ci.z0, ci.z1);
   slab(g, ceil, -WX + T, -CX, TOPW - 0.42, TOPW - 0.4, -WZ + T, WZ - T); slab(g, ceil, CX, WX - T, TOPW - 0.42, TOPW - 0.4, -WZ + T, WZ - T);
   // forros de dentro y friso de madera noble hasta 1 m
-  const liner = (x0, x1, y0, y1, z0, z1) => slab(g, M.inner, x0, x1, y0, y1, z0, z1);
-  const wain = (x0, x1, y0, z0, z1) => { slab(g, M.walnut, x0, x1, y0, y0 + 1.0, z0, z1); slab(g, M.gold, x0, x1, y0 + 1.0, y0 + 1.03, z0, z1); };
+  const wain = (x0, x1, y0, z0, z1) => { slab(g, M.walnut, x0, x1, y0, y0 + 0.74, z0, z1); slab(g, M.gold, x0, x1, y0 + 0.74, y0 + 0.77, z0, z1); }; // (hasta el alféizar)
   const ROOMH = UP - 0.22;
-  for (const [x0, x1, z0, z1] of [[ci.x0, ci.x1, ci.z1 - 0.02, ci.z1], [ci.x0, ci.x1, ci.z0, ci.z0 + 0.02]]) { liner(x0, x1, 0, ROOMH, z0, z1); wain(x0, x1, 0, z0 + (z0 > 0 ? -0.01 : 0), z1 + (z0 > 0 ? 0 : 0.01)); }
+  // (con los mismos huecos que el muro: puerta y ventanas)
+  for (const [z0, z1, holes] of [[ci.z1 - 0.02, ci.z1, frontG], [ci.z0, ci.z0 + 0.02, backG]]) {
+    wallAlong(g, M.inner, 'x', z0, z1, ci.x0, ci.x1, 0, ROOMH, gaps(holes));
+    const wz0 = z0 + (z0 > 0 ? -0.01 : 0), wz1 = z1 + (z0 > 0 ? 0 : 0.01);
+    let a = ci.x0; for (const [ha, hb, , , k] of holes) { if (k === 'door') { wain(a, ha, 0, wz0, wz1); a = hb; } } wain(a, ci.x1, 0, wz0, wz1);
+  }
   // tabiques de la planta baja (con sus pasos)
   const part = (axis, c, a0, a1, holes, y0, y1, lv) => {
     wallAlong(g, M.inner, axis, c - PT / 2, c + PT / 2, a0, a1, y0, y1, holes, M.frame);
@@ -437,10 +448,14 @@ export function mansionHQ() {
   const slope = new THREE.Group(); slope.position.set(SX0, 0, 0); slope.rotation.z = Math.atan2(UP, SX1 - SX0); g.add(slope);
   const SL = Math.hypot(UP, SX1 - SX0);
   slab(slope, M.walnut, 0, SL, -0.3, 0.02, SZ1 - 0.05, SZ1 + 0.03);
-  slab(slope, M.walnut, 0, SL, 0.92, 0.98, SZ1 - 0.02, SZ1 + 0.05);
-  for (let k = 0; k <= 12; k++) { const x = SX0 + ((SX1 - SX0) * k) / 12; slab(g, M.iron, x - 0.015, x + 0.015, (UP * k) / 12, (UP * k) / 12 + 0.95, SZ1, SZ1 + 0.03); }
+  // la barandilla empieza en el cuarto peldaño: los primeros quedan libres por el costado, que
+  // es por donde se sube (el pie de la escalera da contra el tabique del comedor)
+  const OPEN = 3 / 12;
+  slab(slope, M.walnut, SL * OPEN, SL, 0.92, 0.98, SZ1 - 0.02, SZ1 + 0.05);
+  for (let k = 3; k <= 12; k++) { const x = SX0 + ((SX1 - SX0) * k) / 12; slab(g, M.iron, x - 0.015, x + 0.015, (UP * k) / 12, (UP * k) / 12 + 0.95, SZ1, SZ1 + 0.03); }
+  { const x = SX0 + (SX1 - SX0) * OPEN, y = UP * OPEN; rbox(g, M.walnut, 0.12, 1.15, 0.12, x, y + 0.575 - 0.1, SZ1 + 0.015, 0.02); cyl(g, M.walnut, 0.07, 0.05, 0.1, x, y + 1.05, SZ1 + 0.015, 12); } // poste
   box(SX0 + 1.2, SX1, SZ0, SZ1 + 0.05, UP - 0.25, 'low');                          // debajo de la escalera no se pasa
-  box(SX0, SX1, SZ1, SZ1 + 0.08, 1.1);                                                // barandilla de la escalera
+  box(SX0 + (SX1 - SX0) * OPEN - 0.06, SX1, SZ1, SZ1 + 0.08, 1.1);                  // barandilla de la escalera (desde el poste)
   const stairs = { x0: SX0, x1: SX1, z0: SZ0, z1: SZ1, h: (lx) => Math.max(0, Math.min(UP, ((lx - SX0) / (SX1 - SX0)) * UP)) };
   // muebles del recibidor
   hang('Chandelier_03', 0, 1.8, 1.3, ROOMH);
@@ -454,8 +469,8 @@ export function mansionHQ() {
   P('antique_ceramic_vase_01', 2.55, 0.02, ci.z1 - 0.4, 0, 0.6);
   const runner = mat('mAlfombraRoja', { color: '#7a1f2a', roughness: 0.92, map: canvasTex('mAlfombra', 64, 256, (c, w, h) => { c.fillStyle = '#7a1f2a'; c.fillRect(0, 0, w, h); c.strokeStyle = '#c9a24a'; c.lineWidth = 3; c.strokeRect(5, 5, w - 10, h - 10); c.strokeStyle = 'rgba(201,162,74,0.5)'; for (let y = 30; y < h; y += 40) { c.beginPath(); c.moveTo(w / 2, y - 12); c.lineTo(w / 2 + 14, y); c.lineTo(w / 2, y + 12); c.lineTo(w / 2 - 14, y); c.closePath(); c.stroke(); } }) });
   slab(g, runner, -0.9, 0.9, 0.02, 0.035, -2.5, ci.z1 - 0.3);
-  P('hanging_picture_frame_01', -2.88, 1.75, -2.2, Math.PI / 2, 1.1, null);
-  P('hanging_picture_frame_01', 2.88, 1.75, -2.2, -Math.PI / 2, 1.1, null);
+  P('fancy_picture_frame_01', -2.88, 1.75, -2.2, Math.PI / 2, 1.0, null);
+  P('fancy_picture_frame_01', 2.88, 1.75, -2.2, -Math.PI / 2, 1.0, null);
 
   // --- comedor ---
   const dx = (ci.x0 - 3) / 2 - 0.1, dz = -0.2;
@@ -466,13 +481,13 @@ export function mansionHQ() {
   hang('Chandelier_01', dx, dz, 0.9, ROOMH);
   P('vintage_cabinet_01', dx, 0.02, ci.z0 + 0.4, 0, 2.1);
   P('wine_bottles_01', dx, 0.95, ci.z0 + 0.4, 0, 0.3, null);
-  P('fancy_picture_frame_02', ci.x0 + 0.05, 1.7, dz, Math.PI / 2, 0.95, null);
+  P('fancy_picture_frame_01', ci.x0 + 0.05, 1.7, dz, Math.PI / 2, 0.95, null);
   P('potted_plant_02', -3.5, 0.02, ci.z1 - 0.5, 0, 0.85);
   L1(dx, 3.5);
 
   // --- salón (ala izquierda) ---
   const lx0 = -WX + T, lx1 = -CX, lcx = (lx0 + lx1) / 2;
-  wain(lx0, lx1, 0, WZ - T - 0.02, WZ - T); wain(lx0, lx1, 0, -WZ + T, -WZ + T + 0.02);
+  wain(lx0, lx1, 0, WZ - T - 0.02, WZ - T); wain(lx0, -12.9, 0, -WZ + T, -WZ + T + 0.02); wain(-9.1, lx1, 0, -WZ + T, -WZ + T + 0.02); // (detrás, el ventanal baja casi al suelo)
   slab(g, M.trim, lx0, lx1, TOPW - 0.56, TOPW - 0.42, -WZ + T, -WZ + T + 0.1); slab(g, M.trim, lx0, lx1, TOPW - 0.56, TOPW - 0.42, WZ - T - 0.1, WZ - T);
   put('luxhi/Fireplace', lx0 + 0.35, 0.02, 0, Math.PI / 2, 1.2);
   P('mantel_clock_01', lx0 + 0.3, 1.25, 0, Math.PI / 2, 0.2, null);
@@ -562,7 +577,8 @@ export function mansionHQ() {
   ];
   const U = UP, UH = TOP1 - 0.3;
   slab(g, ceil, ci.x0, ci.x1, UH - 0.02, UH, ci.z0, ci.z1);
-  for (const [x0, x1, z0, z1] of [[ci.x0, ci.x1, ci.z1 - 0.02, ci.z1], [ci.x0, ci.x1, ci.z0, ci.z0 + 0.02], [ci.x0, ci.x0 + 0.02, ci.z0, ci.z1], [ci.x1 - 0.02, ci.x1, ci.z0, ci.z1]]) liner(x0, x1, U, UH, z0, z1);
+  wallAlong(g, M.inner, 'x', ci.z1 - 0.02, ci.z1, ci.x0, ci.x1, U, UH, gaps(frontU)); wallAlong(g, M.inner, 'x', ci.z0, ci.z0 + 0.02, ci.x0, ci.x1, U, UH, gaps(backU));
+  for (const c of [ci.x0, ci.x1 - 0.02]) wallAlong(g, M.inner, 'z', c, c + 0.02, ci.z0, ci.z1, U, UH, gaps([winU(-3.6, -2.2), winU(2.2, 3.6)]));
   part('z', -3, ci.z0, ci.z1, [[1.8, 3.2, 0, 2.4, 'door']], U, UH, 'up');   // dormitorio
   part('z', 3, ci.z0, ci.z1, [[1.8, 3.2, 0, 2.4, 'door']], U, UH, 'up');    // biblioteca
   // barandilla del hueco de la escalera (hierro y nogal)
@@ -574,8 +590,8 @@ export function mansionHQ() {
   // galería: alfombra, consola, cuadros y la lámpara de araña del recibidor vista desde arriba
   slab(g, runner, -0.9, 0.9, U + 0.001, U + 0.012, SZ1 + 0.4, ci.z1 - 0.2);
   P('Sofa_01', 0, U, ci.z1 - 1.7, Math.PI, 0.8, 'up');
-  P('hanging_picture_frame_02', -2.88, U + 1.6, 4.4, Math.PI / 2, 0.7, null);
-  P('hanging_picture_frame_02', 2.88, U + 1.6, 4.4, -Math.PI / 2, 0.7, null);
+  P('fancy_picture_frame_01', -2.88, U + 1.6, 4.4, Math.PI / 2, 0.75, null);
+  P('fancy_picture_frame_01', 2.88, U + 1.6, 4.4, -Math.PI / 2, 0.75, null);
   P('potted_plant_01', 2.3, U, -3.6, 0, 1.3, 'up');
   L1(0, 2, UH); L1(0, -2, UH);
   // --- dormitorio principal ---
@@ -587,7 +603,7 @@ export function mansionHQ() {
   P('ArmChair_01', -3.9, U, 4.9, -Math.PI * 0.75, 1.0, 'up');
   P('side_table_tall_01', -4.9, U, ci.z1 - 0.4, 0, 0.75, 'up');
   P('ceramic_vase_01', -4.9, U + 0.75, ci.z1 - 0.4, 0, 0.35, null);
-  P('fancy_picture_frame_02', ci.x0 + 0.05, U + 1.6, -1.2, Math.PI / 2, 0.85, null);
+  P('fancy_picture_frame_01', ci.x0 + 0.05, U + 1.6, -1.2, Math.PI / 2, 0.85, null);
   put('luxhi/Carpet_1', rx, U + 0.01, ci.z0 + 2.0, 0, 2.0, null);
   hang('Chandelier_02', rx, 0, 0.85, UH);
   // --- biblioteca ---

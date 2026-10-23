@@ -1164,7 +1164,7 @@ function mansionFor(b) {
   W.pois[id] = { x: x + r.door.x, z: z + r.door.z };
   W.mapRects.push({ x0: x - 14, x1: x + 14, z0: z - 6.5, z1: z + 9, c: '#d8c8a8' });
   W.mapLabels.push({ x, z, t: 'La Mansión' });
-  DOORS.push({ x0: x - 14, x1: x + 14, z0: z - 6.5, z1: z + 6.5, x, z, ry: 0, house: false });
+  DOORS.push({ x0: x - 14, x1: x + 14, z0: z - 6.5, z1: z + 25.3, x, z, ry: 0, house: false }); // (el camino de la calle llega hasta la verja: dentro van las losas)
   return true;
 }
 function warehouseLights() {
@@ -1185,8 +1185,8 @@ function warehouseLights() {
       return;
     }
     if (id === 'mansionIn' || id === 'mansionUp') {
-      const up = id === 'mansionUp', y = MN.gy + (up ? MANSION_UP + 2.6 : 2.7);
-      MN[up ? 'up' : 'down'].forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 16; });
+      const up = id === 'mansionUp', y = MN.gy + (up ? MANSION_UP + 2.8 : 3.0); // (cerca del techo y suaves: las paredes claras queman)
+      MN[up ? 'up' : 'down'].forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 7; });
       return;
     }
     for (const l of L) l.color.set('#ffe6c0');
