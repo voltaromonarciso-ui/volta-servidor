@@ -57,8 +57,40 @@ function ramp(s, L) { // 0 → 1 a lo largo del tramo [0, L]
   if (s > b - KNEE) { const u = (b - s) / KNEE; return 1 - (u * u * KNEE) / 2 / (b - a - KNEE); } // acuerdo de salida
   return lin(s);
 }
+// Cruces por niveles (terrazas): la altura de cada cruce de dentro se redondea a escalones de
+// STEP m y dos cruces vecinos nunca se llevan más de un escalón. Así hay calles llanas (mismo
+// nivel en los dos extremos) y, entre un nivel y otro, una sola cuesta suave (~7 %). Los
+// cruces de la circunvalación quedan a su altura natural (casan con la costa).
+const STEP = 3;
 const nodeH = new Map();
-const node = (x, z) => { const k = x + ',' + z; if (!nodeH.has(k)) nodeH.set(k, naturalH(x, z)); return nodeH.get(k); };
+function buildNodes() {
+  const raw = XS.map((x) => ZS.map((z) => naturalH(x, z)));
+  const edge = (i, j) => i === 0 || j === 0 || i === XS.length - 1 || j === ZS.length - 1;
+  const q = raw.map((col, i) => col.map((h, j) => (edge(i, j) ? h : Math.round(h / STEP) * STEP)));
+  for (let pass = 0; pass < 30; pass++) {
+    let changed = false;
+    for (let i = 0; i < XS.length; i++) for (let j = 0; j < ZS.length; j++) {
+      if (edge(i, j)) continue;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = q[i + di]?.[j + dj];
+        if (n === undefined) continue;
+        if (q[i][j] - n > STEP + 0.01) { q[i][j] -= STEP; changed = true; }
+      }
+    }
+    if (!changed) break;
+  }
+  XS.forEach((x, i) => ZS.forEach((z, j) => nodeH.set(x + ',' + z, q[i][j])));
+}
+const node = (x, z) => { if (!nodeH.size) buildNodes(); const k = x + ',' + z; if (!nodeH.has(k)) nodeH.set(k, naturalH(x, z)); return nodeH.get(k); };
+// Suelo de dentro de las manzanas: mezcla de sus cuatro cruces con el mismo perfil que las
+// calles (llano junto a cada cruce, rampa en medio), así el borde casa con la acera
+function blockH(x, z) {
+  if (!XS.length || x <= XS[0] || x >= XS[XS.length - 1] || z <= ZS[0] || z >= ZS[ZS.length - 1]) return null;
+  const a = XS.findLastIndex((v) => v <= x), b = ZS.findLastIndex((v) => v <= z);
+  const fx = ramp(x - XS[a], XS[a + 1] - XS[a]), fz = ramp(z - ZS[b], ZS[b + 1] - ZS[b]);
+  const h00 = node(XS[a], ZS[b]), h10 = node(XS[a + 1], ZS[b]), h01 = node(XS[a], ZS[b + 1]), h11 = node(XS[a + 1], ZS[b + 1]);
+  return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
+}
 function streetH(x, z) {
   if (!XS.length || Math.abs(x) > RX + WALK || Math.abs(z) > RZ + WALK) return null;
   let ix = 0, iz = 0;
@@ -79,7 +111,7 @@ function streetH(x, z) {
 export function baseH(x, z) {
   if (!T.on) return 0;
   const st = streetH(x, z);
-  return st ?? naturalH(x, z);
+  return st ?? blockH(x, z) ?? naturalH(x, z);
 }
 
 // Orilla con forma: el rectángulo de esquinas redondeadas de la isla (ISLE, radio r) con cabos
