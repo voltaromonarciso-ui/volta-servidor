@@ -16,6 +16,7 @@ import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './p
 import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
+import { FRONTS, ownsFront, buyFront, launderStats } from '../systems/fronts.js';
 import { maxStaff, employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF, PACK_MODES } from '../systems/staff.js';
 
 const APPS = [
@@ -408,7 +409,16 @@ function supplier() {
 //  Inmobiliaria: portal de naves en venta (fotos sacadas del juego, ficha y compra con dinero limpio)
 // ------------------------------------------------------------------
 const RE_PICS = import.meta.glob('../assets/realty/*.jpg', { query: '?url', import: 'default', eager: true });
-const rePics = (id) => ['fachada', 'interior'].map((k) => ({ src: RE_PICS[`../assets/realty/${id}-${k}.jpg`], cap: k === 'fachada' ? 'Fachada y patio' : 'Interior de la nave' })).filter((p) => p.src);
+const RE_CAPS = { nave: ['Fachada y patio', 'Interior de la nave'], lujo: ['Fachada y jardín', 'Recibidor y escalera', 'Salón'], negocio: ['Fachada', 'Interior'] };
+const rePics = (id) => { const k = reKind(id), caps = RE_CAPS[k]; return ['fachada', 'interior', 'salon'].map((n, i) => ({ src: RE_PICS[`../assets/realty/${id}-${n}.jpg`], cap: caps[i] || '' })).filter((q) => q.src); };
+// Qué se vende: naves y la mansión (propiedades del mapa) y los negocios tapadera
+const reKind = (id) => (FRONTS[id] ? 'negocio' : G.world.props[id]?.luxury ? 'lujo' : 'nave');
+function reItem(id) {
+  if (FRONTS[id]) { const f = FRONTS[id], z = G.world.zones?.find((q) => q.id === id); return { id, kind: 'negocio', name: f.name, price: f.price, blurb: f.blurb, owned: ownsFront(id), cap: f.cap, fee: f.fee, poi: z ? { x: z.cx, z: z.z1 - 2 } : null }; }
+  const q = G.world.props[id];
+  return { ...q, id, kind: q.luxury ? 'lujo' : 'nave', owned: !!G.state.props[id], poi: G.world.pois[id] };
+}
+let reTab = 'nave';
 // iconos de línea (24×24) para las características
 const RE_ICO = {
   area: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path d="M8 12h8M12 8v8" opacity=".55"/>',
@@ -427,12 +437,29 @@ const RE_ICO = {
 const reIco = (k, cls = 're-ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${RE_ICO[k]}</svg>`;
 const thousands = (n) => n.toLocaleString('es-ES').replace(/\s/g, '.');
 function reDist(id) {
-  const q = G.world.pois[id], P = G.player?.pos;
-  if (!q || !P) return 'Polígono industrial';
+  const it = reItem(id), q = it.poi, P = G.player?.pos;
+  const zone = { nave: 'Polígono industrial', lujo: 'La colina · Rooktown', negocio: 'Centro de Rooktown' }[it.kind];
+  if (!q || !P) return zone;
   const d = Math.hypot(q.x - P.x, q.z - P.z);
-  return `Polígono industrial · ${d < 1000 ? `a ${Math.round(d / 10) * 10} m` : `a ${(d / 1000).toFixed(1)} km`}`;
+  return `${zone} · ${d < 1000 ? `a ${Math.round(d / 10) * 10} m` : `a ${(d / 1000).toFixed(1)} km`}`;
 }
 function reFeats(p) {
+  if (p.kind === 'lujo') return [
+    ['area', 'Superficie', `${p.area} m² en 2 plantas`],
+    ['office', 'Despacho', 'Con caja fuerte grande'],
+    ['key', 'Dormitorio', 'Cama de dosel: se duerme aquí'],
+    ['light', 'Salón', 'Bar para dar fiestas'],
+    ['fence', 'Jardín', 'Vallado, con fuente y verja'],
+    ['door', 'Piscina', 'Con terraza de piedra'],
+    ['bolt', 'Discreción', 'La policía no entra sin orden'],
+    ['rack', 'Negocios', 'Socios y fiestas privadas'],
+  ];
+  if (p.kind === 'negocio') return [
+    ['bolt', 'Blanquea', `${money(p.cap)} al día`],
+    ['key', 'Comisión', `${Math.round(p.fee * 100)} %`],
+    ['light', 'Cuándo', 'Cada mañana a las 9:00'],
+    ['office', 'Gestor', 'Te avisa por mensaje'],
+  ];
   return [
     ['area', 'Superficie', `${p.area} m²`],
     ['height', 'Altura libre', `${p.height || 8} m`],
@@ -465,14 +492,23 @@ function reGallery(id, big = false) {
   return g;
 }
 function reBuy(id) {
+  if (FRONTS[id]) {
+    const f = FRONTS[id];
+    confirmDialog(`Comprar ${f.name}`, `<p>${f.blurb}</p><p>Precio: <b>${money(f.price)}</b> · se paga con dinero limpio.</p><p class="small">Cada mañana blanquea hasta ${money(f.cap)} del efectivo que lleves (se queda un ${Math.round(f.fee * 100)} %).</p>`, 'Comprar', () => {
+      const r = buyFront(id);
+      if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
+      sfx('level'); G.act.bigToast(`¡${f.name} es tuyo!`, `Desde mañana blanquea hasta ${money(f.cap)} al día.`); render();
+    });
+    return;
+  }
   const p = G.world.props[id];
-  confirmDialog(`Comprar ${p.name}`, `<p>${p.blurb || ''}</p><p>${p.area} m² · Precio: <b>${money(p.price)}</b> · se paga con dinero limpio.</p><p class="small">Podrás entrar por la puerta de la oficina, cultivar, montar mesas de trabajo, almacenar y asignar empleados.</p>`, 'Comprar', () => {
+  confirmDialog(`Comprar ${p.name}`, `<p>${p.blurb || ''}</p><p>${p.area} m² · Precio: <b>${money(p.price)}</b> · se paga con dinero limpio.</p><p class="small">${p.luxury ? 'Podrás dormir, guardar dinero en la caja fuerte, dar fiestas, reunirte con socios y tener empleados.' : 'Podrás entrar por la puerta de la oficina, cultivar, montar mesas de trabajo, almacenar y asignar empleados.'}</p>`, 'Comprar', () => {
     if (G.state.props[id]) return;
     const r = spend('clean', p.price, id, { key: 'prop:' + id });
     if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
     G.state.props[id] = true;
     sfx('level');
-    G.act.bigToast(`¡${p.name} es tuyo!`, 'La puerta de la oficina ya está abierta. Te lo he marcado en el mapa.');
+    G.act.bigToast(`¡${p.name} es tuyo!`, p.luxury ? 'Las llaves ya son tuyas. Te la he marcado en el mapa.' : 'La puerta de la oficina ya está abierta. Te lo he marcado en el mapa.');
     const q = G.world.pois[id];
     if (q) setWaypoint(q.x, q.z, p.name);
     save();
@@ -480,38 +516,51 @@ function reBuy(id) {
   });
 }
 function reMark(id) {
-  const q = G.world.pois[id], p = G.world.props[id];
+  const it = reItem(id), q = it.poi;
   if (!q) return;
-  setWaypoint(q.x, q.z, p.name); sfx('click'); G.act.toast(`Destino: ${p.name}`, '📍');
+  setWaypoint(q.x, q.z, it.name); sfx('click'); G.act.toast(`Destino: ${it.name}`, '📍');
 }
 function realty() {
-  if (view.arg && G.world.props[view.arg]) return realtyDetail(view.arg);
-  const list = Object.entries(G.world.props).filter(([, p]) => p.warehouse).sort((a, b) => a[1].price - b[1].price);
+  if (view.arg && (G.world.props[view.arg] || FRONTS[view.arg])) return realtyDetail(view.arg);
+  const ids = { nave: Object.keys(G.world.props).filter((id) => G.world.props[id].warehouse), lujo: Object.keys(G.world.props).filter((id) => G.world.props[id].luxury), negocio: Object.keys(FRONTS) };
+  const list = ids[reTab].map(reItem).sort((a, b) => a.price - b.price);
   const box = h('div', 're');
-  box.appendChild(h('div', 're-head', `<div class="re-logo">NL</div><div class="re-brand"><b>Naves Lomas</b><small>Inmobiliaria industrial · Rooktown</small></div>
+  box.appendChild(h('div', 're-head', `<div class="re-logo">NL</div><div class="re-brand"><b>Naves Lomas</b><small>Inmobiliaria · Rooktown</small></div>
     <div class="re-bal"><small>Saldo limpio</small><b>${money(balance('clean'))}</b></div>`));
-  const avail = list.filter(([id]) => !G.state.props[id]).length;
-  box.appendChild(h('div', 're-sub', `<b>${list.length} naves</b> en el polígono · ${avail ? `${avail} disponible${avail > 1 ? 's' : ''}` : 'todas son tuyas'}<span>Por precio ↑</span>`));
-  for (const [id, p] of list) {
-    const owned = !!G.state.props[id];
-    const card = h('div', 're-card' + (owned ? ' owned' : ''));
-    const gal = reGallery(id);
-    gal.appendChild(h('span', 're-tag' + (owned ? ' own' : ''), owned ? `${reIco('check', 're-ico s')} Tuya` : 'En venta'));
+  const tabs = h('div', 'chips big re-tabs');
+  for (const [k, label] of [['nave', 'Naves'], ['lujo', 'Casas de lujo'], ['negocio', 'Negocios']]) {
+    const b = h('button', 'chip' + (reTab === k ? ' on' : ''), label);
+    b.onclick = () => { reTab = k; sfx('click'); render(); };
+    tabs.appendChild(b);
+  }
+  box.appendChild(tabs);
+  const word = { nave: ['nave', 'naves', 'en el polígono'], lujo: ['casa', 'casas', 'en la colina'], negocio: ['negocio', 'negocios', 'en el centro'] }[reTab];
+  const avail = list.filter((it) => !it.owned).length;
+  box.appendChild(h('div', 're-sub', `<b>${list.length} ${list.length === 1 ? word[0] : word[1]}</b> ${word[2]} · ${avail ? `${avail} disponible${avail > 1 ? 's' : ''}` : 'todo es tuyo'}<span>Por precio ↑</span>`));
+  if (reTab === 'negocio') { const st = launderStats(); if (st.n) box.appendChild(h('div', 're-sub', `🧾 Tus negocios blanquean hasta <b>${money(st.cap)}</b> al día (te llegan ${money(st.net)} limpios).`)); }
+  for (const it of list) {
+    const card = h('div', 're-card' + (it.owned ? ' owned' : ''));
+    const gal = reGallery(it.id);
+    gal.appendChild(h('span', 're-tag' + (it.owned ? ' own' : ''), it.owned ? `${reIco('check', 're-ico s')} Tuya` : 'En venta'));
     card.appendChild(gal);
-    const body = h('div', 're-body', `<div class="re-price">${money(p.price)}<small>${thousands(Math.round(p.price / p.area))} $/m²</small></div>
-      <div class="re-title">${p.name}</div>
-      <div class="re-loc">${reIco('pin', 're-ico s')}${reDist(id)}</div>
-      <div class="re-chips"><span>${reIco('area', 're-ico s')}${p.area} m²</span><span>${reIco('door', 're-ico s')}${p.doors || 1} portón${(p.doors || 1) > 1 ? 'es' : ''}</span><span>${reIco('office', 're-ico s')}Altillo ${p.office || 35} m²</span></div>`);
+    const chips = it.kind === 'nave'
+      ? `<span>${reIco('area', 're-ico s')}${it.area} m²</span><span>${reIco('door', 're-ico s')}${it.doors || 1} portón${(it.doors || 1) > 1 ? 'es' : ''}</span><span>${reIco('office', 're-ico s')}Altillo ${it.office || 35} m²</span>`
+      : it.kind === 'lujo' ? `<span>${reIco('area', 're-ico s')}${it.area} m²</span><span>${reIco('fence', 're-ico s')}Jardín y piscina</span><span>${reIco('office', 're-ico s')}2 plantas</span>`
+        : `<span>${reIco('bolt', 're-ico s')}${money(it.cap)}/día</span><span>${reIco('key', 're-ico s')}Comisión ${Math.round(it.fee * 100)} %</span>`;
+    const body = h('div', 're-body', `<div class="re-price">${money(it.price)}${it.area ? `<small>${thousands(Math.round(it.price / it.area))} $/m²</small>` : ''}</div>
+      <div class="re-title">${it.name}</div>
+      <div class="re-loc">${reIco('pin', 're-ico s')}${reDist(it.id)}</div>
+      <div class="re-chips">${chips}</div>`);
     card.appendChild(body);
-    card.onclick = (e) => { if (e.target.closest('.re-track') && e.target.closest('.re-gal').querySelector('.re-track').scrollLeft % 1) return; sfx('click'); go('realty', id); };
+    card.onclick = (e) => { if (e.target.closest('.re-track') && e.target.closest('.re-gal').querySelector('.re-track').scrollLeft % 1) return; sfx('click'); go('realty', it.id); };
     box.appendChild(card);
   }
-  if (!list.length) box.appendChild(h('div', 'muted small center', 'No hay naves en venta en esta zona.'));
-  box.appendChild(h('div', 're-foot', '💡 Solo aceptamos transferencia: blanquea efectivo en un cajero del Banco Rooktown.'));
+  if (!list.length) box.appendChild(h('div', 'muted small center', 'No hay nada en venta en esta zona.'));
+  box.appendChild(h('div', 're-foot', '💡 Solo aceptamos transferencia: blanquea efectivo en un cajero del Banco Rooktown o con tus negocios.'));
   screen.appendChild(box);
 }
 function realtyDetail(id) {
-  const p = G.world.props[id], owned = !!G.state.props[id], clean = balance('clean');
+  const p = reItem(id), owned = p.owned, clean = balance('clean');
   const box = h('div', 're re-detail');
   const gal = reGallery(id, true);
   gal.appendChild(h('span', 're-tag' + (owned ? ' own' : ''), owned ? `${reIco('check', 're-ico s')} Tuya` : 'En venta'));
@@ -523,13 +572,18 @@ function realtyDetail(id) {
     box.appendChild(th);
   }
   box.appendChild(h('div', 're-info', `<div class="re-title big">${p.name}</div><div class="re-loc">${reIco('pin', 're-ico s')}${reDist(id)}</div>
-    <div class="re-price big">${money(p.price)}<small>${thousands(Math.round(p.price / p.area))} $/m²</small></div>`));
+    <div class="re-price big">${money(p.price)}${p.area ? `<small>${thousands(Math.round(p.price / p.area))} $/m²</small>` : ''}</div>`));
   const feats = h('div', 're-sec', '<h4>Características</h4>');
   const grid = h('div', 're-feats');
   for (const [k, label, val] of reFeats(p)) grid.appendChild(h('div', 're-feat', `${reIco(k)}<div><small>${label}</small><b>${val}</b></div>`));
   feats.appendChild(grid);
   box.appendChild(feats);
-  box.appendChild(h('div', 're-sec', `<h4>Descripción</h4><p>${p.blurb || ''} Nave de bloque y chapa con ${p.doors > 1 ? 'dos portones enrollables' : 'portón enrollable'} a la zona de carga, oficina acristalada en altillo con escalera metálica y zona de descanso, y patio vallado para la furgoneta. Se entrega tal cual: con estanterías y maquinaria.</p>`));
+  const desc = {
+    nave: `Nave de bloque y chapa con ${p.doors > 1 ? 'dos portones enrollables' : 'portón enrollable'} a la zona de carga, oficina acristalada en altillo con escalera metálica y zona de descanso, y patio vallado para la furgoneta. Se entrega tal cual: con estanterías y maquinaria.`,
+    lujo: 'Villa de dos plantas con alas, tejados de teja y pórtico de columnas. Abajo: recibidor con escalera de mármol, comedor, salón con chimenea, bar, cocina y despacho; arriba: dormitorio principal con balcón y biblioteca. Jardín vallado con fuente, y piscina con terraza detrás. Se entrega amueblada.',
+    negocio: 'Negocio en marcha con su clientela. El gestor mezcla tu efectivo con la caja de cada día y te lo pasa limpio a la cuenta.',
+  }[p.kind];
+  box.appendChild(h('div', 're-sec', `<h4>Descripción</h4><p>${p.blurb || ''} ${desc}</p>`));
   const bar = h('div', 're-bar');
   const mk = h('button', 'btn ghost', `${reIco('pin', 're-ico s')} Cómo llegar`);
   mk.onclick = () => reMark(id);
