@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { labelTex, lathe, ribbedCap, wrapLabel, canvasTex } from './detail.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { shardsFaceURL } from '../ui/icons.js';
@@ -427,59 +428,92 @@ const gm = (k, o) => once('dg-' + k, () => new THREE.MeshStandardMaterial(o));
 const glassClear = () => gm('vidrio', { color: 0xe8f6ff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.4, depthWrite: false });
 const blackCap = () => gm('tapon', { color: 0x24272b, roughness: 0.45 });
 export function vialModel(full = true, { cap = true } = {}) {
+  // vial de vidrio torneado (fondo redondeado, cuello y boca), tapón de rosca estriado y etiqueta
   const g = new THREE.Group();
-  if (full) { const p = new THREE.Mesh(once('vialPolvo', () => new THREE.CylinderGeometry(0.0115, 0.0115, 0.04, 16)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.position.y = 0.022; g.add(p); }
-  const b = new THREE.Mesh(once('vialCuerpo', () => new THREE.CylinderGeometry(0.013, 0.013, 0.085, 18)), glassClear()); b.position.y = 0.0425; b.renderOrder = 2; g.add(b);
-  const c = new THREE.Mesh(once('vialTapa', () => new THREE.CylinderGeometry(0.0145, 0.0145, 0.018, 18)), blackCap()); c.position.y = 0.093; c.visible = cap; g.add(c); g.userData.cap = c;
-  if (full === 'level') { const p = new THREE.Mesh(once('vialPolvo', () => new THREE.CylinderGeometry(0.0115, 0.0115, 0.04, 16)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.scale.y = 0.001; p.position.y = 0.002; g.add(p); g.userData.level = p; g.userData.levelMax = 0.075; }
-  const l = new THREE.Mesh(once('vialEtiq', () => new THREE.CylinderGeometry(0.0133, 0.0133, 0.026, 18, 1, true, -0.9, 1.8)), gm('etiqueta', { color: 0xffffff, roughness: 0.7 })); l.position.y = 0.05; g.add(l);
+  const prof = [[0, 0], [0.011, 0.0008], [0.013, 0.004], [0.013, 0.072], [0.0118, 0.077], [0.0105, 0.079], [0.0105, 0.088], [0.0098, 0.088], [0.0098, 0.08], [0.0122, 0.076], [0.0122, 0.004], [0.0105, 0.0015], [0, 0.0015]];
+  const glass = gm('vidrioVial', { color: 0xeaf6ff, roughness: 0.04, metalness: 0.05, transparent: true, opacity: 0.38, depthWrite: false, side: THREE.DoubleSide });
+  const b = new THREE.Mesh(lathe('vial', prof, 24), glass); b.renderOrder = 2; g.add(b);
+  if (full === true) { const p = new THREE.Mesh(once('vialPolvo2', () => new THREE.CylinderGeometry(0.0112, 0.0112, 0.04, 18)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.position.y = 0.022; g.add(p); }
+  const c = new THREE.Mesh(ribbedCap(0.0128, 0.016), gm('taponVial', { color: 0x1f2226, roughness: 0.45 })); c.position.y = 0.084; c.visible = cap; g.add(c); g.userData.cap = c;
+  wrapLabel(g, labelTex('vial', { band: '#5a6168', title: 'N-01', sub: 'polvo fino', icon: 'warn' }), 0.0132, 0.03, 0.045, Math.PI * 1.25);
+  if (full === 'level') { const p = new THREE.Mesh(once('vialPolvo', () => new THREE.CylinderGeometry(0.0115, 0.0115, 0.04, 16)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.scale.y = 0.001; p.position.y = 0.002; g.add(p); g.userData.level = p; g.userData.levelMax = 0.07; }
   return g;
 }
 export function pillModel(size = 1) {
+  // cápsula de dos colores con la junta marcada y brillo
   const g = new THREE.Group();
-  const geo = once('capsula', () => new THREE.CapsuleGeometry(0.005, 0.012, 4, 10));
-  const a = new THREE.Mesh(geo, gm('capVerde', { color: 0x1f9e7a, roughness: 0.35 }));
-  const half = new THREE.Mesh(once('capMedia', () => new THREE.CapsuleGeometry(0.0052, 0.006, 4, 10)), gm('capBlanca', { color: 0xf4f6f5, roughness: 0.35 }));
-  half.position.y = -0.004; g.add(a, half); g.scale.setScalar(size); return g;
+  const a = new THREE.Mesh(once('capsula', () => new THREE.CapsuleGeometry(0.005, 0.012, 6, 14)), gm('capVerde', { color: 0x1f9e7a, roughness: 0.22, metalness: 0.05 }));
+  const half = new THREE.Mesh(once('capMedia', () => { const ge = new THREE.CapsuleGeometry(0.00515, 0.006, 6, 14); ge.translate(0, -0.004, 0); return ge; }), gm('capBlanca', { color: 0xf4f6f5, roughness: 0.22 }));
+  const seam = new THREE.Mesh(once('capJunta', () => new THREE.TorusGeometry(0.00518, 0.0004, 4, 18)), gm('capJunta', { color: 0xc9d3cf, roughness: 0.4 }));
+  seam.rotation.x = Math.PI / 2; seam.position.y = -0.001;
+  g.add(a, half, seam); g.scale.setScalar(size); return g;
 }
 export function blisterModel(full = true, { slots = null } = {}) {
+  // lámina de aluminio impresa (con troquel) y burbujas de PVC transparentes
   const g = new THREE.Group();
-  const card = new THREE.Mesh(once('blisterCarta', () => new RoundedBoxGeometry(0.06, 0.09, 0.002, 1, 0.0008)), gm('alu', { color: 0xd5dbe0, roughness: 0.35, metalness: 0.3 }));
+  const print = canvasTex('blisterFoil', 128, 192, (c, w, h) => {
+    const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#e9edf0'); gr.addColorStop(0.5, '#c6ced5'); gr.addColorStop(1, '#e2e7eb'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#9aa6af'; c.lineWidth = 1; c.setLineDash([3, 2]); c.beginPath(); c.moveTo(w / 2, 6); c.lineTo(w / 2, h - 6); for (let r = 1; r < 5; r++) { c.moveTo(6, (r * h) / 5); c.lineTo(w - 6, (r * h) / 5); } c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#1f9e7a'; c.font = 'bold 13px Arial'; c.textAlign = 'center'; c.fillText('LUMINA 10', w / 2, h - 6);
+  });
+  const card = new THREE.Mesh(once('blisterCarta', () => new RoundedBoxGeometry(0.06, 0.09, 0.0016, 1, 0.0007)), gm('aluImpreso', { color: 0xffffff, map: print, roughness: 0.3, metalness: 0.5 }));
   g.add(card);
+  const pvc = gm('pvc', { color: 0xf4fbff, roughness: 0.06, transparent: true, opacity: 0.35, depthWrite: false });
   for (let c = 0; c < 2; c++) for (let r = 0; r < 5; r++) {
     const x = -0.014 + c * 0.028, y = -0.034 + r * 0.017;
-    const bub = new THREE.Mesh(once('burbuja', () => new THREE.CapsuleGeometry(0.0055, 0.012, 4, 10)), glassClear());
-    bub.rotation.z = Math.PI / 2; bub.position.set(x, y, 0.004); bub.scale.z = 0.6; g.add(bub);
-    if (full) { const p = pillModel(0.9); p.rotation.z = Math.PI / 2; p.position.set(x, y, 0.004); g.add(p); }
-    if (slots) slots.push(new THREE.Vector3(x, y, 0.004));
+    const bub = new THREE.Mesh(once('burbuja', () => new THREE.CapsuleGeometry(0.0058, 0.012, 6, 14)), pvc);
+    bub.rotation.z = Math.PI / 2; bub.position.set(x, y, 0.003); bub.scale.z = 0.55; bub.renderOrder = 2; g.add(bub);
+    if (full) { const p = pillModel(0.9); p.rotation.z = Math.PI / 2; p.position.set(x, y, 0.0035); g.add(p); }
+    if (slots) slots.push(new THREE.Vector3(x, y, 0.0035));
   }
   return g;
 }
 export function amberBottle(full = true, { cap = true } = {}) {
+  // bote de farmacia ámbar: cuerpo torneado con hombro, cuello de rosca, tapón estriado y etiqueta
   const g = new THREE.Group();
-  const prof = [[0, 0], [0.022, 0], [0.025, 0.004], [0.025, 0.06], [0.02, 0.07], [0.016, 0.072], [0.016, 0.078], [0, 0.078]].map(([a, b]) => new THREE.Vector2(a, b));
-  const body = new THREE.Mesh(once('frascoCuerpo', () => new THREE.LatheGeometry(prof, 24)), gm('ambar', { color: full ? 0xb8641c : 0xd79c5c, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.92 }));
+  const prof = [[0, 0], [0.021, 0], [0.0245, 0.003], [0.025, 0.006], [0.025, 0.056], [0.0235, 0.064], [0.019, 0.07], [0.0165, 0.071], [0.0165, 0.08], [0.0152, 0.08], [0.0152, 0.072], [0.0235, 0.062], [0.0238, 0.006], [0.02, 0.0025], [0, 0.0025]];
+  const body = new THREE.Mesh(lathe('frasco', prof, 32), gm(full ? 'ambar2' : 'ambarClaro', { color: full ? 0x9a4f12 : 0xc98a4a, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.88, side: THREE.DoubleSide }));
   g.add(body);
-  const capM = new THREE.Mesh(once('frascoTapa', () => new THREE.CylinderGeometry(0.019, 0.019, 0.016, 20)), blackCap()); capM.position.y = 0.084; capM.visible = cap; g.add(capM); g.userData.cap = capM;
-  if (full) { const lab = new THREE.Mesh(once('frascoEtiq', () => new THREE.CylinderGeometry(0.0255, 0.0255, 0.03, 24, 1, true, -1.1, 2.2)), gm('etiquetaCrema', { color: 0xf3ead2, roughness: 0.7 })); lab.position.y = 0.032; g.add(lab); }
+  for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(once('rosca', () => new THREE.TorusGeometry(0.0168, 0.0007, 4, 24)), gm('ambarRosca', { color: 0x7a3d10, roughness: 0.2 })); t.rotation.x = Math.PI / 2; t.position.y = 0.073 + i * 0.0025; g.add(t); }
+  const capM = new THREE.Mesh(ribbedCap(0.0195, 0.017), gm('taponFrasco', { color: 0x1f2226, roughness: 0.45 })); capM.position.y = 0.071; capM.visible = cap; g.add(capM); g.userData.cap = capM;
+  if (full) wrapLabel(g, labelTex('frasco', { band: '#1f9e7a', title: 'LUMINA', sub: '25 cápsulas', icon: 'leaf' }), 0.0253, 0.034, 0.032, Math.PI * 1.3);
   return g;
 }
 export function dropperModel(withBox = true, { cap = true, level = false } = {}) {
+  // frasco gotero de vidrio ámbar, collar estriado, pera de goma y pipeta; caja impresa
   const g = new THREE.Group();
-  const b = new THREE.Mesh(once('goteroCuerpo', () => new RoundedBoxGeometry(0.03, 0.06, 0.03, 2, 0.008)), gm('ambarOsc', { color: 0x7a3d12, roughness: 0.15, transparent: true, opacity: 0.95 }));
-  b.position.y = 0.03; g.add(b);
-  const lab = new THREE.Mesh(once('goteroEtiq', () => new THREE.PlaneGeometry(0.024, 0.026)), gm('etiqMorada', { color: 0xe5d8fb, roughness: 0.7 })); lab.position.set(0, 0.03, 0.0152); g.add(lab);
+  const prof = [[0, 0], [0.013, 0], [0.0152, 0.003], [0.0155, 0.042], [0.014, 0.05], [0.009, 0.056], [0.0075, 0.057], [0.0075, 0.062], [0, 0.062]];
+  const b = new THREE.Mesh(lathe('gotero', prof, 28), gm('ambarOsc2', { color: 0x6b330e, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.93 }));
+  g.add(b);
+  wrapLabel(g, labelTex('gotero', { band: '#8a5bd6', title: 'EXTRACTO', sub: 'lumaflor 30 ml', icon: 'drop', bg: '#f3edff' }), 0.0158, 0.026, 0.024, Math.PI * 1.4);
   const top = new THREE.Group(); g.add(top); g.userData.cap = top; top.visible = cap;
-  const ring = new THREE.Mesh(once('goteroAro', () => new THREE.CylinderGeometry(0.009, 0.009, 0.01, 16)), blackCap()); ring.position.y = 0.065; top.add(ring);
-  const bulb = new THREE.Mesh(once('goteroPera', () => new THREE.SphereGeometry(0.008, 14, 10)), blackCap()); bulb.scale.y = 1.6; bulb.position.y = 0.08; top.add(bulb);
-  if (level) { const l = new THREE.Mesh(once('goteroLiq', () => new THREE.BoxGeometry(0.026, 1, 0.026)), gm('extractoLiq', { color: 0xb48cf0, roughness: 0.1, transparent: true, opacity: 0.85, emissive: 0x6a3fc0, emissiveIntensity: 0.25 })); l.scale.y = 0.001; l.position.y = 0.003; g.add(l); g.userData.level = l; g.userData.levelMax = 0.054; }
+  const ring = new THREE.Mesh(ribbedCap(0.0095, 0.012), gm('collarNegro', { color: 0x1d1f22, roughness: 0.4 })); ring.position.y = 0.058; top.add(ring);
+  const bulb = new THREE.Mesh(lathe('pera', [[0, 0], [0.0062, 0], [0.0068, 0.004], [0.0072, 0.011], [0.0058, 0.017], [0.0032, 0.0195], [0, 0.0198]], 20), gm('goma', { color: 0x141516, roughness: 0.75 }));
+  bulb.position.y = 0.07; top.add(bulb);
+  if (level) { const l = new THREE.Mesh(once('goteroLiq2', () => new THREE.CylinderGeometry(0.0142, 0.0142, 1, 24)), gm('extractoLiq', { color: 0xb48cf0, roughness: 0.1, transparent: true, opacity: 0.85, emissive: 0x6a3fc0, emissiveIntensity: 0.25 })); l.scale.y = 0.001; l.position.y = 0.003; g.add(l); g.userData.level = l; g.userData.levelMax = 0.04; }
   if (withBox) {
-    const bx = new THREE.Mesh(once('goteroCaja', () => new RoundedBoxGeometry(0.034, 0.075, 0.034, 1, 0.002)), gm('cajaMorada', { color: 0xc7b0f5, roughness: 0.6 }));
-    bx.position.set(0.04, 0.0375, -0.006); g.add(bx);
+    const art = canvasTex('cajaGotero', 128, 256, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#e8dcff'); gr.addColorStop(1, '#b99af0'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#8a5bd6'; c.beginPath(); c.moveTo(0, h * 0.62); c.bezierCurveTo(w * 0.3, h * 0.52, w * 0.7, h * 0.72, w, h * 0.6); c.lineTo(w, h); c.lineTo(0, h); c.fill();
+      c.fillStyle = '#fff'; for (const a of [-0.9, -0.45, 0, 0.45, 0.9]) { c.save(); c.translate(w / 2, h * 0.42); c.rotate(a); c.beginPath(); c.ellipse(0, -h * 0.07, w * 0.04, h * 0.075, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
+      c.fillStyle = '#4b2a8a'; c.font = 'bold 18px Arial'; c.textAlign = 'center'; c.fillText('EXTRACTO', w / 2, h * 0.18); c.font = '12px Arial'; c.fillText('Lumaflor · 30 ml', w / 2, h * 0.26);
+    });
+    const bm = [gm('cajaLado', { color: 0xc7b0f5, roughness: 0.6 }), gm('cajaLado', { color: 0xc7b0f5, roughness: 0.6 }), gm('cajaTapa', { color: 0xd9c8fb, roughness: 0.6 }), gm('cajaTapa', { color: 0xd9c8fb, roughness: 0.6 }), gm('cajaFrente', { map: art, roughness: 0.55 }), gm('cajaLado', { color: 0xc7b0f5, roughness: 0.6 })];
+    const bx = new THREE.Mesh(once('goteroCaja2', () => new RoundedBoxGeometry(0.034, 0.08, 0.034, 1, 0.0015)), bm);
+    bx.position.set(0.042, 0.04, -0.006); g.add(bx);
   }
   return g;
 }
 export function powderPile() {
-  const p = new THREE.Mesh(once('montonPolvo', () => new THREE.ConeGeometry(0.045, 0.035, 20)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 }));
-  p.position.y = 0.017; const g = new THREE.Group(); g.add(p); return g;
+  // montón de polvo con relieve irregular y granos
+  const geo = once('montonPolvo2', () => {
+    const ge = new THREE.ConeGeometry(0.045, 0.035, 40, 8);
+    const p = ge.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), n = Math.sin(a * 5) * 0.003 + Math.sin(a * 11 + y * 90) * 0.0015; if (y < 0.0174) { const k = 1 + n / 0.045; p.setX(i, x * k); p.setZ(i, z * k); } p.setY(i, y + Math.sin(a * 7) * 0.0012 * (0.0175 - y) / 0.035); }
+    ge.computeVertexNormals(); return ge;
+  });
+  const p = new THREE.Mesh(geo, gm('polvoMate', { color: 0xfbfaf6, roughness: 1 }));
+  p.position.y = 0.017; const g = new THREE.Group(); g.add(p);
+  for (let i = 0; i < 10; i++) { const s = new THREE.Mesh(once('grano', () => new THREE.IcosahedronGeometry(0.0022, 0)), gm('polvoMate', { color: 0xfbfaf6, roughness: 1 })); const a = i * 2.4, d = 0.046 + (i % 3) * 0.004; s.position.set(Math.cos(a) * d, 0.001, Math.sin(a) * d); g.add(s); }
+  return g;
 }

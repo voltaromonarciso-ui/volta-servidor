@@ -1152,9 +1152,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/goods.js": {
-    "mtime": 1792761604.9920077,
-    "seen": 1792764097.070657,
-    "ast_hash": "c1bde27f584e8f5d035066f028111a46",
+    "mtime": 1792766816.3524036,
+    "seen": 1792767652.9742734,
+    "ast_hash": "e07654bddbdaf0ad4c35f48959cac23a",
     "semantic_hash": ""
   },
   "juego/src/systems/station.js": {
@@ -2211,6 +2211,12 @@
     "mtime": 1792762355.8814745,
     "seen": 1792764097.0711217,
     "ast_hash": "0c30173d3289bf25d23ea94170069e47",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/detail.js": {
+    "mtime": 1792766816.3334117,
+    "seen": 1792767652.9742422,
+    "ast_hash": "5630acd12e8fa6431c135a990925a910",
     "semantic_hash": ""
   }
 }
