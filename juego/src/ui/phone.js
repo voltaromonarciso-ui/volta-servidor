@@ -501,7 +501,7 @@ function realty() {
     const body = h('div', 're-body', `<div class="re-price">${money(p.price)}<small>${thousands(Math.round(p.price / p.area))} $/m²</small></div>
       <div class="re-title">${p.name}</div>
       <div class="re-loc">${reIco('pin', 're-ico s')}${reDist(id)}</div>
-      <div class="re-chips"><span>${reIco('area', 're-ico s')}${p.area} m²</span><span>${reIco('door', 're-ico s')}${p.doors || 1} portón${(p.doors || 1) > 1 ? 'es' : ''}</span><span>${reIco('office', 're-ico s')}Altillo ${p.office || 35} m²</span><span>${reIco('height', 're-ico s')}${p.height || 8} m</span></div>`);
+      <div class="re-chips"><span>${reIco('area', 're-ico s')}${p.area} m²</span><span>${reIco('door', 're-ico s')}${p.doors || 1} portón${(p.doors || 1) > 1 ? 'es' : ''}</span><span>${reIco('office', 're-ico s')}Altillo ${p.office || 35} m²</span></div>`);
     card.appendChild(body);
     card.onclick = (e) => { if (e.target.closest('.re-track') && e.target.closest('.re-gal').querySelector('.re-track').scrollLeft % 1) return; sfx('click'); go('realty', id); };
     box.appendChild(card);
