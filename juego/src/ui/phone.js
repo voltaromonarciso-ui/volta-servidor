@@ -16,7 +16,7 @@ import { chips, confirmDialog, closePanel, stepper, chanceBar, meter } from './p
 import { ITEMS } from '../data/items.js';
 import { setWaypoint, clearWaypoint, getWaypoint } from './hud.js';
 import { setShadows } from '../world/sky.js';
-import { maxStaff, employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF } from '../systems/staff.js';
+import { maxStaff, employees, candidate, hired, hire, fire, assign, setMode, payDebt, dailyCost, totalDebt, nextPayday, ownedProps, statusText, ROLES, CANDIDATES, STAFF, PACK_MODES } from '../systems/staff.js';
 
 const APPS = [
   { id: 'msgs', name: 'Mensajes', icon: '💬', color: '#27ae60' },
@@ -589,7 +589,7 @@ function staff() {
     }
     if (e.role === 'envasado') {
       const row = h('div', 'chips big');
-      for (const [m, label] of [['auto', 'Lo que haya'], ['bolsa', 'Sobres'], ['tarro', 'Tarros'], ['shards', 'Sweet Shards']]) {
+      for (const [m, { label }] of Object.entries(PACK_MODES)) {
         const b = h('button', 'chip' + (e.mode === m ? ' on' : ''), label);
         b.onclick = () => { setMode(e.uid, m); sfx('click'); render(); };
         row.appendChild(b);

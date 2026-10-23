@@ -1,9 +1,9 @@
 import { G } from '../game.js';
-import { ITEMS, STRAINS, FORMS } from '../data/items.js';
-import { CANDIDATES, ROLES, STAFF } from '../data/staff.js';
+import { ITEMS, STRAINS, FORMS, LAB } from '../data/items.js';
+import { CANDIDATES, ROLES, STAFF, PACK_MODES } from '../data/staff.js';
 import { absNow, save, slotsAdd, slotsRemove, slotsRoom, slotsCount } from '../core/state.js';
 import { spend, ensureBaseProduct, sendMsg, CONTACTS } from './economy.js';
-import { RECIPE, COOK_MIN, COOK_OUT, harvestYield, emptyPot, refreshPot } from './objects.js';
+import { RECIPE, COOK_MIN, COOK_OUT, COOK_PRO, LAB_TYPES, harvestYield, emptyPot, refreshPot } from './objects.js';
 import { rememberIncident } from './appearance.js';
 import { rackStore } from '../world/racks.js';
 
@@ -135,7 +135,7 @@ export function assign(uid, prop) {
 
 export function setMode(uid, mode) {
   const e = staff().find((x) => x.uid === uid);
-  if (e && e.role === 'envasado' && ['auto', 'bolsa', 'tarro', 'shards'].includes(mode)) { e.mode = mode; e.task = null; save(); }
+  if (e && e.role === 'envasado' && PACK_MODES[mode]) { e.mode = mode; e.task = null; save(); }
 }
 
 // Pagar la deuda a mano (desde el móvil): todo o nada.
@@ -206,44 +206,61 @@ function planCultivo(e, store, busy) {
   return { wait: 'sin_tarea', reason: 'Las plantas están regadas y creciendo.' };
 }
 
-function packOptions(e, store) {
-  const want = e.mode === 'auto' ? ['shards', 'tarro', 'bolsa'] : [e.mode];
-  return FORMS.filter((f) => want.includes(f.id));
+function packOptions(e) {
+  const want = (PACK_MODES[e.mode] || PACK_MODES.auto).forms;
+  return want.map((id) => FORMS.find((f) => f.id === id)).filter(Boolean);
 }
+const stationName = (at) => ({ packer: 'mesa de empaquetado', jarpacker: 'envasadora de tarros' }[at] || LAB[at]?.name.toLowerCase() || at);
+// Cada forma se envasa en su mesa o en la empacadora avanzada (esta hace varios envases seguidos)
 function planEnvasado(e, store, busy) {
   if (!store.n) return { wait: 'material', reason: 'No hay estanterías ni armarios con material.' };
-  let missing = null, full = null, noStation = null;
-  for (const F of packOptions(e, store)) {
-    const st = objsIn(e.prop, F.at).find((o) => !busy.has(o.entry.uid));
-    if (!st) { noStation ||= F.at === 'jarpacker' ? 'No hay envasadora de tarros libre.' : 'No hay mesa de empaquetado libre.'; continue; }
+  // (si hay producto pero faltan envases, se avisa de eso antes que de lo que no hay)
+  let missing = null, missPack = null, full = null, noStation = null;
+  for (const F of packOptions(e)) {
+    const st = objsIn(e.prop, [F.at, 'autopack']).find((o) => !busy.has(o.entry.uid));
+    if (!st) { noStation ||= `No hay ${stationName(F.at)} ni empacadora libre.`; continue; }
     const p = store.stacks(F.src, F.per)[0];
     if (p === undefined && !store.count(F.src)) { missing ||= `Faltan ${ITEMS[F.src].name.toLowerCase()} en las estanterías.`; continue; }
     if (p === undefined) { missing ||= `Hacen falta ${F.per} ${ITEMS[F.src].name.toLowerCase()} del mismo tipo.`; continue; }
-    if (store.count(F.pack) < 1) { missing ||= `Faltan ${ITEMS[F.pack].name.toLowerCase()} en las estanterías.`; continue; }
+    if (store.count(F.pack) < 1) { missPack ||= `Faltan ${ITEMS[F.pack].name.toLowerCase()} en las estanterías.`; continue; }
     if (store.room(F.id, p) < 1) { full ||= 'Las estanterías están llenas.'; continue; }
-    return { kind: F.id, target: st.entry.uid, p, dur: STAFF.minutes[F.id] };
+    const auto = st.entry.type === 'autopack';
+    const n = auto ? Math.max(1, Math.min(STAFF.autopackBatch, Math.floor(store.count(F.src, p) / F.per), store.count(F.pack), store.room(F.id, p))) : 1;
+    const base = STAFF.minutes[F.id] || 15;
+    return { kind: F.id, target: st.entry.uid, p, n, dur: Math.round(base * (auto ? 1 + 0.25 * (n - 1) : 1)) };
   }
   if (full) return { wait: 'espacio', reason: full };
-  if (missing) return { wait: 'material', reason: missing };
+  if (missPack || missing) return { wait: 'material', reason: missPack || missing };
   return { wait: 'sin_tarea', reason: noStation || 'Nada que envasar.' };
 }
 
+// Lo que mete y lo que saca cada sitio de cocina: el hornillo o una mesa del cártel
+const cookOf = (o) => {
+  if (o.entry.type === 'stove') { const pro = o.entry.data.pro; return { make: RECIPE, out: 'cristal', strain: 'shards', n: pro ? COOK_PRO.out : COOK_OUT, min: pro ? COOK_PRO.min : COOK_MIN, name: 'el hornillo' }; }
+  const L = LAB[o.entry.type];
+  return { ...L, name: L.name.toLowerCase() };
+};
 function planCocina(e, store, busy, t) {
-  const stoves = objsIn(e.prop, 'stove').filter((o) => !busy.has(o.entry.uid));
-  if (!stoves.length) return { wait: 'sin_tarea', reason: 'No hay hornillo libre en la propiedad.' };
+  const stoves = objsIn(e.prop, ['stove', ...LAB_TYPES]).filter((o) => !busy.has(o.entry.uid));
+  if (!stoves.length) return { wait: 'sin_tarea', reason: 'No hay hornillo ni mesa del cártel libre en la propiedad.' };
   const done = stoves.find((o) => o.entry.data.batch && o.entry.data.batch.ready <= t);
   if (done) {
-    if (store.room('cristal', 'shards') < done.entry.data.batch.n) return { wait: 'espacio', reason: 'No caben los cristales en las estanterías.' };
+    const C = cookOf(done);
+    if (store.room(C.out, ensureBaseProduct(C.strain)) < done.entry.data.batch.n) return { wait: 'espacio', reason: `No cabe lo de ${C.name} en las estanterías.` };
     return { kind: 'cookCollect', target: done.entry.uid, dur: STAFF.minutes.cookCollect };
   }
-  const free = stoves.find((o) => !o.entry.data.batch);
-  if (free) {
-    const miss = Object.entries(RECIPE).filter(([k, n]) => store.count(k) < n);
-    if (miss.length) return { wait: 'material', reason: `Faltan: ${miss.map(([k, n]) => `${n}× ${ITEMS[k].name.toLowerCase()}`).join(', ')}.` };
-    return { kind: 'cookStart', target: free.entry.uid, dur: STAFF.minutes.cookStart };
+  let missing = null;
+  for (const o of stoves.filter((x) => !x.entry.data.batch)) {
+    const C = cookOf(o);
+    const miss = Object.entries(C.make).filter(([k, n]) => store.count(k) < n);
+    if (miss.length) { missing ||= `Faltan para ${C.name}: ${miss.map(([k, n]) => `${n}× ${ITEMS[k].name.toLowerCase()}`).join(', ')}.`; continue; }
+    return { kind: 'cookStart', target: o.entry.uid, dur: STAFF.minutes.cookStart };
   }
-  const soon = Math.min(...stoves.map((o) => o.entry.data.batch.ready));
-  return { wait: 'trabajando', reason: `Tanda en el hornillo hasta las ${hhmm(soon)}.`, until: soon };
+  // con alguna tanda en marcha está trabajando (aunque al resto le falten ingredientes)
+  const running = stoves.filter((o) => o.entry.data.batch);
+  if (!running.length) return { wait: 'material', reason: missing };
+  const soon = Math.min(...running.map((o) => o.entry.data.batch.ready));
+  return { wait: 'trabajando', reason: `Tanda en marcha hasta las ${hhmm(soon)}.${missing ? ' ' + missing : ''}`, until: soon };
 }
 
 const hhmm = (t) => { const m = minuteOfDay(t); return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`; };
@@ -268,30 +285,36 @@ function complete(e, task) {
       emptyPot(o);
       return n;
     }
-    case 'bolsa': case 'shards': case 'tarro': {
-      const F = FORMS.find((f) => f.id === task.kind);
-      if (o.entry.type !== F.at) return false;
-      if (store.count(F.src, task.p) < F.per || store.count(F.pack) < 1 || store.room(F.id, task.p) < 1) return false;
-      store.remove(F.src, F.per, task.p);
-      store.remove(F.pack, 1);
-      store.add(F.id, 1, task.p);
-      return 1;
-    }
     case 'cookStart': {
-      if (o.entry.type !== 'stove' || d.batch) return false;
-      if (Object.entries(RECIPE).some(([k, n]) => store.count(k) < n)) return false;
-      for (const [k, n] of Object.entries(RECIPE)) store.remove(k, n);
-      d.batch = { ready: task.until + COOK_MIN, n: COOK_OUT };
+      if (!(o.entry.type === 'stove' || LAB_TYPES.includes(o.entry.type)) || d.batch) return false;
+      const C = cookOf(o);
+      if (Object.entries(C.make).some(([k, n]) => store.count(k) < n)) return false;
+      for (const [k, n] of Object.entries(C.make)) store.remove(k, n);
+      d.batch = { ready: task.until + C.min, n: C.n };
       return 0;
     }
     case 'cookCollect': {
       const b = d.batch;
       if (!b || b.ready > task.until) return false;
-      const pid = ensureBaseProduct('shards');
-      if (store.room('cristal', pid) < b.n) return false;
-      store.add('cristal', b.n, pid);
+      const C = cookOf(o), pid = ensureBaseProduct(C.strain);
+      if (store.room(C.out, pid) < b.n) return false;
+      store.add(C.out, b.n, pid);
       d.batch = null;
       return b.n;
+    }
+    default: {
+      // envasar: en su mesa o en la empacadora; produce lo que siga cuadrando al terminar
+      const F = FORMS.find((f) => f.id === task.kind);
+      if (!F || (o.entry.type !== F.at && o.entry.type !== 'autopack')) return false;
+      let made = 0;
+      for (let k = 0; k < (task.n || 1); k++) {
+        if (store.count(F.src, task.p) < F.per || store.count(F.pack) < 1 || store.room(F.id, task.p) < 1) break;
+        store.remove(F.src, F.per, task.p);
+        store.remove(F.pack, 1);
+        store.add(F.id, 1, task.p);
+        made++;
+      }
+      return made || false;
     }
   }
   return false;
@@ -330,12 +353,12 @@ function simulate(e, now) {
       e.clock = wake;
       continue;
     }
-    e.task = { kind: plan.kind, target: plan.target, p: plan.p, start: e.clock, until: e.clock + plan.dur };
+    e.task = { kind: plan.kind, target: plan.target, p: plan.p, n: plan.n, start: e.clock, until: e.clock + plan.dur };
     e.status = 'trabajando'; e.reason = taskText(plan.kind);
   }
 }
 
-const taskText = (k) => ({ water: 'Regando', harvest: 'Cosechando', bolsa: 'Envasando sobres', shards: 'Envasando Sweet Shards', tarro: 'Llenando tarros', cookStart: 'Preparando una tanda', cookCollect: 'Sacando cristales' }[k] || '');
+const taskText = (k) => ({ water: 'Regando', harvest: 'Cosechando', bolsa: 'Envasando sobres', shards: 'Envasando Sweet Shards', tarro: 'Llenando tarros', tarro_cr: 'Llenando tarros de cristales', sobre_polvo: 'Envasando sobres de polvo', vial: 'Llenando viales', blister: 'Llenando blísters', frasco: 'Llenando frascos', gotero: 'Llenando goteros', cookStart: 'Preparando una tanda', cookCollect: 'Sacando la tanda' }[k] || '');
 
 // Algo ha cambiado (estanterías, objetos): que vuelvan a mirar ya.
 export function pokeStaff() { for (const e of G.state?.employees || []) e.wake = null; }
@@ -355,7 +378,7 @@ export function validateStaff() {
   G.state.employees = (G.state.employees || []).filter((e) => e && byId[e.cid] && !seen.has(e.cid) && seen.add(e.cid));
   for (const e of G.state.employees) {
     e.role = byId[e.cid].role;
-    e.owed ||= 0; e.debt ||= 0; e.made ||= 0; e.mode ||= 'auto';
+    e.owed ||= 0; e.debt ||= 0; e.made ||= 0; if (!PACK_MODES[e.mode]) e.mode = 'auto';
     if (!Number.isFinite(e.paidDay)) e.paidDay = G.state.day;
     if (!Number.isFinite(e.clock) || e.clock > now) e.clock = now;
     if (e.task && (!G.objects.has(e.task.target) || !Number.isFinite(e.task.until))) e.task = null;
@@ -398,4 +421,4 @@ export function updateWorkers(dt) {
   for (const uid of [...bodies.keys()]) if (!staff().some((e) => e.uid === uid)) { bodies.get(uid).group.removeFromParent(); bodies.delete(uid); }
 }
 
-export { ROLES, CANDIDATES, STAFF };
+export { ROLES, CANDIDATES, STAFF, PACK_MODES };

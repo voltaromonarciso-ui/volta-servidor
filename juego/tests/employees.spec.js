@@ -29,7 +29,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     expect(await ev(page, () => __G.state.employees)).toEqual([]);
     await ev(page, () => __G.act.openPhone());
     await press(page, testInfo, '.ph-app:has-text("Personal")');
-    await expect(page.locator('.staff .cand')).toHaveCount(5);
+    await expect(page.locator('.staff .cand')).toHaveCount(13);
   });
 
   test('un novato no puede contratar (plantilla según rango)', async ({}, testInfo) => {
@@ -153,6 +153,41 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     expect(await ev(page, (u) => __G.objects.get(u).entry.data.batch, stove)).toBe(null);
     await advance(page, 120);
     expect((await shelf(page, sh))['cristal:shards']).toBe(6);
+  });
+
+  test('cocina: tanda en una mesa del cártel (polvos) y lo que sale a la estantería', async () => {
+    const st = await mod(page, OB, (m) => { const o = m.placeObject('powder', -71, -58.5, 0); return { uid: o.entry.uid, prop: __G.world.inProperty(o.entry.x, o.entry.z) }; });
+    expect(st.prop).toBe('nave');
+    // Vero (envasado) solo envasa pastillas en esta prueba: que no toque el polvo
+    await mod(page, S, (m) => m.setMode(__G.state.employees.find((e) => e.cid === 'ines').uid, 'pastillas'));
+    await setShelf(page, sh, [{ id: 'hoja', q: 4 }, { id: 'reactivo', q: 1 }]);
+    await mod(page, S, (m) => m.pokeStaff());
+    await at(page, 1, 10 * 60);
+    await advance(page, 25);
+    expect(await shelf(page, sh)).toEqual({});
+    expect(await ev(page, (u) => __G.objects.get(u).entry.data.batch?.n, st.uid)).toBe(6);
+    expect((await emp(page, 'mateo')).status).toBe('trabajando');
+    // 1 h 30 después, los 6 de polvo están en la estantería y la mesa queda libre
+    await advance(page, 110);
+    const got = await shelf(page, sh);
+    expect(Object.keys(got).filter((k) => k.startsWith('polvo')).reduce((a, k) => a + got[k], 0)).toBe(6);
+    expect(await ev(page, (u) => __G.objects.get(u).entry.data.batch, st.uid)).toBe(null);
+    await advance(page, 120);
+    const again = await shelf(page, sh);
+    expect(Object.keys(again).filter((k) => k.startsWith('polvo')).reduce((a, k) => a + again[k], 0)).toBe(6);
+  });
+
+  test('envasado: la empacadora avanzada hace varios envases por turno', async () => {
+    await mod(page, OB, (m) => m.placeObject('autopack', -71, -62, 0));
+    await setShelf(page, sh, [{ id: 'pastilla', q: 30, p: 'pastis' }, { id: 'blister_v', q: 3 }]);
+    await mod(page, S, (m) => m.pokeStaff());
+    await at(page, 1, 11 * 60);
+    await advance(page, 30);
+    // 3 blísters (10 pastillas cada uno) de una sola tanda: los envases que había
+    expect(await shelf(page, sh)).toEqual({ 'blister:pastis': 3 });
+    const e = await emp(page, 'ines');
+    expect(e.status).toBe('material');
+    await mod(page, S, (m) => m.setMode(__G.state.employees.find((x) => x.cid === 'ines').uid, 'auto'));
   });
 
   test('despedir a media tarea: no produce ni gasta nada', async () => {

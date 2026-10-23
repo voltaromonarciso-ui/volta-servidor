@@ -8,8 +8,8 @@
 
 export const ROLES = {
   cultivo: { name: 'Cultivo', icon: '🌱', does: 'Riega las macetas que lo necesitan y cosecha las que están listas. Deja los cogollos en las estanterías o armarios.' },
-  envasado: { name: 'Envasado', icon: '📦', does: 'Envasa en la mesa de empaquetado o la envasadora con lo que haya en las estanterías y armarios, y deja ahí el resultado.' },
-  cocina: { name: 'Cocina', icon: '🔥', does: 'Pone tandas en el hornillo con los ingredientes de las estanterías y armarios, y guarda los cristales al terminar.' },
+  envasado: { name: 'Envasado', icon: '📦', does: 'Envasa en la mesa de empaquetado, la envasadora, las mesas del cártel (tarros de cristal, sobres y viales, blísters, frascos, goteros) o la empacadora avanzada, con lo que haya en las estanterías y armarios, y deja ahí el resultado.' },
+  cocina: { name: 'Cocina', icon: '🔥', does: 'Pone tandas en el hornillo y en las mesas del cártel (cristales, polvos, pastillas, líquidos) con los ingredientes de las estanterías y armarios, y guarda lo que sale.' },
 };
 
 // Candidatos que se pueden contratar (cada uno, una sola vez a la vez). El id es interno
@@ -42,7 +42,20 @@ export const STAFF = {
   payHour: 7,               // la nómina se cobra cada mañana a esta hora
   quitAfterDays: 2,         // días sin cobrar antes de irse
   // minutos de juego que tarda cada tarea (aprox. el doble que el jugador)
-  minutes: { water: 6, harvest: 20, bolsa: 12, shards: 12, tarro: 25, cookStart: 20, cookCollect: 10, idle: 30 },
+  minutes: { water: 6, harvest: 20, bolsa: 12, shards: 12, tarro: 25, tarro_cr: 25, sobre_polvo: 12, vial: 15, blister: 15, frasco: 25, gotero: 15, cookStart: 20, cookCollect: 10, idle: 30 },
+  autopackBatch: 5,         // envases seguidos por turno en la empacadora avanzada
   regar: 0.3,               // riega cuando el agua baja de aquí (lo mismo que avisa la maceta)
   leakChance: (loyalty) => Math.max(0, 0.8 - loyalty), // al irse sin cobrar
+};
+
+// Qué envasa cada empleado de envasado (el modo se elige en la app Personal)
+export const PACK_MODES = {
+  auto: { label: 'Lo que haya', forms: ['shards', 'tarro', 'bolsa', 'tarro_cr', 'vial', 'sobre_polvo', 'frasco', 'blister', 'gotero'] },
+  bolsa: { label: 'Sobres', forms: ['bolsa'] },
+  tarro: { label: 'Tarros', forms: ['tarro'] },
+  shards: { label: 'Sweet Shards', forms: ['shards'] },
+  tarro_cr: { label: 'Tarros de cristal', forms: ['tarro_cr'] },
+  polvo: { label: 'Polvo', forms: ['vial', 'sobre_polvo'] },
+  pastillas: { label: 'Pastillas', forms: ['frasco', 'blister'] },
+  gotero: { label: 'Goteros', forms: ['gotero'] },
 };
