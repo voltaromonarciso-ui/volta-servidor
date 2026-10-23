@@ -149,20 +149,20 @@ test.describe.serial('Relieve de la isla', () => {
     await page.evaluate(() => { __G.police.forEach((c) => c.pos.set(900, 0, 900)); __G.player.teleport(-30.5, -100, Math.PI); });
     await frames(page, 5);
     const gaps = [];
-    for (let k = 0; k < 6; k++) {
+    for (let k = 0; k < 4; k++) {
       await page.evaluate(() => { __G.player.vel.set(0, 0, 0); });
-      // se anda hasta avanzar unos metros (el navegador de pruebas dibuja por software y va a
-      // pocos fotogramas por segundo: un tiempo fijo puede no dar ni un fotograma)
+      // se anda hasta avanzar unos metros, contando fotogramas y no segundos (el navegador de
+      // pruebas dibuja por software: mirando calle arriba al centro da muy pocos por segundo)
       const z0 = await page.evaluate(() => __G.player.pos.z);
       await page.keyboard.down('KeyW');
-      for (let t = 0; t < 120; t++) { await page.waitForTimeout(500); if ((await page.evaluate(() => __G.player.pos.z)) - z0 > 2.2) break; }
+      for (let t = 0; t < 40; t++) { await frames(page, 2); if ((await page.evaluate(() => __G.player.pos.z)) - z0 > 2.2) break; }
       await page.keyboard.up('KeyW');
       await frames(page, 4);
       const p = await page.evaluate(() => ({ x: __G.player.pos.x, y: __G.player.pos.y, z: __G.player.pos.z }));
       gaps.push(Math.abs(p.y - (await H(p.x, p.z))));
     }
     const p = await page.evaluate(() => __G.player.pos.z);
-    expect(p).toBeGreaterThan(-90); // ha avanzado
+    expect(p).toBeGreaterThan(-92); // ha avanzado (4 tramos de más de 2 m)
     for (const g of gaps) expect(g).toBeLessThan(0.05);
     await page.screenshot({ path: testInfo.outputPath('cuesta.png') });
   });
