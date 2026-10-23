@@ -2,6 +2,7 @@
 // hacen falta, y se reutilizan (geometría y texturas compartidas entre copias).
 //   prop(parent, 'bleach_bottle', { h: 0.12 })  → hueco que se rellena en cuanto el modelo carga
 // Opciones: x, y, z, ry (giro); w / h / d (encajar a ese ancho, alto o fondo, sin deformar);
+// fit: [ancho, alto, fondo] (lo más grande que quepa en esa caja);
 // s (escala directa); base (apoyado en y; si no, centrado en el origen); onload(group).
 // Y texturas de chapa pintada con desgaste para teñir de cualquier color (wornPaint).
 import * as THREE from 'three';
@@ -56,7 +57,8 @@ export function prop(parent, name, o = {}) {
   const fill = ({ tpl, size }) => {
     const m = tpl.clone(true);
     let s = o.s || 1;
-    if (o.h) s = o.h / size.y; else if (o.w) s = o.w / size.x; else if (o.d) s = o.d / size.z;
+    if (o.fit) s = Math.min(o.fit[0] / size.x, o.fit[1] / size.y, o.fit[2] / size.z);
+    else if (o.h) s = o.h / size.y; else if (o.w) s = o.w / size.x; else if (o.d) s = o.d / size.z;
     m.scale.setScalar(s);
     if (o.base === false) m.position.y = -size.y * s / 2;
     slot.add(m);

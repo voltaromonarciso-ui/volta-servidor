@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { prop, wornPaint } from '../entities/realprops.js';
 import { metalize } from './labs.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { woodTex } from './textures.js';
@@ -151,8 +152,7 @@ export function buildPacker(o) {
 // Como la lámina: cajonera con tiradores, cajas de colores en la balda, estante alto con barra
 // de luz y cajas de cartón, cinta de embalar y papelera al lado (nada pisa la zona de trabajo)
 function packerDressing(g) {
-  const top = BENCH_TOP, dk = once('m-cajon', () => new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.45, metalness: 0.55 }));
-  const dk2 = once('m-cajon2', () => new THREE.MeshStandardMaterial({ color: 0x23272c, roughness: 0.5, metalness: 0.4 }));
+  const top = BENCH_TOP, dk = wornPaint('#454b53', { metalness: 0.45 }), dk2 = wornPaint('#2c3036', { metalness: 0.4 });
   // cajonera de tres cajones bajo el tablero, a la derecha
   add(rb(0.4, top - 0.2, 0.74, 0.015), dk, 0.5, (top - 0.2) / 2 + 0.1, 0, g);
   for (let k = 0; k < 3; k++) {
@@ -161,21 +161,18 @@ function packerDressing(g) {
     add(rb(0.17, 0.022, 0.03, 0.008), M.steel, 0.5, y + 0.04, 0.39, g);
   }
   // cajas de plástico en la balda de abajo
-  const box3 = [[0x2f7d4a, -0.48], [0x2463b8, -0.12]];
-  for (const [c, x] of box3) {
-    const m = once('m-caja' + c, () => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 }));
-    add(rb(0.32, 0.17, 0.5, 0.02), m, x, 0.3, 0.05, g);
-  }
-  add(rb(0.3, 0.14, 0.46, 0.015), M.card, -0.12, 0.47, 0.05, g);
-  // papelera al lado izquierdo
-  add(rb(0.28, 0.52, 0.32, 0.03), dk2, -0.98, 0.27, 0.1, g);
+  prop(g, 'plastic_crate_02', { x: -0.48, y: 0.215, z: 0.05, ry: Math.PI / 2, fit: [0.6, 0.26, 0.34] });
+  prop(g, 'cardboard_box_01', { x: -0.12, y: 0.215, z: 0.05, ry: 0.05, fit: [0.32, 0.5, 0.6] });
+  // bolsa de basura y extintor al lado izquierdo
+  prop(g, 'trashbag', { x: -0.98, z: 0.1, h: 0.5, ry: 0.4 });
+  prop(g, 'korean_fire_extinguisher_01', { x: -0.98, z: -0.28, h: 0.55, ry: 0.6 });
   // estante alto al fondo: dos postes, barra de luz y cajas de cartón encima
   const z = -0.4, h = 0.62;
   for (const x of [-0.66, 0.66]) add(rb(0.04, h, 0.04, 0.008), M.frame, x, top + h / 2, z, g);
   add(rb(1.36, 0.04, 0.2, 0.008), M.frame, 0, top + h, z + 0.04, g);
   add(rb(1.2, 0.025, 0.05, 0.008), glow(0xffe6b0), 0, top + h - 0.035, z + 0.1, g, false);
   add(rb(1.32, 0.025, 0.2, 0.006), M.frame, 0, top + h * 0.55, z + 0.04, g);
-  for (const x of [-0.42, 0.05, 0.42]) add(rb(0.26, 0.16, 0.18, 0.01), M.card, x, top + h + 0.1, z + 0.04, g);
+  for (const [x, ry] of [[-0.42, 0.1], [0.05, Math.PI / 2], [0.42, -0.08]]) prop(g, 'cardboard_box_01', { x, y: top + h + 0.02, z: z + 0.04, ry, fit: [0.26, 0.2, 0.2] });
   for (const x of [-0.5, -0.25]) add(rb(0.18, 0.02, 0.14, 0.004), M.plasticW, x, top + h * 0.55 + 0.024, z + 0.04, g);
   // cinta de embalar amarilla en su dispensador, sobre el estante
   const tape = add(cylG(0.055, 0.055, 0.045, 20), once('m-cinta', () => new THREE.MeshStandardMaterial({ color: 0xe8b31c, roughness: 0.45 })), 0.35, top + h * 0.55 + 0.07, z + 0.04, g);

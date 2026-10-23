@@ -1170,9 +1170,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/benches.js": {
-    "mtime": 1792764056.1143544,
-    "seen": 1792764097.0716925,
-    "ast_hash": "fe23c04ad21cf66495332af44c653667",
+    "mtime": 1792770003.94795,
+    "seen": 1792770056.2626133,
+    "ast_hash": "a2b25b4e3298295728c4ff3bc2b44420",
     "semantic_hash": ""
   },
   "juego/ios/App/App/AppDelegate.swift": {
@@ -2202,9 +2202,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/labs.js": {
-    "mtime": 1792768107.5014641,
-    "seen": 1792768135.84323,
-    "ast_hash": "f271ceed68913ebdc02687e1ac41123d",
+    "mtime": 1792769984.550284,
+    "seen": 1792770056.2628396,
+    "ast_hash": "c14976ef2dcfe64ce9a0410c52b4ce03",
     "semantic_hash": ""
   },
   "juego/src/systems/craft.js": {
@@ -2226,9 +2226,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/realprops.js": {
-    "mtime": 1792769779.801896,
-    "seen": 1792769886.2015262,
-    "ast_hash": "e958f6360c77083b6408adebde8c69ac",
+    "mtime": 1792769984.5495431,
+    "seen": 1792770056.2617488,
+    "ast_hash": "1e0e2c33c0922524b78f39ae82ee1625",
     "semantic_hash": ""
   },
   "juego/src/assets/props/LICENSE.txt": {

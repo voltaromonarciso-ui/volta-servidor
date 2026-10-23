@@ -12,6 +12,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { G as GAME } from '../game.js';
 import { canvasTex, labelTex, screw, screws4, vent, cable, decal } from '../entities/detail.js';
+import { prop, wornPaint } from '../entities/realprops.js';
 
 // Reflejos de taller (neutros) para los metales: con el reflejo del cielo, dentro de casa el
 // acero salía azulado. Se crea una vez, cuando ya hay renderer.
@@ -35,18 +36,6 @@ function brushed(key, base, spread = 26) {
     for (let i = 0; i < 500; i++) { const v = 90 + Math.floor(R() * 90); y2.fillStyle = `rgb(${v},${v},${v})`; y2.fillRect(R() * 128, R() * 128, 10 + R() * 70, 1); }
     const rt = new THREE.CanvasTexture(r); rt.wrapS = rt.wrapT = THREE.RepeatWrapping; rt.repeat.set(2, 2);
     texs.set(key, { map: t, rough: rt });
-  }
-  return texs.get(key);
-}
-// Pintura en polvo (texturita granulada) para los armarios oscuros
-function powderCoat(key, base) {
-  if (!texs.has(key)) {
-    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-    const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, 128, 128);
-    let sd = 3; const R = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
-    for (let i = 0; i < 2500; i++) { const v = R() < 0.5 ? 255 : 0; x.fillStyle = `rgba(${v},${v},${v},${0.03 + R() * 0.04})`; x.fillRect(R() * 128, R() * 128, 1, 1); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3);
-    texs.set(key, { map: t });
   }
   return texs.get(key);
 }
@@ -77,8 +66,9 @@ const cyl = (g, m, rt, rb, h, x, y, z, s = 20) => put(g, cyg(rt, rb, h, s), m, x
 // ---------- materiales ----------
 const steel = () => M('labAcero', { color: '#ffffff', map: brushed('acero', '#a3abb3').map, roughnessMap: brushed('acero', '#a3abb3').rough, roughness: 0.55, metalness: 0.92 });
 const steelTop = () => M('labAceroTop', { color: '#ffffff', map: brushed('aceroTop', '#bcc3ca', 34).map, roughnessMap: brushed('aceroTop', '#bcc3ca', 34).rough, roughness: 0.45, metalness: 0.95 });
-const dark = () => M('labOscuro', { color: '#ffffff', map: powderCoat('oscuro', '#3a3f47').map, roughness: 0.5, metalness: 0.35 });
-const darker = () => M('labNegro', { color: '#ffffff', map: powderCoat('negro', '#24282d').map, roughness: 0.55, metalness: 0.3 });
+// chapa pintada con el desgaste real de una foto (Poly Haven), teñida de gris oscuro
+const dark = () => wornPaint('#454b53', { kind: 'pintura', metalness: 0.45, rep: 1 });
+const darker = () => wornPaint('#2c3036', { kind: 'pintura', metalness: 0.4, rep: 1 });
 const handleM = () => M('labTirador', { color: '#e2e8ee', roughness: 0.12, metalness: 1.0 });
 const handleBlue = () => M('labTiradorAzul', { color: '#3a8de0', roughness: 0.25, metalness: 0.4, emissive: '#1d5fb0', emissiveIntensity: 0.35 });
 const glass = () => M('labCristal', { color: '#bfe3ff', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false });
@@ -105,7 +95,6 @@ function eStop(g, x, y, z) {
   const c = cyl(g, M('labCollar', { color: '#f2c230', roughness: 0.45 }), 0.04, 0.04, 0.012, x, y, z, 20); c.rotation.x = Math.PI / 2;
   const b = put(g, G('labSeta', () => new THREE.SphereGeometry(0.03, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2)), btn('#e02a2a'), x, y, z + 0.012, Math.PI / 2, 0, 0); return b;
 }
-const bins = { blue: M('labCajaAzul', { color: '#2463b8', roughness: 0.5 }), green: M('labCajaVerde', { color: '#2f8a4a', roughness: 0.5 }), black: M('labCajaNegra', { color: '#2a2e33', roughness: 0.55 }), tan: M('labCajaCarton', { color: '#b98a52', roughness: 0.8 }) };
 const btn = (c) => M('labBoton' + c, { color: c, emissive: c, emissiveIntensity: 0.6, roughness: 0.35 });
 const lightBar = (c) => M('labLuz' + c, { color: '#ffffff', emissive: c, emissiveIntensity: 2.2 });
 
@@ -141,16 +130,15 @@ function bench(g, { w = W, d = D, drawers = 3, blue = true, binsLow = ['blue', '
   box(g, steel(), sx1 - sx0, 0.03, d - 0.1, (sx0 + sx1) / 2, 0.2, 0, 0.008);
   box(g, steel(), sx1 - sx0, 0.03, d - 0.1, (sx0 + sx1) / 2, 0.52, 0, 0.008);
   const bw = (sx1 - sx0 - 0.08) / binsLow.length;
+  // cajas de plástico y de cartón de verdad en la balda baja
   binsLow.forEach((c, k) => {
     const bx = sx0 + 0.04 + bw * (k + 0.5);
-    box(g, bins[c], bw - 0.05, 0.24, d - 0.22, bx, 0.34, 0.02, 0.025);
-    box(g, bins[c], bw - 0.02, 0.025, d - 0.19, bx, 0.465, 0.02, 0.01);           // reborde
-    box(g, M('labAsaCaja', { color: '#e8c33a', roughness: 0.4 }), 0.1, 0.03, 0.02, bx, 0.43, d / 2 - 0.09, 0.008);
+    const name = c === 'black' ? 'cardboard_box_01' : k % 2 ? 'plastic_crate_03' : 'plastic_crate_02';
+    prop(g, name, { x: bx, y: 0.215, z: 0.02, ry: Math.PI / 2 + (k - 1) * 0.04, fit: [d - 0.16, 0.28, bw - 0.03] }); // (girada: el fondo de la caja va a lo ancho)
   });
-  if (trash) { // papelera alta al lado
-    const tx = x0 - 0.2;
-    box(g, darker(), 0.3, 0.6, 0.36, tx, 0.31, 0.12, 0.04);
-    box(g, dark(), 0.32, 0.03, 0.38, tx, 0.62, 0.12, 0.015);
+  if (trash) { // bolsa de basura y extintor al lado
+    prop(g, 'trashbag', { x: x0 - 0.22, z: 0.12, h: 0.55, ry: 0.4 });
+    prop(g, 'korean_fire_extinguisher_01', { x: x0 - 0.2, z: -0.25, h: 0.6, ry: 0.5 });
   }
   return { x0, x1, cx, cw };
 }
@@ -206,9 +194,10 @@ function tray(g, x, y, z, w, d, col, n = 10, seed = 3) {
   let s = seed; const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   for (let k = 0; k < n; k++) { const c = put(g, G('gema', () => new THREE.IcosahedronGeometry(0.025, 0)), cm, x + (rnd() - 0.5) * (w - 0.06), y + 0.05, z + (rnd() - 0.5) * (d - 0.05), rnd() * 3, rnd() * 3, 0); c.scale.y = 1.5; }
 }
-function bottle(g, x, y, z, col = '#f2f2f2', cap = '#2c2f33', h = 0.14, r = 0.035) {
-  cyl(g, M('labBote' + col, { color: col, roughness: 0.3 }), r, r, h, x, y + h / 2, z, 16);
-  cyl(g, M('labTapa' + cap, { color: cap, roughness: 0.4 }), r * 0.9, r * 0.9, 0.03, x, y + h + 0.015, z, 16);
+// botes reales (lejía, limpiador, garrafa) según el color de la tapa
+const BOTTLES = { '#d64541': 'bleach_bottle', '#2c74c9': 'multi_cleaner_bottle', '#2a9d5b': 'multi_cleaner_bottle', '#e9eef2': 'plastic_bottle_gallon' };
+function bottle(g, x, y, z, col = '#f2f2f2', cap = '#2c2f33', h = 0.14) {
+  prop(g, BOTTLES[cap] || 'bleach_bottle', { x, y, z, h: h * 1.25, ry: (x * 7.3) % 1.2 - 0.6 });
 }
 // cinta transportadora (rodillos)
 function conveyor(g, x0, x1, y, z, d = 0.34) {
@@ -233,6 +222,7 @@ export function buildCrystalTable(o) {
   // bandeja de salida de los cristales (vacía: se llena al trabajar la máquina)
   box(g, M('labBandeja', { color: '#2b5fa8', roughness: 0.35, metalness: 0.3 }), 0.5, 0.04, 0.26, 0.0, y + 0.02, -0.1, 0.01);
   bottle(g, 0.3, y, -0.3, '#e9eef2', '#2c74c9', 0.12, 0.04);
+  prop(g, 'magnifying_glass_01', { x: 0.36, y: y + 0.006, z: -0.05, h: 0.16, rx: -Math.PI / 2, ry: 0.6, base: false });
   spots(o, { kind: 'crystal', input: new THREE.Vector3(b.x0 + 0.17, y + 0.52, -0.12), button, out: new THREE.Vector3(0.0, y + 0.04, -0.1), mix: '#9fd6ff' });
   // estante con barra de luz cian y cajitas de cristales
   const sy = topShelf(g, -0.4, 0.95, { light: '#4fd5ff' });
@@ -398,7 +388,7 @@ export function buildAutoPacker(o) {
   box(g, M('labTuboAzul', { color: '#2f7fd6', roughness: 0.3 }), 0.5, 0.05, 0.05, -0.15, ty + th - 0.08, 0, 0.01);
   const pk = M('labPaquete', { color: '#f1f3f5', roughness: 0.4 }), pkTop = M('labPaqueteTapa', { color: '#f2c94c', roughness: 0.5 });
   for (const x of [-0.65, -0.15, 0.3, w / 2 + 0.15]) { box(g, pk, 0.2, 0.06, 0.16, x, y + 0.09, 0, 0.012); box(g, pkTop, 0.2, 0.012, 0.16, x, y + 0.126, 0, 0.004); }
-  box(g, bins.tan, 0.24, 0.16, 0.2, w / 2 + 0.26, y + 0.14, 0, 0.012);
+  prop(g, 'cardboard_box_01', { x: w / 2 + 0.26, y: y + 0.06, h: 0.2, ry: Math.PI / 2 });
   // armario de control con pantalla, botones y baliza (verde, ámbar, rojo)
   const cx = w / 2 - 0.22;
   box(g, steel(), 0.4, 0.78, 0.6, cx, ty + 0.39, -0.04, 0.025);
