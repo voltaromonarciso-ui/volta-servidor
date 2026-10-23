@@ -13,6 +13,7 @@
 // entreplanta de los almacenes); sin nivel, de arriba abajo.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { pbrMat } from './buildingkit.js';
 import { slab, GLASS } from './realbuilding.js';
 import { dims } from './interior.js';
@@ -130,12 +131,21 @@ function hipRoof(g, m, x0, x1, z0, z1, y, rise, o = 0.5) {
   const mesh = new THREE.Mesh(geo, m); mesh.castShadow = true; mesh.receiveShadow = true; g.add(mesh);
   return mesh;
 }
+// Muchas copias de una pieza fundidas en una sola malla (el juego une las mallas al colocar
+// el edificio y no conserva las instancias)
+function copies(g, geo, m, mats4) {
+  if (!mats4.length) return null;
+  const base = geo.index ? geo.toNonIndexed() : geo;
+  const list = mats4.map((M4) => base.clone().applyMatrix4(M4));
+  const mesh = new THREE.Mesh(mergeGeometries(list), m); mesh.castShadow = true; mesh.receiveShadow = true; g.add(mesh);
+  return mesh;
+}
 // Balaustrada de piedra: balaustres torneados (instanciados), pasamanos y zócalo
 const balG = new THREE.LatheGeometry([[0, 0], [0.07, 0], [0.07, 0.05], [0.045, 0.09], [0.07, 0.25], [0.075, 0.33], [0.04, 0.5], [0.06, 0.56], [0.06, 0.62], [0, 0.62]].map(([r, h]) => new THREE.Vector2(r, h)), 12);
 function balustrade(g, m, axis, at, a0, a1, y) {
-  const n = Math.max(2, Math.floor((a1 - a0) / 0.24)), inst = new THREE.InstancedMesh(balG, m, n), M4 = new THREE.Matrix4();
-  for (let k = 0; k < n; k++) { const t = a0 + ((k + 0.5) * (a1 - a0)) / n; M4.makeTranslation(axis === 'x' ? t : at, y + 0.1, axis === 'x' ? at : t); inst.setMatrixAt(k, M4); }
-  inst.castShadow = true; inst.frustumCulled = false; g.add(inst);
+  const n = Math.max(2, Math.floor((a1 - a0) / 0.24)), list = [];
+  for (let k = 0; k < n; k++) { const t = a0 + ((k + 0.5) * (a1 - a0)) / n; list.push(new THREE.Matrix4().makeTranslation(axis === 'x' ? t : at, y + 0.1, axis === 'x' ? at : t)); }
+  copies(g, balG, m, list);
   const run = (yy0, yy1, th) => (axis === 'x' ? slab(g, m, a0, a1, y + yy0, y + yy1, at - th, at + th) : slab(g, m, at - th, at + th, y + yy0, y + yy1, a0, a1));
   run(0, 0.1, 0.12); run(0.72, 0.86, 0.14);
 }
@@ -176,7 +186,7 @@ export function mansionHQ() {
 
   // ---------------- materiales ----------------
   const M = {
-    stucco: pbrMat('estuco', '#f7ecdb'), stone: pbrMat('hormigon', '#e7dbc6'), base: pbrMat('sillar', '#e9dcc5'), cut: pbrMat('hormigon', '#ece2d1'), tiles: pbrMat('tejas', '#c46f4a'),
+    stucco: pbrMat('estuco', '#f7ecdb'), stone: pbrMat('hormigon', '#f6efe3'), base: pbrMat('sillar', '#f1e7d6'), cut: pbrMat('hormigon', '#f8f2e8'), tiles: pbrMat('tejas', '#c46f4a'),
     inner: pbrMat('yesoInt', '#fbf4e8'), wood: pbrMat('madera', '#7a4b2c'), lawn: pbrMat('cesped'), slabs: pbrMat('losa', '#e6dccb'),
     shutter: mat('mPersiana', { color: '#3d5a48', roughness: 0.6 }), shutterDark: mat('mPersianaLama', { color: '#324b3c', roughness: 0.65 }),
     frame: mat('mMarco', { color: '#f2efe8', roughness: 0.45 }), trim: mat('mMoldura', { color: '#fbf7ef', roughness: 0.6 }),
@@ -333,7 +343,7 @@ export function mansionHQ() {
     P('street_lamp_02', s2 * (GW + 0.45), 1.75, LZ1 - 0.5, Math.PI, 0.8, null);
   }
   // barrotes, puntas y anillas de toda la verja: tres mallas instanciadas (no se recortan)
-  const inst = (geo, list, fn) => { const im = new THREE.InstancedMesh(geo, M.iron, list.length), M4 = new THREE.Matrix4(); list.forEach((q, i) => { fn(M4, q); im.setMatrixAt(i, M4); }); im.castShadow = true; im.frustumCulled = false; g.add(im); };
+  const inst = (geo, list, fn) => copies(g, geo, M.iron, list.map((q) => { const M4 = new THREE.Matrix4(); fn(M4, q); return M4; }));
   inst(new THREE.BoxGeometry(0.024, 1, 0.024), bars, (M4, [x, y, z, h]) => M4.compose(new THREE.Vector3(x, y + h / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, h, 1)));
   inst(new THREE.LatheGeometry([[0, 0], [0.03, 0], [0.03, 0.02], [0.012, 0.03], [0.034, 0.06], [0, 0.15]].map(([r, h]) => new THREE.Vector2(r, h)), 8), spears, (M4, [x, y, z]) => M4.makeTranslation(x, y, z));
   inst(new THREE.TorusGeometry(0.052, 0.009, 6, 16), rings, (M4, [x, y, z]) => M4.makeTranslation(x, y, z));
