@@ -113,10 +113,15 @@ function hipRoof(g, m, x0, x1, z0, z1, y, rise, o = 0.5) {
   const A = [x0, y, z0], B = [x1, y, z0], C = [x1, y, z1], D = [x0, y, z1];
   const tris = alongX ? [[D, C, r1], [D, r1, r0], [B, A, r0], [B, r0, r1], [A, D, r0], [C, B, r1]] : [[A, D, r0], [D, r1, r0], [C, B, r1], [B, r0, r1], [D, C, r1], [B, A, r0]];
   const pos = [], uv = [], tile = m.userData.tile || 2.5, slope = Math.hypot(half, rise) / half;
-  for (const t of tris) for (const p of t) {
+  for (const t0 of tris) {
+    // (cada cara mirando hacia fuera y hacia arriba)
+    const [a, b, c] = t0, ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+    const t = ny >= 0 ? t0 : [a, c, b];
+    for (const p of t) {
     pos.push(...p);
     // proyección en planta, estirada a lo largo de la pendiente para que la teja no se deforme
     uv.push(p[0] / tile, (p[2] * slope) / tile);
+    }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -171,7 +176,7 @@ export function mansionHQ() {
 
   // ---------------- materiales ----------------
   const M = {
-    stucco: pbrMat('beige', '#f3e7d3'), stone: pbrMat('hormigon', '#e6dccb'), tiles: pbrMat('tejas', '#c9754e'),
+    stucco: pbrMat('blanco', '#fff6ea'), stone: pbrMat('hormigon', '#e6dccb'), tiles: pbrMat('tejas', '#c9754e'),
     inner: pbrMat('claro', '#f5ecdd'), wood: pbrMat('madera', '#7a4b2c'),
     shutter: mat('mPersiana', { color: '#55705e', roughness: 0.7 }), shutterDark: mat('mPersianaLama', { color: '#46604f', roughness: 0.75 }),
     frame: mat('mMarco', { color: '#f2efe8', roughness: 0.45 }), trim: mat('mMoldura', { color: '#fbf7ef', roughness: 0.6 }),
