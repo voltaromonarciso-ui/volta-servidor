@@ -385,9 +385,7 @@ function actionsFor(o) {
       return [{ label: 'Abrir caja fuerte', fn: () => G.act.openSafe(o) }, pick];
     case 'crystal': case 'powder': case 'pills': case 'liquid': {
       const L = LAB[e.type], b = d.batch;
-      const left = b ? Math.ceil(b.ready - absNow()) : 0;
-      const lab = { label: !b ? `Usar ${L.name.toLowerCase()}` : left > 0 ? `Trabajando… ${Math.floor(left / 60)}h ${String(left % 60).padStart(2, '0')}min` : `Recoger ${b.n} ${ITEMS[L.out].name.toLowerCase()}`, fn: () => (b && left <= 0 ? labCollect(o) : G.act.openLab(o)) };
-      return [lab, ...(b ? [] : [pick])];
+      return [{ label: b ? `Recoger ${b.n} ${ITEMS[L.out].name.toLowerCase()}` : `Usar ${L.name.toLowerCase()}`, fn: () => (b ? labCollect(o) : G.act.openLab(o)) }, ...(b ? [] : [pick])];
     }
     case 'autopack':
       return [{ label: 'Usar la empacadora avanzada', fn: () => G.act.openAutopack(o) }, pick];
@@ -429,7 +427,7 @@ export function labStart(o) {
 }
 export function labCollect(o) {
   const L = LAB[o.entry.type], b = o.entry.data.batch;
-  if (!b || absNow() < b.ready) return false;
+  if (!b) return false;
   const pid = ensureBaseProduct(L.strain);
   if (inv.room(L.out, pid) < b.n) { G.act.toast('No tienes hueco en el inventario.'); return false; }
   inv.add(L.out, b.n, pid);

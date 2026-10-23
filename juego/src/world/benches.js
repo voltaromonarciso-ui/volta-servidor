@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { metalize } from './labs.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { woodTex } from './textures.js';
 import { zipBag, jar, shardsBag, budPile, crystalCluster } from '../entities/goods.js';
@@ -117,6 +118,7 @@ function crate(g, x, z, w = 0.3, d = 0.22, h = 0.12) {
 // ------------------------------------------------------------------
 export function buildPacker(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   workbench(g, 1.6, 0.9);
   // tapete de corte en la zona de trabajo
   const mat = add(once('matG', () => new THREE.BoxGeometry(0.62, 0.004, 0.42)), M.mat, 0, BENCH_TOP + 0.002, 0.08, g, false);
@@ -186,6 +188,7 @@ function packerDressing(g) {
 // ------------------------------------------------------------------
 export function buildJarPacker(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   workbench(g, 1.3, 0.8);
   // máquina selladora al fondo: base, columna, cabezal y palanca
   const m = new THREE.Group(); m.position.set(-0.42, BENCH_TOP, -0.2);
@@ -223,6 +226,7 @@ export function buildJarPacker(o) {
 // ------------------------------------------------------------------
 export function buildStove(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   // mueble de acero inoxidable con puertas y zócalo
   add(rb(1.2, 0.8, 0.75, 0.025, 3), M.brushed, 0, 0.44, 0, g);
   add(rb(1.16, 0.06, 0.7, 0.01), M.rubber, 0, 0.03, 0.0, g);

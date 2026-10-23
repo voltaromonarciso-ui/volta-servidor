@@ -215,10 +215,10 @@ const filmMats = () => once('film', () => ({
 export const BAG = { w: 0.085, h: 0.11, d: 0.03 };
 
 // Sobre zip; si `hex` viene, con cogollos dentro. Origen en el centro de la bolsa.
-export function zipBag(hex = null, { open = false, seed = 4, flat = false, fill = null } = {}) {
+export function zipBag(hex = null, { open = false, seed = 4, flat = false, fill = null, deep = false } = {}) {
   const g = new THREE.Group();
   const M = filmMats();
-  const { w, h } = BAG, d = flat ? 0.004 : hex || fill ? BAG.d : 0.012;
+  const { w, h } = BAG, d = flat ? 0.004 : hex || fill || deep ? BAG.d : 0.012;
   if (fill === 'crystal') { // cristales azules apretados en el fondo
     const inner = new THREE.Group(); inner.position.y = -h / 2 + 0.008;
     for (let k = 0; k < 3; k++) { const l = new THREE.Group(); l.position.y = k * 0.018; crystalCluster(l, 9 - k * 2, w * 0.8, 0.028, seed + k); inner.add(l); }
@@ -426,11 +426,12 @@ export function seedPile(parent, n = 5, size = 0.024, seedN = 5) {
 const gm = (k, o) => once('dg-' + k, () => new THREE.MeshStandardMaterial(o));
 const glassClear = () => gm('vidrio', { color: 0xe8f6ff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.4, depthWrite: false });
 const blackCap = () => gm('tapon', { color: 0x24272b, roughness: 0.45 });
-export function vialModel(full = true) {
+export function vialModel(full = true, { cap = true } = {}) {
   const g = new THREE.Group();
   if (full) { const p = new THREE.Mesh(once('vialPolvo', () => new THREE.CylinderGeometry(0.0115, 0.0115, 0.04, 16)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.position.y = 0.022; g.add(p); }
   const b = new THREE.Mesh(once('vialCuerpo', () => new THREE.CylinderGeometry(0.013, 0.013, 0.085, 18)), glassClear()); b.position.y = 0.0425; b.renderOrder = 2; g.add(b);
-  const c = new THREE.Mesh(once('vialTapa', () => new THREE.CylinderGeometry(0.0145, 0.0145, 0.018, 18)), blackCap()); c.position.y = 0.093; g.add(c);
+  const c = new THREE.Mesh(once('vialTapa', () => new THREE.CylinderGeometry(0.0145, 0.0145, 0.018, 18)), blackCap()); c.position.y = 0.093; c.visible = cap; g.add(c); g.userData.cap = c;
+  if (full === 'level') { const p = new THREE.Mesh(once('vialPolvo', () => new THREE.CylinderGeometry(0.0115, 0.0115, 0.04, 16)), gm('polvo', { color: 0xfbfaf7, roughness: 0.95 })); p.scale.y = 0.001; p.position.y = 0.002; g.add(p); g.userData.level = p; g.userData.levelMax = 0.075; }
   const l = new THREE.Mesh(once('vialEtiq', () => new THREE.CylinderGeometry(0.0133, 0.0133, 0.026, 18, 1, true, -0.9, 1.8)), gm('etiqueta', { color: 0xffffff, roughness: 0.7 })); l.position.y = 0.05; g.add(l);
   return g;
 }
@@ -441,7 +442,7 @@ export function pillModel(size = 1) {
   const half = new THREE.Mesh(once('capMedia', () => new THREE.CapsuleGeometry(0.0052, 0.006, 4, 10)), gm('capBlanca', { color: 0xf4f6f5, roughness: 0.35 }));
   half.position.y = -0.004; g.add(a, half); g.scale.setScalar(size); return g;
 }
-export function blisterModel(full = true) {
+export function blisterModel(full = true, { slots = null } = {}) {
   const g = new THREE.Group();
   const card = new THREE.Mesh(once('blisterCarta', () => new RoundedBoxGeometry(0.06, 0.09, 0.002, 1, 0.0008)), gm('alu', { color: 0xd5dbe0, roughness: 0.35, metalness: 0.3 }));
   g.add(card);
@@ -450,25 +451,28 @@ export function blisterModel(full = true) {
     const bub = new THREE.Mesh(once('burbuja', () => new THREE.CapsuleGeometry(0.0055, 0.012, 4, 10)), glassClear());
     bub.rotation.z = Math.PI / 2; bub.position.set(x, y, 0.004); bub.scale.z = 0.6; g.add(bub);
     if (full) { const p = pillModel(0.9); p.rotation.z = Math.PI / 2; p.position.set(x, y, 0.004); g.add(p); }
+    if (slots) slots.push(new THREE.Vector3(x, y, 0.004));
   }
   return g;
 }
-export function amberBottle(full = true) {
+export function amberBottle(full = true, { cap = true } = {}) {
   const g = new THREE.Group();
   const prof = [[0, 0], [0.022, 0], [0.025, 0.004], [0.025, 0.06], [0.02, 0.07], [0.016, 0.072], [0.016, 0.078], [0, 0.078]].map(([a, b]) => new THREE.Vector2(a, b));
   const body = new THREE.Mesh(once('frascoCuerpo', () => new THREE.LatheGeometry(prof, 24)), gm('ambar', { color: full ? 0xb8641c : 0xd79c5c, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.92 }));
   g.add(body);
-  const cap = new THREE.Mesh(once('frascoTapa', () => new THREE.CylinderGeometry(0.019, 0.019, 0.016, 20)), blackCap()); cap.position.y = 0.084; g.add(cap);
+  const capM = new THREE.Mesh(once('frascoTapa', () => new THREE.CylinderGeometry(0.019, 0.019, 0.016, 20)), blackCap()); capM.position.y = 0.084; capM.visible = cap; g.add(capM); g.userData.cap = capM;
   if (full) { const lab = new THREE.Mesh(once('frascoEtiq', () => new THREE.CylinderGeometry(0.0255, 0.0255, 0.03, 24, 1, true, -1.1, 2.2)), gm('etiquetaCrema', { color: 0xf3ead2, roughness: 0.7 })); lab.position.y = 0.032; g.add(lab); }
   return g;
 }
-export function dropperModel(withBox = true) {
+export function dropperModel(withBox = true, { cap = true, level = false } = {}) {
   const g = new THREE.Group();
   const b = new THREE.Mesh(once('goteroCuerpo', () => new RoundedBoxGeometry(0.03, 0.06, 0.03, 2, 0.008)), gm('ambarOsc', { color: 0x7a3d12, roughness: 0.15, transparent: true, opacity: 0.95 }));
   b.position.y = 0.03; g.add(b);
   const lab = new THREE.Mesh(once('goteroEtiq', () => new THREE.PlaneGeometry(0.024, 0.026)), gm('etiqMorada', { color: 0xe5d8fb, roughness: 0.7 })); lab.position.set(0, 0.03, 0.0152); g.add(lab);
-  const ring = new THREE.Mesh(once('goteroAro', () => new THREE.CylinderGeometry(0.009, 0.009, 0.01, 16)), blackCap()); ring.position.y = 0.065; g.add(ring);
-  const bulb = new THREE.Mesh(once('goteroPera', () => new THREE.SphereGeometry(0.008, 14, 10)), blackCap()); bulb.scale.y = 1.6; bulb.position.y = 0.08; g.add(bulb);
+  const top = new THREE.Group(); g.add(top); g.userData.cap = top; top.visible = cap;
+  const ring = new THREE.Mesh(once('goteroAro', () => new THREE.CylinderGeometry(0.009, 0.009, 0.01, 16)), blackCap()); ring.position.y = 0.065; top.add(ring);
+  const bulb = new THREE.Mesh(once('goteroPera', () => new THREE.SphereGeometry(0.008, 14, 10)), blackCap()); bulb.scale.y = 1.6; bulb.position.y = 0.08; top.add(bulb);
+  if (level) { const l = new THREE.Mesh(once('goteroLiq', () => new THREE.BoxGeometry(0.026, 1, 0.026)), gm('extractoLiq', { color: 0xb48cf0, roughness: 0.1, transparent: true, opacity: 0.85, emissive: 0x6a3fc0, emissiveIntensity: 0.25 })); l.scale.y = 0.001; l.position.y = 0.003; g.add(l); g.userData.level = l; g.userData.levelMax = 0.054; }
   if (withBox) {
     const bx = new THREE.Mesh(once('goteroCaja', () => new RoundedBoxGeometry(0.034, 0.075, 0.034, 1, 0.002)), gm('cajaMorada', { color: 0xc7b0f5, roughness: 0.6 }));
     bx.position.set(0.04, 0.0375, -0.006); g.add(bx);

@@ -9,6 +9,58 @@
 // Todo con cantos redondeados; geometrías y materiales compartidos entre copias.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { G as GAME } from '../game.js';
+
+// Reflejos de taller (neutros) para los metales: con el reflejo del cielo, dentro de casa el
+// acero salía azulado. Se crea una vez, cuando ya hay renderer.
+let ENV = null;
+function studioEnv() {
+  if (!ENV && GAME.renderer) { const pm = new THREE.PMREMGenerator(GAME.renderer); ENV = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose(); }
+  return ENV;
+}
+// Acero cepillado: vetas finas horizontales (color) y su rugosidad
+const texs = new Map();
+function brushed(key, base, spread = 26) {
+  if (!texs.has(key)) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const x = c.getContext('2d');
+    x.fillStyle = base; x.fillRect(0, 0, 256, 256);
+    let sd = 7; const R = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+    for (let i = 0; i < 900; i++) { const y = R() * 256, l = 20 + R() * 180, v = Math.floor((R() - 0.5) * spread); x.fillStyle = `rgba(${v > 0 ? 255 : 0},${v > 0 ? 255 : 0},${v > 0 ? 255 : 0},${Math.abs(v) / 255})`; x.fillRect(R() * 256, y, l, 1); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2); t.anisotropy = 8;
+    const r = document.createElement('canvas'); r.width = 128; r.height = 128;
+    const y2 = r.getContext('2d'); y2.fillStyle = '#6a6a6a'; y2.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 500; i++) { const v = 90 + Math.floor(R() * 90); y2.fillStyle = `rgb(${v},${v},${v})`; y2.fillRect(R() * 128, R() * 128, 10 + R() * 70, 1); }
+    const rt = new THREE.CanvasTexture(r); rt.wrapS = rt.wrapT = THREE.RepeatWrapping; rt.repeat.set(2, 2);
+    texs.set(key, { map: t, rough: rt });
+  }
+  return texs.get(key);
+}
+// Pintura en polvo (texturita granulada) para los armarios oscuros
+function powderCoat(key, base) {
+  if (!texs.has(key)) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, 128, 128);
+    let sd = 3; const R = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+    for (let i = 0; i < 2500; i++) { const v = R() < 0.5 ? 255 : 0; x.fillStyle = `rgba(${v},${v},${v},${0.03 + R() * 0.04})`; x.fillRect(R() * 128, R() * 128, 1, 1); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3);
+    texs.set(key, { map: t });
+  }
+  return texs.get(key);
+}
+// Pone los reflejos de taller a los metales de un grupo (también lo usan las mesas de benches.js)
+export function metalize(group) {
+  const env = studioEnv();
+  if (!env) return;
+  group.traverse((m) => {
+    if (!m.isMesh) return;
+    for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
+      if (!mt || mt.userData.metalized || mt.transparent) continue;
+      if ((mt.metalness ?? 0) > 0.15) { mt.envMap = env; mt.envMapIntensity = mt.metalness > 0.6 ? 1.0 : 0.55; mt.userData.metalized = true; mt.needsUpdate = true; }
+    }
+  });
+}
 
 const geos = new Map(), mats = new Map();
 const G = (k, f) => { if (!geos.has(k)) geos.set(k, f()); return geos.get(k); };
@@ -22,13 +74,14 @@ const box = (g, m, w, h, d, x, y, z, r = 0.02) => put(g, rbg(w, h, d, r), m, x, 
 const cyl = (g, m, rt, rb, h, x, y, z, s = 20) => put(g, cyg(rt, rb, h, s), m, x, y, z);
 
 // ---------- materiales ----------
-const steel = () => M('labAcero', { color: '#a9b2ba', roughness: 0.32, metalness: 0.75 });
-const steelTop = () => M('labAceroTop', { color: '#c3cad0', roughness: 0.25, metalness: 0.7 });
-const dark = () => M('labOscuro', { color: '#3a3f47', roughness: 0.45, metalness: 0.55 });
-const darker = () => M('labNegro', { color: '#22262b', roughness: 0.5, metalness: 0.4 });
-const handleM = () => M('labTirador', { color: '#c8d3dc', roughness: 0.2, metalness: 0.9 });
+const steel = () => M('labAcero', { color: '#ffffff', map: brushed('acero', '#a3abb3').map, roughnessMap: brushed('acero', '#a3abb3').rough, roughness: 0.55, metalness: 0.92 });
+const steelTop = () => M('labAceroTop', { color: '#ffffff', map: brushed('aceroTop', '#bcc3ca', 34).map, roughnessMap: brushed('aceroTop', '#bcc3ca', 34).rough, roughness: 0.45, metalness: 0.95 });
+const dark = () => M('labOscuro', { color: '#ffffff', map: powderCoat('oscuro', '#3a3f47').map, roughness: 0.5, metalness: 0.35 });
+const darker = () => M('labNegro', { color: '#ffffff', map: powderCoat('negro', '#24282d').map, roughness: 0.55, metalness: 0.3 });
+const handleM = () => M('labTirador', { color: '#e2e8ee', roughness: 0.12, metalness: 1.0 });
 const handleBlue = () => M('labTiradorAzul', { color: '#3a8de0', roughness: 0.25, metalness: 0.4, emissive: '#1d5fb0', emissiveIntensity: 0.35 });
 const glass = () => M('labCristal', { color: '#bfe3ff', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false });
+export const labScreen = () => screenM();
 const screenM = () => M('labPantalla', { color: '#7fd0ff', emissive: '#2b9dff', emissiveIntensity: 1.3, roughness: 0.2 });
 const bins = { blue: M('labCajaAzul', { color: '#2463b8', roughness: 0.5 }), green: M('labCajaVerde', { color: '#2f8a4a', roughness: 0.5 }), black: M('labCajaNegra', { color: '#2a2e33', roughness: 0.55 }), tan: M('labCajaCarton', { color: '#b98a52', roughness: 0.8 }) };
 const btn = (c) => M('labBoton' + c, { color: c, emissive: c, emissiveIntensity: 0.6, roughness: 0.35 });
@@ -88,6 +141,14 @@ function controlBox(g, x, y, z, w = 0.36, h = 0.42, d = 0.3) {
   box(g, darker(), w * 0.62, h * 0.32, 0.02, x, y + h * 0.68, z + d / 2, 0.01);
   box(g, screenM(), w * 0.54, h * 0.25, 0.02, x, y + h * 0.68, z + d / 2 + 0.006, 0.006);
   ['#2ecc71', '#f39c12', '#e74c3c'].forEach((c, k) => { const b = cyl(g, btn(c), 0.022, 0.022, 0.02, x + (k - 1) * w * 0.22, y + h * 0.3, z + d / 2 + 0.01, 14); b.rotation.x = Math.PI / 2; });
+  return new THREE.Vector3(x - w * 0.22, y + h * 0.3, z + d / 2 + 0.02);
+}
+// Zona de trabajo delantera, común a las mesas (los ingredientes a la izquierda, el cuenco en el
+// centro, los envases y el producto para envasar) y dónde está cada cosa de la máquina
+const Y = TOP + 0.03;
+function spots(o, craft) {
+  o.spots = { pack: new THREE.Vector3(-0.6, Y, 0.27), work: new THREE.Vector3(0.0, Y, 0.25), supply: new THREE.Vector3(0.58, Y, 0.25), out: craft.stash || new THREE.Vector3(0.6, Y, -0.1) };
+  o.craft = { supplies: [new THREE.Vector3(-0.7, Y, 0.27), new THREE.Vector3(-0.45, Y, 0.27), new THREE.Vector3(-0.2, Y, 0.27)], bowl: new THREE.Vector3(0.22, Y, 0.25), ...craft };
 }
 // tolva (embudo) sobre un soporte
 function hopper(g, x, y, z, r = 0.16, h = 0.24) {
@@ -119,17 +180,18 @@ function conveyor(g, x0, x1, y, z, d = 0.34) {
 // ======================================================================
 export function buildCrystalTable(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   const b = bench(g, { binsLow: ['blue', 'green', 'black'] });
   const y = TOP + 0.03;
   // máquina con tolva a la izquierda
-  controlBox(g, b.x0 + 0.42, y, -0.12, 0.34, 0.44, 0.3);
+  const button = controlBox(g, b.x0 + 0.42, y, -0.12, 0.34, 0.44, 0.3);
   box(g, steel(), 0.18, 0.2, 0.22, b.x0 + 0.17, y + 0.1, -0.12, 0.02);
   hopper(g, b.x0 + 0.17, y + 0.32, -0.12, 0.13, 0.2);
   // bandeja grande de cristales azules en el centro, y otras dos pequeñas
-  tray(g, -0.05, y, 0.06, 0.62, 0.36, '#4fb4ff', 22, 5);
-  tray(g, 0.52, y, 0.16, 0.26, 0.2, '#4fb4ff', 7, 9);
-  box(g, M('labPapel', { color: '#e8edf2', roughness: 0.8 }), 0.26, 0.012, 0.18, b.x0 + 0.4, y + 0.006, 0.24, 0.004);
-  bottle(g, 0.35, y, -0.24, '#e9eef2', '#2c74c9', 0.12, 0.04);
+  // bandeja de salida de los cristales (vacía: se llena al trabajar la máquina)
+  box(g, M('labBandeja', { color: '#2b5fa8', roughness: 0.35, metalness: 0.3 }), 0.5, 0.04, 0.26, 0.0, y + 0.02, -0.1, 0.01);
+  bottle(g, 0.3, y, -0.3, '#e9eef2', '#2c74c9', 0.12, 0.04);
+  spots(o, { kind: 'crystal', input: new THREE.Vector3(b.x0 + 0.17, y + 0.52, -0.12), button, out: new THREE.Vector3(0.0, y + 0.04, -0.1), mix: '#9fd6ff' });
   // estante con barra de luz cian y cajitas de cristales
   const sy = topShelf(g, -0.4, 0.95, { light: '#4fd5ff' });
   void sy;
@@ -142,6 +204,7 @@ export function buildCrystalTable(o) {
 // ======================================================================
 export function buildPowderTable(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   const b = bench(g, { binsLow: ['blue', 'green', 'black'] });
   const y = TOP + 0.03;
   // mezcladora: tolva grande en columna con brazo y cuenco de acero debajo
@@ -154,16 +217,15 @@ export function buildPowderTable(o) {
   cyl(g, M('labCuenco', { color: '#cfd6dc', roughness: 0.18, metalness: 0.9 }), 0.13, 0.08, 0.1, mx, y + 0.11, -0.04, 24);
   cyl(g, M('labPolvoCuenco', { color: '#f4efe6', roughness: 0.95 }), 0.115, 0.115, 0.012, mx, y + 0.155, -0.04, 24);
   // máquina con pantalla al lado y su ventana
-  controlBox(g, b.x0 + 0.85, y, -0.1, 0.42, 0.46, 0.32);
+  const button = controlBox(g, b.x0 + 0.85, y, -0.1, 0.42, 0.46, 0.32);
   box(g, glass(), 0.3, 0.14, 0.02, b.x0 + 0.85, y + 0.12, 0.07, 0.01);
-  // bandeja y papeles de pesar
-  box(g, M('labBandejaGris', { color: '#4a5560', roughness: 0.35, metalness: 0.5 }), 0.4, 0.03, 0.26, 0.15, y + 0.015, 0.16, 0.01);
-  box(g, M('labPapel', { color: '#e8edf2', roughness: 0.8 }), 0.24, 0.01, 0.18, 0.5, y + 0.005, 0.2, 0.004);
+  // bandeja gris al fondo (donde se deja el polvo hecho)
+  box(g, M('labBandejaGris', { color: '#4a5560', roughness: 0.35, metalness: 0.5 }), 0.36, 0.03, 0.24, 0.45, y + 0.015, -0.06, 0.01);
+  spots(o, { kind: 'powder', input: new THREE.Vector3(mx, y + 0.92, -0.12), button, out: new THREE.Vector3(mx, y + 0.16, -0.04), mix: '#f4efe6' });
   // estante con botes blancos de tapa roja, verde y azul y un bote de lápices
   const sy = topShelf(g, 0.25, 0.95, { light: '#ffe2a8' });
   ['#d64541', '#2c74c9', '#2a9d5b', '#d64541'].forEach((c, k) => bottle(g, 0.36 + k * 0.17, sy, -0.28, '#f1f3f5', c, 0.15, 0.045));
-  ['#2c74c9', '#2a9d5b', '#2c2f33'].forEach((c, k) => bottle(g, 0.4 + k * 0.2, y, -0.28, '#f1f3f5', c, 0.13 + k * 0.02, 0.04));
-  box(g, darker(), 0.08, 0.12, 0.08, 0.86, y + 0.06, 0.2, 0.01);
+  ['#2c74c9', '#2a9d5b'].forEach((c, k) => bottle(g, 0.75 + k * 0.12, y, -0.3, '#f1f3f5', c, 0.13 + k * 0.02, 0.04));
 }
 
 // ======================================================================
@@ -171,6 +233,7 @@ export function buildPowderTable(o) {
 // ======================================================================
 export function buildPillMachine(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   // armario base de la prensa (izquierda) y mesa lateral (derecha)
   const px = -0.45;
   box(g, dark(), 0.9, 0.78, 0.78, px, 0.41, 0, 0.03);
@@ -191,6 +254,7 @@ export function buildPillMachine(o) {
   box(g, darker(), 0.17, 0.12, 0.02, px + 0.33, y + 0.38, 0.215, 0.008);
   box(g, screenM(), 0.14, 0.09, 0.02, px + 0.33, y + 0.38, 0.222, 0.006);
   const stop = cyl(g, btn('#e02a2a'), 0.035, 0.035, 0.035, px + 0.38, y + 0.2, 0.225, 16); stop.rotation.x = Math.PI / 2;
+  const button = new THREE.Vector3(px + 0.27, y + 0.2, 0.24);
   const go = cyl(g, btn('#2ecc71'), 0.022, 0.022, 0.02, px + 0.27, y + 0.2, 0.222, 14); go.rotation.x = Math.PI / 2;
   // salida: rampa con una bandeja de pastillas
   box(g, steel(), 0.2, 0.03, 0.2, px + 0.33, y - 0.02, 0.3, 0.008);
@@ -201,11 +265,15 @@ export function buildPillMachine(o) {
   box(g, steel(), tx1 - tx0 - 0.1, 0.025, 0.5, (tx0 + tx1) / 2, 0.22, 0, 0.008);
   const blisterM = M('labBlister', { color: '#d9dee3', roughness: 0.25, metalness: 0.6 });
   const pillM = M('labPastilla', { color: '#e9f5f2', roughness: 0.4 }), pillM2 = M('labPastillaAzul', { color: '#4a8fe0', roughness: 0.4 });
-  for (let k = 0; k < 6; k++) box(g, blisterM, 0.3, 0.012, 0.2, 0.75, ty + 0.03 + k * 0.014, -0.08, 0.005);
-  for (const [bx, bz] of [[0.3, 0.05], [0.3, -0.18]]) {
+  for (let k = 0; k < 6; k++) box(g, blisterM, 0.3, 0.012, 0.2, 0.75, ty + 0.03 + k * 0.014, -0.17, 0.005);
+  for (const [bx, bz] of [[0.3, -0.17]]) {
     box(g, M('labBandejaAzul', { color: '#3a8de0', roughness: 0.35 }), 0.3, 0.02, 0.2, bx, ty + 0.03, bz, 0.006);
     for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) { const p = put(g, G('pill', () => new THREE.CapsuleGeometry(0.01, 0.022, 4, 8)), (i + j) % 2 ? pillM : pillM2, bx - 0.1 + j * 0.05, ty + 0.05, bz - 0.05 + i * 0.05, 0, 0, Math.PI / 2); void p; }
   }
+  // en la mesa lateral: ingredientes delante, el cuenco y el envasado
+  const T = ty + 0.02;
+  o.spots = { pack: new THREE.Vector3(0.15, T, 0.2), work: new THREE.Vector3(0.47, T, 0.16), supply: new THREE.Vector3(0.8, T, 0.18), out: new THREE.Vector3(0.75, T + 0.1, -0.17) };
+  o.craft = { kind: 'pills', supplies: [new THREE.Vector3(0.12, T, 0.2), new THREE.Vector3(0.35, T, 0.2)], bowl: new THREE.Vector3(0.7, T, 0.16), input: new THREE.Vector3(px - 0.08, y + 1.1, -0.04), button, out: new THREE.Vector3(px + 0.33, y, 0.3), mix: '#eef4f2' };
 }
 
 // ======================================================================
@@ -213,6 +281,7 @@ export function buildPillMachine(o) {
 // ======================================================================
 export function buildLiquidStation(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   const b = bench(g, { drawers: 2, binsLow: ['blue', 'black'], blue: false });
   const y = TOP + 0.03;
   // depósito azul transparente con tapa de acero
@@ -236,12 +305,11 @@ export function buildLiquidStation(o) {
     box(g, handleBlue(), 0.04, 0.05, 0.05, x, y + 0.34, -0.01, 0.01);
   }
   // panel de mando a la derecha
-  controlBox(g, 0.68, y, -0.12, 0.34, 0.5, 0.3);
-  // bandeja con frascos bajo las boquillas y botellas
-  box(g, M('labBandejaGris', { color: '#4a5560', roughness: 0.35, metalness: 0.5 }), 0.64, 0.03, 0.22, dx, y + 0.015, 0.12, 0.01);
-  for (let k = 0; k < 4; k++) bottle(g, dx - 0.21 + k * 0.14, y + 0.03, 0.12, '#dfefff', '#2c74c9', 0.08, 0.025);
-  for (let k = 0; k < 3; k++) bottle(g, b.x0 + 0.12 + k * 0.1, y, 0.22, '#f4f6f8', '#e9eef2', 0.18, 0.035);
-  for (let i = 0; i < 2; i++) for (let j = 0; j < 4; j++) bottle(g, 0.62 + j * 0.07, y, 0.18 + i * 0.07, '#f4f6f8', '#2c74c9', 0.07, 0.022);
+  const button = controlBox(g, 0.68, y, -0.12, 0.34, 0.5, 0.3);
+  // bandeja bajo las boquillas (ahí cae el extracto) y garrafas al fondo
+  box(g, M('labBandejaGris', { color: '#4a5560', roughness: 0.35, metalness: 0.5 }), 0.64, 0.03, 0.2, dx, y + 0.015, -0.06, 0.01);
+  for (let k = 0; k < 2; k++) bottle(g, -0.42 + k * 0.09, y, -0.32, '#f4f6f8', '#e9eef2', 0.18, 0.035);
+  spots(o, { kind: 'liquid', input: new THREE.Vector3(tx, y + 0.66, -0.1), button, out: new THREE.Vector3(dx, y + 0.03, -0.06), mix: '#b48cf0' });
 }
 
 // ======================================================================
@@ -249,6 +317,7 @@ export function buildLiquidStation(o) {
 // ======================================================================
 export function buildAutoPacker(o) {
   const g = o.group;
+  queueMicrotask(() => metalize(g));
   const w = 2.0, y = 0.82;
   // base de armarios con franjas de luz azul
   box(g, dark(), w, y - 0.08, 0.86, 0, (y - 0.08) / 2 + 0.06, 0, 0.03);

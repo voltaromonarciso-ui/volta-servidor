@@ -299,6 +299,24 @@ export function buildItem(s) {
     case 'gotero': case 'gotero_v': { const d = dropperModel(s.id === 'gotero'); d.position.y = -0.05; d.scale.setScalar(1.3); g.add(d); break; }
     case 'polvo': { const p = powderPile(); p.position.y = -0.02; g.add(p); break; }
     case 'pastilla': for (let i = 0; i < 4; i++) { const p = pillModel(1.6); p.position.set((i % 2) * 0.03 - 0.015, Math.floor(i / 2) * 0.02, 0); p.rotation.z = 0.6 + i; g.add(p); } break;
+    case 'hoja': {
+      const lm = M('#7fb88a', { roughness: 0.6, side: THREE.DoubleSide });
+      for (let i = 0; i < 5; i++) { const l = mesh(new THREE.SphereGeometry(0.04, 10, 6), lm, 0, 0, 0, g); l.scale.set(0.35, 0.06, 1); l.rotation.y = (i - 2) * 0.5; l.position.set((i - 2) * 0.008, 0, 0.03); }
+      break;
+    }
+    case 'reactivo':
+      mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.1, 16), M('#f1f3f5', { roughness: 0.4 }), 0, 0, 0, g);
+      mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.025, 14), M('#d64541'), 0, 0.062, 0, g);
+      break;
+    case 'aglutinante':
+      mesh(new THREE.CylinderGeometry(0.045, 0.038, 0.07, 18), M('#e8eef0', { roughness: 0.5 }), 0, 0, 0, g);
+      mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.015, 18), M('#2a9d5b'), 0, 0.04, 0, g);
+      break;
+    case 'disolvente':
+      mesh(bx(0.07, 0.1, 0.045, 0.006), M('#b9c1c8', { metalness: 0.6, roughness: 0.3 }), 0, 0, 0, g);
+      mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.02, 10), M('#d64541'), 0.02, 0.06, 0, g);
+      mesh(new THREE.PlaneGeometry(0.05, 0.04), M('#e5d8fb'), 0, 0, 0.0231, g);
+      break;
     case 'extracto': { const d = dropperModel(false); d.position.y = -0.05; d.scale.setScalar(1.3); g.add(d); break; }
     case 'bolsa_ss':
       for (let i = 0; i < 3; i++) { const b = shardsBag(false); b.position.set(i * 0.004, i * 0.003, i * 0.006); b.rotation.z = (i - 1) * 0.07; g.add(b); }

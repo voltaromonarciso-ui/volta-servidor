@@ -481,44 +481,46 @@ function productStacks(id) {
 export function openLab(o) {
   const type = o.entry.type, L = LAB[type];
   const p = openPanel({ title: L.name, wide: true, cls: 'lab' });
-  const render = () => {
-    p.body.innerHTML = ''; p.foot.innerHTML = '';
-    // 1) producir
-    const sec = h('div', 'lab-sec', `<div class="label">Producir</div>`);
-    const row = h('div', 'lab-recipe');
-    for (const [k, n] of Object.entries(L.make)) {
-      const have = inv.count(k), ok = have >= n;
-      row.appendChild(h('div', 'lab-ing' + (ok ? '' : ' miss'), `${ii(k)}<b>${n}× ${ITEMS[k].name}</b><small>tienes ${have}</small>`));
-    }
-    row.appendChild(h('div', 'lab-arrow', '➜'));
-    row.appendChild(h('div', 'lab-ing out', `${ii(L.out)}<b>${L.n}× ${ITEMS[L.out].name}</b><small>${Math.floor(L.min / 60)} h ${String(L.min % 60).padStart(2, '0')} min</small>`));
-    sec.appendChild(row);
-    const b = o.entry.data.batch;
-    if (b) sec.appendChild(h('div', 'small muted', absNow() >= b.ready ? '¡La tanda está lista! Recógela.' : `Trabajando: quedan ${Math.ceil(b.ready - absNow())} min de juego.`));
-    const go = h('button', 'btn', b ? (absNow() >= b.ready ? `Recoger ${b.n}` : 'Trabajando…') : 'Poner tanda');
-    go.onclick = () => {
-      if (b) { if (absNow() >= b.ready && G.act.labCollect(o)) render(); return; }
-      const r = G.act.labStart(o);
-      if (!r.ok) return fail(r.msg);
-      G.act.toast(r.msg, '⚗️'); render();
-    };
+  // 1) elaborar a mano (receta y lo que tienes)
+  const sec = h('div', 'lab-sec', `<div class="label">Elaborar a mano</div>`);
+  const row = h('div', 'lab-recipe');
+  for (const [k, n] of Object.entries(L.make)) {
+    const have = inv.count(k), ok = have >= n;
+    row.appendChild(h('div', 'lab-ing' + (ok ? '' : ' miss'), `${ii(k)}<b>${n}× ${ITEMS[k].name}</b><small>tienes ${have}</small>`));
+  }
+  row.appendChild(h('div', 'lab-arrow', '➜'));
+  row.appendChild(h('div', 'lab-ing out', `${ii(L.out)}<b>${L.n}× ${ITEMS[L.out].name}</b><small>por tanda</small>`));
+  sec.appendChild(row);
+  sec.appendChild(h('div', 'small muted', 'Echas tú los ingredientes al cuenco, remueves y lo vuelcas en la máquina; la máquina hace el resto.'));
+  const old = o.entry.data.batch; // (tandas de antes del cambio: se recogen aquí)
+  if (old) {
+    const bt = h('button', 'btn', `Recoger la tanda pendiente (${old.n})`);
+    bt.onclick = () => { if (G.act.labCollect(o)) closePanel(); };
+    sec.appendChild(bt);
+  } else {
+    const go = h('button', 'btn', 'Ponerse a elaborar');
+    go.onclick = () => { closePanel(true); G.act.startCraft(o); };
     sec.appendChild(go);
-    p.body.appendChild(sec);
-    // 2) envasar lo suelto de esta estación
-    const forms = FORMS.filter((f) => f.at === type);
-    const stacks = productStacks(L.out);
-    const pk = h('div', 'lab-sec', `<div class="label">Envasar</div>`);
-    if (!stacks.length) pk.appendChild(h('div', 'small muted', `No llevas ${ITEMS[L.out].name.toLowerCase()} suelto para envasar.`));
-    for (const st of stacks) for (const F of forms) {
-      const max = Math.min(Math.floor(st.q / F.per), inv.count(F.pack));
-      const card = h('div', 'lab-pack', `${ii(F.id)}<div><b>${ITEMS[F.id].name}</b><small>${product(st.p)?.name || ''} · ${F.per} ${F.per > 1 ? 'unidades' : 'unidad'} + 1 ${ITEMS[F.pack].name.toLowerCase().replace(/s$/, '').replace(/es$/, '')} · tienes ${inv.count(F.pack)} envases</small></div>`);
-      const bt = h('button', 'btn sm' + (max ? '' : ' dim'), max ? `Envasar ${max}` : 'Faltan envases');
-      bt.onclick = () => { if (!max) return fail(`Te faltan ${ITEMS[F.pack].name.toLowerCase()} (en El Cartel) o producto.`); const n = G.act.packNow(F, st.p, max); G.act.toast(`Has envasado ${n} ${ITEMS[F.id].name.toLowerCase()}.`, '📦'); render(); };
-      card.appendChild(bt); pk.appendChild(card);
-    }
-    p.body.appendChild(pk);
-  };
-  render();
+  }
+  p.body.appendChild(sec);
+  // 2) envasar a mano lo suelto de esta estación
+  const forms = FORMS.filter((f) => f.at === type);
+  const stacks = productStacks(L.out);
+  const pk = h('div', 'lab-sec', `<div class="label">Envasar a mano</div>`);
+  if (!stacks.length) pk.appendChild(h('div', 'small muted', `No llevas ${ITEMS[L.out].name.toLowerCase()} suelto para envasar.`));
+  for (const st of stacks) for (const F of forms) {
+    const max = Math.min(Math.floor(st.q / F.per), inv.count(F.pack));
+    const card = h('div', 'lab-pack', `${ii(F.id)}<div><b>${ITEMS[F.id].name}</b><small>${product(st.p)?.name || ''} · ${F.per} por envase · tienes ${inv.count(F.pack)} ${ITEMS[F.pack].name.toLowerCase()}</small></div>`);
+    const bt = h('button', 'btn sm' + (max ? '' : ' dim'), max ? `Envasar (${max})` : 'Faltan envases');
+    bt.onclick = () => {
+      if (!max) return fail(`Te faltan ${ITEMS[F.pack].name.toLowerCase()} (en El Cartel) o producto.`);
+      if (!inv.room(F.id, st.p)) return fail('No tienes hueco en el inventario.');
+      closePanel(true);
+      G.act.startStation(o, { id: L.out, p: st.p }, F);
+    };
+    card.appendChild(bt); pk.appendChild(card);
+  }
+  p.body.appendChild(pk);
 }
 
 // Empacadora avanzada: envasa sola todo lo suelto que llevas, cada producto en el envase más

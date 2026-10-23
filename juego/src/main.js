@@ -1,4 +1,5 @@
 import { startStation, updateStation, exitStation, stationAuto } from './systems/station.js';
+import { startCraft, updateCraft, exitCraft, craftAuto } from './systems/craft.js';
 import { makeAvatar, sleeveFor } from './entities/avatar.js';
 import { style, syncInventory } from './systems/appearance.js';
 import { openBarber, openClothes, updateDressing, closeDressing, dressingOpen } from './ui/dressing.js';
@@ -160,7 +161,7 @@ initPhone();
 // acciones globales que usan los distintos sistemas
 Object.assign(G.act, {
   toast, bigToast, notify, sfx, setWaypoint, clearWaypoint,
-  openShop: P.openShop, openCasino: P.openCasino, openRobbery: P.robberyDialog, openPacker: P.openPacker, startStation, openBarber, openClothes,
+  openShop: P.openShop, openCasino: P.openCasino, openRobbery: P.robberyDialog, openPacker: P.openPacker, startStation, startCraft, openBarber, openClothes,
   openVehicleShop: P.openVehicleShop, forceDismount, pokeStaff, currentStyle: () => style(),
   // la apariencia ha cambiado: avatar y mangas en primera persona
   lookChanged: () => {
@@ -225,6 +226,7 @@ on('btn', (b) => {
   if (b === 'place-store') { if (!G.uiOpen) storeMoving(); return; }
   if (b === 'escape') {
     if (G.station) return exitStation();
+    if (G.craft) return exitCraft();
     if (dressingOpen()) return closeDressing();
     if (!G.uiOpen && placement.moving) return cancelPlacement();
     if (bigMapOpen()) return closeBigMap();
@@ -509,6 +511,7 @@ function frame() {
   updateRiding(dt);
   updateWorkers(dt);
   updateStation(dt);
+  updateCraft(dt);
   updateDressing(dt);
   for (const n of G.npcs) n.update(dt, gdt);
   updatePolice(dt);
@@ -554,7 +557,7 @@ window.addEventListener('beforeunload', () => { if (!G.paused) save(); });
 // exponer para depuración
 window.__G = G;
 window.__R = R; // para medir llamadas de dibujo en las pruebas
-window.__debug = { stationAuto, layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
+window.__debug = { stationAuto, craftAuto, layout: openLayoutEditor, audio: audioStatus, sfx, setSiren, 
   arrest, advanceTime, econ: ECON, panels: P, R, spawn: (e) => { if (!G.objects.has(e.uid)) spawnObject(e); },
   // ejecuta la acción del centro de la pantalla al instante (para pruebas automáticas)
   act: (secondary = false) => { G.player.update(0, false); camera.updateMatrixWorld(); updateInteract(1); runAction(secondary); },
