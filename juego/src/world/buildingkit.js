@@ -47,6 +47,8 @@ export const PBR = {
   hormigon: ['concrete_wall_008', 3], tejas: ['clay_roof_tiles_02', 2.5], pizarra: ['roof_slates_02', 2.5], chapa: ['corrugated_iron_02', 2],
   madera: ['wood_planks', 2], metal: ['metal_plate', 1.5],
   estuco: ['white_stucco_02', 3], sillar: ['white_sandstone_blocks_02', 2], losa: ['precast_stone_paving', 1.6], yesoInt: ['plastered_wall_04', 3], cesped: ['cesped', 3],
+  terrazo: ['terrazzo_tiles', 1.2], azulejo: ['square_tiled_wall', 1.0], fachadaAzulejo: ['rectangular_facade_tiles', 1.4], panelMetal: ['exterior_wall_cladding_02', 2.4],
+  sueloGaraje: ['garage_floor', 3], azulejoLargo: ['long_white_tiles', 1.2], baldosaGris: ['large_grey_tiles', 1.6], hormigonPintado: ['painted_concrete', 3],
 };
 export function pbrMat(key, tint) {
   const k = key + (tint || '');
