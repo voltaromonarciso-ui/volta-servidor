@@ -4,7 +4,7 @@ import { G } from '../game.js';
 import { ITEMS, STRAINS } from '../data/items.js';
 import { R } from '../render.js';
 import { cardboardTex } from '../world/textures.js';
-import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile } from './goods.js';
+import { budPile as goodsPile, zipBag, jar, shardsBag, crystalCluster, cashStack, seedPile, vialModel, blisterModel, amberBottle, dropperModel, powderPile, pillModel } from './goods.js';
 import { FPArms, collectSolids } from './fparms.js';
 import { HELD } from './helditems.js';
 import { MODELS } from './models.js';
@@ -291,6 +291,15 @@ export function buildItem(s) {
       break;
     }
     case 'shards': g.add(shardsBag(true)); break;
+    case 'tarro_cr': { const j = jar(null, { fill: 'crystal' }); j.position.y = -0.06; g.add(j); break; }
+    case 'sobre_polvo': g.add(zipBag(null, { fill: 'powder' })); break;
+    case 'vial': case 'vial_v': for (let i = 0; i < (s.id === 'vial' ? 1 : 3); i++) { const v = vialModel(s.id === 'vial'); v.position.set(i * 0.03 - (s.id === 'vial' ? 0 : 0.03), -0.05, 0); v.scale.setScalar(1.3); g.add(v); } break;
+    case 'blister': case 'blister_v': { const b = blisterModel(s.id === 'blister'); b.scale.setScalar(1.3); g.add(b); break; }
+    case 'frasco': case 'frasco_v': { const f = amberBottle(s.id === 'frasco'); f.position.y = -0.05; f.scale.setScalar(1.3); g.add(f); break; }
+    case 'gotero': case 'gotero_v': { const d = dropperModel(s.id === 'gotero'); d.position.y = -0.05; d.scale.setScalar(1.3); g.add(d); break; }
+    case 'polvo': { const p = powderPile(); p.position.y = -0.02; g.add(p); break; }
+    case 'pastilla': for (let i = 0; i < 4; i++) { const p = pillModel(1.6); p.position.set((i % 2) * 0.03 - 0.015, Math.floor(i / 2) * 0.02, 0); p.rotation.z = 0.6 + i; g.add(p); } break;
+    case 'extracto': { const d = dropperModel(false); d.position.y = -0.05; d.scale.setScalar(1.3); g.add(d); break; }
     case 'bolsa_ss':
       for (let i = 0; i < 3; i++) { const b = shardsBag(false); b.position.set(i * 0.004, i * 0.003, i * 0.006); b.rotation.z = (i - 1) * 0.07; g.add(b); }
       break;

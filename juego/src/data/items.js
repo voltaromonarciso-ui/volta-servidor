@@ -9,7 +9,7 @@ export const ITEMS = {
   bolsa:     { name: 'Sobre', icon: '🛍️', stack: 30, illegal: true, product: true, units: 1, packed: true, form: 'sobres', color: '#7ad06a', desc: 'Bolsita zip con 1 unidad.' },
   tarro:     { name: 'Tarro', icon: '🫙', stack: 10, illegal: true, product: true, units: 5, packed: true, form: 'tarros', color: '#9bd0e6', desc: 'Tarro de cristal con 5 unidades. Los clientes lo pagan mejor.' },
   cristal:   { name: 'Cristales Sweet', icon: '💎', stack: 30, illegal: true, product: true, units: 1, color: '#b06cff', desc: 'Cristales sueltos: envásalos en bolsas Sweet Shards.' },
-  shards:    { name: 'Sweet Shards', icon: '🍬', stack: 30, illegal: true, product: true, units: 1, packed: true, form: 'bolsas Sweet Shards', color: '#c58bff', desc: 'Bolsa de cristales de colores.' },
+  shards:    { name: 'Bolsa de cristales', icon: '🍬', stack: 30, illegal: true, product: true, units: 1, packed: true, form: 'bolsas de cristales', color: '#5ab4ff', desc: 'Bolsa zip con cristales azules.' },
 
   fardo:     { name: 'Fardo del cártel', icon: '📦', stack: 12, illegal: true, color: '#8a6a3b', desc: 'Mercancía del jefe. Llévala al punto de entrega antes de que acabe el plazo.' },
   alijo:     { name: 'Alijo', icon: '🧳', stack: 1, illegal: true, color: '#3b4a5a', desc: 'El alijo del puerto. Llévaselo al jefe a El Cartel.' },
@@ -49,7 +49,7 @@ export const ITEMS = {
   regadera:  { name: 'Regadera', icon: '🚿', stack: 1, price: 15, tool: true, desc: 'Riega tus plantas. Rellénala en un grifo.' },
   bolsita:   { name: 'Sobres zip vacíos', icon: '📨', stack: 50, price: 1, desc: 'Para envasar 1 cogollo en un sobre.' },
   tarro_v:   { name: 'Tarros vacíos', icon: '🫙', stack: 20, price: 4, rank: 1, desc: 'Para envasar 5 cogollos (necesitas la envasadora de tarros).' },
-  bolsa_ss:  { name: 'Bolsas Sweet Shards', icon: '🎴', stack: 50, price: 2, rank: 2, desc: 'Para envasar cristales en la mesa de empaquetado.' },
+  bolsa_ss:  { name: 'Bolsas zip para cristales', icon: '🎴', stack: 50, price: 2, rank: 2, desc: 'Para envasar cristales en la mesa de empaquetado.' },
   mesa_emp:  { name: 'Mesa de empaquetado', icon: '📦', stack: 1, price: 80, place: 'packer', desc: 'Envasa cogollos en sobres (y cristales en bolsas Sweet Shards).' },
   envasadora:{ name: 'Envasadora de tarros', icon: '🏭', stack: 1, price: 250, rank: 1, place: 'jarpacker', desc: 'Llena tarros de cristal con 5 cogollos.' },
   hornillo:  { name: 'Hornillo de cristalización', icon: '🔥', stack: 1, price: 600, rank: 2, place: 'stove', desc: 'Cocina azúcar, colorante y catalizador para hacer cristales.' },

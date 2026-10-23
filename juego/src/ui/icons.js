@@ -50,7 +50,7 @@ function sparkle(x, y, r, col = '#fff') {
 }
 
 // Tarro de cristal con tapón de corcho (con o sin cogollos).
-function jar(x, y, w, h, full, seed = 3) {
+function jar(x, y, w, h, full, seed = 3, { fill = 'bud', lid = 'cork' } = {}) {
   const x0 = x - w / 2, x1 = x + w / 2, top = y - h / 2, bot = y + h / 2, r = w * 0.18;
   const neck = w * 0.12;
   const body = `M${f(x0 + neck)} ${f(top + h * 0.1)}C${f(x0)} ${f(top + h * 0.13)} ${f(x0)} ${f(top + h * 0.2)} ${f(x0)} ${f(top + h * 0.28)}L${f(x0)} ${f(bot - r)}Q${f(x0)} ${f(bot)} ${f(x0 + r)} ${f(bot)}L${f(x1 - r)} ${f(bot)}Q${f(x1)} ${f(bot)} ${f(x1)} ${f(bot - r)}L${f(x1)} ${f(top + h * 0.28)}C${f(x1)} ${f(top + h * 0.2)} ${f(x1)} ${f(top + h * 0.13)} ${f(x1 - neck)} ${f(top + h * 0.1)}Z`;
@@ -60,7 +60,8 @@ function jar(x, y, w, h, full, seed = 3) {
     const bw = w * 0.2;
     const rows = [[bot - bw * 1.05, 3], [bot - bw * 2.6, 3], [bot - bw * 4.0, 2]];
     let k = 0;
-    for (const [cy, n] of rows) for (let i = 0; i < n; i++) {
+    if (fill === 'crystal') s += blueCrystals(x, bot - h * 0.32, w * 0.86, h * 0.62, seed);
+    else for (const [cy, n] of rows) for (let i = 0; i < n; i++) {
       const cx = x - (n - 1) * bw * 0.95 + i * bw * 1.9 + (R() - 0.5) * 2;
       s += bud(cx, cy, bw * 1.15, seed * 10 + k++);
     }
@@ -71,14 +72,14 @@ function jar(x, y, w, h, full, seed = 3) {
   s += `<path d="M${f(x1 - w * 0.12)} ${f(top + h * 0.38)}L${f(x1 - w * 0.12)} ${f(top + h * 0.52)}" stroke="#fff" stroke-width="${f(w * 0.05)}" stroke-linecap="round" opacity=".7"/>`;
   // tapón de corcho
   const lw = w * 0.92, lh = h * 0.17, ly = top - lh * 0.15;
-  s += `<rect x="${f(x - lw / 2)}" y="${f(ly)}" width="${f(lw)}" height="${f(lh)}" rx="${f(lh * 0.35)}" fill="url(#cork)" stroke="${OL}" stroke-width="${W}"/>`;
-  s += `<rect x="${f(x - lw / 2 + 2)}" y="${f(ly + 1.4)}" width="${f(lw - 4)}" height="${f(lh * 0.22)}" rx="1" fill="#e3b77e" opacity=".8"/>`;
+  s += `<rect x="${f(x - lw / 2)}" y="${f(ly)}" width="${f(lw)}" height="${f(lh)}" rx="${f(lh * 0.35)}" fill="${lid === 'grey' ? 'url(#steel)' : 'url(#cork)'}" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<rect x="${f(x - lw / 2 + 2)}" y="${f(ly + 1.4)}" width="${f(lw - 4)}" height="${f(lh * 0.22)}" rx="1" fill="${lid === 'grey' ? '#f4f7f9' : '#e3b77e'}" opacity=".8"/>`;
   s += `<path d="M${f(x - lw / 2 + 1)} ${f(ly + lh * 0.75)}H${f(x + lw / 2 - 1)}" stroke="#8a5a2b" stroke-width=".8" opacity=".6"/>`;
   return s;
 }
 
 // Bolsita zip transparente (con o sin cogollos).
-function zipBag(x, y, w, h, full, seed = 5, tilt = 0) {
+function zipBag(x, y, w, h, full, seed = 5, tilt = 0, fill = 'bud') {
   const x0 = x - w / 2, x1 = x + w / 2, top = y - h / 2, bot = y + h / 2;
   const shape = `M${f(x0 + 1)} ${f(top)}L${f(x1 - 1)} ${f(top)}Q${f(x1)} ${f(top)} ${f(x1)} ${f(top + 1)}L${f(x1 + 1)} ${f(bot - 2)}Q${f(x1 + 1)} ${f(bot)} ${f(x1 - 2)} ${f(bot)}L${f(x0 + 2)} ${f(bot + 0.6)}Q${f(x0 - 0.6)} ${f(bot + 0.6)} ${f(x0 - 0.4)} ${f(bot - 2)}L${f(x0)} ${f(top + 1)}Q${f(x0)} ${f(top)} ${f(x0 + 1)} ${f(top)}Z`;
   let s = `<g transform="rotate(${tilt} ${x} ${y})"><path d="${shape}" fill="#eef4f6" opacity=".7"/>`;
@@ -86,7 +87,9 @@ function zipBag(x, y, w, h, full, seed = 5, tilt = 0) {
     const R = rng(seed);
     const bw = w * 0.17;
     const pts = [[-1.1, 0.62], [0.05, 0.66], [1.15, 0.6], [-0.6, 0.18], [0.65, 0.2], [0.0, -0.22]];
-    pts.forEach(([px, py], i) => { s += bud(x + px * bw * 1.6 + (R() - 0.5), y + py * h * 0.42, bw * 1.15, seed * 10 + i); });
+    if (fill === 'crystal') s += blueCrystals(x, y + h * 0.18, w * 0.84, h * 0.62, seed);
+    else if (fill === 'powder') s += `<path d="M${f(x0 + 3)} ${f(bot - 1)}Q${f(x - w * 0.12)} ${f(bot - h * 0.36)} ${f(x + w * 0.05)} ${f(bot - h * 0.38)}Q${f(x + w * 0.28)} ${f(bot - h * 0.3)} ${f(x1 - 2)} ${f(bot - 1)}Z" fill="#fbfaf7" stroke="#cfd5da" stroke-width="1"/>` + `<path d="M${f(x - w * 0.1)} ${f(bot - h * 0.28)}Q${f(x)} ${f(bot - h * 0.34)} ${f(x + w * 0.12)} ${f(bot - h * 0.3)}" stroke="#fff" stroke-width="1.6" fill="none"/>`;
+    else pts.forEach(([px, py], i) => { s += bud(x + px * bw * 1.6 + (R() - 0.5), y + py * h * 0.42, bw * 1.15, seed * 10 + i); });
   }
   s += `<path d="${shape}" fill="#f6fbfc" fill-opacity="${full ? 0.22 : 0.5}" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
   // cierre zip y agujero de colgar
@@ -108,6 +111,91 @@ function shard(x, y, w, h, col, rot = 0) {
   s += `<polygon points="${P([[0, -h / 2], [w / 2, -h / 2 + w * 0.5], [w / 2, h / 2], [w * 0.15, h / 2], [w * 0.15, -h / 2 + w * 0.3]])}" fill="${c1}"/>`;
   s += `<polygon points="${P(pts)}" fill="none" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
   s += `<path d="M${f(-w * 0.28)} ${f(-h * 0.1)}V${f(h * 0.3)}" stroke="#fff" stroke-width="${f(w * 0.12)}" stroke-linecap="round" opacity=".7"/>`;
+  return s + '</g>';
+}
+// Montón de cristales azules facetados (para bolsas y tarros)
+function blueCrystals(x, y, w, h, seed = 3) {
+  // filas apretadas de cristales, de abajo arriba (los de abajo, algo más grandes)
+  const R = rng(seed);
+  let s = '';
+  const rows = 4, sz = w / 4.2;
+  for (let r = 0; r < rows; r++) {
+    const n = 4 - (r === rows - 1 ? 1 : 0), cy = y + h / 2 - sz * 0.55 - r * sz * 0.72;
+    for (let i = 0; i < n; i++) {
+      const cx = x - w / 2 + sz * 0.6 + i * (w - sz * 1.2) / Math.max(1, n - 1) + (R() - 0.5) * sz * 0.3 + (r % 2) * sz * 0.2;
+      s += shard(cx, cy, sz * (0.85 + R() * 0.25), sz * (1.0 + R() * 0.3), GEM.blue, (R() - 0.5) * 80);
+    }
+  }
+  return s;
+}
+// Etiqueta blanca cuadrada con dibujo: hoja, cristal o montaña
+function label(x, y, sz, kind, col) {
+  let s = `<rect x="${f(x - sz / 2)}" y="${f(y - sz / 2)}" width="${f(sz)}" height="${f(sz)}" rx="${f(sz * 0.14)}" fill="#fff" stroke="${OL}" stroke-width="1" stroke-opacity=".5"/>`;
+  const k = sz / 20;
+  if (kind === 'leaf') {
+    const c = col || '#3f9a3a';
+    for (const a of [-60, -30, 0, 30, 60]) s += `<ellipse cx="${f(x)}" cy="${f(y - 3 * k)}" rx="${f(1.7 * k)}" ry="${f((a ? 5.2 : 6.6) * k)}" fill="${c}" transform="rotate(${a} ${f(x)} ${f(y + 2 * k)})"/>`;
+    s += `<path d="M${f(x)} ${f(y + 2 * k)}V${f(y + 7 * k)}" stroke="${c}" stroke-width="${f(k)}"/>`;
+  } else if (kind === 'crystal') {
+    s += `<path d="M${f(x)} ${f(y - 7 * k)}L${f(x + 4 * k)} ${f(y - 2 * k)}L${f(x + 2.5 * k)} ${f(y + 7 * k)}L${f(x - 2.5 * k)} ${f(y + 7 * k)}L${f(x - 4 * k)} ${f(y - 2 * k)}Z" fill="#cfe8ff" stroke="#2f7fd6" stroke-width="${f(1.2 * k)}" stroke-linejoin="round"/><path d="M${f(x)} ${f(y - 7 * k)}V${f(y + 7 * k)}M${f(x - 4 * k)} ${f(y - 2 * k)}H${f(x + 4 * k)}" stroke="#2f7fd6" stroke-width="${f(0.8 * k)}"/>`;
+  } else if (kind === 'mountain') {
+    s += `<path d="M${f(x - 7 * k)} ${f(y + 5 * k)}L${f(x - 2 * k)} ${f(y - 4 * k)}L${f(x + 1 * k)} ${f(y + 1 * k)}L${f(x + 3 * k)} ${f(y - 2 * k)}L${f(x + 7 * k)} ${f(y + 5 * k)}Z" fill="#5a6168"/><path d="M${f(x - 3.4 * k)} ${f(y - 1.6 * k)}L${f(x - 2 * k)} ${f(y - 4 * k)}L${f(x - 0.6 * k)} ${f(y - 1.6 * k)}Z" fill="#fff"/>`;
+  }
+  return s;
+}
+// Cápsula de dos colores
+function capsule(x, y, len, r, rot, c1 = '#1f9e7a', c2 = '#f4f6f5') {
+  return `<g transform="rotate(${rot} ${f(x)} ${f(y)})"><path d="M${f(x - len / 2 + r)} ${f(y - r)}H${f(x)}V${f(y + r)}H${f(x - len / 2 + r)}A${f(r)} ${f(r)} 0 0 1 ${f(x - len / 2 + r)} ${f(y - r)}Z" fill="${c2}" stroke="${OL}" stroke-width="1.1"/>` +
+    `<path d="M${f(x)} ${f(y - r)}H${f(x + len / 2 - r)}A${f(r)} ${f(r)} 0 0 1 ${f(x + len / 2 - r)} ${f(y + r)}H${f(x)}Z" fill="${c1}" stroke="${OL}" stroke-width="1.1"/>` +
+    `<path d="M${f(x - len / 2 + r)} ${f(y - r * 0.45)}H${f(x + len / 2 - r)}" stroke="#fff" stroke-width="${f(r * 0.4)}" stroke-linecap="round" opacity=".55"/></g>`;
+}
+// Vial alto con tapón negro y polvo blanco
+function vial(x, y, w, h, full) {
+  const x0 = x - w / 2, top = y - h / 2, bot = y + h / 2;
+  let s = `<rect x="${f(x0)}" y="${f(top + h * 0.14)}" width="${f(w)}" height="${f(h * 0.86)}" rx="${f(w * 0.2)}" fill="#e8f4f8" opacity=".85"/>`;
+  if (full) s += `<rect x="${f(x0 + 1)}" y="${f(bot - h * 0.42)}" width="${f(w - 2)}" height="${f(h * 0.42 - 1)}" rx="${f(w * 0.18)}" fill="#f7f2ea"/><path d="M${f(x0 + 1)} ${f(bot - h * 0.42)}Q${f(x)} ${f(bot - h * 0.48)} ${f(x0 + w - 1)} ${f(bot - h * 0.42)}" fill="#fff"/>`;
+  s += `<rect x="${f(x0)}" y="${f(top + h * 0.14)}" width="${f(w)}" height="${f(h * 0.86)}" rx="${f(w * 0.2)}" fill="none" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<rect x="${f(x0 - 1)}" y="${f(top)}" width="${f(w + 2)}" height="${f(h * 0.16)}" rx="${f(w * 0.14)}" fill="#26292d" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<path d="M${f(x0 + w * 0.22)} ${f(top + h * 0.24)}V${f(bot - h * 0.1)}" stroke="#fff" stroke-width="${f(w * 0.14)}" stroke-linecap="round" opacity=".75"/>`;
+  return s;
+}
+// Bote de farmacia ámbar con tapón negro y etiqueta
+function amberBottle(x, y, w, h, lbl = 'leaf', empty = false) {
+  const x0 = x - w / 2, top = y - h / 2, bot = y + h / 2;
+  let s = `<path d="M${f(x0 + w * 0.12)} ${f(top + h * 0.2)}Q${f(x0)} ${f(top + h * 0.22)} ${f(x0)} ${f(top + h * 0.34)}V${f(bot - 3)}Q${f(x0)} ${f(bot)} ${f(x0 + 3)} ${f(bot)}H${f(x0 + w - 3)}Q${f(x0 + w)} ${f(bot)} ${f(x0 + w)} ${f(bot - 3)}V${f(top + h * 0.34)}Q${f(x0 + w)} ${f(top + h * 0.22)} ${f(x0 + w * 0.88)} ${f(top + h * 0.2)}Z" fill="${empty ? '#d79c5c' : '#b8641c'}" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
+  s += `<rect x="${f(x0 + w * 0.08)}" y="${f(top)}" width="${f(w * 0.84)}" height="${f(h * 0.2)}" rx="${f(w * 0.08)}" fill="#26292d" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<rect x="${f(x0 + w * 0.1)}" y="${f(top + h * 0.42)}" width="${f(w * 0.8)}" height="${f(h * 0.36)}" rx="2" fill="#f3ead2" stroke="${OL}" stroke-width="1"/>`;
+  if (lbl) s += label(x, top + h * 0.6, h * 0.26, lbl).replace(/<rect[^>]*\/>/, '');
+  s += `<path d="M${f(x0 + w * 0.14)} ${f(top + h * 0.3)}V${f(bot - h * 0.1)}" stroke="#fff" stroke-width="${f(w * 0.08)}" stroke-linecap="round" opacity=".45"/>`;
+  return s;
+}
+// Gotero ámbar con etiqueta morada y su caja
+function dropper(x, y, w, h, withBox = true) {
+  let s = '';
+  if (withBox) {
+    const bx = x + w * 0.55, bw = w * 0.95, bh = h * 0.9;
+    s += `<path d="M${f(bx)} ${f(y + h / 2)}V${f(y + h / 2 - bh)}L${f(bx + bw * 0.25)} ${f(y + h / 2 - bh - 4)}H${f(bx + bw * 1.15)}V${f(y + h / 2 - 4)}L${f(bx + bw)} ${f(y + h / 2)}Z" fill="#b99af0" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
+    s += `<rect x="${f(bx)}" y="${f(y + h / 2 - bh)}" width="${f(bw)}" height="${f(bh)}" fill="#d6c4fa" stroke="${OL}" stroke-width="${W}"/>`;
+    s += `<path d="M${f(bx)} ${f(y + h * 0.25)}Q${f(bx + bw * 0.5)} ${f(y + h * 0.12)} ${f(bx + bw)} ${f(y + h * 0.22)}V${f(y + h / 2)}H${f(bx)}Z" fill="#a98ae8" opacity=".8"/>`;
+    s += label(bx + bw / 2, y - h * 0.08, bw * 0.55, 'leaf', '#8a5bd6').replace(/<rect[^>]*\/>/, '');
+  }
+  const x0 = x - w / 2, top = y - h / 2 + h * 0.32, bot = y + h / 2;
+  s += `<rect x="${f(x0)}" y="${f(top)}" width="${f(w)}" height="${f(bot - top)}" rx="${f(w * 0.22)}" fill="#7a3d12" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<rect x="${f(x0 + w * 0.12)}" y="${f(top + (bot - top) * 0.32)}" width="${f(w * 0.76)}" height="${f((bot - top) * 0.44)}" rx="2" fill="#e5d8fb" stroke="${OL}" stroke-width="1"/>`;
+  s += label(x, top + (bot - top) * 0.54, w * 0.5, 'leaf', '#8a5bd6').replace(/<rect[^>]*\/>/, '');
+  s += `<rect x="${f(x - w * 0.3)}" y="${f(top - h * 0.12)}" width="${f(w * 0.6)}" height="${f(h * 0.13)}" rx="2" fill="#26292d" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<path d="M${f(x - w * 0.22)} ${f(top - h * 0.12)}Q${f(x - w * 0.24)} ${f(top - h * 0.32)} ${f(x)} ${f(top - h * 0.33)}Q${f(x + w * 0.24)} ${f(top - h * 0.32)} ${f(x + w * 0.22)} ${f(top - h * 0.12)}Z" fill="#1b1d20" stroke="${OL}" stroke-width="${W}"/>`;
+  return s;
+}
+// Blíster de cápsulas (2 × 5)
+function blisterPack(x, y, w, h, rot = -14, full = true) {
+  let s = `<g transform="rotate(${rot} ${f(x)} ${f(y)})"><rect x="${f(x - w / 2)}" y="${f(y - h / 2)}" width="${f(w)}" height="${f(h)}" rx="3" fill="url(#steel)" stroke="${OL}" stroke-width="${W}"/>`;
+  s += `<path d="M${f(x)} ${f(y - h / 2 + 2)}V${f(y + h / 2 - 2)}" stroke="#8d98a1" stroke-width="1"/>`;
+  for (let c = 0; c < 2; c++) for (let r = 0; r < 5; r++) {
+    const cx = x - w / 4 + c * w / 2, cy = y - h / 2 + h * 0.13 + r * h * 0.185;
+    s += `<rect x="${f(cx - w * 0.17)}" y="${f(cy - h * 0.06)}" width="${f(w * 0.34)}" height="${f(h * 0.12)}" rx="${f(h * 0.06)}" fill="#e9eef1" stroke="#9aa6af" stroke-width=".8"/>`;
+    if (full) s += capsule(cx, cy, w * 0.3, h * 0.045, 0);
+  }
   return s + '</g>';
 }
 const GEM = {
@@ -238,13 +326,30 @@ const DRAW = {
   // sobre vacío: abierto por arriba, arrugado y con la ventana vacía
   sobre_vacio: () => shadow(32, 58, 18) + seedPacket(true),
   cogollo: () => shadow(32, 52, 22) + bud(23, 41, 11, 4) + bud(41, 41, 11, 7) + bud(32, 28, 12.5, 9) + sparkle(52, 16, 4) + sparkle(12, 20, 3),
-  bolsa: () => zipBag(32, 33, 38, 46, true, 6, -6) + sparkle(54, 12, 4),
-  tarro: () => shadow(32, 58, 20) + jar(32, 35, 36, 44, true, 4) + sparkle(54, 12, 4) + sparkle(10, 24, 3),
+  bolsa: () => zipBag(32, 33, 38, 46, true, 6, -6) + label(31, 30, 12, 'leaf') + sparkle(54, 12, 4),
+  shards: () => zipBag(32, 33, 38, 46, true, 6, -6, 'crystal') + label(31, 27, 12, 'crystal') + sparkle(54, 12, 4),
+  tarro_cr: () => shadow(32, 58, 20) + jar(32, 35, 36, 44, true, 4, { fill: 'crystal', lid: 'grey' }) + label(32, 40, 12, 'crystal') + sparkle(54, 12, 4) + sparkle(10, 24, 3),
+  sobre_polvo: () => zipBag(32, 33, 38, 46, true, 6, -6, 'powder') + label(31, 27, 12, 'mountain') + sparkle(54, 12, 4),
+  vial: () => shadow(32, 58, 18) + vial(27, 32, 14, 46, true) + label(27, 38, 9, 'mountain') + `<path d="M34 57Q40 47 46 49Q52 47 56 57Z" fill="#fbfaf7" stroke="#cfd5da" stroke-width="1"/>` + sparkle(54, 14, 4),
+  vial_v: () => shadow(32, 58, 18) + vial(26, 32, 13, 44, false) + vial(40, 34, 13, 42, false),
+  polvo: () => shadow(32, 54, 22) + `<path d="M8 54Q20 30 32 28Q44 30 56 54Z" fill="#fbfaf7" stroke="${OL}" stroke-width="1.4"/><path d="M20 44Q30 34 40 38" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M14 50Q32 46 50 50" stroke="#dfe3e6" stroke-width="1.4" fill="none"/>` + sparkle(52, 16, 4),
+  pastilla: () => shadow(32, 54, 22) + capsule(24, 40, 22, 5, -25) + capsule(40, 44, 22, 5, 20) + capsule(33, 28, 22, 5, 70) + sparkle(54, 14, 4),
+  blister: () => shadow(32, 58, 22) + blisterPack(32, 32, 30, 44) + capsule(48, 52, 16, 4, -30) + sparkle(12, 14, 3),
+  blister_v: () => shadow(32, 58, 22) + blisterPack(34, 33, 28, 42, -10, false) + blisterPack(28, 30, 28, 42, -18, false),
+  frasco: () => shadow(32, 58, 20) + amberBottle(28, 34, 28, 44, 'leaf') + capsule(46, 52, 16, 4, -20) + capsule(52, 46, 16, 4, 30),
+  frasco_v: () => shadow(32, 58, 20) + amberBottle(32, 34, 28, 44, null, true),
+  extracto: () => shadow(32, 56, 16) + `<path d="M32 12C24 26 20 34 20 42a12 12 0 0 0 24 0C44 34 40 26 32 12Z" fill="#b48cf0" stroke="${OL}" stroke-width="${W}"/><ellipse cx="27" cy="38" rx="3" ry="6" fill="#fff" opacity=".6"/>` + sparkle(52, 16, 4),
+  gotero: () => shadow(32, 58, 22) + dropper(22, 35, 18, 44, true),
+  gotero_v: () => shadow(32, 58, 18) + dropper(32, 35, 18, 44, false),
+  hoja: () => shadow(32, 54, 22) + label(32, 36, 40, 'leaf', '#7fb88a').replace(/<rect[^>]*\/>/, '') + sparkle(52, 14, 4),
+  reactivo: () => shadow(32, 58, 18) + `<rect x="20" y="18" width="24" height="38" rx="4" fill="#f1f3f5" stroke="${OL}" stroke-width="${W}"/><rect x="22" y="12" width="20" height="8" rx="2" fill="#d64541" stroke="${OL}" stroke-width="${W}"/><rect x="22" y="30" width="20" height="14" rx="2" fill="#fff" stroke="${OL}" stroke-width="1"/>` + label(32, 37, 10, 'mountain').replace(/<rect[^>]*\/>/, ''),
+  aglutinante: () => shadow(32, 58, 20) + `<path d="M14 28H50L46 54Q46 57 43 57H21Q18 57 18 54Z" fill="#e8eef0" stroke="${OL}" stroke-width="${W}"/><rect x="12" y="22" width="40" height="8" rx="3" fill="#2a9d5b" stroke="${OL}" stroke-width="${W}"/>` + capsule(32, 42, 18, 4, 0),
+  disolvente: () => shadow(32, 58, 20) + `<rect x="16" y="18" width="30" height="38" rx="3" fill="url(#steel)" stroke="${OL}" stroke-width="${W}"/><rect x="38" y="12" width="8" height="8" rx="1.5" fill="#d64541" stroke="${OL}" stroke-width="${W}"/><rect x="20" y="28" width="22" height="16" rx="2" fill="#e5d8fb" stroke="${OL}" stroke-width="1"/>` + label(31, 36, 11, 'leaf', '#8a5bd6').replace(/<rect[^>]*\/>/, ''),
+  tarro: () => shadow(32, 58, 20) + jar(32, 35, 36, 44, true, 4) + label(32, 40, 12, 'leaf') + sparkle(54, 12, 4) + sparkle(10, 24, 3),
   tarro_v: () => shadow(32, 58, 20) + jar(32, 35, 36, 44, false) + sparkle(54, 14, 4),
   bolsita: () => zipBag(36, 34, 34, 42, false, 1, 8) + zipBag(28, 31, 34, 42, false, 2, -6),
-  cristal: () => shadow(32, 54, 22) + crystalCluster(32, 36, 1.25) + sparkle(54, 14, 4) + sparkle(10, 22, 3),
-  shards: () => shardsBag(32, 33, 40, 50, true) + sparkle(56, 14, 4),
-  bolsa_ss: () => `<g opacity=".95">${shardsBag(37, 35, 34, 44, false)}</g>` + shardsBag(28, 31, 34, 44, false),
+  cristal: () => shadow(32, 54, 22) + blueCrystals(32, 40, 40, 30, 7) + sparkle(54, 14, 4) + sparkle(10, 22, 3),
+  bolsa_ss: () => zipBag(36, 34, 34, 42, false, 1, 8) + zipBag(28, 31, 34, 42, false, 2, -6) + label(28, 30, 11, 'crystal'),
   caja: () => {
     let s = shadow(32, 54, 24);
     s += `<path d="M10 24L32 14L54 24L54 46L32 56L10 46Z" fill="#c8955a" stroke="${OL}" stroke-width="${W}" stroke-linejoin="round"/>`;
