@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { pbrMat, plainMat, FRAME } from './buildingkit.js';
+import { dims } from './interior.js';
 
 // Caja con UV en metros (continuas entre piezas porque se calculan con las coordenadas del
 // edificio, no de cada caja): la textura de ladrillo tiene el mismo tamaño en todo el edificio.
@@ -227,6 +228,16 @@ export function ownedWarehouse(o) {
   const block = pbrMat('hormigon'), sheet = pbrMat('chapa', '#b9bec4'), stone = pbrMat('claro');
   const steel = mat('aceroNave', { color: '#5d6873', roughness: 0.45, metalness: 0.65 });
   const boxes = [];
+  // piezas de interior (modelos Kenney, ver interior.js): el mundo las coloca; aquí se apunta
+  // dónde y se pone su colisión (lv: 'up'/'down' para la entreplanta, null sin colisión)
+  const items = [];
+  const put = (name, x, y, z, ry = 0, s = 1, lv = 'all') => {
+    const d = dims(name, s);
+    if (!d[0]) return null;
+    items.push({ name, x, y, z, ry, s });
+    if (lv) { const tn = Math.abs(Math.sin(ry)) > 0.5, hw = (tn ? d[2] : d[0]) / 2, hd = (tn ? d[0] : d[2]) / 2; boxes.push([x - hw, x + hw, z - hd, z + hd, d[1], lv === 'all' ? undefined : lv]); }
+    return d;
+  };
   // --- muros por capas ---
   // por fuera: bloque de hormigón hasta 3 m y chapa encima (como las naves del polígono);
   // por dentro: zócalo pintado oscuro, bloque visto con sus juntas (pintado en dos tonos),
@@ -358,45 +369,35 @@ export function ownedWarehouse(o) {
   const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
   for (let k = 0; k <= nb; k++) { const x = rx0 + k * bayW; for (const z of [rz0, rz0 + rackD]) slab(g, up, x - 0.05, x + 0.05, 0, 4.6, z - 0.05, z + 0.05); }
   for (const y of [0.15, 1.65, 3.15, 4.5]) for (const z of [rz0, rz0 + rackD]) slab(g, beam, rx0, rx0 + nb * bayW, y, y + 0.12, z - 0.05, z + 0.05);
-  // cada hueco: dos palés (con sus tablas) y encima una carga distinta: cajas de cartón con
-  // cinta y etiqueta, cajas envueltas en film (se ven a través), bidones o sacos
-  const tapeM = mat('cintaCaja', { color: '#d9b26a', roughness: 0.6 }), label = mat('etiquetaCaja', { color: '#f4f2ec', roughness: 0.8 });
-  const sackM = mat('saco', { color: '#d8cdb4', roughness: 1 }), drumM = mat('bidonRack', { color: '#1f5fa8', roughness: 0.45 }), drumR = mat('bidonRojo', { color: '#a93226', roughness: 0.45 });
+  // cada hueco: dos palés (modelo) y encima una carga distinta: cajas de cartón, cajas de
+  // madera, bidones o sacos (sin colisión: la estantería entera ya la tiene)
+  const sackM = mat('saco', { color: '#d8cdb4', roughness: 1 }), filmW = mat('filmRackFino', { color: '#d9dde2', roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.55 });
   const zc = rz0 + rackD / 2;
-  const pallet = (x, y) => {
-    for (const dz2 of [-0.45, 0, 0.45]) slab(g, wood, x - 0.6, x + 0.6, y, y + 0.1, zc + dz2 - 0.05, zc + dz2 + 0.05);           // largueros
-    for (let t = -0.52; t <= 0.53; t += 0.208) slab(g, wood, x + t - 0.05, x + t + 0.05, y + 0.1, y + 0.13, zc - 0.5, zc + 0.5); // tablas
-  };
-  const cartons = (x, y, rows, wrap) => {
-    const bw = 0.55, bd = 0.48, bh = 0.4;
-    for (let r = 0; r < rows; r++) for (const ox of [-0.29, 0.29]) for (const oz of [-0.25, 0.25]) {
-      const cx = x + ox, cz = zc + oz, yy = y + 0.13 + r * bh;
-      rb(g, carton, bw, bh - 0.01, bd, cx, yy + bh / 2, cz, 0.012);
-      slab(g, tapeM, cx - 0.04, cx + 0.04, yy + bh - 0.012, yy + bh - 0.002, cz - bd / 2, cz + bd / 2);
-      if (oz < 0) slab(g, label, cx - 0.1, cx + 0.06, yy + 0.12, yy + 0.24, cz - bd / 2 - 0.006, cz - bd / 2 - 0.001);
-    }
-    if (wrap) slab(g, film, x - 0.61, x + 0.61, y + 0.13, y + 0.15 + rows * bh, zc - 0.52, zc + 0.52);
-  };
   for (let k = 0; k < nb; k++) for (const y of [0.27, 1.77, 3.27]) for (const side of [-0.65, 0.65]) {
-    if (rnd() < 0.2) continue;
+    if (rnd() < 0.18) continue;
     const x = rx0 + k * bayW + bayW / 2 + side, t = rnd();
-    pallet(x, y);
-    if (t < 0.45) cartons(x, y, 1 + (rnd() < 0.6 ? 1 : 0) + (y < 3 && rnd() < 0.4 ? 1 : 0), false);
-    else if (t < 0.75) cartons(x, y, 2, true);
-    else if (t < 0.88) for (const ox of [-0.29, 0.29]) for (const oz of [-0.25, 0.25]) cy(g, rnd() < 0.7 ? drumM : drumR, 0.23, 0.23, 0.82, x + ox, y + 0.13 + 0.41, zc + oz, 14);
-    else for (let r = 0; r < 3; r++) for (const ox of [-0.27, 0.27]) rb(g, sackM, 0.5, 0.17, 0.85, x + ox, y + 0.22 + r * 0.17, zc + (r % 2 ? 0.04 : -0.04), 0.07, (r % 2) * 0.05);
+    const p0 = put('retro/pallet', x, y, zc, 0, 1, null);
+    const py = y + (p0 ? p0[1] : 0.14);
+    if (t < 0.5) {
+      const rows = 1 + (rnd() < 0.6 ? 1 : 0) + (y < 3 && rnd() < 0.35 ? 1 : 0);
+      let yy = py;
+      for (let r = 0; r < rows; r++) { let hh = 0; for (const [ox, oz] of [[-0.3, -0.28], [0.3, -0.28], [-0.3, 0.28], [0.3, 0.28]]) { const d = put('furniture/cardboardBoxClosed', x + ox, yy, zc + oz, (r + k) % 2 ? 0.08 : 0, 1.15, null); if (d) hh = d[1]; } yy += hh; }
+      if (t < 0.2) slab(g, filmW, x - 0.62, x + 0.62, py, yy + 0.02, zc - 0.6, zc + 0.6); // envuelto en film
+    } else if (t < 0.68) for (const ox of [-0.3, 0.3]) put('survival/box-large', x + ox, py, zc, Math.PI / 2, 1.0, null);
+    else if (t < 0.86) for (const [ox, oz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) put('survival/barrel', x + ox, py, zc + oz, ox + oz, 0.95, null);
+    else for (let r = 0; r < 3; r++) for (const ox of [-0.27, 0.27]) rb(g, sackM, 0.5, 0.17, 0.85, x + ox, py + 0.09 + r * 0.17, zc + (r % 2 ? 0.04 : -0.04), 0.07, (r % 2) * 0.05);
   }
   boxes.push([rx0 - 0.1, rx0 + nb * bayW + 0.1, rz0 - 0.1, rz0 + rackD + 0.1, 4.6]);
   // oficina acristalada junto a la entrada y las cosas de la nave (más cuanto más grande)
-  const office = warehouseOffice(g, { x0: ix1 - (level ? 13.5 : 10), x1: ix1, z1: iz1, level }, boxes);
-  warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX: (D0 + D1) / 2, level, office }, boxes);
-  warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes);
+  const office = warehouseOffice(g, { x0: ix1 - [9, 11, 12][level], x1: ix1, z1: iz1, level }, boxes, put);
+  warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX: (D0 + D1) / 2, level, office, put, rolls }, boxes);
+  warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office, put }, boxes);
   return {
     group: g, door: { x: (D0 + D1) / 2, z: zf + 1.4 }, height: h + 0.35, boxes,
     inside: { x0: ix0 + 0.5, x1: ix1 - 0.5, z0: rz1 + 0.7, z1: iz1 - 0.4 },
     rack: { x0: rx0, x1: rx0 + nb * bayW, z0: rz0, z1: rz0 + rackD },
     floor: { x0: ix0, x1: ix1, z0: iz0, z1: iz1 },
-    leaf: { x: D0, z: zf - T / 2, width: D1 - D0 }, entry: { x: (D0 + D1) / 2, z: iz1 - 1.2 }, lamps, office, floors: office.floors,
+    leaf: { x: D0, z: zf - T / 2, width: D1 - D0 }, entry: { x: (D0 + D1) / 2, z: iz1 - 1.2 }, lamps, office, floors: office.floors, items,
     // dónde van la carretilla, la transpaleta y los palés sueltos (piezas del mundo)
     gear: {
       forklift: level >= 1 ? { x: ix1 - 3.2, z: rz1 + 2.2, ry: Math.PI } : null,
@@ -462,7 +463,7 @@ const signTex = (txt, bg, fg = '#fff', icon = '') => (c, w, h) => {
 // Las colisiones van con nivel: 'up' sólo cuenta arriba, 'down' sólo abajo, 'low' sólo a ras
 // de suelo (bajo la escalera). Devuelve también los suelos de arriba (entreplanta y escalera).
 export const FH = 3.3; // altura del suelo de la entreplanta
-function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes) {
+function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes, put) {
   const D = 5.6, mz0 = mz1 - D, WK = 1.25, oz0 = mz0 + WK, H2 = 2.8, top = FH + H2;
   const steel = mat('aceroEntre', { color: '#55616d', roughness: 0.45, metalness: 0.65 }), yellow = mat('barandilla', { color: '#e3b51c', roughness: 0.45, metalness: 0.3 });
   const dark = mat('negroOf', { color: '#1c1e22', roughness: 0.4, metalness: 0.3 }), wood = mat('mesaOf', { color: '#6e4b2e', roughness: 0.55 });
@@ -530,110 +531,73 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes) {
   slab(g, mat('techoOficina', { color: '#f2f1ee', roughness: 0.9 }), mx0, mx1, top, top + 0.1, oz0 - 0.06, mz1);
   const light = mat('panelLuz', { color: '#ffffff', emissive: '#fff4e2', emissiveIntensity: 1.1 });
   for (let x = mx0 + 1.8; x < mx1 - 1; x += 3) slab(g, light, x - 0.6, x + 0.6, top - 0.02, top, oz0 + 1.2, mz1 - 1.2);
-  // --- arriba: zona de estar a la izquierda (tele en la pared de panel) ---
-  const Y = FH, cz = (oz0 + mz1) / 2;
-  slab(g, mat('alfombraOf', { color: '#4d5a6b', roughness: 1 }), mx0 + 0.7, mx0 + 3.9, Y + 0.01, Y + 0.025, cz - 1.3, cz + 1.3);
-  rb(g, dark, 0.06, 0.8, 1.4, mx0 + 0.14, Y + 1.5, cz, 0.01);
-  const tv = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.72), paintMat('tele', 256, 144, (c, w, h) => {
-    const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#2c7fb8'); gr.addColorStop(0.55, '#7fcdbb'); gr.addColorStop(0.56, '#3d8b37'); gr.addColorStop(1, '#2a6a2a'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
-    c.fillStyle = '#fff'; c.fillRect(w * 0.45, h * 0.62, 6, 6); c.fillStyle = '#e74c3c'; c.fillRect(w * 0.6, h * 0.66, 6, 6);
-    c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(8, 8, 70, 16); c.fillStyle = '#fff'; c.font = 'bold 12px sans-serif'; c.fillText('ROO 2 - 1 VND', 12, 20);
-  }, { emissive: '#ffffff', emissiveIntensity: 0.45 }));
-  tv.position.set(mx0 + 0.18, Y + 1.5, cz); tv.rotation.y = Math.PI / 2; g.add(tv);
-  rb(g, wood, 0.4, 0.45, 1.6, mx0 + 0.32, Y + 0.23, cz, 0.02); // mueble de la tele
-  const sofaM = mat('sofaOf', { color: level === 2 ? '#7a2f2f' : '#5a6470', roughness: 0.95 }), cushion = mat('cojinOf', { color: '#d9c7a3', roughness: 1 });
-  const sx = mx0 + 3.6, sw = 2.3;
-  rb(g, sofaM, 0.9, 0.42, sw, sx, Y + 0.25, cz, 0.08); rb(g, sofaM, 0.22, 0.55, sw, sx + 0.34, Y + 0.62, cz, 0.08);
-  for (const s2 of [-1, 1]) rb(g, sofaM, 0.9, 0.6, 0.2, sx, Y + 0.35, cz + s2 * (sw / 2 - 0.1), 0.08);
-  for (const k of [-0.6, 0.6]) rb(g, cushion, 0.12, 0.35, 0.4, sx + 0.18, Y + 0.66, cz + k, 0.05);
-  boxes.push([sx - 0.45, sx + 0.46, cz - sw / 2, cz + sw / 2, 0.9, 'up']);
-  rb(g, wood, 0.6, 0.05, 1.1, mx0 + 2.3, Y + 0.42, cz, 0.02);
-  for (const [a, b2] of [[-0.25, -0.5], [0.25, -0.5], [-0.25, 0.5], [0.25, 0.5]]) slab(g, dark, mx0 + 2.3 + a - 0.02, mx0 + 2.3 + a + 0.02, Y, Y + 0.4, cz + b2 - 0.02, cz + b2 + 0.02);
-  cy(g, mat('taza', { color: '#f2f2f2', roughness: 0.4 }), 0.04, 0.035, 0.09, mx0 + 2.3, Y + 0.49, cz + 0.2, 10);
-  slab(g, mat('revista', { color: '#c0392b', roughness: 0.8 }), mx0 + 2.15, mx0 + 2.4, Y + 0.445, Y + 0.455, cz - 0.35, cz - 0.1);
-  boxes.push([mx0 + 1.98, mx0 + 2.62, cz - 0.57, cz + 0.57, 0.45, 'up']);
-  if (level >= 1) for (const s2 of [-1, 1]) {
-    const az = cz + s2 * 1.75, ax = mx0 + 2.3;
-    rb(g, sofaM, 0.8, 0.42, 0.8, ax, Y + 0.25, az, 0.08); rb(g, sofaM, 0.8, 0.55, 0.22, ax, Y + 0.62, az + s2 * 0.3, 0.08);
-    boxes.push([ax - 0.42, ax + 0.42, az - 0.42, az + 0.42, 0.9, 'up']);
-  }
-  // pizarra y cuadro en la pared del fondo (el frente de la nave)
   const board = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.0), paintMat('pizarra', 256, 144, (c, w, h) => {
     c.fillStyle = '#f7f7f4'; c.fillRect(0, 0, w, h); c.strokeStyle = '#9aa0a6'; c.lineWidth = 6; c.strokeRect(0, 0, w, h);
     c.strokeStyle = '#1f5fbf'; c.lineWidth = 2; c.font = 'bold 14px sans-serif'; c.fillStyle = '#1f5fbf'; c.fillText('PEDIDOS SEMANA', 14, 24);
     c.fillStyle = '#333'; c.font = '12px sans-serif'; ['Lunes  ··  40 u.', 'Martes ··  55 u.', 'Jueves ··  70 u.'].forEach((t, k) => c.fillText(t, 16, 50 + k * 20));
     c.strokeStyle = '#c0392b'; c.beginPath(); c.moveTo(150, 110); c.lineTo(180, 80); c.lineTo(205, 95); c.lineTo(235, 50); c.stroke();
   }));
-  // --- escritorios con ordenador (uno en Delta, dos en las otras) ---
-  const nd = level >= 1 ? 2 : 1;
+  // --- arriba: muebles (modelos Kenney): zona de estar a la izquierda, escritorios en el
+  // centro, estanterías, office a la derecha, reuniones en la grande ---
+  const Y = FH, cz = (oz0 + mz1) / 2, wz = mz1 - 0.14; // (wz: cara del panel del fondo)
+  const up = (name, x, z, ry = 0, s = 1, solid = true, y = Y) => put(name, x, y, z, ry, s, solid ? 'up' : null);
+  up('furniture/rugRectangle', mx0 + 2.3, cz, Math.PI / 2, 1.1, false);
+  const tvc = up('furniture/cabinetTelevision', mx0 + 0.35, cz, Math.PI / 2);
+  if (tvc) up('furniture/televisionModern', mx0 + 0.32, cz, Math.PI / 2, 1, false, Y + tvc[1]);
+  up('furniture/loungeSofa', mx0 + 3.75, cz, -Math.PI / 2);
+  const tbl = up('furniture/tableCoffee', mx0 + 2.3, cz, Math.PI / 2);
+  if (tbl) { up('furniture/books', mx0 + 2.2, cz - 0.25, 0.3, 0.8, false, Y + tbl[1]); up('furniture/plantSmall2', mx0 + 2.35, cz + 0.3, 0, 1, false, Y + tbl[1]); }
+  if (level >= 1) { up('furniture/loungeChair', mx0 + 2.3, cz - 1.55, 0); up('furniture/loungeChair', mx0 + 2.3, cz + 1.55, Math.PI); }
+  up('furniture/lampSquareFloor', mx0 + 0.45, wz - 0.35);
+  up('furniture/pottedPlant', mx0 + 0.45, oz0 + 0.45);
+  up('furniture/coatRackStanding', mx0 + 3.1, oz0 + 0.35, 0, 1, false);
+  // escritorios contra el fondo, con su pantalla, teclado, ratón y flexo; silla de ruedas delante
+  const nd = level >= 1 ? 2 : 1, dx0 = mx0 + 5.4;
   const deskAt = (dx) => {
-    const dz = mz1 - 0.5;
-    rb(g, wood, 1.6, 0.05, 0.75, dx, Y + 0.74, dz, 0.015);
-    for (const s3 of [-0.74, 0.74]) slab(g, dark, dx + s3 - 0.03, dx + s3 + 0.03, Y, Y + 0.72, dz - 0.33, dz + 0.33);
-    slab(g, wood, dx + 0.25, dx + 0.75, Y + 0.1, Y + 0.71, dz - 0.33, dz + 0.3);
-    rb(g, dark, 0.62, 0.38, 0.035, dx - 0.2, Y + 1.1, dz + 0.15, 0.01);
-    const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.57, 0.33), paintMat('escritorio', 256, 160, (c, w, h) => {
-      const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#1d4f8f'); gr.addColorStop(1, '#3fa2c9'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
-      c.fillStyle = 'rgba(255,255,255,0.9)'; for (let k = 0; k < 5; k++) c.fillRect(12, 14 + k * 26, 16, 16);
-      c.fillStyle = 'rgba(255,255,255,0.85)'; c.fillRect(70, 30, 150, 90); c.fillStyle = '#2d6a3e'; for (let k = 0; k < 6; k++) c.fillRect(80, 42 + k * 12, 60 + ((k * 37) % 70), 6);
-      c.fillStyle = '#20252b'; c.fillRect(0, h - 14, w, 14);
-    }, { emissive: '#ffffff', emissiveIntensity: 0.9 }));
-    sc.position.set(dx - 0.2, Y + 1.1, dz + 0.13); sc.rotation.y = Math.PI; g.add(sc);
-    slab(g, dark, dx - 0.23, dx - 0.17, Y + 0.765, Y + 0.92, dz + 0.16, dz + 0.2); slab(g, dark, dx - 0.32, dx - 0.08, Y + 0.765, Y + 0.775, dz + 0.08, dz + 0.24);
-    rb(g, dark, 0.44, 0.02, 0.14, dx - 0.2, Y + 0.775, dz - 0.15, 0.006); rb(g, dark, 0.06, 0.025, 0.1, dx + 0.12, Y + 0.775, dz - 0.15, 0.01);
-    slab(g, mat('papelOf', { color: '#f4f2ec', roughness: 0.9 }), dx + 0.3, dx + 0.6, Y + 0.765, Y + 0.78, dz - 0.2, dz + 0.05);
-    cy(g, dark, 0.07, 0.08, 0.02, dx + 0.6, Y + 0.775, dz + 0.2); cy(g, dark, 0.012, 0.012, 0.35, dx + 0.6, Y + 0.95, dz + 0.2);
-    cy(g, mat('pantallaFlexo', { color: '#2b2f35', emissive: '#ffd59a', emissiveIntensity: 0.4 }), 0.05, 0.1, 0.1, dx + 0.6, Y + 1.12, dz + 0.12);
-    const cxh = dx - 0.2, czh = dz - 0.75, fabric = mat('tapizSilla', { color: '#2a2d33', roughness: 0.9 });
-    rb(g, fabric, 0.5, 0.09, 0.48, cxh, Y + 0.48, czh, 0.04); rb(g, fabric, 0.46, 0.55, 0.07, cxh, Y + 0.85, czh - 0.24, 0.04);
-    cy(g, dark, 0.025, 0.025, 0.36, cxh, Y + 0.27, czh);
-    for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2; const arm = slab(g, dark, -0.015, 0.015, 0.07, 0.1, 0, 0.3); arm.geometry.translate(0, 0, 0.15); arm.position.set(cxh, Y + 0.085, czh); arm.rotation.y = a; cy(g, dark, 0.03, 0.03, 0.04, cxh + Math.sin(a) * 0.3, Y + 0.03, czh + Math.cos(a) * 0.3, 8); }
-    boxes.push([dx - 0.82, dx + 0.82, dz - 0.4, dz + 0.4, 0.8, 'up']);
+    const d = up('furniture/desk', dx, wz - 0.42, Math.PI);
+    const dy = Y + (d ? d[1] : 0.76);
+    up('furniture/computerScreen', dx - 0.15, wz - 0.3, Math.PI, 0.7, false, dy);
+    up('furniture/computerKeyboard', dx - 0.15, wz - 0.62, Math.PI, 0.8, false, dy);
+    up('furniture/computerMouse', dx + 0.2, wz - 0.62, Math.PI, 0.8, false, dy);
+    up('furniture/lampRoundTable', dx + 0.55, wz - 0.3, Math.PI, 0.75, false, dy);
+    up('furniture/chairDesk', dx - 0.1, wz - 1.25, 0, 1, false);
   };
-  const dx0 = mx0 + 5.6;
-  for (let k = 0; k < nd; k++) deskAt(dx0 + k * 2.1);
-  board.position.set(dx0 + nd * 2.1 + 0.4, Y + 1.55, mz1 - 0.16); board.rotation.y = Math.PI; g.add(board);
-  // estantería con archivadores de colores e impresora en su mueble (en Bravo y Alfa)
+  for (let k = 0; k < nd; k++) deskAt(dx0 + k * 1.9);
+  board.position.set(dx0 + (nd - 1) * 0.95, Y + 1.75, wz - 0.02); board.rotation.y = Math.PI; g.add(board);
+  // estanterías con libros y archivos, y la impresora en una mesita
+  let bx = dx0 + nd * 1.9 + 0.2;
   if (level >= 1) {
-    const bx = dx0 + nd * 2.1 + 1.6, bz = mz1 - 0.38;
-    rb(g, wood, 1.2, 1.9, 0.4, bx, Y + 0.95, bz, 0.01);
-    for (let r = 0; r < 4; r++) for (let k = 0; k < 9; k++) {
-      if ((r * 9 + k) % 7 === 3) continue;
-      const c = ['#c0392b', '#1f5fbf', '#27ae60', '#f1c40f', '#7f8c8d'][(r + k * 3) % 5];
-      slab(g, mat('archiv' + c, { color: c, roughness: 0.7 }), bx - 0.55 + k * 0.12, bx - 0.47 + k * 0.12, Y + 0.12 + r * 0.45, Y + 0.44 + r * 0.45, bz - 0.19, bz + 0.08);
-    }
-    boxes.push([bx - 0.62, bx + 0.62, bz - 0.22, bz + 0.22, 1.9, 'up']);
-    const px = bx + 1.2;
-    rb(g, mat('muebleImp', { color: '#d8d4cc', roughness: 0.6 }), 0.7, 0.7, 0.5, px, Y + 0.35, mz1 - 0.4, 0.02);
-    rb(g, mat('impresora', { color: '#ececec', roughness: 0.45 }), 0.5, 0.3, 0.42, px, Y + 0.86, mz1 - 0.4, 0.04);
-    slab(g, dark, px - 0.18, px + 0.18, Y + 0.84, Y + 0.86, mz1 - 0.64, mz1 - 0.6);
-    slab(g, mat('papelOf', { color: '#f4f2ec', roughness: 0.9 }), px - 0.15, px + 0.15, Y + 0.86, Y + 0.87, mz1 - 0.7, mz1 - 0.6);
-    boxes.push([px - 0.37, px + 0.37, mz1 - 0.67, mz1 - 0.13, 1.0, 'up']);
+    const bc = up('furniture/bookcaseClosedDoors', bx, wz - 0.3, Math.PI);
+    bx += (bc ? bc[0] : 1) + 0.05;
+    const bo = up('furniture/bookcaseOpen', bx, wz - 0.3, Math.PI);
+    if (bo) up('furniture/books', bx, wz - 0.3, Math.PI, 1, false, Y + bo[1]);
+    bx += (bo ? bo[0] : 1) / 2 + 0.6;
+  }
+  const st = up('furniture/sideTable', bx, wz - 0.3, Math.PI);
+  const sy = Y + (st ? st[1] : 0.5);
+  rb(g, mat('impresora', { color: '#ececec', roughness: 0.45 }), 0.5, 0.3, 0.42, bx, sy + 0.15, wz - 0.3, 0.04);
+  slab(g, dark, bx - 0.18, bx + 0.18, sy + 0.28, sy + 0.3, wz - 0.54, wz - 0.5);
+  slab(g, mat('papelOf', { color: '#f4f2ec', roughness: 0.9 }), bx - 0.15, bx + 0.15, sy + 0.3, sy + 0.31, wz - 0.6, wz - 0.5);
+  // office contra la pared derecha: muebles de cocina, cafetera, microondas, nevera y papelera
+  const kx = mx1 - 0.47, ka = up('furniture/kitchenCabinet', kx, oz0 + 1.0, -Math.PI / 2);
+  const kh = Y + (ka ? ka[1] : 0.9);
+  up('furniture/kitchenCabinet', kx, oz0 + 1.0 + (ka ? ka[0] : 0.9), -Math.PI / 2);
+  up('furniture/kitchenCoffeeMachine', kx + 0.05, oz0 + 0.85, -Math.PI / 2, 1, false, kh);
+  up('furniture/kitchenMicrowave', kx + 0.05, oz0 + 1.0 + (ka ? ka[0] : 0.9), -Math.PI / 2, 1, false, kh);
+  up('furniture/kitchenFridgeSmall', kx, oz0 + 2.9, -Math.PI / 2);
+  up('furniture/trashcan', kx - 0.1, wz - 0.4, 0, 1, false);
+  up('furniture/radio', kx + 0.05, oz0 + 1.3, -Math.PI / 2, 1, false, kh);
+  // mesa de reuniones (Alfa)
+  if (level >= 2) {
+    const mx = dx0 + 1.0, mzz = oz0 + 1.25;
+    up('furniture/tableRound', mx, mzz, 0);
+    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2 + Math.PI / 4; up('furniture/chairCushion', mx + Math.sin(a) * 0.95, mzz + Math.cos(a) * 0.95, a + Math.PI, 1, false); }
   }
   // cuadros y reloj en la pared de panel de la zona de estar
   const frame = (x, z, wd, ht, key, draw) => { rb(g, mat('marcoCuadro', { color: '#2b2622', roughness: 0.6 }), wd + 0.08, ht + 0.08, 0.04, x, Y + 1.65, z, 0.01); const pic = new THREE.Mesh(new THREE.PlaneGeometry(wd, ht), paintMat(key, 128, 96, draw)); pic.position.set(x, Y + 1.65, z - 0.025); pic.rotation.y = Math.PI; g.add(pic); };
-  frame(mx0 + 1.6, mz1 - 0.17, 0.9, 0.6, 'cuadroPuerto', (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#f6b26b'); gr.addColorStop(0.6, '#e06666'); gr.addColorStop(0.61, '#3d85c6'); gr.addColorStop(1, '#1c4587'); c.fillStyle = gr; c.fillRect(0, 0, w, hh); c.fillStyle = '#20124d'; c.fillRect(20, 40, 8, 18); c.fillRect(30, 30, 6, 28); c.fillRect(70, 48, 40, 10); });
-  frame(mx0 + 3.0, mz1 - 0.17, 0.5, 0.6, 'cuadroIsla', (c, w, hh) => { c.fillStyle = '#cfe2f3'; c.fillRect(0, 0, w, hh); c.fillStyle = '#6aa84f'; c.beginPath(); c.ellipse(w / 2, hh / 2, w * 0.35, hh * 0.3, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffe599'; c.fillRect(w * 0.3, hh * 0.45, w * 0.4, 4); });
+  frame(mx0 + 1.6, wz - 0.03, 0.9, 0.6, 'cuadroPuerto', (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#f6b26b'); gr.addColorStop(0.6, '#e06666'); gr.addColorStop(0.61, '#3d85c6'); gr.addColorStop(1, '#1c4587'); c.fillStyle = gr; c.fillRect(0, 0, w, hh); c.fillStyle = '#20124d'; c.fillRect(20, 40, 8, 18); c.fillRect(30, 30, 6, 28); c.fillRect(70, 48, 40, 10); });
+  frame(mx0 + 3.0, wz - 0.03, 0.5, 0.6, 'cuadroIsla', (c, w, hh) => { c.fillStyle = '#cfe2f3'; c.fillRect(0, 0, w, hh); c.fillStyle = '#6aa84f'; c.beginPath(); c.ellipse(w / 2, hh / 2, w * 0.35, hh * 0.3, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffe599'; c.fillRect(w * 0.3, hh * 0.45, w * 0.4, 4); });
   const clk = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), clockMat()); clk.position.set(mx0 + 0.16, Y + 2.3, cz); clk.rotation.y = Math.PI / 2; g.add(clk);
-  // mesa de reuniones (Alfa)
-  if (level >= 2) {
-    const mx = dx0 + 1.05, mzz = cz - 0.6;
-    cy(g, wood, 0.75, 0.75, 0.05, mx, Y + 0.74, mzz, 24); cy(g, dark, 0.06, 0.2, 0.72, mx, Y + 0.36, mzz, 10);
-    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2 + 0.4; const chx = mx + Math.sin(a) * 1.05, chz = mzz + Math.cos(a) * 1.05; rb(g, mat('sillaReu', { color: '#3d4650', roughness: 0.8 }), 0.45, 0.06, 0.45, chx, Y + 0.46, chz, 0.03, a); cy(g, dark, 0.02, 0.02, 0.45, chx, Y + 0.22, chz, 6); }
-    boxes.push([mx - 1.3, mx + 1.3, mzz - 1.3, mzz + 1.3, 0.8, 'up']);
-  }
-  // --- office al fondo a la derecha: nevera, encimera con cafetera, archivadores, planta ---
-  const kx = mx1 - 0.45;
-  rb(g, mat('neveraOf', { color: '#eef0f2', roughness: 0.3, metalness: 0.2 }), 0.55, 0.85, 0.55, kx, Y + 0.43, oz0 + 0.6, 0.03);
-  rb(g, wood, 0.6, 0.9, 1.3, kx, Y + 0.45, oz0 + 1.65, 0.02);
-  rb(g, mat('encimeraOf', { color: '#d8d4cc', roughness: 0.4 }), 0.65, 0.04, 1.35, kx, Y + 0.92, oz0 + 1.65, 0.01);
-  rb(g, dark, 0.26, 0.32, 0.22, kx, Y + 1.1, oz0 + 1.3, 0.03);
-  for (let k = 0; k < 3; k++) cy(g, mat('taza', { color: '#f2f2f2', roughness: 0.4 }), 0.04, 0.035, 0.09, kx, Y + 0.985, oz0 + 1.75 + k * 0.12, 10);
-  const metal = mat('archivador', { color: '#8b949c', roughness: 0.45, metalness: 0.6 });
-  for (let k = 0; k < 1 + level; k++) { const az = mz1 - 0.6 - k * 0.5; rb(g, metal, 0.6, 1.32, 0.46, kx, Y + 0.66, az, 0.015); for (let j = 0; j < 4; j++) slab(g, dark, kx - 0.31, kx - 0.29, Y + 0.25 + j * 0.31, Y + 0.27 + j * 0.31, az - 0.08, az + 0.08); }
-  boxes.push([kx - 0.33, mx1, oz0 + 0.3, oz0 + 2.35, 1.0, 'up'], [kx - 0.33, mx1, mz1 - 0.85 - level * 0.5, mz1, 1.4, 'up']);
-  const plant = (x, z) => { cy(g, mat('macetaOf', { color: '#8a4b2a', roughness: 0.8 }), 0.18, 0.14, 0.4, x, Y + 0.2, z, 12); const leaves = mat('hojasOf', { color: '#3f7d3a', roughness: 0.8 }); for (let k = 0; k < 7; k++) { const a = k * 0.9; const l = rb(g, leaves, 0.12, 0.65, 0.03, x + Math.sin(a) * 0.12, Y + 0.75, z + Math.cos(a) * 0.12, 0.015, a); l.rotation.x = 0.35 * Math.cos(a); l.rotation.z = 0.35 * Math.sin(a); } };
-  plant(mx0 + 0.45, mz1 - 0.45); plant(dx0 - 1.0, oz0 + 0.45); if (level >= 1) plant(kx - 0.2, oz0 + 2.8);
   // --- debajo: zona de taquillas y descanso (contra el frente, dejando libre la entrada) ---
   const lockM = mat('taquilla', { color: level === 2 ? '#2f5fa8' : '#6d7c87', roughness: 0.45, metalness: 0.5 }), galva = mat('galvanizado', { color: '#c4c9cd', roughness: 0.35, metalness: 0.75 });
   const nL = 4 + level * 2, lx0 = mx0 + 0.6;
@@ -644,12 +608,10 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes) {
     slab(g, galva, x + 0.14, x + 0.16, 0.95, 1.12, mz1 - 0.53, mz1 - 0.515);
   }
   boxes.push([lx0 - 0.25, lx0 + nL * 0.48 - 0.22, mz1 - 0.55, mz1, 1.9, 'down']);
-  // banco de vestuario delante de las taquillas
-  const bz = mz1 - 1.15;
-  rb(g, wood, nL * 0.48 - 0.3, 0.05, 0.38, lx0 + (nL * 0.48) / 2 - 0.24, 0.45, bz, 0.01);
-  for (const t of [0.2, nL * 0.48 - 0.7]) slab(g, galva, lx0 + t - 0.03, lx0 + t + 0.03, 0, 0.43, bz - 0.15, bz + 0.15);
-  boxes.push([lx0 - 0.2, lx0 + nL * 0.48 - 0.3, bz - 0.2, bz + 0.2, 0.5, 'down']);
-  // máquina de vending, fuente de agua y mesa con sillas
+  // banco delante de las taquillas, máquina de vending, nevera de bebidas, fuente de agua,
+  // mesa redonda con sillas y una mesita con la tele vieja y la radio
+  const dn = (name, x, z, ry = 0, s = 1, solid = true, y = 0) => put(name, x, y, z, ry, s, solid ? 'down' : null);
+  dn('furniture/bench', lx0 + (nL * 0.48) / 2 - 0.24, mz1 - 1.15, 0);
   const vx = lx0 + nL * 0.48 + 0.4;
   rb(g, mat('vending', { color: '#b0221f', roughness: 0.4, metalness: 0.2 }), 0.9, 1.85, 0.8, vx, 0.93, mz1 - 0.45, 0.03);
   const vf = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 1.2), paintMat('vendingFrente', 128, 256, (c, w, h) => {
@@ -658,15 +620,19 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes) {
   }, { emissive: '#ffffff', emissiveIntensity: 0.45 }));
   vf.position.set(vx - 0.1, 1.15, mz1 - 0.86); vf.rotation.y = Math.PI; g.add(vf);
   boxes.push([vx - 0.46, vx + 0.46, mz1 - 0.86, mz1, 1.9, 'down']);
-  const fx = vx + 0.85;
+  const fr = dn('market/freezers-standing', vx + 1.05, mz1 - 0.45, Math.PI);
+  const fx = vx + 1.05 + (fr ? fr[0] / 2 : 0.6) + 0.4;
   rb(g, mat('fuenteAgua', { color: '#eceeef', roughness: 0.4 }), 0.35, 1.0, 0.35, fx, 0.5, mz1 - 0.3, 0.03);
   cy(g, mat('garrafa', { color: '#7fb6e0', roughness: 0.1, transparent: true, opacity: 0.7 }), 0.15, 0.15, 0.45, fx, 1.25, mz1 - 0.3, 14);
   boxes.push([fx - 0.2, fx + 0.2, mz1 - 0.5, mz1, 1.4, 'down']);
-  const tx = fx + 1.6, tz = mz1 - 1.6;
-  rb(g, mat('mesaDescanso', { color: '#d9d4c7', roughness: 0.5 }), 1.2, 0.04, 0.8, tx, 0.74, tz, 0.02);
-  for (const [a, b2] of [[-0.5, -0.32], [0.5, -0.32], [-0.5, 0.32], [0.5, 0.32]]) slab(g, galva, tx + a - 0.02, tx + a + 0.02, 0, 0.72, tz + b2 - 0.02, tz + b2 + 0.02);
-  for (const [a, b2] of [[-0.35, -0.65], [0.35, -0.65], [-0.35, 0.65], [0.35, 0.65]]) { rb(g, mat('sillaDesc', { color: '#2f5fa8', roughness: 0.6 }), 0.42, 0.05, 0.42, tx + a, 0.45, tz + b2, 0.02); slab(g, galva, tx + a - 0.02, tx + a + 0.02, 0, 0.43, tz + b2 - 0.02, tz + b2 + 0.02); rb(g, mat('sillaDesc', { color: '#2f5fa8', roughness: 0.6 }), 0.42, 0.4, 0.04, tx + a, 0.68, tz + b2 + Math.sign(b2) * 0.2, 0.02); }
-  boxes.push([tx - 0.65, tx + 0.65, tz - 0.9, tz + 0.9, 0.8, 'down']);
+  const tx = mx0 + 3.2, tz = mz0 + 1.5; // (delante, entre los pilares: la entrada queda libre)
+  {
+    dn('furniture/tableRound', tx, tz, 0);
+    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2; dn('furniture/chair', tx + Math.sin(a) * 0.85, tz + Math.cos(a) * 0.85, a + Math.PI, 1, false); }
+    dn('furniture/trashcan', tx + 1.1, mz1 - 0.35, 0, 1, false);
+  }
+  const sd = dn('furniture/sideTable', lx0 - 0.1, mz0 + 1.4, Math.PI / 2);
+  if (sd) { dn('furniture/televisionVintage', lx0 - 0.1, mz0 + 1.4, Math.PI / 2, 1, false, sd[1]); }
   return { x0: mx0, x1: mx1, z0: mz0, z1: mz1, floors, stair: { x0: sx0, x1: sx1, z0: zs, z1: mz0 } };
 }
 
@@ -674,7 +640,7 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes) {
 // con panel de herramientas, extintores, botiquín y señales, bidones, cajas y film; en las
 // grandes, contenedores IBC y más de todo. (La carretilla y los palés sueltos los pone el
 // mundo con sus piezas de siempre.)
-function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office }, boxes) {
+function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office, put, rolls }, boxes) {
   const red = mat('extintor', { color: '#c0392b', roughness: 0.35, metalness: 0.2 }), dark = mat('negroOf', { color: '#1c1e22', roughness: 0.4, metalness: 0.3 });
   const steel = mat('aceroBanco', { color: '#5d6872', roughness: 0.45, metalness: 0.7 });
   // banco de trabajo contra la pared izquierda, con panel de herramientas encima
@@ -710,17 +676,39 @@ function warehouseStuff(g, { ix0, ix1, iz0, iz1, rz1, doorX, level, office }, bo
   rb(g, mat('botiquin', { color: '#f4f4f4', roughness: 0.5 }), 0.12, 0.3, 0.4, ix1 - 0.08, 1.5, iz1 - 3.3, 0.02); // (de canto contra la pared derecha)
   const cross = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), paintMat('cruz', 64, 64, (c, w, h) => { c.fillStyle = '#f4f4f4'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e8449'; c.fillRect(24, 8, 16, 48); c.fillRect(8, 24, 48, 16); }));
   cross.position.set(ix1 - 0.145, 1.5, iz1 - 3.3); cross.rotation.y = -Math.PI / 2; g.add(cross);
-  // bidones azules en la esquina del fondo izquierda, cajas y rollos de film
-  const blue = mat('bidon', { color: '#1f5fa8', roughness: 0.45 });
-  const drums = [[0, 0], [0.62, 0], [0, 0.62], [0.62, 0.62], [1.24, 0.3], [0.3, 1.24]].slice(0, 3 + level * 1.5 | 0);
-  const dx0 = ix0 + 0.5, dz0 = rz1 + 0.9;
-  for (const [ox, oz] of drums) { cy(g, blue, 0.29, 0.29, 0.9, dx0 + ox, 0.45, dz0 + oz, 16); cy(g, blue, 0.3, 0.3, 0.04, dx0 + ox, 0.25, dz0 + oz, 16); cy(g, blue, 0.3, 0.3, 0.04, dx0 + ox, 0.65, dz0 + oz, 16); }
-  boxes.push([dx0 - 0.32, dx0 + 1.6, dz0 - 0.32, dz0 + 1.6, 0.95]);
-  const carton = mat('cajaNave', { color: '#b88a58', roughness: 0.9 }), tape = mat('cintaCaja', { color: '#d9b26a', roughness: 0.6 });
-  const stack = (x, z, n) => { for (let k = 0; k < n; k++) { const s3 = 0.55 - (k % 2) * 0.05; rb(g, carton, s3, 0.45, s3, x + (k % 2) * 0.05, 0.225 + k * 0.45, z, 0.015, k * 0.2); slab(g, tape, x - 0.03 + (k % 2) * 0.05, x + 0.03 + (k % 2) * 0.05, 0.45 + k * 0.45, 0.455 + k * 0.45, z - s3 / 2, z + s3 / 2); } boxes.push([x - 0.35, x + 0.4, z - 0.35, z + 0.35, n * 0.45]); };
-  stack(ix1 - 0.6, rz1 + 2.6, 3);
-  if (level >= 1) { stack(ix1 - 1.3, rz1 + 2.7, 2); stack(ix1 - 0.6, rz1 + 3.4, 2); }
-  if (level >= 2) { stack(ix0 + 2.2, rz1 + 1.0, 4); stack(ix0 + 2.9, rz1 + 1.1, 3); }
+  // bidones en la esquina del fondo izquierda (modelo), y montones de cajas
+  const drums = [[0, 0], [0.66, 0], [0, 0.66], [0.66, 0.66], [1.32, 0.33], [0.33, 1.32]].slice(0, 3 + level * 1.5 | 0);
+  const dx0 = ix0 + 0.6, dz0 = rz1 + 0.9;
+  for (const [ox, oz] of drums) put('survival/barrel', dx0 + ox, 0, dz0 + oz, ox * 3 + oz, 1, null);
+  boxes.push([dx0 - 0.33, dx0 + 1.65, dz0 - 0.33, dz0 + 1.65, 0.9]);
+  // montón de cajas de cartón (cerradas y alguna abierta), apiladas con un leve giro
+  const stack = (x, z, n) => {
+    let y = 0, top = 0;
+    for (let k = 0; k < n; k++) { const d = put(k === n - 1 && n > 1 ? 'furniture/cardboardBoxOpen' : 'furniture/cardboardBoxClosed', x + (k % 2) * 0.04, y, z, k * 0.25 - 0.2, 1.25, null); if (!d) return; y += d[1]; top = Math.max(top, d[0]); }
+    boxes.push([x - top / 2 - 0.05, x + top / 2 + 0.05, z - top / 2 - 0.05, z + top / 2 + 0.05, y]);
+  };
+  stack(ix1 - 0.7, rz1 + 2.6, 3);
+  if (level >= 1) { stack(ix1 - 1.5, rz1 + 2.7, 2); stack(ix1 - 0.7, rz1 + 3.5, 2); }
+  if (level >= 2) { stack(ix0 + 2.4, rz1 + 1.0, 4); stack(ix0 + 3.2, rz1 + 1.1, 3); }
+  // zona de carga en la persiana de la izquierda: la furgoneta de reparto dentro (de morro a la
+  // persiana), una cinta de rodillos detrás, palés con cajas al lado, conos y un poste
+  const r0 = rolls[0];
+  const van = put('cars/' + (level >= 1 ? 'delivery' : 'van'), r0, 0, iz1 - 3.1, 0, 1);
+  const vl = van ? van[2] : 4.8;
+  const cv = put('factory/conveyor-long', r0, 0, iz1 - 3.1 - vl / 2 - 1.3, Math.PI / 2, 1.1, 'all');
+  const palletStack = (x, z, layers) => {
+    const p0 = put('retro/pallet', x, 0, z, 0, 1, null); if (!p0) return;
+    let y = p0[1];
+    for (let l = 0; l < layers; l++) { let hgt = 0; for (const [ox, oz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) { const d = put('furniture/cardboardBoxClosed', x + ox, y, z + oz, (l % 2) * 0.1, 1.15, null); if (d) hgt = d[1]; } y += hgt; }
+    boxes.push([x - 0.62, x + 0.62, z - 0.62, z + 0.62, y]);
+  };
+  palletStack(r0 + 2.4, iz1 - 2.2, 2);
+  palletStack(r0 + 2.4, iz1 - 3.6, 1 + level);
+  if (level >= 1) palletStack(r0 - 2.6, iz1 - 4.6, 2);
+  for (const [cx2, cz2] of [[r0 - 1.7, iz1 - 0.8], [r0 + 1.7, iz1 - 0.8]]) put('factory/cone', cx2, 0, cz2, 0, 1, null);
+  put('factory/warning-traffic', r0 + 1.6, 0, iz1 - 5.6, 0, 1, null);
+  put('furniture/chair', r0 + 1.0, 0, iz1 - 6.6, 2.4, 1, null);
+  put('survival/bucket', r0 - 1.2, 0, iz1 - 6.2, 0, 1, null);
   const film = mat('filmRollo', { color: '#d9dde2', roughness: 0.25, transparent: true, opacity: 0.9 });
   for (let k = 0; k < 2 + level; k++) { const r = cy(g, film, 0.12, 0.12, 0.5, ix1 - 0.4, 0.12, rz1 + 1.0 + k * 0.28, 12); r.rotation.x = Math.PI / 2; }
   // contenedores IBC (depósito blanco dentro de una jaula de acero sobre palé), en Bravo y Alfa
@@ -814,6 +802,18 @@ function warehouseExtras(g, { ix0, ix1, iz0, iz1, rz1, h, level, office }, boxes
   crate(ix0 + 6.5, cz0, 4, '#1f5fbf'); crate(ix0 + 7.2, cz0, 3, '#c0392b');
   if (level >= 1) { crate(ix0 + 7.9, cz0, 5, '#27ae60'); crate(ix0 + 6.85, cz0 + 0.5, 2, '#1f5fbf'); }
   if (level >= 2) { crate(ix1 - 6, cz0, 4, '#e67e22'); crate(ix1 - 6.7, cz0, 4, '#1f5fbf'); crate(ix1 - 7.4, cz0, 3, '#27ae60'); }
+  // detalles de vida: pósters, calendario y tablón de avisos en las paredes
+  const poster = (key, x, y, z, ry, w, h, draw) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintMat(key, 128, Math.round((128 * h) / w), draw)); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); };
+  const lw = ix0 + 0.045; // pared izquierda (cara hacia dentro)
+  poster('posterSeguridad', lw, 1.9, (rz1 + iz1) / 2 + 4.6, Math.PI / 2, 0.6, 0.85, (c, w, h) => { c.fillStyle = '#1e8449'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = 'bold 16px sans-serif'; c.fillText('LA SEGURIDAD', w / 2, 26); c.fillText('ES COSA', w / 2, 46); c.fillText('DE TODOS', w / 2, 66); c.font = '60px sans-serif'; c.fillText('⛑', w / 2, 140); });
+  poster('calendario', lw, 1.7, (rz1 + iz1) / 2 - 4.4, Math.PI / 2, 0.45, 0.65, (c, w, h) => { c.fillStyle = '#fafafa'; c.fillRect(0, 0, w, h); c.fillStyle = '#c0392b'; c.fillRect(0, 0, w, 26); c.fillStyle = '#fff'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText('OCTUBRE', w / 2, 18); c.fillStyle = '#333'; c.font = '10px sans-serif'; for (let k = 0; k < 31; k++) c.fillText(String(k + 1), 14 + (k % 7) * 17, 44 + Math.floor(k / 7) * 22); c.strokeStyle = '#c0392b'; c.lineWidth = 2; c.strokeRect(78, 74, 16, 16); });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.8), paintMat('tablon', 192, 128, (c, w, h) => { c.fillStyle = '#b08a5a'; c.fillRect(0, 0, w, h); for (let k = 0; k < 400; k++) { c.fillStyle = `rgba(80,55,30,${Math.random() * 0.25})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } const notes = [['#fff8b0', 12, 10, 50, 40], ['#ffffff', 70, 8, 56, 70], ['#bfe3ff', 136, 14, 44, 36], ['#ffd1dc', 20, 62, 46, 50], ['#ffffff', 132, 60, 48, 56]]; for (const [col, x, y, ww, hh] of notes) { c.fillStyle = col; c.fillRect(x, y, ww, hh); c.fillStyle = '#c0392b'; c.beginPath(); c.arc(x + ww / 2, y + 4, 3, 0, Math.PI * 2); c.fill(); c.fillStyle = 'rgba(0,0,0,0.5)'; for (let l = 0; l < 4; l++) c.fillRect(x + 5, y + 12 + l * 8, ww - 10 - (l * 7) % 15, 2); } }));
+  board.position.set(lw, 1.7, (rz1 + iz1) / 2 + 2.4); board.rotation.y = Math.PI / 2; g.add(board);
+  slab(g, mat('marcoTablon', { color: '#5b3d22', roughness: 0.7 }), ix0 + 0.01, ix0 + 0.06, 1.28, 2.12, (rz1 + iz1) / 2 + 1.78, (rz1 + iz1) / 2 + 3.02);
+  // un póster deportivo y uno de la empresa en el frente (dentro, junto a la zona de carga)
+  const fw = iz1 - 0.04;
+  poster('posterEmpresa', ix0 + 5.6, 2.2, fw, Math.PI, 0.9, 0.6, (c, w, h) => { c.fillStyle = '#34495e'; c.fillRect(0, 0, w, h); c.fillStyle = '#f1c40f'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText('ROOK LOGÍSTICA', w / 2, 34); c.fillStyle = '#ecf0f1'; c.font = '11px sans-serif'; c.fillText('Distribución · Isla de Rooktown', w / 2, 56); });
+  if (level >= 1) poster('posterFutbol', ix0 + 6.8, 1.9, fw, Math.PI, 0.5, 0.7, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1f5fbf'); gr.addColorStop(1, '#0b2a5c'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillText('ROOKTOWN', w / 2, 28); c.fillText('F.C.', w / 2, 46); c.font = '56px sans-serif'; c.fillText('⚽', w / 2, 120); });
   // reloj de pared en el fondo, encima de las estanterías
   const clock = new THREE.Mesh(new THREE.CircleGeometry(0.4, 32), clockMat());
   clock.position.set((ix0 + ix1) / 2, 5.6, iz0 + 0.06); g.add(clock);

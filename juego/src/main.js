@@ -18,6 +18,7 @@ import { makeHuman } from './entities/human.js';
 import { loadModels, makeRealHuman, MODELS, modelNames } from './entities/models.js';
 import { loadVehicles } from './entities/vehicles.js';
 import { loadProps } from './world/props.js';
+import { loadInterior } from './world/interior.js';
 import { loadBuildings } from './world/buildingkit.js';
 import { loadGrass } from './world/grass.js';
 import { LEO_MODEL } from './entities/npc.js';
@@ -403,7 +404,7 @@ async function warmup(withHands) {
 async function boot() {
   setLoad(0.05, 'Construyendo Puerto Lomas…');
   await nextFrame(); await nextFrame();
-  try { await Promise.all([loadVehicles(), loadProps(), mapV2() ? loadBuildings() : null, mapV2() ? loadGrass() : null]); } catch (e) { console.warn('Modelos de coches/productos/edificios no disponibles', e); }
+  try { await Promise.all([loadVehicles(), loadProps(), mapV2() ? loadBuildings() : null, mapV2() ? loadGrass() : null, mapV2() ? loadInterior() : null]); } catch (e) { console.warn('Modelos de coches/productos/edificios no disponibles', e); }
   buildWorld();
   setLoad(0.35, 'Cargando personajes…');
   await nextFrame();

@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792695505.784811,
-    "seen": 1792697612.235217,
-    "ast_hash": "061ffe71e438267504b061d0b06bfcf0",
+    "mtime": 1792709803.723374,
+    "seen": 1792715592.00025,
+    "ast_hash": "c303b9598a105968fae69409f3229f8d",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792708158.9317098,
-    "seen": 1792709264.5534034,
-    "ast_hash": "3f1867c010514f0e51b7ed42e9f0820d",
+    "mtime": 1792709945.1394553,
+    "seen": 1792715592.0009942,
+    "ast_hash": "453608437966c17eddcbd22378e13ac1",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792708167.2932878,
-    "seen": 1792709264.5534492,
-    "ast_hash": "d1065f8209b7e81aabe3599e12c7c513",
+    "mtime": 1792711353.323852,
+    "seen": 1792715592.0010414,
+    "ast_hash": "a98dfb549780da9032bfbf52055a6ebf",
     "semantic_hash": ""
   },
   "juego/docs/avances-18-apart.png": {
@@ -2085,6 +2085,48 @@
     "mtime": 1792698575.4654737,
     "seen": 1792698584.5716074,
     "ast_hash": "b751f557a124ada8a7803072d60f506e",
+    "semantic_hash": ""
+  },
+  "juego/src/world/interior.js": {
+    "mtime": 1792711353.3218315,
+    "seen": 1792715592.0009923,
+    "ast_hash": "2b2852babb130af89dac295f8aa12882",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/LICENSE.txt": {
+    "mtime": 1792709739.7041986,
+    "seen": 1792715592.0119607,
+    "ast_hash": "f65925a7b8e66346364110bf06a48135",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/cars/Textures/colormap.png": {
+    "mtime": 1792709739.6873882,
+    "seen": 1792715592.0190134,
+    "ast_hash": "451b163d51d08b73f7d98244fef3f979",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/factory/Textures/colormap.png": {
+    "mtime": 1792709739.7029212,
+    "seen": 1792715592.0190153,
+    "ast_hash": "ff020610bfb303c072c1b16b16624a88",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/market/Textures/colormap.png": {
+    "mtime": 1792709739.669674,
+    "seen": 1792715592.019017,
+    "ast_hash": "6113ca7438d6f42a273498b357eb5c01",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/retro/Textures/planks.png": {
+    "mtime": 1792709739.6954243,
+    "seen": 1792715592.0190184,
+    "ast_hash": "0538f5fafd37baf73dcc550d734b2792",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/survival/Textures/colormap.png": {
+    "mtime": 1792709739.6810496,
+    "seen": 1792715592.01902,
+    "ast_hash": "8aa3d8b5a7ce10fad67e7ba1011689eb",
     "semantic_hash": ""
   }
 }

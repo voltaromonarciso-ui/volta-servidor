@@ -15,6 +15,7 @@ import * as SK from './streetkit.js';
 import { createFurniture } from './streetfurniture.js';
 import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
 import { shopBuilding, warehouseBuilding, bankBranch, ownedWarehouse, naveFloorMat, FH } from './realbuilding.js';
+import * as INT from './interior.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
@@ -618,6 +619,7 @@ export function buildIsland() {
   W.furnitureReport = F.report();
   SK.setDetail(1);
   K.buildMountains(); // (sin el skyline de la ciudad antigua: en la isla quedaba flotando sobre el mar)
+  W.interiorStats = INT.build(scene); // (las piezas pedidas por los almacenes)
   tempProps();
   if (Object.keys(WAREHOUSES).some((k) => W.props[k])) warehouseLights();
 }
@@ -1023,14 +1025,14 @@ function alley(b) {
 //  colocan macetas y mesas, estanterías al fondo para guardar mercancía.
 // ------------------------------------------------------------------
 export const WAREHOUSES = {
-  almacenDelta: { w: 30, level: 0, price: 6000, blurb: 'El más pequeño: buena nave para empezar a cultivar en serio.' },
-  almacenBravo: { level: 1, price: 12000, blurb: 'Nave mediana con estanterías al fondo y sitio de sobra para mesas.' },
-  almacenAlfa: { level: 2, price: 20000, blurb: 'La más grande de la isla: para montar un negocio con empleados.' },
+  almacenDelta: { w: 24, d: 16, level: 0, price: 6000, blurb: 'El más pequeño: buena nave para empezar a cultivar en serio.' },
+  almacenBravo: { w: 34, d: 18, level: 1, price: 12000, blurb: 'Nave mediana con estanterías al fondo y sitio de sobra para mesas.' },
+  almacenAlfa: { w: 38, d: 18, level: 2, price: 20000, blurb: 'La más grande de la isla: para montar un negocio con empleados.' },
 };
 function warehouseFor(b) {
   if (!hasBuilding('q_Flat')) return false; // sin texturas: la nave de relleno de siempre
   const spec = WAREHOUSES[b.zone], id = b.zone, name = ZONE_NAMES[id];
-  const w = spec.w || b.x1 - b.x0 - 8, d = 22, x = b.cx, z = b.cz + 3;
+  const w = spec.w, d = spec.d, x = b.cx, z = b.cz + 3 + (22 - d) / 2; // (la fachada sigue en el mismo sitio)
   const r = ownedWarehouse({ w, d, h: 9, sign: name.toUpperCase(), signBg: '#34495e', doors: 2, level: spec.level });
   F.place('real:' + id, () => r.group, x, z, 0, { solid: false });
   pad(x - w / 2 - 0.3, x + w / 2 + 0.3, z - d / 2 - 0.3, z + d / 2 + 0.3, 0, id);
@@ -1042,6 +1044,8 @@ function warehouseFor(b) {
     else if (lv === 'down') c.yMax = gy + FH - 0.8;
     else if (lv === 'low') c.yMax = gy + 0.45;
   }
+  // muebles y cosas (modelos de interior.js), en coordenadas del mundo
+  for (const it of r.items) INT.place(it.name, x + it.x, it.y, z + it.z, it.ry, it.s);
   // suelos de arriba: la entreplanta y la escalera (sólo se pisan llegando desde arriba)
   for (const f of r.floors) addFloor(x + f.x0, x + f.x1, z + f.z0, z + f.z1, (px, pz) => gy + f.h(px - x, pz - z), { upper: true });
   W.mapRects.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, c: '#8a9aa6' });
