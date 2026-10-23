@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "juego/src/main.js": {
-    "mtime": 1792785781.2556512,
-    "seen": 1792785879.6666274,
-    "ast_hash": "9c2946b19779325fc87a7eca857af834",
+    "mtime": 1792796895.2239234,
+    "seen": 1792796990.5242293,
+    "ast_hash": "8443bb2fb4425b4c2003fd11e8b69585",
     "semantic_hash": ""
   },
   "juego/src/render.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792785781.2546363,
-    "seen": 1792785879.6672235,
-    "ast_hash": "db4af8cfdb3a3388005f6cd64c88221e",
+    "mtime": 1792796895.2252226,
+    "seen": 1792796990.5250704,
+    "ast_hash": "26da629ff6c7e40bde8026e981914a5c",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792792756.0547853,
-    "seen": 1792793030.7722692,
-    "ast_hash": "02eb34a86634a7d9ea8824c5ea7ccf55",
+    "mtime": 1792796895.230572,
+    "seen": 1792796990.5254517,
+    "ast_hash": "3206c6273db4785ad5e1ae75a683221e",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792754258.203702,
-    "seen": 1792754427.785316,
-    "ast_hash": "ad7520a9badf0db2a4fe0bdd7de03d95",
+    "mtime": 1792796895.2270994,
+    "seen": 1792796990.5255857,
+    "ast_hash": "ad7113246a64f71a605d4613a31ebb41",
     "semantic_hash": ""
   },
   "juego/docs/avances-18-apart.png": {
@@ -2274,9 +2274,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/fronts.js": {
-    "mtime": 1792785187.3009088,
-    "seen": 1792785879.66684,
-    "ast_hash": "1eec36c8783b3b431bdc9a9e353a1c15",
+    "mtime": 1792796881.203316,
+    "seen": 1792796990.5245614,
+    "ast_hash": "fa1c4aed2c4efe45e20f84ffcff27e65",
     "semantic_hash": ""
   },
   "juego/src/systems/mansionjobs.js": {
@@ -2292,9 +2292,9 @@
     "semantic_hash": ""
   },
   "juego/tests/mansion.spec.js": {
-    "mtime": 1792795114.376645,
-    "seen": 1792795145.207138,
-    "ast_hash": "68529eb7ede2deb4add845e3f44310e0",
+    "mtime": 1792796936.854313,
+    "seen": 1792796990.52633,
+    "ast_hash": "d6a75d56d367a59eae4f110a01ddad2e",
     "semantic_hash": ""
   },
   "juego/src/assets/textures/pbr/cesped_c.jpg": {

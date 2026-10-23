@@ -1073,6 +1073,11 @@ function warehouseFor(b) {
   if (so) K.hitbox(x + so.x, so.y + 0.5, z + so.z, 1.0, 1.0, 2.2, {
     actions: () => (G.state.props[id] ? [{ label: 'Dormir en el sofá', fn: () => G.act.sleep(id, { wake: 7 * 60 }) }] : []),
   });
+  // el ordenador de la oficina: desde aquí se blanquea el dinero por los negocios tapadera
+  const pc = r.office.pc;
+  if (pc) K.hitbox(x + pc.x, pc.y + 1.0, z + pc.z, 0.9, 0.7, 0.7, {
+    actions: () => (G.state.props[id] ? [{ label: 'Usar el ordenador (blanqueo)', fn: () => G.act.launder() }] : []),
+  });
   // la puerta de la oficina: sólo se abre si el almacén es tuyo
   K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.25, color: '#5d6670', locked: () => !G.state.props[id] });
   // suelo de hormigón (es el que recibe macetas y mesas)
@@ -1152,7 +1157,7 @@ function mansionFor(b) {
   K.makeDoor({ x: x + r.officeLeaf.x, z: z + r.officeLeaf.z, axis: 'z', width: r.officeLeaf.width, h: 2.55, color: '#3b2518' });
   K.hitbox(x + r.bed.x, r.bed.y + 0.6, z + r.bed.z, 2.0, 1.0, 2.4, { actions: () => (mine() ? [{ label: 'Dormir', fn: () => G.act.sleep(id, { wake: 7 * 60 }) }] : []) });
   K.hitbox(x + r.safe.x, 0.7, z + r.safe.z + 0.35, 0.9, 1.3, 0.3, { actions: () => (mine() ? [{ label: 'Abrir la caja fuerte', fn: () => G.act.openSafe({ entry: { type: 'safe', data: (G.state.mansionSafe ||= { cash: 0 }) } }) }] : []) });
-  K.hitbox(x + r.desk.x, 1.0, z + r.desk.z, 0.8, 1.2, 1.6, { actions: () => (mine() ? [{ label: 'Reunirse con los socios', fn: () => (G.act.mansionPartners ? G.act.mansionPartners() : G.act.toast?.('Hoy no ha venido nadie.', '🤝')) }] : []) });
+  K.hitbox(x + r.desk.x, 1.0, z + r.desk.z, 0.8, 1.2, 1.6, { actions: () => (mine() ? [{ label: 'Reunirse con los socios', fn: () => (G.act.mansionPartners ? G.act.mansionPartners() : G.act.toast?.('Hoy no ha venido nadie.', '🤝')) }, { label: 'Usar el ordenador (blanqueo)', fn: () => G.act.launder() }] : []) });
   K.hitbox(x + r.party.x, 1.1, z + r.party.z, 0.6, 1.2, 3.4, { actions: () => (mine() ? [{ label: 'Fiestas en la mansión', fn: () => (G.act.mansionParty ? G.act.mansionParty() : G.act.toast?.('Todavía no hay fiestas.', '🍾')) }] : []) });
   const i = r.inside;
   W.props[id] = {

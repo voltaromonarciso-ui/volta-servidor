@@ -83,27 +83,37 @@ test.describe.serial('Mansión y blanqueo', () => {
     expect(r.z).toBeGreaterThan(-4.9);
   });
 
-  test('negocios tapadera: se compran, blanquean cada mañana con comisión y sólo una vez al día', async () => {
+  test('negocios tapadera: se compran y sólo blanquean a mano desde el ordenador, con comisión y tope diario', async ({}, testInfo) => {
     await ev(page, () => { __G.state.clean = 15000; __G.state.money = 5000; });
     await at(page, 2, 8 * 60);
     expect((await mod(page, F, (m) => m.buyFront('lavanderia'))).ok).toBe(true);
     expect((await mod(page, F, (m) => m.buyFront('lavanderia'))).ok).toBe(false); // (ya es tuya)
     expect((await cash(page)).clean).toBe(3000);
-    // a las 9:00 de ese día: 1.500 del efectivo → 1.350 limpios (10 % de comisión)
-    await at(page, 2, 9 * 60 + 5);
-    await mod(page, F, (m) => m.tickFronts());
-    expect(await cash(page)).toEqual({ dirty: 3500, clean: 4350 });
-    await mod(page, F, (m) => m.tickFronts());
-    expect(await cash(page)).toEqual({ dirty: 3500, clean: 4350 });
-    // dos días después (durmiendo, por ejemplo): se liquidan los dos días pendientes
+    // pasa el día y no se blanquea nada solo
+    await at(page, 3, 12 * 60);
+    expect(await cash(page)).toEqual({ dirty: 5000, clean: 3000 });
+    // en el ordenador: 1.000 → 900 limpios (10 % de comisión)
+    expect((await mod(page, F, (m) => m.launder('lavanderia', 1000))).ok).toBe(true);
+    expect(await cash(page)).toEqual({ dirty: 4000, clean: 3900 });
+    // el tope del día (1.500): quedan 500
+    expect(await mod(page, F, (m) => m.leftToday('lavanderia'))).toBe(500);
+    expect((await mod(page, F, (m) => m.launder('lavanderia', 600))).ok).toBe(false);
+    expect((await mod(page, F, (m) => m.launder('lavadero', 100))).ok).toBe(false); // (no es tuyo)
+    // al día siguiente el tope se renueva
     await at(page, 4, 10 * 60);
-    await mod(page, F, (m) => m.tickFronts());
-    expect(await cash(page)).toEqual({ dirty: 500, clean: 7050 });
-    // sin efectivo no se blanquea nada (ni se queda en negativo)
-    await ev(page, () => { __G.state.money = 0; });
-    await at(page, 5, 10 * 60);
-    await mod(page, F, (m) => m.tickFronts());
-    expect(await cash(page)).toEqual({ dirty: 0, clean: 7050 });
+    expect(await mod(page, F, (m) => m.leftToday('lavanderia'))).toBe(1500);
+    // sin efectivo no se blanquea
+    await ev(page, () => { __G.state.money = 200; });
+    expect((await mod(page, F, (m) => m.launder('lavanderia', 300))).ok).toBe(false);
+    // el ordenador del despacho de la mansión ofrece el blanqueo
+    const pc = await ev(page, () => __G.interactables.some((m) => { const a = m.userData.ia?.actions; const l = typeof a === 'function' ? a() : a || []; return l.some((x) => /ordenador/.test(x.label)); }));
+    expect(pc).toBe(true);
+    // el programa del ordenador: botón "Todo" y blanquear
+    await ev(page, () => { __G.state.money = 2000; __G.act.launder(); });
+    await press(page, testInfo, '.panel .chip:has-text("Todo")');
+    await press(page, testInfo, '.panel .btn:has-text("Blanquear")');
+    expect(await cash(page)).toEqual({ dirty: 500, clean: 3900 + 1350 });
+    await ev(page, async () => (await import('/src/ui/panels.js')).closePanel());
   });
 
   test('Inmobiliaria: los negocios aparecen en su pestaña y la tuya sale como tuya', async ({}, testInfo) => {

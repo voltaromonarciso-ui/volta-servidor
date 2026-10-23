@@ -21,7 +21,7 @@ import { loadVehicles } from './entities/vehicles.js';
 import { loadProps } from './world/props.js';
 import { loadInterior } from './world/interior.js';
 import { preloadProps, tickProps } from './entities/realprops.js';
-import { tickFronts } from './systems/fronts.js';
+import { openLaunder } from './systems/fronts.js';
 import { openParty, openPartners } from './systems/mansionjobs.js';
 import { HELD_PROPS } from './entities/helditems.js';
 import { loadBuildings } from './world/buildingkit.js';
@@ -179,7 +179,7 @@ Object.assign(G.act, {
   arrested: (r) => P.arrestedDialog(r),
   openPhone: (app, arg) => { P.closePanel(true); openPhone(app, arg); },
   sleep: (prop, opts) => sleep(prop, false, opts),
-  mansionParty: openParty, mansionPartners: openPartners,
+  mansionParty: openParty, mansionPartners: openPartners, launder: openLaunder,
   openSafe: P.openSafe, openAtm: P.openAtm, openBag: () => P.openBag(),
   refill: () => {
     if (!inv.count('regadera')) return toast('No llevas regadera.');
@@ -525,7 +525,6 @@ function frame() {
   for (const c of G.cars) c.update(dt);
   updateObjects(dt);
   tickProps(G.player.pos);
-  tickFronts();
   tickCartel(dt);
   G.world.update(dt);
   if (G.uiOpen) hideGhost();

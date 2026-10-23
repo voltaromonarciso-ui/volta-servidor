@@ -457,8 +457,8 @@ function reFeats(p) {
   if (p.kind === 'negocio') return [
     ['bolt', 'Blanquea', `${money(p.cap)} al día`],
     ['key', 'Comisión', `${Math.round(p.fee * 100)} %`],
-    ['light', 'Cuándo', 'Cada mañana a las 9:00'],
-    ['office', 'Gestor', 'Te avisa por mensaje'],
+    ['office', 'Dónde', 'En el ordenador de tu oficina'],
+    ['light', 'Tope', 'Se renueva cada día'],
   ];
   return [
     ['area', 'Superficie', `${p.area} m²`],
@@ -494,10 +494,10 @@ function reGallery(id, big = false) {
 function reBuy(id) {
   if (FRONTS[id]) {
     const f = FRONTS[id];
-    confirmDialog(`Comprar ${f.name}`, `<p>${f.blurb}</p><p>Precio: <b>${money(f.price)}</b> · se paga con dinero limpio.</p><p class="small">Cada mañana blanquea hasta ${money(f.cap)} del efectivo que lleves (se queda un ${Math.round(f.fee * 100)} %).</p>`, 'Comprar', () => {
+    confirmDialog(`Comprar ${f.name}`, `<p>${f.blurb}</p><p>Precio: <b>${money(f.price)}</b> · se paga con dinero limpio.</p><p class="small">Blanquea hasta ${money(f.cap)} al día del efectivo que lleves (se queda un ${Math.round(f.fee * 100)} %). Se hace desde el ordenador de tu oficina: el del altillo de un almacén o el del despacho de la mansión.</p>`, 'Comprar', () => {
       const r = buyFront(id);
       if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
-      sfx('level'); G.act.bigToast(`¡${f.name} es tuyo!`, `Desde mañana blanquea hasta ${money(f.cap)} al día.`); render();
+      sfx('level'); G.act.bigToast(`¡${f.name} es tuyo!`, `Ya puedes blanquear hasta ${money(f.cap)} al día desde el ordenador de tu oficina.`); render();
     });
     return;
   }
@@ -537,7 +537,7 @@ function realty() {
   const word = { nave: ['nave', 'naves', 'en el polígono'], lujo: ['casa', 'casas', 'en la colina'], negocio: ['negocio', 'negocios', 'en el centro'] }[reTab];
   const avail = list.filter((it) => !it.owned).length;
   box.appendChild(h('div', 're-sub', `<b>${list.length} ${list.length === 1 ? word[0] : word[1]}</b> ${word[2]} · ${avail ? `${avail} disponible${avail > 1 ? 's' : ''}` : 'todo es tuyo'}<span>Por precio ↑</span>`));
-  if (reTab === 'negocio') { const st = launderStats(); if (st.n) box.appendChild(h('div', 're-sub', `🧾 Tus negocios blanquean hasta <b>${money(st.cap)}</b> al día (te llegan ${money(st.net)} limpios).`)); }
+  if (reTab === 'negocio') { const st = launderStats(); if (st.n) box.appendChild(h('div', 're-sub', `🧾 Tus negocios blanquean hasta <b>${money(st.cap)}</b> al día (te llegan ${money(st.net)} limpios), desde el ordenador de tu oficina.`)); }
   for (const it of list) {
     const card = h('div', 're-card' + (it.owned ? ' owned' : ''));
     const gal = reGallery(it.id);

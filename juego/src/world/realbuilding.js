@@ -609,7 +609,7 @@ function warehouseOffice(g, { x0: mx0, x1: mx1, z1: mz1, level }, boxes, put) {
   frame(mx0 + 3.0, wz - 0.03, 0.5, 0.6, 'cuadroIsla', (c, w, hh) => { c.fillStyle = '#cfe2f3'; c.fillRect(0, 0, w, hh); c.fillStyle = '#6aa84f'; c.beginPath(); c.ellipse(w / 2, hh / 2, w * 0.35, hh * 0.3, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#ffe599'; c.fillRect(w * 0.3, hh * 0.45, w * 0.4, 4); });
   const clk = new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), clockMat()); clk.position.set(mx0 + 0.16, Y + 2.3, cz); clk.rotation.y = Math.PI / 2; g.add(clk);
   // (debajo de la entreplanta no se pone nada: queda libre, sólo los pilares)
-  return { x0: mx0, x1: mx1, z0: mz0, z1: mz1, floors, stair: { x0: sx0, x1: sx1, z0: zs, z1: mz0 }, sofa: { x: mx0 + 3.75, y: FH, z: cz } };
+  return { x0: mx0, x1: mx1, z0: mz0, z1: mz1, floors, stair: { x0: sx0, x1: sx1, z0: zs, z1: mz0 }, sofa: { x: mx0 + 3.75, y: FH, z: cz }, pc: { x: dx0 - 0.15, y: FH, z: wz - 0.4 } };
 }
 
 // Lo típico de una nave, según el tamaño (level 0 Delta, 1 Bravo, 2 Alfa): banco de trabajo
