@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792761899.3598812,
-    "seen": 1792764097.071205,
-    "ast_hash": "fb9ab8279e7a372f76492b2ff0b5b5ab",
+    "mtime": 1792767798.9825196,
+    "seen": 1792767841.7674634,
+    "ast_hash": "52192f83d6082e9ee1cfa6286e12e099",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
@@ -2217,6 +2217,12 @@
     "mtime": 1792766816.3334117,
     "seen": 1792767652.9742422,
     "ast_hash": "5630acd12e8fa6431c135a990925a910",
+    "semantic_hash": ""
+  },
+  "juego/src/entities/furniture.js": {
+    "mtime": 1792767798.981204,
+    "seen": 1792767841.7666523,
+    "ast_hash": "8129c6e3fd1b628a4f904d3fa24f0056",
     "semantic_hash": ""
   }
 }

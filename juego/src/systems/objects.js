@@ -10,6 +10,7 @@ import { ensureBaseProduct } from './economy.js';
 import { absNow } from '../core/state.js';
 import { buildPacker, buildJarPacker, buildStove } from '../world/benches.js';
 import { buildCrystalTable, buildPowderTable, buildPillMachine, buildLiquidStation, buildAutoPacker } from '../world/labs.js';
+import { buildLamp, buildPanel, buildExtractor, buildLocker, buildSafe, buildHumid, buildShelf } from '../entities/furniture.js';
 import { buildFabricPot, buildPlant, refreshPlant } from '../entities/plant.js';
 
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
@@ -150,43 +151,9 @@ const BUILD = {
   jarpacker: buildJarPacker,
   stove: buildStove,
   crystal: buildCrystalTable, powder: buildPowderTable, pills: buildPillMachine, liquid: buildLiquidStation, autopack: buildAutoPacker,
-  lamp(o) {
-    const g = o.group;
-    mesh(cyl, '#2c3e50', 0.5, 0.06, 0.5, 0, 0.03, 0, g);
-    mesh(cyl, '#95a5a6', 0.05, 1.8, 0.05, 0, 0.9, 0, g);
-    mesh(bx, '#34495e', 0.7, 0.1, 0.4, 0, 1.85, 0.25, g);
-    mesh(bx, new THREE.MeshBasicMaterial({ color: 0xff8ef0 }), 0.6, 0.03, 0.32, 0, 1.79, 0.25, g);
-  },
-  // Panel LED colgante (como el de cultivo de las naves): carcasa negra con aletas, luz cálida
-  // hacia abajo, colgado de dos cables de un soporte de dos patas
-  panel(o) {
-    const g = o.group;
-    const black = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.45, metalness: 0.5 });
-    const steel = new THREE.MeshStandardMaterial({ color: 0x5d646c, roughness: 0.4, metalness: 0.7 });
-    for (const x of [-0.6, 0.6]) { mesh(cyl, steel, 0.04, 2.05, 0.04, x, 1.03, 0, g); mesh(bx, steel, 0.08, 0.04, 0.55, x, 0.02, 0, g); }
-    mesh(cyl, steel, 0.035, 1.24, 0.035, 0, 2.03, 0, g).rotation.z = Math.PI / 2;
-    for (const x of [-0.4, 0.4]) mesh(cyl, black, 0.008, 0.42, 0.008, x, 1.82, 0, g);
-    mesh(rbx(1.0, 0.12, 0.42, 0.025), black, 1, 1, 1, 0, 1.56, 0, g);
-    for (let k = -3; k <= 3; k++) mesh(bx, black, 0.02, 0.05, 0.36, k * 0.12, 1.645, 0, g); // aletas
-    o.glowPanel = mesh(bx, new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffd27a, emissiveIntensity: 1.6 }), 0.9, 0.012, 0.34, 0, 1.495, 0, g);
-    mesh(bx, new THREE.MeshStandardMaterial({ color: 0xe0b020, roughness: 0.4 }), 0.12, 0.05, 0.02, -0.32, 1.56, 0.215, g); // etiqueta
-  },
-  // Extractor con filtro de carbón: cilindro del filtro, ventilador en línea y tubo
-  extractor(o) {
-    const g = o.group;
-    const grey = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.35, metalness: 0.6 });
-    const black = new THREE.MeshStandardMaterial({ color: 0x24272b, roughness: 0.5, metalness: 0.4 });
-    mesh(cyl, black, 0.5, 0.05, 0.5, 0, 0.025, 0, g);
-    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x2f3337, roughness: 0.9 }), 0.44, 0.6, 0.44, 0, 0.35, 0, g); // filtro
-    for (const y of [0.07, 0.63]) mesh(cyl, grey, 0.46, 0.04, 0.46, 0, y, 0, g);
-    const fan = mesh(cyl, black, 0.36, 0.28, 0.36, 0, 0.82, 0, g);
-    mesh(bx, new THREE.MeshStandardMaterial({ color: 0xe0b020, roughness: 0.4 }), 0.1, 0.06, 0.02, 0, 0.84, 0.18, g);
-    mesh(cyl, grey, 0.22, 0.2, 0.22, 0, 1.03, 0, g);
-    o.spin = new THREE.Group(); o.spin.position.y = 0.97; g.add(o.spin);
-    for (let k = 0; k < 4; k++) { const b = mesh(bx, grey, 0.16, 0.01, 0.05, 0, 0, 0, o.spin); b.rotation.y = (k * Math.PI) / 2; b.position.set(Math.cos(k * Math.PI / 2) * 0.08, 0, Math.sin(k * Math.PI / 2) * 0.08); }
-    void fan;
-    o.busy = true; // (gira siempre)
-  },
+  lamp: buildLamp,
+  panel: buildPanel,
+  extractor: buildExtractor,
   bed(o) {
     // formas redondeadas (sin que cueste mucho: pocas piezas y geometrías compartidas)
     const g = o.group;
@@ -203,41 +170,10 @@ const BUILD = {
     const pil = mesh(pillow, '#ffffff', 1, 1, 1, 0, 0.6, -0.78, g);              // almohada
     pil.rotation.x = -0.18;
   },
-  locker(o) {
-    const g = o.group;
-    mesh(rbx(1.2, 1.95, 0.6, 0.03), '#6f7d88', 1, 1, 1, 0, 0.975, 0, g);
-    for (const x of [-0.3, 0.3]) {
-      mesh(bx, '#8796a1', 0.56, 1.85, 0.02, x, 0.975, 0.305, g);
-      for (const y of [1.62, 1.7, 1.78]) mesh(bx, '#56636c', 0.36, 0.02, 0.01, x, y, 0.318, g);
-      mesh(bx, '#e0e4e7', 0.03, 0.22, 0.03, x * 0.15, 1.0, 0.33, g);
-    }
-  },
-  safe(o) {
-    const g = o.group;
-    const steel = new THREE.MeshStandardMaterial({ color: 0x3d4650, roughness: 0.4, metalness: 0.6 });
-    mesh(rbx(0.7, 0.8, 0.7, 0.05), steel, 1, 1, 1, 0, 0.42, 0, g);
-    mesh(rbx(0.58, 0.66, 0.03, 0.012), '#56616c', 1, 1, 1, 0, 0.42, 0.355, g);
-    const dial = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.7, roughness: 0.3 }), 0.16, 0.03, 0.16, -0.05, 0.46, 0.37, g);
-    dial.rotation.x = Math.PI / 2;
-    mesh(bx, '#c8ccd0', 0.04, 0.16, 0.04, 0.18, 0.42, 0.38, g);
-    for (const x of [-0.3, 0.3]) for (const z of [-0.3, 0.3]) mesh(bx, '#20262b', 0.06, 0.04, 0.06, x, 0.02, z, g);
-  },
-  humid(o) {
-    const g = o.group;
-    mesh(cyl, '#eef3f6', 0.36, 0.7, 0.36, 0, 0.35, 0, g);
-    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x7cc7ef, transparent: true, opacity: 0.8 }), 0.37, 0.3, 0.37, 0, 0.2, 0, g);
-    mesh(cyl, '#c8d2d8', 0.14, 0.08, 0.14, 0, 0.74, 0, g);
-    mesh(cyl, new THREE.MeshBasicMaterial({ color: 0x2ecc71 }), 0.05, 0.02, 0.05, 0, 0.5, 0.18, g).rotation.x = Math.PI / 2;
-    o.mist = mesh(new THREE.SphereGeometry(0.5, 10, 8), new THREE.MeshBasicMaterial({ color: 0xdff3ff, transparent: true, opacity: 0.35, depthWrite: false }), 0.22, 0.3, 0.22, 0, 0.95, 0, g);
-    o.mist.castShadow = false;
-  },
-  shelf(o) {
-    const g = o.group;
-    for (const x of [-0.78, 0.78]) mesh(bx, '#5d6d7e', 0.05, 1.8, 0.6, x, 0.9, 0, g);
-    for (const y of [0.1, 0.6, 1.1, 1.6]) mesh(bx, '#85929e', 1.6, 0.04, 0.58, 0, y, 0, g);
-    o.boxes = [];
-    for (let i = 0; i < 6; i++) o.boxes.push(mesh(bx, '#a57a49', 0.4, 0.3, 0.4, -0.5 + (i % 3) * 0.5, 0.27 + Math.floor(i / 3) * 0.5, 0, g));
-  },
+  locker: buildLocker,
+  safe: buildSafe,
+  humid: buildHumid,
+  shelf: buildShelf,
 };
 
 // ------------------------------------------------------------------
