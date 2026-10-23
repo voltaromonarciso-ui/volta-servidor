@@ -135,7 +135,7 @@ const balG = new THREE.LatheGeometry([[0, 0], [0.07, 0], [0.07, 0.05], [0.045, 0
 function balustrade(g, m, axis, at, a0, a1, y) {
   const n = Math.max(2, Math.floor((a1 - a0) / 0.24)), inst = new THREE.InstancedMesh(balG, m, n), M4 = new THREE.Matrix4();
   for (let k = 0; k < n; k++) { const t = a0 + ((k + 0.5) * (a1 - a0)) / n; M4.makeTranslation(axis === 'x' ? t : at, y + 0.1, axis === 'x' ? at : t); inst.setMatrixAt(k, M4); }
-  inst.castShadow = true; g.add(inst);
+  inst.castShadow = true; inst.frustumCulled = false; g.add(inst);
   const run = (yy0, yy1, th) => (axis === 'x' ? slab(g, m, a0, a1, y + yy0, y + yy1, at - th, at + th) : slab(g, m, at - th, at + th, y + yy0, y + yy1, a0, a1));
   run(0, 0.1, 0.12); run(0.72, 0.86, 0.14);
 }
@@ -176,12 +176,12 @@ export function mansionHQ() {
 
   // ---------------- materiales ----------------
   const M = {
-    stucco: pbrMat('estuco', '#fff7ec'), stone: pbrMat('sillar', '#fbf3e6'), cut: pbrMat('hormigon', '#eee6d8'), tiles: pbrMat('tejas', '#c9754e'),
-    inner: pbrMat('yesoInt', '#fbf4e8'), wood: pbrMat('madera', '#7a4b2c'), lawn: pbrMat('cesped'), slabs: pbrMat('losa', '#e8dfd0'),
-    shutter: mat('mPersiana', { color: '#55705e', roughness: 0.7 }), shutterDark: mat('mPersianaLama', { color: '#46604f', roughness: 0.75 }),
+    stucco: pbrMat('estuco', '#f7ecdb'), stone: pbrMat('hormigon', '#e7dbc6'), base: pbrMat('sillar', '#e9dcc5'), cut: pbrMat('hormigon', '#ece2d1'), tiles: pbrMat('tejas', '#c46f4a'),
+    inner: pbrMat('yesoInt', '#fbf4e8'), wood: pbrMat('madera', '#7a4b2c'), lawn: pbrMat('cesped'), slabs: pbrMat('losa', '#e6dccb'),
+    shutter: mat('mPersiana', { color: '#3d5a48', roughness: 0.6 }), shutterDark: mat('mPersianaLama', { color: '#324b3c', roughness: 0.65 }),
     frame: mat('mMarco', { color: '#f2efe8', roughness: 0.45 }), trim: mat('mMoldura', { color: '#fbf7ef', roughness: 0.6 }),
     walnut: mat('mNogal', { color: '#3b2518', roughness: 0.45 }), gold: mat('mOro', { color: '#c9a24a', roughness: 0.25, metalness: 0.9 }),
-    lamp: mat('mFoco', { color: '#fff4dc', emissive: '#ffd9a0', emissiveIntensity: 1.6 }), iron: mat('mHierro', { color: '#1d1f22', roughness: 0.45, metalness: 0.7 }),
+    lamp: mat('mFoco', { color: '#fff4dc', emissive: '#ffd9a0', emissiveIntensity: 1.6 }), iron: mat('mHierro', { color: '#1c1d1f', roughness: 0.38, metalness: 0.75 }),
   };
 
   // ======================================================================
@@ -234,8 +234,8 @@ export function mansionHQ() {
     hipRoof(g, M.tiles, Math.min(xa, xb), Math.max(xa, xb), -WZ, WZ, TOPW + 0.18, 1.6, 0.45);
   }
   // --- zócalo, impostas, cornisas y sillares del cuerpo central ---
-  slab(g, M.stone, -WX - 0.06, WX + 0.06, 0, 0.5, WZ, WZ + 0.06); slab(g, M.stone, -CX - 0.06, CX + 0.06, 0, 0.5, CZ, CZ + 0.06);
-  slab(g, M.stone, -WX - 0.06, WX + 0.06, 0, 0.5, -WZ - 0.06, -WZ); slab(g, M.stone, -CX - 0.06, CX + 0.06, 0, 0.5, -CZ - 0.06, -CZ);
+  slab(g, M.base, -WX - 0.06, WX + 0.06, 0, 0.5, WZ, WZ + 0.06); slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, CZ, CZ + 0.06);
+  slab(g, M.base, -WX - 0.06, WX + 0.06, 0, 0.5, -WZ - 0.06, -WZ); slab(g, M.base, -CX - 0.06, CX + 0.06, 0, 0.5, -CZ - 0.06, -CZ);
   for (const z of [CZ, -CZ]) slab(g, M.trim, -CX - 0.12, CX + 0.12, UP - 0.2, UP + 0.02, z > 0 ? z : z - 0.12, z > 0 ? z + 0.12 : z);   // imposta entre plantas
   slab(g, M.trim, -CX - 0.3, CX + 0.3, TOP1 - 0.06, TOP1 + 0.12, -CZ - 0.3, CZ + 0.3);
   slab(g, M.trim, -CX - 0.42, CX + 0.42, TOP1 + 0.12, TOP1 + 0.24, -CZ - 0.42, CZ + 0.42);
@@ -271,42 +271,72 @@ export function mansionHQ() {
   // --- parcela: césped, muro con pilares y verja, y camino de losas hasta la escalinata ---
   const LX0 = -23, LX1 = 23, LZ0 = -21, LZ1 = 25;
   slab(g, M.lawn, LX0, LX1, -0.03, 0.012, LZ0, LZ1);
+  // pilar de piedra caliza con zócalo, recuadro rehundido, cornisa y remate de bola
   const pillar = (x, z, h, big = false) => {
-    const w = big ? 0.8 : 0.6;
-    slab(g, M.stone, x - w / 2, x + w / 2, 0, h, z - w / 2, z + w / 2);
-    slab(g, M.trim, x - w / 2 - 0.08, x + w / 2 + 0.08, h, h + 0.12, z - w / 2 - 0.08, z + w / 2 + 0.08);
-    lathe(g, M.trim, [[0, 0], [0.16, 0], [0.12, 0.06], [0.08, 0.1], [0.17, 0.26], [0.12, 0.42], [0, 0.46]], x, h + 0.12, z, 16);
-    box(x - w / 2, x + w / 2, z - w / 2, z + w / 2, h + 0.5);
+    const w = big ? 0.85 : 0.62, r = w / 2;
+    slab(g, M.base, x - r - 0.05, x + r + 0.05, 0, 0.45, z - r - 0.05, z + r + 0.05);
+    slab(g, M.stone, x - r, x + r, 0.45, h, z - r, z + r);
+    for (const [dx, dz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {            // recuadro en las cuatro caras
+      const px = x + dx * (r + 0.005), pz = z + dz * (r + 0.005), hw = r - 0.1;
+      if (dx) slab(g, M.cut, px - 0.01, px + 0.01, 0.75, h - 0.3, z - hw, z + hw); else slab(g, M.cut, x - hw, x + hw, 0.75, h - 0.3, pz - 0.01, pz + 0.01);
+    }
+    slab(g, M.trim, x - r - 0.06, x + r + 0.06, h, h + 0.08, z - r - 0.06, z + r + 0.06);
+    slab(g, M.trim, x - r - 0.1, x + r + 0.1, h + 0.08, h + 0.16, z - r - 0.1, z + r + 0.1);
+    lathe(g, M.trim, [[0, 0], [0.18, 0], [0.13, 0.07], [0.09, 0.12], [0.2, 0.3], [0.14, 0.48], [0, 0.52]].map(([q, y]) => [q * (big ? 1.25 : 1), y * (big ? 1.25 : 1)]), x, h + 0.16, z, 18);
+    box(x - r - 0.05, x + r + 0.05, z - r - 0.05, z + r + 0.05, h + 0.6);
   };
-  // muro macizo a los lados y detrás (sillería con albardilla), con pilares cada pocos metros
+  // muro a los lados y detrás: estuco como la casa, zócalo de sillería y albardilla blanca
   const solidWall = (axis, at, a0, a1, h = 2.0) => {
-    if (axis === 'x') { slab(g, M.stone, a0, a1, 0, h, at - 0.2, at + 0.2); slab(g, M.trim, a0, a1, h, h + 0.1, at - 0.27, at + 0.27); box(a0, a1, at - 0.2, at + 0.2, h + 0.1); }
-    else { slab(g, M.stone, at - 0.2, at + 0.2, 0, h, a0, a1); slab(g, M.trim, at - 0.27, at + 0.27, h, h + 0.1, a0, a1); box(at - 0.2, at + 0.2, a0, a1, h + 0.1); }
+    const A = (m, p, q, y0, y1, t) => (axis === 'x' ? slab(g, m, p, q, y0, y1, at - t, at + t) : slab(g, m, at - t, at + t, y0, y1, p, q));
+    A(M.base, a0, a1, 0, 0.45, 0.24); A(M.stucco, a0, a1, 0.45, h, 0.2); A(M.trim, a0, a1, h, h + 0.1, 0.27);
+    box(axis === 'x' ? a0 : at - 0.24, axis === 'x' ? a1 : at + 0.24, axis === 'x' ? at - 0.24 : a0, axis === 'x' ? at + 0.24 : a1, h + 0.1);
     const n = Math.max(1, Math.round((a1 - a0) / 5.5));
-    for (let k = 0; k <= n; k++) { const t = a0 + ((a1 - a0) * k) / n; axis === 'x' ? pillar(t, at, h + 0.25) : pillar(at, t, h + 0.25); }
+    for (let k = 0; k <= n; k++) { const t = a0 + ((a1 - a0) * k) / n; axis === 'x' ? pillar(t, at, h + 0.3) : pillar(at, t, h + 0.3); }
   };
   solidWall('x', LZ0, LX0, LX1); solidWall('z', LX0, LZ0, LZ1); solidWall('z', LX1, LZ0, LZ1);
-  // delante: murete con verja de hierro forjado y el portón abierto en el centro
-  const GW = 2.0;
+  // delante: murete con verja de forja entre pilares (barrotes con punta de lanza, anillas y
+  // paños en arco), y el portón abierto en el centro
+  const GW = 2.0, bars = [], spears = [], rings = [];
+  const panel = (a0, a1, z, arch = 0.22) => {
+    const n = Math.floor((a1 - a0) / 0.13);
+    for (let k = 0; k < n; k++) {
+      const x = a0 + (k + 0.5) * ((a1 - a0) / n), t = (x - a0) / (a1 - a0), top = 1.72 + Math.sin(t * Math.PI) * arch;
+      bars.push([x, 0.8, z, top - 0.8]); spears.push([x, top, z]);
+      if (k < n - 1) rings.push([x + (a1 - a0) / n / 2, 1.0, z]);
+    }
+    for (const y of [0.86, 1.14]) slab(g, M.iron, a0, a1, y, y + 0.035, z - 0.02, z + 0.02);
+    // pasamanos de arriba siguiendo el arco, por tramos
+    const seg = 10;
+    for (let k = 0; k < seg; k++) {
+      const x0 = a0 + ((a1 - a0) * k) / seg, x1 = a0 + ((a1 - a0) * (k + 1)) / seg, y0 = 1.62 + Math.sin(((x0 - a0) / (a1 - a0)) * Math.PI) * arch, y1 = 1.62 + Math.sin(((x1 - a0) / (a1 - a0)) * Math.PI) * arch;
+      const bar = slab(g, M.iron, -(x1 - x0) / 2 - 0.01, (x1 - x0) / 2 + 0.01, -0.017, 0.017, -0.02, 0.02); if (bar) { bar.position.set((x0 + x1) / 2, (y0 + y1) / 2, z); bar.rotation.z = Math.atan2(y1 - y0, x1 - x0); }
+    }
+  };
   for (const [a0, a1] of [[LX0, -GW], [GW, LX1]]) {
-    slab(g, M.stone, a0, a1, 0, 0.7, LZ1 - 0.2, LZ1 + 0.2); slab(g, M.trim, a0, a1, 0.7, 0.8, LZ1 - 0.27, LZ1 + 0.27);
-    box(a0, a1, LZ1 - 0.2, LZ1 + 0.2, 2.0);
-    const n = Math.floor((a1 - a0) / 0.14), inst = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 1.05, 6), M.iron, n), M4 = new THREE.Matrix4();
-    for (let k = 0; k < n; k++) { M4.makeTranslation(a0 + (k + 0.5) * ((a1 - a0) / n), 0.8 + 0.525, LZ1); inst.setMatrixAt(k, M4); }
-    g.add(inst);
-    for (const y of [0.95, 1.75]) slab(g, M.iron, a0, a1, y, y + 0.04, LZ1 - 0.025, LZ1 + 0.025);
-    const nt = Math.floor((a1 - a0) / 0.42);
-    for (let k = 0; k < nt; k++) { const c = cyl(g, M.iron, 0, 0.035, 0.12, a0 + (k + 0.5) * ((a1 - a0) / nt), 1.9, LZ1, 6); void c; }  // puntas
-    const m = Math.max(1, Math.round((a1 - a0) / 5.5));
-    for (let k = 0; k <= m; k++) pillar(a0 + ((a1 - a0) * k) / m, LZ1, 2.0, Math.abs(a0 + ((a1 - a0) * k) / m) <= GW + 0.01);
+    slab(g, M.base, a0, a1, 0, 0.45, LZ1 - 0.24, LZ1 + 0.24); slab(g, M.stone, a0, a1, 0.45, 0.72, LZ1 - 0.2, LZ1 + 0.2); slab(g, M.trim, a0, a1, 0.72, 0.8, LZ1 - 0.27, LZ1 + 0.27);
+    box(a0, a1, LZ1 - 0.24, LZ1 + 0.24, 2.0);
+    const m = Math.max(1, Math.round((a1 - a0) / 4.2));
+    for (let k = 0; k < m; k++) panel(a0 + ((a1 - a0) * k) / m + 0.32, a0 + ((a1 - a0) * (k + 1)) / m - 0.32, LZ1);
+    for (let k = 0; k <= m; k++) { const t = a0 + ((a1 - a0) * k) / m; pillar(t, LZ1, 2.0, Math.abs(Math.abs(t) - GW) < 0.01); }
   }
-  // hojas del portón, abiertas hacia dentro, y faroles en los pilares grandes
+  // hojas del portón (abiertas hacia dentro) con el mismo dibujo y faroles en los pilares grandes
   for (const s2 of [-1, 1]) {
-    const leaf = new THREE.Group(); leaf.position.set(s2 * GW, 0, LZ1); leaf.rotation.y = s2 * 1.25; g.add(leaf);
-    for (let k = 0; k < 13; k++) slab(leaf, M.iron, -s2 * (0.08 + k * 0.15) - 0.015, -s2 * (0.08 + k * 0.15) + 0.015, 0.1, 2.1 + Math.sin((k / 12) * Math.PI) * 0.25, -0.015, 0.015);
-    for (const y of [0.15, 1.0, 1.9]) slab(leaf, M.iron, s2 > 0 ? -1.95 : 0, s2 > 0 ? 0 : 1.95, y, y + 0.05, -0.025, 0.025);
-    P('street_lamp_02', s2 * (GW + 0.4), 1.6, LZ1 - 0.45, Math.PI, 0.8, null);
+    const leaf = new THREE.Group(); leaf.position.set(s2 * (GW - 0.45), 0, LZ1); leaf.rotation.y = s2 * 1.2; g.add(leaf);
+    const L = GW - 0.5, n = 11;
+    for (let k = 0; k < n; k++) {
+      const u = (k + 0.5) / n, x = -s2 * u * L, top = 2.0 + Math.sin(u * Math.PI * 0.5 + (s2 > 0 ? 0 : 0)) * 0.35;
+      slab(leaf, M.iron, x - 0.013, x + 0.013, 0.08, top, -0.013, 0.013);
+      cyl(leaf, M.iron, 0, 0.032, 0.14, x, top + 0.07, 0, 6);
+    }
+    for (const y of [0.12, 0.95, 1.25, 1.95]) slab(leaf, M.iron, s2 > 0 ? -L : 0, s2 > 0 ? 0 : L, y, y + 0.04, -0.02, 0.02);
+    for (let k = 0; k < 4; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.012, 6, 18), M.iron); t.position.set(-s2 * (0.25 + k * 0.38), 1.1, 0); leaf.add(t); }
+    P('street_lamp_02', s2 * (GW + 0.45), 1.75, LZ1 - 0.5, Math.PI, 0.8, null);
   }
+  // barrotes, puntas y anillas de toda la verja: tres mallas instanciadas (no se recortan)
+  const inst = (geo, list, fn) => { const im = new THREE.InstancedMesh(geo, M.iron, list.length), M4 = new THREE.Matrix4(); list.forEach((q, i) => { fn(M4, q); im.setMatrixAt(i, M4); }); im.castShadow = true; im.frustumCulled = false; g.add(im); };
+  inst(new THREE.BoxGeometry(0.024, 1, 0.024), bars, (M4, [x, y, z, h]) => M4.compose(new THREE.Vector3(x, y + h / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, h, 1)));
+  inst(new THREE.LatheGeometry([[0, 0], [0.03, 0], [0.03, 0.02], [0.012, 0.03], [0.034, 0.06], [0, 0.15]].map(([r, h]) => new THREE.Vector2(r, h)), 8), spears, (M4, [x, y, z]) => M4.makeTranslation(x, y, z));
+  inst(new THREE.TorusGeometry(0.052, 0.009, 6, 16), rings, (M4, [x, y, z]) => M4.makeTranslation(x, y, z));
   // camino de losas sueltas con la hierba entre medias: de la verja a la fuente y de la fuente
   // a la escalinata, y un anillo de losas alrededor de la fuente
   const slabStone = (x, z, w, d, ry = 0) => { const o = slab(g, M.slabs, -w / 2, w / 2, 0, 0.06, -d / 2, d / 2); if (o) { o.position.x += x; o.position.z += z; o.rotation.y = ry; o.receiveShadow = true; } };
