@@ -97,7 +97,7 @@ export function startStation(obj, sel, F) {
   }
   for (let i = 0; i < 9; i++) { const u = unit(true); u.position.set(((i % 3) - 1) * 0.06, 0.012 + Math.floor(i / 3) * 0.004, (Math.floor(i / 3) - 1) * 0.045); pile.add(u); }
   // envases vacíos, apilados donde se cogen (la mesa de sobres ya tiene su montón)
-  const st = new THREE.Group(); st.visible = !obj.supply || S.K.cont !== 'bag';
+  const st = new THREE.Group(); st.visible = !!obj.craft; // (las mesas de siempre ya tienen su montón de envases)
   for (let i = 0; i < 3; i++) { const c = makeContainer().o; c.scale.multiplyScalar(0.7); c.position.set((i - 1) * 0.07, K.cont === 'bag' ? BAG.h * SC * 0.35 : 0, 0); if (K.cont === 'bag') c.rotation.x = -0.25; st.add(c); }
   st.position.copy(sp.pack).setY(sp.work.y);
   S.root.add(st); S.packStack = st;
@@ -194,8 +194,9 @@ function unit(deco = false) {
   else if (k === 'powder') { u = new THREE.Mesh(powderG(), powderM()); u.scale.setScalar(deco ? 0.8 : 1); }
   else if (k === 'pill') { u = pillModel(SC * 1.25); u.rotation.set(Math.PI / 2, 0, Math.random() * 3); }
   else if (k === 'drop') { u = new THREE.Mesh(dropG(), dropM()); }
-  else { u = bud(S.color, (deco ? 0.024 : 0.022) * SC, Math.floor(Math.random() * 4)); u.rotation.set(Math.random(), Math.random() * 6, Math.random() * 0.5); }
-  u.userData.r = { crystal: 0.016, powder: 0.013, pill: 0.011, drop: 0.009, bud: 0.028 }[k] * SC;
+  else { u = bud(S.color, (deco ? 0.024 : S.isJar ? 0.018 : 0.017) * SC, Math.floor(Math.random() * 4)); u.rotation.set(Math.random(), Math.random() * 6, Math.random() * 0.5); }
+  // radio para la física (en los tarros los cogollos van más pequeños: caben 5)
+  u.userData.r = (k === 'bud' ? (S.isJar ? 0.018 : 0.017) : { crystal: 0.016, powder: 0.013, pill: 0.011, drop: 0.009 }[k]) * SC;
   return u;
 }
 let _pg, _pm, _dg, _dm;

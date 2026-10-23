@@ -1158,9 +1158,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/station.js": {
-    "mtime": 1792761922.9485826,
-    "seen": 1792764097.0712857,
-    "ast_hash": "438f72d069a0e93cdc8037a8578a6caf",
+    "mtime": 1792766452.1114798,
+    "seen": 1792766471.188103,
+    "ast_hash": "32d5a663cb8ec56283e08d39ea88e773",
     "semantic_hash": ""
   },
   "juego/src/ui/icons.js": {
