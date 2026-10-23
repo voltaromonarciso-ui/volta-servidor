@@ -145,8 +145,9 @@ test.describe.serial('Relieve de la isla', () => {
 
   test('el jugador anda cuesta arriba y abajo pegado al suelo', async ({}, testInfo) => {
     const H = (x, z) => page.evaluate(([x, z]) => __G.world.groundAt(x, z), [x, z]);
-    // la calle norte-sur de la avenida central, de una punta a otra
-    await page.evaluate(() => { __G.police.forEach((c) => c.pos.set(900, 0, 900)); __G.player.teleport(-30.5, -100, Math.PI); });
+    // la avenida central en cuesta (de 3 m a la costa), bajando hacia el mar: mirando calle
+    // abajo el navegador de pruebas dibuja más deprisa que mirando al centro
+    await page.evaluate(() => { __G.police.forEach((c) => c.pos.set(900, 0, 900)); __G.player.teleport(-30.5, -70, 0); });
     await frames(page, 5);
     const gaps = [];
     for (let k = 0; k < 4; k++) {
@@ -155,14 +156,14 @@ test.describe.serial('Relieve de la isla', () => {
       // pruebas dibuja por software: mirando calle arriba al centro da muy pocos por segundo)
       const z0 = await page.evaluate(() => __G.player.pos.z);
       await page.keyboard.down('KeyW');
-      for (let t = 0; t < 40; t++) { await frames(page, 2); if ((await page.evaluate(() => __G.player.pos.z)) - z0 > 2.2) break; }
+      for (let t = 0; t < 40; t++) { await frames(page, 2); if (z0 - (await page.evaluate(() => __G.player.pos.z)) > 2.2) break; }
       await page.keyboard.up('KeyW');
       await frames(page, 4);
       const p = await page.evaluate(() => ({ x: __G.player.pos.x, y: __G.player.pos.y, z: __G.player.pos.z }));
       gaps.push(Math.abs(p.y - (await H(p.x, p.z))));
     }
     const p = await page.evaluate(() => __G.player.pos.z);
-    expect(p).toBeGreaterThan(-92); // ha avanzado (4 tramos de más de 2 m)
+    expect(p).toBeLessThan(-78); // ha avanzado cuesta abajo (4 tramos de más de 2 m)
     for (const g of gaps) expect(g).toBeLessThan(0.05);
     await page.screenshot({ path: testInfo.outputPath('cuesta.png') });
   });
