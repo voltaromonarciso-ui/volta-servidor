@@ -42,6 +42,8 @@ export async function loadInterior() {
       const geo = list.length > 1 ? mergeGeometries(list) : list[0];
       const mat = m.clone();
       if (kit === 'furniture' && TINT[m.name]) mat.color.set(TINT[m.name]); // tapicería en tonos de oficina
+      // lavadoras y secadoras blancas, con el ojo de buey de cristal oscuro
+      if (/^(washer|dryer|washerDryerStacked)$/.test(file)) { if (m.name === 'metalLight') mat.color.set('#f4f5f6'); else if (m.name === 'metal') mat.color.set('#d9dde1'); else if (m.name === 'glass') mat.color.set('#3c4a56'); }
       if (kit.startsWith('lux')) {
         // (Quaternius, convertidos de FBX: vienen transparentes y con el color oscurecido dos veces)
         mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
