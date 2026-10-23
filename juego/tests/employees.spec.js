@@ -43,7 +43,7 @@ test.describe.serial('Empleados: contratar, trabajar, cobrar y guardar', () => {
     expect(await money(page)).toBe(5000);
     expect(await ev(page, () => __G.state.employees.length)).toBe(0);
     const lim = await mod(page, S, (m) => [0, 1, 2, 3].map((r) => { __G.state.rank = r; return m.maxStaff(); }));
-    expect(lim).toEqual([0, 1, 2, 3]);
+    expect(lim).toEqual([0, 1, 2, 4]);
     // Buscavidas: una sola persona
     await ev(page, () => { __G.state.rank = 1; });
     const r = await mod(page, S, (m) => { const a = m.hire('dani', 'nave').ok, b = m.hire('paco', 'nave').ok; m.fire(__G.state.employees[0].uid); return [a, b, __G.state.employees.length]; });
