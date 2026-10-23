@@ -147,15 +147,13 @@ function buildStage(st, seed) {
         leaves.push(placeLeaf(fanLeaf(big, leafN), dx * 0.02, y, dz * 0.02, ang + 0.45, 0.3 + t * 0.5)); // (las de abajo caen menos: no atraviesan la maceta)
         leaves.push(placeLeaf(fanLeaf(big * 0.85, leafN), ex * 0.5, (y + ey) / 2, ez * 0.5, ang - 0.5, 0.55));
         leaves.push(placeLeaf(fanLeaf(big * 0.65, Math.max(5, leafN - 2)), ex, ey, ez, ang, 0.25));
-        // más follaje: hojas a un cuarto y a tres cuartos de la rama, hacia los lados
+        // más follaje: otra hoja a un cuarto de la rama, hacia un lado
         leaves.push(placeLeaf(fanLeaf(big * 0.9, leafN), ex * 0.25, y + (ey - y) * 0.25, ez * 0.25, ang + 0.9, 0.6));
-        leaves.push(placeLeaf(fanLeaf(big * 0.75, leafN), ex * 0.75, y + (ey - y) * 0.75, ez * 0.75, ang - 0.85, 0.45));
-        leaves.push(placeLeaf(fanLeaf(big * 0.55, 5), ex * 0.9, ey + 0.02, ez * 0.9, ang + 0.6, 0.05));
         if (st.buds > 0 && t > 0.3) buds.push(...bud(ex, ey - 0.01, ez, (0.028 + st.buds * 0.018) * (0.7 + t * 0.4), (0.06 + st.buds * 0.09) * (0.6 + t * 0.5), rand, st.buds > 0.5 ? leaves : null));
       }
     }
-    for (let i = 0; i < nodes * 2; i++) {
-      const t = (i + 0.3) / (nodes * 2), ang = i * 2.4 + 0.7;
+    for (let i = 0; i < nodes; i++) {
+      const t = (i + 0.3) / nodes, ang = i * 2.4 + 0.7;
       leaves.push(placeLeaf(fanLeaf(size * (0.5 + (1 - t) * 0.4), leafN), Math.cos(ang) * 0.02, 0.08 + t * H * 0.78, Math.sin(ang) * 0.02, ang, 0.2 + t * 0.4));
     }
     // la punta: un cono de hojas hacia arriba y, en flor, el cogollo principal
