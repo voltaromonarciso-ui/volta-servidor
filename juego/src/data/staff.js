@@ -27,6 +27,7 @@ export const CANDIDATES = [
 // tú y la plantilla crece con el rango: ayudan a escalar, no a saltarse la partida.
 export const STAFF = {
   maxPerProperty: 3,        // empleados por propiedad
+  perWarehouse: [2, 4, 6],  // en los almacenes: Delta, Bravo y Alfa
   maxByRank: [0, 1, 2, 3, 3, 3, 3], // plantilla total según el rango (Novato no puede contratar)
   workFrom: 8, workTo: 20,  // horario (horas de juego)
   payHour: 7,               // la nómina se cobra cada mañana a esta hora

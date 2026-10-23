@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { G } from '../game.js';
+import { rackStore } from './racks.js';
 import { W, B, TM, scene, K, removeBox } from './world.js';
 import * as SK from './streetkit.js';
 import { createFurniture } from './streetfurniture.js';
@@ -1056,6 +1057,18 @@ function warehouseFor(b) {
   if (ge.forklift) { K.forklift(x + ge.forklift.x, z + ge.forklift.z, ge.forklift.ry); K.addBox(x + ge.forklift.x - 0.7, x + ge.forklift.x + 0.7, z + ge.forklift.z - 1.4, z + ge.forklift.z + 1.4, 2.2); }
   if (ge.jack) K.palletJack(x + ge.jack.x, z + ge.jack.z, ge.jack.ry);
   for (const [px, pz, n] of ge.pallets) K.pallet(x + px, z + pz, 0, n); // (cada palé ya lleva su colisión)
+  // las estanterías del fondo: un almacén grande (se abre desde el pasillo de delante)
+  const rk = r.rack;
+  K.hitbox(x + (rk.x0 + rk.x1) / 2, 1.4, z + rk.z1 + 0.2, rk.x1 - rk.x0, 2.8, 0.5, {
+    actions: () => (G.state.props[id]
+      ? [{ label: 'Abrir estanterías', fn: () => G.act.openShelf(rackStore(id)) }]
+      : [{ label: 'Estanterías', fn: () => G.act.toast?.('El almacén no es tuyo.') }]),
+  });
+  // el sofá de la oficina: se puede dormir
+  const so = r.office.sofa;
+  if (so) K.hitbox(x + so.x, so.y + 0.5, z + so.z, 1.0, 1.0, 2.2, {
+    actions: () => (G.state.props[id] ? [{ label: 'Dormir en el sofá', fn: () => G.act.sleep(id, { wake: 7 * 60 }) }] : []),
+  });
   // la puerta de la oficina: sólo se abre si el almacén es tuyo
   K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.25, color: '#5d6670', locked: () => !G.state.props[id] });
   // suelo de hormigón (es el que recibe macetas y mesas)
@@ -1069,7 +1082,7 @@ function warehouseFor(b) {
   fm.userData.prop = id;
   scene.add(fm);
   W.floors.push(fm);
-  const i = r.inside, rk = r.rack;
+  const i = r.inside;
   W.props[id] = {
     x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, name, price: spec.price, blurb: spec.blurb, warehouse: true, indoor: true, doors: spec.doors, level: spec.level, height: 8, office: Math.round([8, 9.5, 10.5][spec.level] * 4.35),
     spawn: { x: x + r.entry.x, z: z + r.entry.z, yaw: Math.PI }, area: Math.round((i.x1 - i.x0) * (i.z1 - i.z0)),

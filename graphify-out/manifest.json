@@ -216,15 +216,15 @@
     "semantic_hash": ""
   },
   "juego/src/systems/objects.js": {
-    "mtime": 1792624088.9603298,
-    "seen": 1792624883.9518652,
-    "ast_hash": "b80b5f24989e039b5382bdca9a0bce76",
+    "mtime": 1792754291.0583627,
+    "seen": 1792754427.784669,
+    "ast_hash": "41845446653af5d673d28c7bd38f4b37",
     "semantic_hash": ""
   },
   "juego/src/systems/police.js": {
-    "mtime": 1792698649.9489293,
-    "seen": 1792698770.7101622,
-    "ast_hash": "77d325e8ed32a40aae23ad4c078c6ba6",
+    "mtime": 1792754283.2865098,
+    "seen": 1792754427.7846713,
+    "ast_hash": "af28ea23c8ca1a7570655e501c6a7342",
     "semantic_hash": ""
   },
   "juego/src/systems/time.js": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/panels.js": {
-    "mtime": 1792646816.8587759,
-    "seen": 1792647496.662236,
-    "ast_hash": "304281519f38fa71340b90ea3f952900",
+    "mtime": 1792754270.8728662,
+    "seen": 1792754427.7849486,
+    "ast_hash": "9b261c229c0540bcc8412b1e4774c30b",
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
@@ -1332,15 +1332,15 @@
     "semantic_hash": ""
   },
   "juego/src/data/staff.js": {
-    "mtime": 1792609645.7258017,
-    "seen": 1792614056.4510925,
-    "ast_hash": "ead2153e202c9a581fa8b50edf1a07f8",
+    "mtime": 1792754270.874497,
+    "seen": 1792754427.7840428,
+    "ast_hash": "0f3dad4ce28ab946ed7ed110a9b13c7a",
     "semantic_hash": ""
   },
   "juego/src/systems/staff.js": {
-    "mtime": 1792609645.7269328,
-    "seen": 1792614056.4511385,
-    "ast_hash": "4ee34cc57aaba3fb28dc441805769658",
+    "mtime": 1792754278.3454652,
+    "seen": 1792754427.7846997,
+    "ast_hash": "1b417f7d4f48498a37dc540cbabea42b",
     "semantic_hash": ""
   },
   "juego/tests/employees.spec.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792750584.29982,
-    "seen": 1792753963.3289382,
-    "ast_hash": "f69fe0f9a7a1c718a54ce7db03dc6a1f",
+    "mtime": 1792754278.3449333,
+    "seen": 1792754427.7852595,
+    "ast_hash": "cb1aa5f813fd61111fb31b41148a85b5",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/realbuilding.js": {
-    "mtime": 1792754052.6567748,
-    "seen": 1792754091.0865235,
-    "ast_hash": "495dcdf99eaadfddc69b16d4db4ed693",
+    "mtime": 1792754258.203702,
+    "seen": 1792754427.785316,
+    "ast_hash": "ad7520a9badf0db2a4fe0bdd7de03d95",
     "semantic_hash": ""
   },
   "juego/docs/avances-18-apart.png": {
@@ -2163,6 +2163,12 @@
     "mtime": 1792752650.0885499,
     "seen": 1792753963.3350365,
     "ast_hash": "7c96ebaa1ba7ae8179c9c020ec49d67d",
+    "semantic_hash": ""
+  },
+  "juego/src/world/racks.js": {
+    "mtime": 1792754278.3451247,
+    "seen": 1792754427.7853127,
+    "ast_hash": "faede7a9c1d5dc956baaac54a70e9a26",
     "semantic_hash": ""
   }
 }

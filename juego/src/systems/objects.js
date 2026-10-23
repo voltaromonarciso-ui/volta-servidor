@@ -491,6 +491,7 @@ export function canPlace(type, x, z, r, propId) {
   const [fw, fd] = footprint(type, r);
   if (!(x - fw / 2 >= prop.x0 && x + fw / 2 <= prop.x1 && z - fd / 2 >= prop.z0 && z + fd / 2 <= prop.z1)) return false;
   for (const c of G.world.colliders) {
+    if (c.yMin > 1) continue; // (barandillas y cristales de la entreplanta: van por arriba)
     if (c.on && c.x0 < x + fw / 2 && c.x1 > x - fw / 2 && c.z0 < z + fd / 2 && c.z1 > z - fd / 2) return false;
   }
   const p = G.player.pos;

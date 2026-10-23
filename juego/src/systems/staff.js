@@ -5,6 +5,7 @@ import { absNow, save, slotsAdd, slotsRemove, slotsRoom, slotsCount } from '../c
 import { spend, ensureBaseProduct, sendMsg, CONTACTS } from './economy.js';
 import { RECIPE, COOK_MIN, COOK_OUT, harvestYield, emptyPot, refreshPot } from './objects.js';
 import { rememberIncident } from './appearance.js';
+import { rackStore } from '../world/racks.js';
 
 // Empleados. Reglas:
 // - Trabajan solo con lo que hay en SU propiedad: estanterías/armarios (de ahí cogen y ahí
@@ -51,6 +52,7 @@ const objsIn = (prop, type) => [...G.objects.values()]
 // Todas las estanterías y armarios de la propiedad como un solo almacén.
 export function storeOf(prop) {
   const lists = objsIn(prop, ['shelf', 'locker']).map((o) => o.entry.data.slots);
+  if (G.world.props[prop]?.warehouse && G.state.props[prop]) lists.push(rackStore(prop).entry.data.slots); // las estanterías del fondo
   return {
     n: lists.length,
     count: (id, p) => lists.reduce((a, s) => a + slotsCount(s, id, p), 0),
@@ -76,6 +78,8 @@ export function storeOf(prop) {
 // ------------------------------------------------------------------
 export const hired = (cid) => staff().find((e) => e.cid === cid);
 const inProp = (prop) => staff().filter((e) => e.prop === prop);
+// Tope de empleados por sitio: en los almacenes, según el tamaño (Delta 2, Bravo 4, Alfa 6)
+export const capOf = (prop) => { const p = G.world.props[prop]; return p?.warehouse ? STAFF.perWarehouse[p.level] ?? STAFF.maxPerProperty : STAFF.maxPerProperty; };
 
 export function hire(cid, prop) {
   const c = byId[cid];
@@ -84,7 +88,7 @@ export function hire(cid, prop) {
   if ((c.rank || 0) > G.state.rank) return { ok: false, msg: 'Aún no confía en ti (sube de rango).' };
   if (staff().length >= maxStaff()) return { ok: false, msg: maxStaff() ? `Con tu rango puedes tener ${maxStaff()} empleado${maxStaff() > 1 ? 's' : ''} como mucho.` : 'Todavía nadie quiere trabajar para un novato: sube de rango.' };
   if (!G.state.props[prop] || !G.world.props[prop]) return { ok: false, msg: 'Esa propiedad no es tuya.' };
-  if (inProp(prop).length >= STAFF.maxPerProperty) return { ok: false, msg: `Ya hay ${STAFF.maxPerProperty} empleados en esa propiedad.` };
+  if (inProp(prop).length >= capOf(prop)) return { ok: false, msg: `Ya hay ${capOf(prop)} empleados en esa propiedad.` };
   const r = spend('dirty', c.hire, `contratación: ${c.name}`);
   if (!r.ok) return { ok: false, msg: r.msg };
   const now = absNow();
@@ -107,7 +111,8 @@ function leave(e, why) {
   e.task = null;
   if (why === 'quit') sendMsg('staff_' + c.id, `Llevo ${e.owed} días sin cobrar. Me largo.`);
   // quien se va con deudas pendientes puede ir con el cuento a la policía
-  if (e.owed > 0 && Math.random() < STAFF.leakChance(c.loyalty)) {
+  // (en un almacén, apartado en el polígono, se va de la lengua la mitad de veces)
+  if (e.owed > 0 && Math.random() < STAFF.leakChance(c.loyalty) * (G.world.props[e.prop]?.warehouse ? 0.5 : 1)) {
     rememberIncident();
     G.act.toast?.(`${c.name} se ha ido resentido y ha dado tu descripción a la policía. Cámbiate de ropa o de pelo.`, '🚨');
     sendMsg('leo', `Primo, ${c.name} anda diciendo por ahí cómo eres. La pasma ya tiene tu descripción: cámbiate de look.`);
@@ -120,7 +125,7 @@ export function assign(uid, prop) {
   const e = staff().find((x) => x.uid === uid);
   if (!e) return { ok: false, msg: 'No trabaja para ti.' };
   if (!G.state.props[prop] || !G.world.props[prop]) return { ok: false, msg: 'Esa propiedad no es tuya.' };
-  if (e.prop !== prop && inProp(prop).length >= STAFF.maxPerProperty) return { ok: false, msg: `Ya hay ${STAFF.maxPerProperty} empleados en esa propiedad.` };
+  if (e.prop !== prop && inProp(prop).length >= capOf(prop)) return { ok: false, msg: `Ya hay ${capOf(prop)} empleados en esa propiedad.` };
   e.prop = prop;
   e.task = null;
   e.clock = Math.max(e.clock, absNow());

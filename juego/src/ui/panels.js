@@ -565,7 +565,8 @@ export function openAtm(atm) {
 
 export function openShelf(obj) {
   const locker = obj.entry.type === 'locker';
-  const p = openPanel({ title: locker ? 'Armario de almacenaje' : 'Estantería', wide: true });
+  const rack = obj.entry.type === 'rack';
+  const p = openPanel({ title: obj.title || (locker ? 'Armario de almacenaje' : 'Estantería'), wide: true });
   const slots = obj.entry.data.slots;
   const render = () => {
     p.body.innerHTML = '';
@@ -591,7 +592,7 @@ export function openShelf(obj) {
       col.appendChild(grid);
       return col;
     };
-    cols.append(make('Tu inventario', G.state.inv, slots), make(locker ? 'Armario' : 'Estantería', slots, G.state.inv));
+    cols.append(make('Tu inventario', G.state.inv, slots), make(rack ? `Estanterías (${slots.filter(Boolean).length}/${slots.length})` : locker ? 'Armario' : 'Estantería', slots, G.state.inv));
     p.body.appendChild(cols);
   };
   render();

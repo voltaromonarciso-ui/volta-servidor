@@ -55,7 +55,9 @@ export function updatePolice(dt) {
     const fit = recognition() < 0.45 ? 1.3 : 1;
     // metido en un callejón (fuera de su vista) te pierden el doble de rápido
     const hid = inAlley(p.x, p.z) ? 2 : 1;
-    wanted.unseen = seen ? 0 : wanted.unseen + step * (inside ? 3 : 1) * fit * hid;
+    // dentro de tu almacén (apartado en el polígono) te pierden antes que en casa
+    const shelter = inside ? (G.world.props[inside]?.warehouse && G.state.props[inside] ? 5 : 3) : 1;
+    wanted.unseen = seen ? 0 : wanted.unseen + step * shelter * fit * hid;
     if (wanted.unseen >= wanted.escape) {
       wanted.level = 0;
       wanted.unseen = 0;
