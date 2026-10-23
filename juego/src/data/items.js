@@ -11,6 +11,8 @@ export const ITEMS = {
   cristal:   { name: 'Cristales Sweet', icon: '💎', stack: 30, illegal: true, product: true, units: 1, color: '#b06cff', desc: 'Cristales sueltos: envásalos en bolsas Sweet Shards.' },
   shards:    { name: 'Sweet Shards', icon: '🍬', stack: 30, illegal: true, product: true, units: 1, packed: true, form: 'bolsas Sweet Shards', color: '#c58bff', desc: 'Bolsa de cristales de colores.' },
 
+  fardo:     { name: 'Fardo del cártel', icon: '📦', stack: 12, illegal: true, color: '#8a6a3b', desc: 'Mercancía del jefe. Llévala al punto de entrega antes de que acabe el plazo.' },
+  alijo:     { name: 'Alijo', icon: '🧳', stack: 1, illegal: true, color: '#3b4a5a', desc: 'El alijo del puerto. Llévaselo al jefe a El Cartel.' },
   caja:      { name: 'Caja de Leo', icon: '📦', stack: 1, desc: 'Ábrela dentro de tu casa.' },
 
   // Ferretería

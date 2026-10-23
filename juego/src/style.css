@@ -786,3 +786,11 @@ body.touch .staff .btn.sm { min-height: 44px; }
 .re-bar .btn { flex: 1; display: flex; align-items: center; justify-content: center; }
 .re-bar .btn:last-child { flex: 1.4; }
 .re-owned { flex: 1.4; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--money); border-radius: 12px; background: rgba(126,217,87,0.12); }
+
+/* ---------- El Cartel: despacho del jefe ---------- */
+.boss-rep { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: rgba(214,50,43,0.1); border: 1px solid rgba(214,50,43,0.35); margin-bottom: 10px; }
+.boss-rep .bar { height: 8px; border-radius: 8px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.boss-rep .bar i { display: block; height: 100%; background: linear-gradient(90deg, #9e1712, #ff4a3a); border-radius: 8px; }
+.boss-job { display: flex; flex-direction: column; gap: 6px; padding: 11px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-top: 8px; }
+.boss-job.on { border-color: rgba(214,50,43,0.6); background: rgba(214,50,43,0.08); }
+.boss-job .row { margin-top: 2px; gap: 8px; }

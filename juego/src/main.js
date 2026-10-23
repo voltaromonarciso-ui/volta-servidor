@@ -36,6 +36,7 @@ import { updateGangs, clearGangs } from './systems/gangs.js';
 import { attack, updateCombat } from './systems/combat.js';
 import { addXP, sendMsg, deadDropActions, unlockStartingCustomers } from './systems/economy.js';
 import { initHUD, updateHUD, toast, bigToast, notify, setWaypoint, clearWaypoint } from './ui/hud.js';
+import { openBoss, tickCartel } from './systems/cartel.js';
 import * as P from './ui/panels.js';
 import { openCreator } from './ui/creator.js';
 import { applyLayout, fitHud, openLayoutEditor } from './ui/layout.js';
@@ -167,7 +168,7 @@ Object.assign(G.act, {
     G.avatar?.apply(st);
     G.player.vm.useAvatar?.(look?.model, st); // brazos en primera persona del propio personaje
     if (look) G.player.applyLook?.({ ...look, shirt: sleeveFor(look, st.worn) || look.shirt });
-  }, openShelf: P.openShelf, openCartelShop: () => P.openShop('cartel'),
+  }, openShelf: P.openShelf, openCartelShop: () => P.openShop('cartel'), cartelBoss: () => openBoss(),
   npcActions: P.npcActions, friskDialog: P.friskDialog, bungalowActions: P.bungalowActions,
   deadDropActions, addXP, advanceTime, daySummary: P.daySummary,
   arrested: (r) => P.arrestedDialog(r),
@@ -515,6 +516,7 @@ function frame() {
   updateCombat(dt);
   for (const c of G.cars) c.update(dt);
   updateObjects(dt);
+  tickCartel(dt);
   G.world.update(dt);
   if (G.uiOpen) hideGhost();
   const target = riding() ? { actions: [], info: '' } : updateInteract(dt);
