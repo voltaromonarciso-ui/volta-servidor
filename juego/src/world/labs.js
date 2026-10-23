@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { G as GAME } from '../game.js';
+import { canvasTex, labelTex, screw, screws4, vent, cable, decal } from '../entities/detail.js';
 
 // Reflejos de taller (neutros) para los metales: con el reflejo del cielo, dentro de casa el
 // acero salía azulado. Se crea una vez, cuando ya hay renderer.
@@ -82,7 +83,28 @@ const handleM = () => M('labTirador', { color: '#e2e8ee', roughness: 0.12, metal
 const handleBlue = () => M('labTiradorAzul', { color: '#3a8de0', roughness: 0.25, metalness: 0.4, emissive: '#1d5fb0', emissiveIntensity: 0.35 });
 const glass = () => M('labCristal', { color: '#bfe3ff', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false });
 export const labScreen = () => screenM();
-const screenM = () => M('labPantalla', { color: '#7fd0ff', emissive: '#2b9dff', emissiveIntensity: 1.3, roughness: 0.2 });
+// pantalla con su interfaz (cabecera, barra de progreso, cifras)
+const screenTex = () => canvasTex('labUI', 256, 160, (c, w, h) => {
+  c.fillStyle = '#06223f'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#1b6fd1'; c.fillRect(0, 0, w, 30);
+  c.fillStyle = '#e8f4ff'; c.font = 'bold 18px Arial'; c.fillText('ROOK LAB  ·  LISTO', 10, 21);
+  c.fillStyle = '#7fd0ff'; c.font = 'bold 30px "Courier New", monospace'; c.fillText('72.4°C', 12, 70);
+  c.font = '14px Arial'; c.fillStyle = '#9cc7ec'; c.fillText('Presión 1.2 bar   Lote 07', 12, 94);
+  c.strokeStyle = '#7fd0ff'; c.lineWidth = 2; c.strokeRect(12, 110, w - 24, 18); c.fillStyle = '#39d98a'; c.fillRect(15, 113, (w - 30) * 0.64, 12);
+  c.fillStyle = '#39d98a'; c.beginPath(); c.arc(w - 22, 15, 6, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = 'rgba(127,208,255,0.5)'; c.beginPath(); c.moveTo(150, 80); for (let x = 0; x < 90; x += 6) c.lineTo(150 + x, 80 - Math.sin(x / 9) * 14 - x * 0.2); c.stroke();
+});
+const screenM = () => M('labPantalla', { color: '#ffffff', map: screenTex(), emissive: '#ffffff', emissiveMap: screenTex(), emissiveIntensity: 1.3, roughness: 0.2 });
+// pegatinas: aviso de tensión, placa del modelo, «no tocar», código QR
+const warnTex = () => canvasTex('labAviso', 128, 112, (c, w, h) => { c.fillStyle = '#f2c230'; c.beginPath(); c.moveTo(w / 2, 6); c.lineTo(w - 6, h - 6); c.lineTo(6, h - 6); c.closePath(); c.fill(); c.strokeStyle = '#111'; c.lineWidth = 8; c.lineJoin = 'round'; c.stroke(); c.fillStyle = '#111'; c.beginPath(); c.moveTo(70, 34); c.lineTo(50, 66); c.lineTo(64, 66); c.lineTo(56, 92); c.lineTo(80, 56); c.lineTo(66, 56); c.lineTo(76, 34); c.closePath(); c.fill(); });
+const plateTex = (model) => labelTex('placa' + model, { bg: '#d9dde1', band: '#2b3138', title: model, sub: 'Rook Industrial', barcode: true, w: 256, h: 112 });
+const warnM = () => M('labAvisoM', { map: warnTex(), transparent: true, alphaTest: 0.5, roughness: 0.6 });
+function sticker(g, x, y, z, s = 0.06, ry = 0) { const m = new THREE.Mesh(G('labPegatina' + s, () => new THREE.PlaneGeometry(s, s * 0.875)), warnM()); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); return m; }
+// seta de emergencia con collarín amarillo
+function eStop(g, x, y, z) {
+  const c = cyl(g, M('labCollar', { color: '#f2c230', roughness: 0.45 }), 0.04, 0.04, 0.012, x, y, z, 20); c.rotation.x = Math.PI / 2;
+  const b = put(g, G('labSeta', () => new THREE.SphereGeometry(0.03, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2)), btn('#e02a2a'), x, y, z + 0.012, Math.PI / 2, 0, 0); return b;
+}
 const bins = { blue: M('labCajaAzul', { color: '#2463b8', roughness: 0.5 }), green: M('labCajaVerde', { color: '#2f8a4a', roughness: 0.5 }), black: M('labCajaNegra', { color: '#2a2e33', roughness: 0.55 }), tan: M('labCajaCarton', { color: '#b98a52', roughness: 0.8 }) };
 const btn = (c) => M('labBoton' + c, { color: c, emissive: c, emissiveIntensity: 0.6, roughness: 0.35 });
 const lightBar = (c) => M('labLuz' + c, { color: '#ffffff', emissive: c, emissiveIntensity: 2.2 });
@@ -94,6 +116,7 @@ function leg(g, x, z, h = TOP - 0.06) {
   put(g, rbg(0.06, h, 0.06, 0.01), dark(), x, h / 2 + 0.05, z);
   cyl(g, darker(), 0.045, 0.05, 0.05, x, 0.025, z, 14);
 }
+const drawerCard = (k) => canvasTex('labCajon' + k, 96, 36, (c, w, h) => { c.fillStyle = '#f4f4ee'; c.fillRect(0, 0, w, h); c.fillStyle = '#1d2126'; c.font = 'bold 20px Arial'; c.fillText(['GUANTES', 'BOLSAS', 'BÁSCULA'][k % 3], 6, 25); });
 // banco: tablero de acero, cajonera derecha con 3 cajones, balda baja con cajas, cubo a la izq.
 function bench(g, { w = W, d = D, drawers = 3, blue = true, binsLow = ['blue', 'green', 'black'], trash = true } = {}) {
   const x0 = -w / 2, x1 = w / 2;
@@ -106,7 +129,12 @@ function bench(g, { w = W, d = D, drawers = 3, blue = true, binsLow = ['blue', '
     const y = 0.12 + dh * (k + 0.5);
     box(g, darker(), cw - 0.06, dh - 0.03, 0.02, cx, y, d / 2 - 0.02, 0.008);
     box(g, blue ? handleBlue() : handleM(), cw * 0.42, 0.025, 0.03, cx, y + dh * 0.15, d / 2 + 0.005, 0.01);
+    box(g, handleM(), 0.07, 0.03, 0.004, cx, y - dh * 0.2, d / 2 - 0.008, 0.003);               // tarjetero
+    decal(g, drawerCard(k), 0.06, 0.022, cx, y - dh * 0.2, d / 2 - 0.005);
   }
+  box(g, steelTop(), w + 0.04, 0.07, 0.015, 0, TOP + 0.065, -d / 2 - 0.012, 0.006);              // peto trasero
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) screw(g, sx * (w / 2 - 0.02), TOP + 0.031, sz * (d / 2 - 0.0), 'y', 0.005);
+  decal(g, plateTex('WB-' + Math.round(w * 100)), 0.16, 0.07, x0 + 0.3, TOP - 0.06, d / 2 - 0.028);
   for (const x of [x0 + 0.05, cx - cw / 2 - 0.03]) for (const z of [-d / 2 + 0.05, d / 2 - 0.05]) leg(g, x, z);
   // balda baja con cajas
   const sx0 = x0 + 0.05, sx1 = cx - cw / 2 - 0.06;
@@ -140,7 +168,18 @@ function controlBox(g, x, y, z, w = 0.36, h = 0.42, d = 0.3) {
   box(g, steel(), w, h, d, x, y + h / 2, z, 0.025);
   box(g, darker(), w * 0.62, h * 0.32, 0.02, x, y + h * 0.68, z + d / 2, 0.01);
   box(g, screenM(), w * 0.54, h * 0.25, 0.02, x, y + h * 0.68, z + d / 2 + 0.006, 0.006);
-  ['#2ecc71', '#f39c12', '#e74c3c'].forEach((c, k) => { const b = cyl(g, btn(c), 0.022, 0.022, 0.02, x + (k - 1) * w * 0.22, y + h * 0.3, z + d / 2 + 0.01, 14); b.rotation.x = Math.PI / 2; });
+  ['#2ecc71', '#f39c12', '#e74c3c'].forEach((c, k) => {
+    const b = cyl(g, btn(c), 0.022, 0.022, 0.02, x + (k - 1) * w * 0.22, y + h * 0.3, z + d / 2 + 0.01, 14); b.rotation.x = Math.PI / 2;
+    const r = put(g, G('labAro', () => new THREE.TorusGeometry(0.025, 0.004, 6, 20)), handleM(), x + (k - 1) * w * 0.22, y + h * 0.3, z + d / 2 + 0.004); void r;
+  });
+  // juntas de la chapa, tornillos, rejilla lateral, placa del modelo, aviso y cable a la pared
+  const f = z + d / 2 + 0.001;
+  box(g, M('labJunta', { color: '#4b5259', roughness: 0.6, metalness: 0.5 }), w - 0.03, 0.004, 0.004, x, y + h * 0.48, f, 0.001);
+  screws4(g, x, y + h / 2, f, w, h, 'z');
+  vent(g, x + w / 2 + 0.001, y + h * 0.55, z, d * 0.6, h * 0.3, Math.PI / 2, 6);
+  decal(g, plateTex('RX-' + Math.round(w * 1000)), w * 0.42, w * 0.18, x + w * 0.12, y + h * 0.13, f + 0.001);
+  sticker(g, x - w * 0.3, y + h * 0.13, f + 0.001, 0.05);
+  cable(g, new THREE.Vector3(x, y + 0.06, z - d / 2), new THREE.Vector3(x + 0.05, y - 0.02, z - d / 2 - 0.06), 0.02, 0.008);
   return new THREE.Vector3(x - w * 0.22, y + h * 0.3, z + d / 2 + 0.02);
 }
 // Zona de trabajo delantera, común a las mesas (los ingredientes a la izquierda, el cuenco en el
@@ -156,6 +195,9 @@ function hopper(g, x, y, z, r = 0.16, h = 0.24) {
   c.material = M('labTolva', { color: '#d4dadf', roughness: 0.2, metalness: 0.85, side: THREE.DoubleSide });
   cyl(g, steelTop(), r * 1.04, r * 1.04, 0.025, x, y + h, z, 24);
   cyl(g, steel(), r * 0.22, r * 0.22, 0.1, x, y - 0.05, z, 14);
+  // abrazadera del cuello y tornillos en el borde
+  put(g, G('labAbraz' + r, () => new THREE.TorusGeometry(r * 0.24, 0.008, 8, 20)), handleM(), x, y - 0.01, z, Math.PI / 2, 0, 0);
+  for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; screw(g, x + Math.cos(a) * r * 0.96, y + h + 0.013, z + Math.sin(a) * r * 0.96, 'y', 0.005); }
 }
 // bandeja con cubitos de colores (cristales)
 function tray(g, x, y, z, w, d, col, n = 10, seed = 3) {
@@ -249,11 +291,18 @@ export function buildPillMachine(o) {
   cyl(g, darker(), 0.1, 0.1, 0.05, px - 0.14, y + 0.12, 0.06, 18);
   box(g, steel(), 0.62, 0.06, 0.62, px - 0.08, y + 0.73, -0.04, 0.02);
   hopper(g, px - 0.08, y + 0.86, -0.04, 0.15, 0.24);
+  screws4(g, px - 0.14, y + 0.34, 0.281, 0.44, 0.5, 'z');
+  for (const sy of [0.18, 0.5]) box(g, handleM(), 0.03, 0.06, 0.02, px - 0.36, y + sy, 0.275, 0.006);   // bisagras
+  vent(g, px - 0.391, y + 0.4, -0.04, 0.36, 0.2, -Math.PI / 2, 7);
+  sticker(g, px + 0.08, y + 0.6, 0.262, 0.06);
+  decal(g, plateTex('TP-200'), 0.2, 0.088, px - 0.25, 0.7, 0.407);
+  vent(g, px + 0.22, 0.2, 0.407, 0.28, 0.12, 0, 5);
   // panel con pantalla y seta de emergencia
   box(g, steel(), 0.24, 0.5, 0.5, px + 0.33, y + 0.25, -0.04, 0.02);
   box(g, darker(), 0.17, 0.12, 0.02, px + 0.33, y + 0.38, 0.215, 0.008);
   box(g, screenM(), 0.14, 0.09, 0.02, px + 0.33, y + 0.38, 0.222, 0.006);
-  const stop = cyl(g, btn('#e02a2a'), 0.035, 0.035, 0.035, px + 0.38, y + 0.2, 0.225, 16); stop.rotation.x = Math.PI / 2;
+  eStop(g, px + 0.38, y + 0.2, 0.216);
+  screws4(g, px + 0.33, y + 0.25, 0.211, 0.24, 0.5, 'z');
   const button = new THREE.Vector3(px + 0.27, y + 0.2, 0.24);
   const go = cyl(g, btn('#2ecc71'), 0.022, 0.022, 0.02, px + 0.27, y + 0.2, 0.222, 14); go.rotation.x = Math.PI / 2;
   // salida: rampa con una bandeja de pastillas
@@ -291,9 +340,16 @@ export function buildLiquidStation(o) {
   cyl(g, steel(), 0.185, 0.185, 0.04, tx, y + 0.64, -0.1, 28);
   cyl(g, steel(), 0.185, 0.185, 0.04, tx, y + 0.21, -0.1, 28);
   box(g, steel(), 0.3, 0.2, 0.28, tx, y + 0.1, -0.1, 0.02);
+  for (const ry of [0.3, 0.42, 0.54]) put(g, G('labAnillo', () => new THREE.TorusGeometry(0.172, 0.004, 6, 36)), steel(), tx, y + ry, -0.1, Math.PI / 2, 0, 0);
+  decal(g, canvasTex('labNivel', 32, 256, (c, w, h) => { c.fillStyle = 'rgba(0,0,0,0)'; c.clearRect(0, 0, w, h); c.fillStyle = '#f4f7fa'; for (let i = 0; i <= 10; i++) c.fillRect(0, 8 + i * 23.5, i % 5 ? 12 : 24, 3); }), 0.025, 0.36, tx, y + 0.42, 0.072).material.transparent = true;
+  const valve = cyl(g, M('labValvula', { color: '#d64541', roughness: 0.4 }), 0.02, 0.02, 0.03, tx + 0.1, y + 0.1, 0.05, 14); valve.rotation.x = Math.PI / 2;
+  screws4(g, tx, y + 0.1, 0.041, 0.3, 0.2, 'z');
+  sticker(g, tx - 0.08, y + 0.12, 0.041, 0.045);
   // bloque dosificador con cuatro boquillas y tubos que salen del depósito
   const dx = 0.12;
   box(g, steel(), 0.62, 0.22, 0.26, dx, y + 0.42, -0.14, 0.02);
+  screws4(g, dx, y + 0.42, -0.009, 0.62, 0.22, 'z');
+  decal(g, plateTex('DOS-4'), 0.16, 0.07, dx + 0.18, y + 0.46, -0.008);
   const tubeM = M('labTuboNegro', { color: '#1d2126', roughness: 0.5 });
   for (let k = 0; k < 4; k++) {
     const x = dx - 0.21 + k * 0.14;
@@ -349,6 +405,13 @@ export function buildAutoPacker(o) {
   box(g, darker(), 0.26, 0.17, 0.02, cx, ty + 0.56, 0.265, 0.008);
   box(g, screenM(), 0.22, 0.13, 0.02, cx, ty + 0.56, 0.272, 0.006);
   ['#2ecc71', '#f39c12', '#e74c3c'].forEach((c, k) => { const b = cyl(g, btn(c), 0.022, 0.022, 0.02, cx - 0.08 + k * 0.08, ty + 0.36, 0.27, 14); b.rotation.x = Math.PI / 2; });
+  screws4(g, cx, ty + 0.39, 0.261, 0.4, 0.78, 'z');
+  vent(g, cx + 0.201, ty + 0.2, -0.04, 0.4, 0.18, Math.PI / 2, 7);
+  eStop(g, cx + 0.1, ty + 0.22, 0.262);
+  sticker(g, cx - 0.1, ty + 0.22, 0.262, 0.06);
+  decal(g, plateTex('AP-900'), 0.24, 0.1, -0.55, 0.12, 0.447);
+  sticker(g, 0.66, 0.7, 0.447, 0.07);
+  cable(g, new THREE.Vector3(cx, ty + 0.1, -0.34), new THREE.Vector3(cx + 0.1, 0.01, -0.5), 0.03, 0.01);
   cyl(g, darker(), 0.025, 0.025, 0.12, cx + 0.1, ty + 0.84, -0.12, 12);
   ['#2ecc71', '#f5b041', '#e74c3c'].forEach((c, k) => cyl(g, btn(c), 0.04, 0.04, 0.06, cx + 0.1, ty + 0.93 + k * 0.065, -0.12, 16));
 }

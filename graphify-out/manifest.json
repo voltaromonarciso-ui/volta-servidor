@@ -2202,9 +2202,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/labs.js": {
-    "mtime": 1792764056.1127095,
-    "seen": 1792764097.072145,
-    "ast_hash": "464302e2ae4390df143a947a890c800f",
+    "mtime": 1792768107.5014641,
+    "seen": 1792768135.84323,
+    "ast_hash": "f271ceed68913ebdc02687e1ac41123d",
     "semantic_hash": ""
   },
   "juego/src/systems/craft.js": {
