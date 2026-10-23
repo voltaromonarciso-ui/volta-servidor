@@ -18,6 +18,8 @@ import { hasBuilding, buildingModel, buildingSize } from './buildingkit.js';
 import { shopBuilding, warehouseBuilding, bankBranch, ownedWarehouse, naveFloorMat, FH } from './realbuilding.js';
 import * as INT from './interior.js';
 import { eclipse as eclipseFacade } from './facades.js';
+import { cartelHQ } from './cartel.js';
+import { RANKS } from '../data/items.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
 import { addPad, addFloor, drapeGeometry, allPads, H as groundH, Hlow, coastOutline, shoreDist } from './terrain.js';
@@ -622,7 +624,7 @@ export function buildIsland() {
   K.buildMountains(); // (sin el skyline de la ciudad antigua: en la isla quedaba flotando sobre el mar)
   W.interiorStats = INT.build(scene); // (las piezas pedidas por los almacenes)
   tempProps();
-  if (Object.keys(WAREHOUSES).some((k) => W.props[k])) warehouseLights();
+  if (Object.keys(WAREHOUSES).some((k) => W.props[k]) || W.cartel) warehouseLights();
 }
 
 // Tu piso (starterflat.js): bloque de 4 plantas con portal, escalera y el estudio en la
@@ -1093,14 +1095,47 @@ function warehouseFor(b) {
 }
 // Luz de dentro: dos luces para todos los almacenes, que se van al almacén en el que estás
 // y se apagan fuera (siempre las mismas dos: cambiar el número de luces recompila los shaders)
+// El Cartel: cuartel hueco con recibidor, sala y despacho (world/cartel.js). El portero sólo
+// deja pasar desde Trapichero (rango 2).
+export const CARTEL_RANK = 2;
+function cartelFor(b) {
+  if (!hasBuilding('q_Flat')) return false;
+  const r = cartelHQ(), x = b.cx, z = b.cz + 2;
+  F.place('real:cartel', () => r.group, x, z, 0, { solid: false });
+  pad(x - 12.3, x + 12.3, z - 9.3, z + 9.3, 0, 'cartel');
+  for (const [x0, x1, z0, z1, h] of r.boxes) K.addBox(x + x0, x + x1, z + z0, z + z1, h);
+  for (const it of r.items) INT.place(it.name, x + it.x, it.y, z + it.z, it.ry, it.s);
+  K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.45, color: '#1d1f22', locked: () => (G.state.rank || 0) < CARTEL_RANK,
+    lockLabel: 'Llamar a la puerta', lockMsg: () => `El portero te mira de arriba abajo: «Aquí no entra cualquiera. Vuelve cuando seas ${RANKS[CARTEL_RANK].name}.»` });
+  K.makeDoor({ x: x + r.officeLeaf.x, z: z + r.officeLeaf.z, axis: 'z', width: r.officeLeaf.width, h: 2.35, color: '#3a2418' });
+  // gente del cártel (quietos como los dependientes) y con quién se habla
+  for (const p of r.people) (W.clerks ||= []).push({ x: x + p.x, z: z + p.z, yaw: p.yaw, kind: 'cartel', role: p.role });
+  K.hitbox(x + r.counter.x, 1.4, z + r.counter.z - 0.3, 1.6, 1.2, 0.4, { actions: () => [{ label: 'Comprar al cártel', fn: () => (G.act.openCartelShop ? G.act.openCartelShop() : G.act.toast?.('«Todavía no tengo nada para ti.»', '💀')) }] });
+  K.hitbox(x + r.boss.x, 1.1, z + r.boss.z + 0.6, 1.6, 2.2, 0.8, { actions: () => [{ label: 'Hablar con el jefe', fn: () => (G.act.cartelBoss ? G.act.cartelBoss() : G.act.toast?.('El jefe ni levanta la vista: «Ahora no. Ya te llamaré.»', '💀')) }] });
+  const i = r.inside;
+  W.cartel = { x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, lights: r.lights.map((l) => ({ x: x + l.x, z: z + l.z, c: l.c })) };
+  W.pois.cartel = { x: x + r.door.x, z: z + r.door.z };
+  W.mapRects.push({ x0: x - 12, x1: x + 12, z0: z - 9, z1: z + 9, c: '#9b6bc9' });
+  W.mapLabels.push({ x, z, t: ZONE_NAMES[b.zone] });
+  DOORS.push({ x0: x - 12, x1: x + 12, z0: z - 9, z1: z + 9, x, z, ry: 0, house: false });
+  return true;
+}
 function warehouseLights() {
   const L = [0, 1].map(() => { const l = new THREE.PointLight('#ffe6c0', 0, 34, 1.15); l.userData.terrainDone = true; scene.add(l); return l; });
   let at = null;
   W.onUpdate = () => {
     const p = G.player?.pos;
-    const id = p && Object.keys(WAREHOUSES).find((k) => { const r = W.props[k]; return r && p.x > r.x0 - 1 && p.x < r.x1 + 1 && p.z > r.rack.z0 - 1 && p.z < r.z1 + 2; });
+    let id = p && Object.keys(WAREHOUSES).find((k) => { const r = W.props[k]; return r && p.x > r.x0 - 1 && p.x < r.x1 + 1 && p.z > r.rack.z0 - 1 && p.z < r.z1 + 2; });
+    const C = W.cartel;
+    if (!id && C && p && p.x > C.x0 - 1 && p.x < C.x1 + 1 && p.z > C.z0 - 1 && p.z < C.z1 + 2) id = 'cartel';
     if (id === at) return;
     at = id;
+    if (id === 'cartel') {
+      const y = groundH((C.x0 + C.x1) / 2, (C.z0 + C.z1) / 2) + 3.3;
+      C.lights.forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 9; });
+      return;
+    }
+    for (const l of L) l.color.set('#ffe6c0');
     if (!id) { for (const l of L) l.intensity = 0; return; }
     const r = W.props[id], cx = (r.x0 + r.x1) / 2, y = groundH(cx, (r.z0 + r.z1) / 2) + 6.5;
     L[0].position.set(r.x0 + (r.x1 - r.x0) * 0.27, y, (r.rack.z0 + r.z1) / 2);
@@ -1179,6 +1214,7 @@ const FILL = {
       for (let k = 0; k < 3; k++) K.parkedCar(b.x0 + 8 + k * 9, b.z1 - 5, Math.PI / 2);
       return;
     }
+    if (b.zone === 'cartel' && cartelFor(b)) { K.asphalt(b.x0 + 2, b.x1 - 2, b.cz + 12, b.z1 - 1, '#45484d'); for (let k = 0; k < 4; k++) K.parkedCar(b.x0 + 8 + k * 9, b.z1 - 5, Math.PI / 2); return; }
     if (b.zone === 'eclipse' || !realAt(b.zone, () => shopBuilding({ w: 30, d: 20, sign: s.text || ZONE_NAMES[b.zone].toUpperCase(), signBg: s.bg || '#1e2a33', ...(LOOK[b.zone] || { wall: 'claro', stone: 'blanco', floors: 2 }) }), b.cx, b.cz + 2, 0, { label: ZONE_NAMES[b.zone], mapColor: '#9b6bc9' })) K.building({ x0: b.cx - 15, x1: b.cx + 15, z0: b.cz - 8, z1: b.cz + 12, h: s.h || 9, wall: s.wall || '#3a2a4a', trim: s.trim || '#ffd34d', roof: '#2b2b30', style: 'shop', front: '+z', sign: s.text, signBg: s.bg, awning: s.awning, seed: 800 + b.i, mapColor: '#9b6bc9', label: ZONE_NAMES[b.zone] });
     K.asphalt(b.x0 + 2, b.x1 - 2, b.cz + 12, b.z1 - 1, '#45484d');
     for (let k = 0; k < 4; k++) K.parkedCar(b.x0 + 8 + k * 9, b.z1 - 5, Math.PI / 2);

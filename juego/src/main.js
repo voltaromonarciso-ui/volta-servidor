@@ -89,7 +89,9 @@ function spawnClerks() {
   const pool = [...modelNames(true), ...modelNames(false)].filter((n) => n !== LEO_MODEL);
   (G.world.clerks || []).forEach((c, i) => {
     if (!pool.length) return;
-    const h = makeRealHuman(pool[(i * 5 + 3) % pool.length]);
+    // la gente del cártel: hombres (el portero, el dependiente, el jefe y los matones)
+    const men = modelNames(false).filter((n) => n !== LEO_MODEL);
+    const h = makeRealHuman(c.kind === 'cartel' && men.length ? men[(i * 3 + 1) % men.length] : pool[(i * 5 + 3) % pool.length]);
     h.group.position.set(c.x, G.world.groundAt(c.x, c.z), c.z);
     h.group.rotation.y = c.yaw;
     scene.add(h.group);

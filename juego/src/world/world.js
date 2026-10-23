@@ -655,7 +655,7 @@ function utilityPoles(points) {
 }
 
 // Puerta con bisagra. axis 'x': la puerta está en un muro paralelo a X.
-function makeDoor({ x, z, axis, width = 1.3, h = 2.2, color = '#7a4e2d', locked = null, flip = 1 }) {
+function makeDoor({ x, z, axis, width = 1.3, h = 2.2, color = '#7a4e2d', locked = null, flip = 1, lockLabel = 'Cerrada con llave', lockMsg = 'Está cerrada con llave.' }) {
   const pivot = new THREE.Group();
   pivot.position.set(x, 0, z);
   const leaf = new THREE.Mesh(new THREE.BoxGeometry(axis === 'x' ? width : 0.08, h, axis === 'x' ? 0.08 : width), plainMat(color, { roughness: 0.6 }));
@@ -671,7 +671,7 @@ function makeDoor({ x, z, axis, width = 1.3, h = 2.2, color = '#7a4e2d', locked 
   const door = { pivot, col, open: false, ang: 0, flip, locked };
   const ia = {
     actions: () => {
-      if (door.locked && door.locked()) return [{ label: 'Cerrada con llave', fn: () => G.act.toast?.('Está cerrada con llave.') }];
+      if (door.locked && door.locked()) return [{ label: lockLabel, fn: () => G.act.toast?.(typeof lockMsg === 'function' ? lockMsg() : lockMsg, '🚪') }];
       return [{ label: door.open ? 'Cerrar puerta' : 'Abrir puerta', fn: () => toggleDoor(door) }];
     },
   };
