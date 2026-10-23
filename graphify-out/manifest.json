@@ -2070,9 +2070,9 @@
     "semantic_hash": ""
   },
   "juego/src/entities/helditems.js": {
-    "mtime": 1792684239.223968,
-    "seen": 1792688862.1066267,
-    "ast_hash": "1ba6013b6384145c05ff60581d98c97b",
+    "mtime": 1792767973.1066382,
+    "seen": 1792767988.3785913,
+    "ast_hash": "5b7e50bf0df5a1508639e7b36aa0e27e",
     "semantic_hash": ""
   },
   "juego/src/world/alleys.js": {

@@ -136,13 +136,15 @@ function regadera() {
 }
 
 // --- bote/spray/frasco con etiqueta envolvente ---
-function wrapTex(k, bg, title, sub, band) { return tex('wrap' + k, 256, 128, (c, w, h) => label(c, w, h, { bg, title, sub, band })); }
+// (texto oscuro sobre fondo claro; el centro de la etiqueta queda delante)
+const inkOn = (bg) => { const c = new THREE.Color(bg); return c.r * 0.3 + c.g * 0.59 + c.b * 0.11 > 0.6 ? '#1d2126' : '#ffffff'; };
+function wrapTex(k, bg, title, sub, band) { return tex('wrap' + k, 256, 128, (c, w, h) => label(c, w, h, { bg, fg: inkOn(bg), title, sub, band })); }
 function bottle(k, { r = 0.03, h = 0.14, color, labelT, cap = '#f5f5f5', neck = 0.4 }) {
   const g = new THREE.Group();
   const body = phys('bote' + k, { color, roughness: 0.25 });
   add(g, lathe('bote' + k, [[0, -h / 2], [r * 0.9, -h / 2], [r, -h / 2 + 0.006], [r, h / 2 - 0.03], [r * neck, h / 2 - 0.006], [r * neck, h / 2], [0, h / 2]]), body);
   const lab = once('cil' + k, () => new THREE.CylinderGeometry(r * 1.004, r * 1.004, h * 0.5, 28, 1, true));
-  add(g, lab, std('etq' + k, { map: labelT, roughness: 0.6 }), 0, -0.004, 0);
+  add(g, lab, std('etq' + k, { map: labelT, roughness: 0.6 }), 0, -0.004, 0, 0, Math.PI, 0);
   add(g, once('tapon' + k, () => new THREE.CylinderGeometry(r * neck * 1.15, r * neck * 1.15, 0.024, 16)), phys('tapon' + cap, { color: cap, roughness: 0.4 }), 0, h / 2 + 0.012, 0);
   return g;
 }
@@ -171,6 +173,69 @@ function azucar() {
   const lado = std('azLado', { color: '#f1f1ee', roughness: 0.85 }), cara = std('az', { map: t, roughness: 0.8 });
   add(g, once('azCaja', () => new THREE.BoxGeometry(0.07, 0.11, 0.045)), [lado, lado, lado, lado, cara, cara]);
   add(g, rb(0.072, 0.014, 0.046, 0.003), std('azPliegue', { color: '#e6e6e2', roughness: 0.9 }), 0, 0.058, 0);
+  return { group: g, pose: 'one' };
+}
+
+// --- ingredientes de laboratorio y abonos del cártel ---
+// tapón estriado por encima del bote
+function ribCap(g, k, r, h, y, color) {
+  const geo = once('ribcap' + k, () => { const c = new THREE.CylinderGeometry(r, r, h, 48, 1); const p = c.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), a = Math.atan2(z, x), d = Math.hypot(x, z); if (d > r * 0.9) { const k2 = 1 + (Math.floor(((a + Math.PI) / (Math.PI * 2)) * 48) % 2 ? 0.05 : 0); p.setX(i, x * k2); p.setZ(i, z * k2); } } c.computeVertexNormals(); return c; });
+  return add(g, geo, phys('ribcap' + color, { color, roughness: 0.45, clearcoat: 0.2 }), 0, y, 0);
+}
+function warnLabel(k, bg, band, title, sub) {
+  return tex('ing' + k, 256, 128, (c, w, h) => {
+    label(c, w, h, { bg, fg: inkOn(bg), title, sub, band });
+    c.save(); c.translate(w * 0.86, h * 0.56); c.fillStyle = '#f1c40f'; c.beginPath(); c.moveTo(0, -20); c.lineTo(18, 14); c.lineTo(-18, 14); c.closePath(); c.fill(); c.strokeStyle = '#111'; c.lineWidth = 2.5; c.stroke();
+    c.fillStyle = '#111'; c.font = 'bold 22px Arial'; c.textAlign = 'center'; c.fillText('!', 0, 11); c.restore();
+  });
+}
+function reactivo() {
+  const g = new THREE.Group();
+  add(g, lathe('reactivo', [[0, -0.055], [0.026, -0.055], [0.03, -0.05], [0.03, 0.025], [0.02, 0.042], [0.013, 0.046], [0.013, 0.055], [0, 0.055]], 32), phys('reactivoBody', { color: '#f3f4f2', roughness: 0.55, clearcoat: 0.15 }));
+  add(g, once('reactLab', () => new THREE.CylinderGeometry(0.0303, 0.0303, 0.05, 32, 1, true, -1.35, 2.7)), std('reactLab', { map: warnLabel('react', '#ffffff', '#c0392b', 'REACTIVO', 'R-7 · 250 ml'), roughness: 0.6 }), 0, -0.012, 0);
+  ribCap(g, 'react', 0.016, 0.02, 0.064, '#c0392b');
+  return { group: g, pose: 'one' };
+}
+function aglutinante() {
+  const g = new THREE.Group();
+  add(g, lathe('aglut', [[0, -0.04], [0.04, -0.04], [0.045, -0.035], [0.048, 0.03], [0.046, 0.034], [0, 0.034]], 36), phys('aglutBody', { color: '#eef1f2', roughness: 0.5, clearcoat: 0.2 }));
+  add(g, once('aglutLab', () => new THREE.CylinderGeometry(0.0475, 0.0455, 0.045, 36, 1, true, -1.35, 2.7)), std('aglutLab', { map: tex('aglut', 256, 128, (c, w, h) => label(c, w, h, { bg: '#f7f7f2', fg: '#1d2126', title: 'AGLUTINANTE', sub: 'Excipiente · 200 g', band: '#2a9d5b' })), roughness: 0.6 }), 0, -0.002, 0);
+  ribCap(g, 'aglut', 0.05, 0.022, 0.045, '#2a9d5b');
+  add(g, once('aglutTop', () => new THREE.CylinderGeometry(0.044, 0.05, 0.004, 36)), phys('ribcap#2a9d5b', {}), 0, 0.058, 0);
+  return { group: g, pose: 'one' };
+}
+function disolvente() {
+  // garrafa metálica: cuerpo con nervios en X, asa, boca con tapón y etiqueta
+  const g = new THREE.Group();
+  const tin = phys('disolBody', { color: '#9aa4ad', roughness: 0.3, metalness: 0.8, clearcoat: 0.3 });
+  add(g, rb(0.075, 0.1, 0.04, 0.008), tin);
+  const rib = rb(0.004, 0.11, 0.003, 0.0015);
+  for (const sz of [-1, 1]) for (const d of [-1, 1]) add(g, rib, tin, 0, 0, sz * 0.0205, 0, 0, d * 0.62);
+  add(g, once('disolAsa', () => new THREE.TorusGeometry(0.014, 0.004, 8, 18, Math.PI)), tin, -0.012, 0.05, 0);
+  add(g, once('disolBoca', () => new THREE.CylinderGeometry(0.009, 0.009, 0.012, 16)), tin, 0.022, 0.055, 0);
+  ribCap(g, 'disol', 0.011, 0.012, 0.067, '#c0392b');
+  add(g, once('disolLabG', () => new THREE.PlaneGeometry(0.05, 0.035)), std('disolLab', { map: warnLabel('disol', '#f6f0ff', '#6c3fc0', 'DISOLVENTE', 'Inflamable · 1 L'), roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }), 0, -0.012, 0.0215);
+  return { group: g, pose: 'one' };
+}
+const abono = (k, bg, band, title, sub, cap) => () => ({ group: bottle(k, { r: 0.034, h: 0.15, color: band, labelT: wrapTex(k, bg, title, sub, band), cap, neck: 0.45 }), pose: 'one' });
+// Manojo de hojas ovaladas con nervio central y venas pintadas, algo curvadas
+function hoja() {
+  const g = new THREE.Group();
+  const t = tex('hojaVenas', 128, 256, (c, w, h) => {
+    const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#5f9e54'); gr.addColorStop(0.5, '#7dbb6c'); gr.addColorStop(1, '#5f9e54'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(220,240,200,0.75)'; c.lineWidth = 3; c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
+    c.lineWidth = 1.2; c.strokeStyle = 'rgba(210,235,190,0.5)'; for (let y = 20; y < h - 10; y += 18) for (const s of [-1, 1]) { c.beginPath(); c.moveTo(w / 2, y); c.quadraticCurveTo(w / 2 + s * w * 0.2, y - 6, w / 2 + s * w * 0.45, y - 18); c.stroke(); }
+    grain(c, w, h, 0.05, 600);
+  });
+  const geo = once('hojaGeo', () => {
+    const sh = new THREE.Shape(); sh.moveTo(0, -0.045); sh.bezierCurveTo(0.024, -0.03, 0.024, 0.02, 0, 0.05); sh.bezierCurveTo(-0.024, 0.02, -0.024, -0.03, 0, -0.045);
+    const ge = new THREE.ShapeGeometry(sh, 10); const p = ge.attributes.position, uv = ge.attributes.uv;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); uv.setXY(i, x / 0.05 + 0.5, (y + 0.045) / 0.095); p.setZ(i, (x * x) * 9 + y * y * 1.5); }
+    ge.computeVertexNormals(); return ge;
+  });
+  const m = std('hoja', { map: t, roughness: 0.55, side: THREE.DoubleSide });
+  for (let i = 0; i < 6; i++) { const l = add(g, geo, m, (i - 2.5) * 0.007, i * 0.002, 0, -Math.PI / 2 + 0.15, (i - 2.5) * 0.28, 0); l.position.z = 0.01; }
+  g.scale.setScalar(1.5);
   return { group: g, pose: 'one' };
 }
 
@@ -375,5 +440,9 @@ export const HELD = {
   caja: () => flatBox('caja', ''), mesa_emp: () => flatBox('mesa_emp', 'Mesa'), estante: () => flatBox('estante', 'Estantería'),
   lampara: () => flatBox('lampara', 'Lámpara LED'), envasadora: () => flatBox('envasadora', 'Envasadora'), hornillo: () => flatBox('hornillo', 'Hornillo'),
   maceta, tierra: () => saco(false), tierra_plus: () => saco(true), regadera, spray, fertil, catalizador, colorante, azucar,
+  reactivo, aglutinante, disolvente, hoja,
+  abono_grow: abono('grow', '#f2f7ec', '#2e7d32', 'GROW', 'Crecimiento · NPK 3-1-2', '#f5f5f5'),
+  abono_bloom: abono('bloom', '#f6eefc', '#7b3fb0', 'BLOOM', 'Floración · PK 13-14', '#f5f5f5'),
+  ph_corr: abono('ph', '#eef6fc', '#1f6fb2', 'pH DOWN', 'Corrector de pH', '#d64541'),
   pistola, porra, phone: movil,
 };
