@@ -132,9 +132,9 @@
     "semantic_hash": ""
   },
   "juego/src/data/items.js": {
-    "mtime": 1792756746.415674,
-    "seen": 1792757278.832255,
-    "ast_hash": "c160594985f99cb13b6505f0f739466b",
+    "mtime": 1792759376.159188,
+    "seen": 1792760026.885668,
+    "ast_hash": "77d9e25c245cf5729882b6db3873d165",
     "semantic_hash": ""
   },
   "juego/src/data/people.js": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   "juego/tests/core.spec.js": {
-    "mtime": 1792647480.08096,
-    "seen": 1792647496.6629515,
-    "ast_hash": "1e699b4150e07574f119a03e54b21ce6",
+    "mtime": 1792759384.1759217,
+    "seen": 1792760026.8882492,
+    "ast_hash": "5e12c336923fcac23b0449df6a012d7d",
     "semantic_hash": ""
   },
   "juego/tests/helpers.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792756324.0107358,
-    "seen": 1792756655.3188004,
-    "ast_hash": "f2b1ea7ad82f0b239833193c8fbc2c1e",
+    "mtime": 1792758679.5465493,
+    "seen": 1792760026.8876865,
+    "ast_hash": "a25088b72f60af59160004066a1eb7d1",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -2064,9 +2064,9 @@
     "semantic_hash": ""
   },
   "juego/src/systems/combat.js": {
-    "mtime": 1792647058.8039954,
-    "seen": 1792647496.661961,
-    "ast_hash": "a6c90b35553593516ea65210d3374c80",
+    "mtime": 1792759376.1584184,
+    "seen": 1792760026.886675,
+    "ast_hash": "a3a5098929dbb6f4de42113f26579103",
     "semantic_hash": ""
   },
   "juego/src/entities/helditems.js": {
@@ -2088,9 +2088,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/interior.js": {
-    "mtime": 1792733239.0661244,
-    "seen": 1792742534.1876454,
-    "ast_hash": "ce05344191fd0ca4034f9be2bcfc8667",
+    "mtime": 1792758679.5303583,
+    "seen": 1792760026.8876834,
+    "ast_hash": "d990f826644b07408240faccbb4bd8b1",
     "semantic_hash": ""
   },
   "juego/src/assets/interior/LICENSE.txt": {
@@ -2178,15 +2178,27 @@
     "semantic_hash": ""
   },
   "juego/src/world/cartel.js": {
-    "mtime": 1792755366.5887113,
-    "seen": 1792755578.8638508,
-    "ast_hash": "da07e4657d3f5ec8630fe579c76020f3",
+    "mtime": 1792757712.6198704,
+    "seen": 1792760026.8875465,
+    "ast_hash": "3c1608b35716dee6c9a4089bb41eb7b8",
     "semantic_hash": ""
   },
   "juego/src/systems/cartel.js": {
     "mtime": 1792757112.0575633,
     "seen": 1792757278.8328962,
     "ast_hash": "0af665083bdfaa8ac43ab69873cf1c06",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/luxhi/LICENSE.txt": {
+    "mtime": 1792757578.763442,
+    "seen": 1792760026.89154,
+    "ast_hash": "8bdaa9c131827627f0cd5e5fdeafbcc9",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/interior/luxuf/LICENSE.txt": {
+    "mtime": 1792757578.763442,
+    "seen": 1792760026.8915439,
+    "ast_hash": "24bb5e70fc26f1d050599fbc9ad92023",
     "semantic_hash": ""
   }
 }

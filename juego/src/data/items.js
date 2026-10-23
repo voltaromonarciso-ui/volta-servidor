@@ -38,9 +38,9 @@ export const ITEMS = {
   caja_fuerte:{ name: 'Caja fuerte', icon: '🔒', stack: 1, price: 450, place: 'safe', desc: 'Guarda dinero en casa. Si te detienen, la multa solo sale de lo que llevas encima.' },
   // Armería Lomas: sirven para defenderte de los atracos de las bandas (no hay tiroteos)
   spray:     { name: 'Spray de pimienta', icon: '🧯', stack: 3, price: 60, desc: 'Si te intentan atracar, lo usas y salen corriendo. Se gasta al usarlo.' },
-  porra:     { name: 'Porra extensible', icon: '🦯', stack: 1, price: 220, rank: 1, desc: 'Plantas cara en un atraco: a menudo se echan atrás, y si no, se llevan menos. No se gasta.' },
-  pistola:   { name: 'Pistola', icon: '🔫', stack: 1, price: 1400, rank: 3, illegal: true, desc: 'Nadie te atraca si la enseñas. Con ella en la mano, el botón de golpear dispara (gasta balas). Ilegal sin licencia: si la policía te cachea, te la quita y la multa es mayor.' },
-  machete:   { name: 'Machete', icon: '🔪', stack: 1, price: 160, rank: 1, desc: 'Golpe rápido y fuerte con el botón de golpear. Pegar a alguien delante de la policía es delito.' },
+  porra:     { name: 'Porra extensible', icon: '🦯', stack: 1, price: 500, rank: 1, desc: 'Plantas cara en un atraco: a menudo se echan atrás, y si no, se llevan menos. No se gasta.' },
+  pistola:   { name: 'Pistola', icon: '🔫', stack: 1, price: 1750, rank: 3, illegal: true, desc: 'Nadie te atraca si la enseñas. Con ella en la mano, el botón de golpear dispara (gasta balas). Ilegal sin licencia: si la policía te cachea, te la quita y la multa es mayor.' },
+  machete:   { name: 'Machete', icon: '🔪', stack: 1, price: 750, rank: 1, desc: 'Golpe rápido y fuerte con el botón de golpear. Pegar a alguien delante de la policía es delito.' },
   balas:     { name: 'Balas', icon: '🟡', stack: 60, price: 4, rank: 3, illegal: true, desc: 'Munición para la pistola: una por disparo.' },
   // El Cartel (cuartel del cártel): material que no venden en otro sitio. `respect`: nivel de
   // respeto del cártel que hace falta (0 Conocido, 1 De confianza, 2 Socio)

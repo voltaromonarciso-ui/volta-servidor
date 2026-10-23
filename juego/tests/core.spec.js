@@ -227,7 +227,7 @@ test.describe.serial('Ciclo completo', () => {
     expect(await ev(page, () => __G.objects.size)).toBe(2);
   });
 
-  test('pelea: tres puñetazos tumban a un vecino y la pistola gasta balas', async () => {
+  test('pelea: cinco puñetazos tumban a un vecino y la pistola gasta balas', async () => {
     const r = await ev(page, async () => {
       const C = await import('/src/systems/combat.js');
       const P = __G.player, n = __G.npcs[0];
@@ -237,19 +237,19 @@ test.describe.serial('Ciclo completo', () => {
       const s = __G.state, sel = s.sel, empty = s.inv.findIndex((x) => !x);
       s.sel = empty;
       const hits = [];
-      for (let i = 0; i < 3; i++) { hits.push(C.attack()?.hit); await new Promise((z) => setTimeout(z, 520)); }
+      for (let i = 0; i < 5; i++) { hits.push(C.attack()?.hit); await new Promise((z) => setTimeout(z, 520)); }
       const ko = n.ko > 0;
       // pistola: una bala por disparo y sin balas no dispara
       const a = s.inv.findIndex((x) => !x); s.inv[a] = { id: 'pistola', q: 1 };
       const b = s.inv.findIndex((x) => !x); s.inv[b] = { id: 'balas', q: 1 };
       s.sel = a;
-      C.attack(); await new Promise((z) => setTimeout(z, 400));
+      C.attack(); await new Promise((z) => setTimeout(z, 500));
       const left = s.inv[b]?.q || 0;
       const second = C.attack();
       s.inv[a] = null; s.inv[b] = null; s.sel = sel;
       return { hits, ko, left, empty: !!second?.empty, mode: C.attackMode() };
     });
-    expect(r.hits).toEqual([true, true, true]);
+    expect(r.hits).toEqual([true, true, true, true, true]);
     expect(r.ko).toBe(true);
     expect(r.left).toBe(0);
     expect(r.empty).toBe(true);

@@ -10,13 +10,15 @@ import { startChase, wanted } from './police.js';
 import { gangThugs, crewHit } from './gangs.js';
 import { customer, addRep } from './economy.js';
 
+// Daño según lo que cuesta cada arma, sin que ninguna tumbe de un golpe (todos aguantan 10):
+// puños 5 golpes, porra ($500) 4, machete ($750) 3 y pistola ($1750) 2 disparos, con alcance
 export const WEAPONS = {
-  punos: { name: 'Puños', dmg: 1, range: 1.7, cd: 0.45 },
-  porra: { name: 'Porra', dmg: 2, range: 2.0, cd: 0.6 },
-  machete: { name: 'Machete', dmg: 3, range: 2.1, cd: 0.55 },
-  pistola: { name: 'Pistola', dmg: 3, range: 60, cd: 0.35, ammo: 'balas' },
+  punos: { name: 'Puños', dmg: 2, range: 1.7, cd: 0.45 },
+  porra: { name: 'Porra', dmg: 3, range: 2.0, cd: 0.6 },
+  machete: { name: 'Machete', dmg: 4, range: 2.1, cd: 0.55 },
+  pistola: { name: 'Pistola', dmg: 5, range: 60, cd: 0.45, ammo: 'balas' },
 };
-const HP = 3, KO_SECS = 25;
+const HP = 10, KO_SECS = 25;
 let readyAt = 0; // espera entre golpes, en tiempo real
 const ray = new THREE.Raycaster();
 

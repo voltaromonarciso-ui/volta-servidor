@@ -1,9 +1,9 @@
 # Graph Report - volta-servidor  (2026-10-23)
 
 ## Corpus Check
-- 199 files · ~2,199,156 words
+- 199 files · ~2,199,580 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 181 file(s) not represented in the graph (top: .glb 148, (none) 10, .xml 10)
+- Unclassified: 221 file(s) not represented in the graph (top: .glb 188, (none) 10, .xml 10)
 
 ## Summary
 - 2809 nodes · 7290 edges · 132 communities (113 shown, 19 thin omitted)
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5f835560`
+- Built from commit: `5adbc9b3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
