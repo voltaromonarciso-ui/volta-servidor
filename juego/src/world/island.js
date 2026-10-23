@@ -1071,7 +1071,7 @@ function warehouseFor(b) {
   W.floors.push(fm);
   const i = r.inside, rk = r.rack;
   W.props[id] = {
-    x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, name, price: spec.price, blurb: spec.blurb, warehouse: true, indoor: true,
+    x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, name, price: spec.price, blurb: spec.blurb, warehouse: true, indoor: true, doors: spec.doors, level: spec.level, height: 8, office: Math.round([8, 9.5, 10.5][spec.level] * 4.35),
     spawn: { x: x + r.entry.x, z: z + r.entry.z, yaw: Math.PI }, area: Math.round((i.x1 - i.x0) * (i.z1 - i.z0)),
     rack: { x0: x + rk.x0, x1: x + rk.x1, z0: z + rk.z0, z1: z + rk.z1 }, lamps: r.lamps.map((l) => ({ x: x + l.x, y: l.y, z: z + l.z })),
   };

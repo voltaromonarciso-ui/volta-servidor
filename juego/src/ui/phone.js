@@ -85,6 +85,7 @@ function go(app, arg = null) {
 
 function back() {
   if (view.app === 'chat') go('msgs');
+  else if (view.app === 'realty' && view.arg) go('realty');
   else go(null);
 }
 
@@ -404,45 +405,144 @@ function supplier() {
 }
 
 // ------------------------------------------------------------------
-//  Inmobiliaria: almacenes del polígono en venta (se pagan con dinero limpio)
+//  Inmobiliaria: portal de naves en venta (fotos sacadas del juego, ficha y compra con dinero limpio)
 // ------------------------------------------------------------------
+const RE_PICS = import.meta.glob('../assets/realty/*.jpg', { query: '?url', import: 'default', eager: true });
+const rePics = (id) => ['fachada', 'interior'].map((k) => ({ src: RE_PICS[`../assets/realty/${id}-${k}.jpg`], cap: k === 'fachada' ? 'Fachada y patio' : 'Interior de la nave' })).filter((p) => p.src);
+// iconos de línea (24×24) para las características
+const RE_ICO = {
+  area: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path d="M8 12h8M12 8v8" opacity=".55"/>',
+  height: '<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/><path d="M3 21h4M17 21h4" opacity=".55"/>',
+  door: '<rect x="4" y="5" width="16" height="15" rx="1"/><path d="M4 9h16M4 12h16M4 15h16M2 5h20"/>',
+  office: '<path d="M3 20h18M5 20V11h14v9M8 11V6h8v5"/><path d="M10 8h4" opacity=".55"/><path d="M7 20v-5M17 20v-5"/>',
+  rack: '<path d="M4 3v18M20 3v18M4 8h16M4 14h16M4 20h16"/><rect x="7" y="10" width="4" height="4" opacity=".55"/><rect x="13" y="4" width="4" height="4" opacity=".55"/>',
+  lift: '<path d="M5 18V8h6l2 4v6"/><circle cx="7" cy="19" r="1.6"/><circle cx="13" cy="19" r="1.6"/><path d="M17 4v15h4"/>',
+  fence: '<path d="M4 6v14M10 6v14M16 6v14M2 10h20M2 16h20"/><path d="M4 6l1-2M10 6l1-2M16 6l1-2" opacity=".55"/>',
+  key: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
+  bolt: '<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>',
+  light: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+};
+const reIco = (k, cls = 're-ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${RE_ICO[k]}</svg>`;
+const thousands = (n) => n.toLocaleString('es-ES').replace(/\s/g, '.');
+function reDist(id) {
+  const q = G.world.pois[id], P = G.player?.pos;
+  if (!q || !P) return 'Polígono industrial';
+  const d = Math.hypot(q.x - P.x, q.z - P.z);
+  return `Polígono industrial · ${d < 1000 ? `a ${Math.round(d / 10) * 10} m` : `a ${(d / 1000).toFixed(1)} km`}`;
+}
+function reFeats(p) {
+  return [
+    ['area', 'Superficie', `${p.area} m²`],
+    ['height', 'Altura libre', `${p.height || 8} m`],
+    ['door', 'Portones de carga', `${p.doors || 1} enrollable${(p.doors || 1) > 1 ? 's' : ''}`],
+    ['office', 'Oficina en altillo', `${p.office || 35} m² acristalada`],
+    ['rack', 'Estanterías', 'Racks de palés'],
+    ['lift', 'Maquinaria', (p.level || 0) > 0 ? 'Carretilla y transpalé' : 'Carretilla elevadora'],
+    ['fence', 'Patio exterior', 'Vallado con portón'],
+    ['key', 'Acceso', 'Puerta de oficina con llave'],
+    ['bolt', 'Instalación', 'Trifásica y cuadro propio'],
+    ['light', 'Iluminación', 'Campanas industriales LED'],
+  ];
+}
+// galería deslizable con puntos, contador y pie de foto
+function reGallery(id, big = false) {
+  const pics = rePics(id);
+  const g = h('div', 're-gal' + (big ? ' big' : ''));
+  const track = h('div', 're-track');
+  for (const p of pics) track.appendChild(h('figure', 're-slide', `<img src="${p.src}" alt="" loading="lazy" draggable="false">${big ? `<figcaption>${p.cap}</figcaption>` : ''}`));
+  if (!pics.length) track.appendChild(h('figure', 're-slide empty', reIco('office', 're-ico xl')));
+  const dots = h('div', 're-dots', pics.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join(''));
+  const count = h('span', 're-count', `1/${pics.length || 1}`);
+  track.addEventListener('scroll', () => {
+    const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    dots.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === i));
+    count.textContent = `${i + 1}/${pics.length || 1}`;
+  }, { passive: true });
+  g.append(track, dots, count);
+  g.show = (i) => track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+  return g;
+}
+function reBuy(id) {
+  const p = G.world.props[id];
+  confirmDialog(`Comprar ${p.name}`, `<p>${p.blurb || ''}</p><p>${p.area} m² · Precio: <b>${money(p.price)}</b> · se paga con dinero limpio.</p><p class="small">Podrás entrar por la puerta de la oficina, cultivar, montar mesas de trabajo, almacenar y asignar empleados.</p>`, 'Comprar', () => {
+    if (G.state.props[id]) return;
+    const r = spend('clean', p.price, id, { key: 'prop:' + id });
+    if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
+    G.state.props[id] = true;
+    sfx('level');
+    G.act.bigToast(`¡${p.name} es tuyo!`, 'La puerta de la oficina ya está abierta. Te lo he marcado en el mapa.');
+    const q = G.world.pois[id];
+    if (q) setWaypoint(q.x, q.z, p.name);
+    save();
+    render();
+  });
+}
+function reMark(id) {
+  const q = G.world.pois[id], p = G.world.props[id];
+  if (!q) return;
+  setWaypoint(q.x, q.z, p.name); sfx('click'); G.act.toast(`Destino: ${p.name}`, '📍');
+}
 function realty() {
-  const box = h('div', 'ph-list');
-  box.appendChild(h('div', 'ph-card', `<b>Naves Lomas</b><div class="small muted">«Almacenes en el polígono, escrituras en regla. Solo transferencia: dinero limpio.»</div>
-    <div class="rowsp small"><span>Tu saldo limpio</span><span class="money">${money(balance('clean'))}</span></div>`));
+  if (view.arg && G.world.props[view.arg]) return realtyDetail(view.arg);
   const list = Object.entries(G.world.props).filter(([, p]) => p.warehouse).sort((a, b) => a[1].price - b[1].price);
+  const box = h('div', 're');
+  box.appendChild(h('div', 're-head', `<div class="re-logo">NL</div><div class="re-brand"><b>Naves Lomas</b><small>Inmobiliaria industrial · Rooktown</small></div>
+    <div class="re-bal"><small>Saldo limpio</small><b>${money(balance('clean'))}</b></div>`));
+  const avail = list.filter(([id]) => !G.state.props[id]).length;
+  box.appendChild(h('div', 're-sub', `<b>${list.length} naves</b> en el polígono · ${avail ? `${avail} disponible${avail > 1 ? 's' : ''}` : 'todas son tuyas'}<span>Por precio ↑</span>`));
   for (const [id, p] of list) {
     const owned = !!G.state.props[id];
-    const card = h('div', 'ph-card realty' + (owned ? ' owned' : ''));
-    card.innerHTML = `<div class="rowsp"><b>🏭 ${p.name}</b>${owned ? '<span class="tag-own">✔ Tuyo</span>' : `<span class="money">${money(p.price)}</span>`}</div>
-      <div class="small muted">${p.blurb || ''}</div><div class="small">📐 ${p.area} m² · oficina en altillo · ${p.price >= 12000 ? 'dos portones' : 'un portón'}</div>`;
-    const row = h('div', 'rowsp');
-    const wp = h('button', 'btn sm ghost', '📍 Marcar');
-    wp.onclick = () => { const q = G.world.pois[id]; if (q) { setWaypoint(q.x, q.z, p.name); sfx('click'); G.act.toast(`Destino: ${p.name}`, '📍'); } };
-    row.appendChild(wp);
-    if (!owned) {
-      const short = balance('clean') < p.price;
-      const buy = h('button', 'btn sm', short ? `Faltan ${money(p.price - balance('clean'))}` : 'Comprar');
-      if (short) buy.disabled = true;
-      buy.onclick = () => confirmDialog(`Comprar ${p.name}`, `<p>${p.blurb || ''}</p><p>${p.area} m² · Precio: <b>${money(p.price)}</b> · se paga con dinero limpio.</p><p class="small">Podrás entrar por la puerta de la oficina, cultivar, montar mesas de trabajo, almacenar y asignar empleados.</p>`, 'Comprar', () => {
-        if (G.state.props[id]) return;
-        const r = spend('clean', p.price, id, { key: 'prop:' + id });
-        if (!r.ok) { sfx('error'); G.act.toast(r.msg, '⚠️'); return; }
-        G.state.props[id] = true;
-        sfx('level');
-        G.act.bigToast(`¡${p.name} es tuyo!`, 'La puerta de la oficina ya está abierta. Te lo he marcado en el mapa.');
-        const q = G.world.pois[id];
-        if (q) setWaypoint(q.x, q.z, p.name);
-        save();
-        render();
-      });
-      row.appendChild(buy);
-    }
-    card.appendChild(row);
+    const card = h('div', 're-card' + (owned ? ' owned' : ''));
+    const gal = reGallery(id);
+    gal.appendChild(h('span', 're-tag' + (owned ? ' own' : ''), owned ? `${reIco('check', 're-ico s')} Tuya` : 'En venta'));
+    card.appendChild(gal);
+    const body = h('div', 're-body', `<div class="re-price">${money(p.price)}<small>${thousands(Math.round(p.price / p.area))} $/m²</small></div>
+      <div class="re-title">${p.name}</div>
+      <div class="re-loc">${reIco('pin', 're-ico s')}${reDist(id)}</div>
+      <div class="re-chips"><span>${reIco('area', 're-ico s')}${p.area} m²</span><span>${reIco('door', 're-ico s')}${p.doors || 1} portón${(p.doors || 1) > 1 ? 'es' : ''}</span><span>${reIco('office', 're-ico s')}Altillo ${p.office || 35} m²</span><span>${reIco('height', 're-ico s')}${p.height || 8} m</span></div>`);
+    card.appendChild(body);
+    card.onclick = (e) => { if (e.target.closest('.re-track') && e.target.closest('.re-gal').querySelector('.re-track').scrollLeft % 1) return; sfx('click'); go('realty', id); };
     box.appendChild(card);
   }
-  if (!list.length) box.appendChild(h('div', 'muted small center', 'No hay almacenes en venta en esta zona.'));
-  box.appendChild(h('div', 'muted small center', '💡 Blanquea efectivo en el cajero para tener dinero limpio.'));
+  if (!list.length) box.appendChild(h('div', 'muted small center', 'No hay naves en venta en esta zona.'));
+  box.appendChild(h('div', 're-foot', '💡 Solo aceptamos transferencia: blanquea efectivo en un cajero del Banco Rooktown.'));
+  screen.appendChild(box);
+}
+function realtyDetail(id) {
+  const p = G.world.props[id], owned = !!G.state.props[id], clean = balance('clean');
+  const box = h('div', 're re-detail');
+  const gal = reGallery(id, true);
+  gal.appendChild(h('span', 're-tag' + (owned ? ' own' : ''), owned ? `${reIco('check', 're-ico s')} Tuya` : 'En venta'));
+  box.appendChild(gal);
+  const pics = rePics(id);
+  if (pics.length > 1) {
+    const th = h('div', 're-thumbs');
+    pics.forEach((q, i) => { const b = h('button', '', `<img src="${q.src}" alt=""><span>${q.cap}</span>`); b.onclick = () => gal.show(i); th.appendChild(b); });
+    box.appendChild(th);
+  }
+  box.appendChild(h('div', 're-info', `<div class="re-title big">${p.name}</div><div class="re-loc">${reIco('pin', 're-ico s')}${reDist(id)}</div>
+    <div class="re-price big">${money(p.price)}<small>${thousands(Math.round(p.price / p.area))} $/m²</small></div>`));
+  const feats = h('div', 're-sec', '<h4>Características</h4>');
+  const grid = h('div', 're-feats');
+  for (const [k, label, val] of reFeats(p)) grid.appendChild(h('div', 're-feat', `${reIco(k)}<div><small>${label}</small><b>${val}</b></div>`));
+  feats.appendChild(grid);
+  box.appendChild(feats);
+  box.appendChild(h('div', 're-sec', `<h4>Descripción</h4><p>${p.blurb || ''} Nave de bloque y chapa con ${p.doors > 1 ? 'dos portones enrollables' : 'portón enrollable'} a la zona de carga, oficina acristalada en altillo con escalera metálica y zona de descanso, y patio vallado para la furgoneta. Se entrega tal cual: con estanterías y maquinaria.</p>`));
+  const bar = h('div', 're-bar');
+  const mk = h('button', 'btn ghost', `${reIco('pin', 're-ico s')} Cómo llegar`);
+  mk.onclick = () => reMark(id);
+  bar.appendChild(mk);
+  if (owned) bar.appendChild(h('div', 're-owned', `${reIco('check', 're-ico s')} Es tuya`));
+  else {
+    const short = clean < p.price;
+    const buy = h('button', 'btn', short ? `Faltan ${money(p.price - clean)}` : `Comprar · ${money(p.price)}`);
+    buy.disabled = short;
+    buy.onclick = () => reBuy(id);
+    bar.appendChild(buy);
+  }
+  box.appendChild(bar);
   screen.appendChild(box);
 }
 
