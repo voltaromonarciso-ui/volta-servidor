@@ -43,7 +43,7 @@ test.describe.serial('Relieve de la isla', () => {
       // en la misma orilla (el borde de la isla) el terreno queda a nivel del mar
       return { range: max - min, steep, road, walls: W.wallCount, coast: W.coastPoly.land.filter((q, i) => i % 9 === 0).map(([x, z]) => H(x, z)) }; // por toda la orilla (con sus cabos)
     });
-    expect(r.range).toBeGreaterThan(12); // colina de unos 15 m
+    expect(r.range).toBeGreaterThan(5); // colina en terrazas: dos niveles de 3 m sobre la costa
     expect(r.road).toBeLessThan(0.25); // calles: cuestas claras, como mucho ~22 %
     expect(r.steep).toBeLessThan(1.0); // taludes de césped junto a algún solar
     expect(r.walls).toBeGreaterThan(0); // los escalones entre acera y manzana llevan muro de contención
