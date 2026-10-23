@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "juego/src/ui/phone.js": {
-    "mtime": 1792746106.8193867,
-    "seen": 1792747305.2035835,
-    "ast_hash": "0780d5bb21f0d1738fd2e3d410762c89",
+    "mtime": 1792753174.511259,
+    "seen": 1792753963.3285475,
+    "ast_hash": "22e2b8aaceb5fe667e64110ff356f09e",
     "semantic_hash": ""
   },
   "juego/src/world/batch.js": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/island.js": {
-    "mtime": 1792733269.0294929,
-    "seen": 1792742534.1876495,
-    "ast_hash": "7139a67a0cb337c182705c53cfa99196",
+    "mtime": 1792750584.29982,
+    "seen": 1792753963.3289382,
+    "ast_hash": "f69fe0f9a7a1c718a54ce7db03dc6a1f",
     "semantic_hash": ""
   },
   "juego/docs/referencias/15-estaciones.png": {
@@ -2127,6 +2127,42 @@
     "mtime": 1792709739.6810496,
     "seen": 1792715592.01902,
     "ast_hash": "8aa3d8b5a7ce10fad67e7ba1011689eb",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenAlfa-fachada.jpg": {
+    "mtime": 1792752650.2445498,
+    "seen": 1792753963.335028,
+    "ast_hash": "201228f349434bbdf9b432b81392b029",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenAlfa-interior.jpg": {
+    "mtime": 1792752650.0325496,
+    "seen": 1792753963.3350308,
+    "ast_hash": "c581e3f72a18f586a2cc7f4f49cd6257",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenBravo-fachada.jpg": {
+    "mtime": 1792752650.1365497,
+    "seen": 1792753963.3350322,
+    "ast_hash": "a12ee181153f3f7118e72e9cc017cec0",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenBravo-interior.jpg": {
+    "mtime": 1792752650.1845498,
+    "seen": 1792753963.3350337,
+    "ast_hash": "aaaf35273a9568a2b1a84312e9fbe1d4",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenDelta-fachada.jpg": {
+    "mtime": 1792752649.9845498,
+    "seen": 1792753963.3350348,
+    "ast_hash": "745765d81548811e93271430eb40a2b3",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/realty/almacenDelta-interior.jpg": {
+    "mtime": 1792752650.0885499,
+    "seen": 1792753963.3350365,
+    "ast_hash": "7c96ebaa1ba7ae8179c9c020ec49d67d",
     "semantic_hash": ""
   }
 }
