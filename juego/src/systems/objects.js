@@ -9,6 +9,7 @@ import { sfx } from '../core/audio.js';
 import { ensureBaseProduct } from './economy.js';
 import { absNow } from '../core/state.js';
 import { buildPacker, buildJarPacker, buildStove } from '../world/benches.js';
+import { buildFabricPot, buildPlant, refreshPlant } from '../entities/plant.js';
 
 // Objetos colocables dentro de tus propiedades (macetas, mesas, máquinas...).
 export const FOOT = {
@@ -131,45 +132,10 @@ export function placeObject(type, x, z, r) {
 // ------------------------------------------------------------------
 const BUILD = {
   pot(o) {
-    const g = o.group;
-    const potM = new THREE.MeshStandardMaterial({ color: 0xb5602a, roughness: 0.85 });
-    mesh(cylTaper, potM, 0.62, 0.5, 0.62, 0, 0.25, 0, g);
-    mesh(cyl, new THREE.MeshStandardMaterial({ color: 0xa2541f, roughness: 0.8 }), 0.67, 0.07, 0.67, 0, 0.5, 0, g);
-    o.soil = mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x5a3c22, roughness: 1 }), 0.57, 0.04, 0.57, 0, 0.495, 0, g);
-    o.plant = new THREE.Group();
-    o.plant.position.y = 0.5;
-    g.add(o.plant);
-    o.leafMat = new THREE.MeshStandardMaterial({ color: 0x2f8f7a, roughness: 0.6 });
-    o.petalMat = new THREE.MeshStandardMaterial({ color: 0x8fe0b0, roughness: 0.4, emissive: 0x2fbf6a, emissiveIntensity: 0.4, side: THREE.DoubleSide });
-    o.coreMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x7dffb0, emissiveIntensity: 1.5, roughness: 0.3 });
-    const stemM = new THREE.MeshStandardMaterial({ color: 0x3f7f5a, roughness: 0.7 });
-    // tallo principal ligeramente curvado
-    for (let i = 0; i < 5; i++) mesh(cyl, stemM, 0.06 - i * 0.006, 0.22, 0.06 - i * 0.006, Math.sin(i * 0.6) * 0.03, 0.11 + i * 0.2, 0, o.plant);
-    // hojas anchas y redondeadas (nada parecido a plantas reales)
-    const leafG = new THREE.SphereGeometry(0.5, 12, 8);
-    for (let i = 0; i < 8; i++) {
-      const a = i * 2.3, y = 0.12 + i * 0.1;
-      const lf = mesh(leafG, o.leafMat, 0.26 - i * 0.012, 0.035, 0.15, Math.cos(a) * 0.14, y, Math.sin(a) * 0.14, o.plant);
-      lf.rotation.set(0, -a, 0.35);
-    }
-    // flores luminosas: núcleo brillante + corona de pétalos
-    o.buds = [];
-    const petalG = new THREE.SphereGeometry(0.5, 10, 6);
-    const coreG = new THREE.SphereGeometry(0.5, 12, 10);
-    const spots = [[0, 1.05, 0, 1.25], [0.14, 0.86, 0.05, 0.95], [-0.12, 0.74, 0.1, 0.9], [0.06, 0.62, -0.14, 0.85], [-0.1, 0.92, -0.1, 0.9]];
-    for (const [x, y, z, k] of spots) {
-      const fl = new THREE.Group();
-      fl.position.set(x, y, z);
-      fl.rotation.set(x * 2, 0, -x * 2);
-      mesh(coreG, o.coreMat, 0.07 * k, 0.07 * k, 0.07 * k, 0, 0.02, 0, fl);
-      for (let p = 0; p < 6; p++) {
-        const pa = (p / 6) * Math.PI * 2;
-        const pt = mesh(petalG, o.petalMat, 0.13 * k, 0.025, 0.07 * k, Math.cos(pa) * 0.07 * k, 0.01, Math.sin(pa) * 0.07 * k, fl);
-        pt.rotation.set(0, -pa, 0.45);
-      }
-      o.plant.add(fl);
-      o.buds.push(fl);
-    }
+    // maceta negra de tela con la planta por fases (entities/plant.js)
+    o.soil = buildFabricPot(o.group);
+    o.crop = buildPlant(o.group);
+    o.plant = o.crop.plant;
   },
   packer: buildPacker,
   jarpacker: buildJarPacker,
@@ -245,21 +211,7 @@ export function refreshPot(o) {
   if (d.soil === 2) o.soil.material.color.offsetHSL(0, 0, -0.03);
   o.plant.visible = has;
   if (!has) return;
-  const s = STRAINS[d.strain];
-  const g = clamp(d.growth, 0, 1);
-  const sc = 0.15 + g * 0.95;
-  o.plant.scale.set(0.5 + g * 0.6, sc, 0.5 + g * 0.6);
-  const leaf = new THREE.Color(0x2f8f7a);
-  if (d.water <= 0.001) leaf.lerp(new THREE.Color(0x8a7a4a), 0.6);
-  o.leafMat.color.copy(leaf);
-  const col = new THREE.Color(s.color);
-  o.petalMat.color.copy(col).lerp(new THREE.Color(0xffffff), 0.35);
-  o.petalMat.emissive.copy(col);
-  o.coreMat.emissive.copy(col).lerp(new THREE.Color(0xffffff), 0.3);
-  const bloom = clamp((g - 0.45) / 0.55, 0, 1);
-  o.coreMat.emissiveIntensity = 0.6 + bloom * 2.2;
-  o.petalMat.emissiveIntensity = 0.15 + bloom * 0.6;
-  o.buds.forEach((b, i) => { b.visible = g > 0.42 + i * 0.06; b.scale.setScalar(0.5 + bloom * 0.5); });
+  refreshPlant(o.crop, clamp(d.growth, 0, 1), d.water <= 0.001, STRAINS[d.strain]?.color);
 }
 
 function lampBoost(o) {
