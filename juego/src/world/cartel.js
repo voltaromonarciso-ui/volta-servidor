@@ -158,10 +158,16 @@ export function cartelHQ() {
 
   // ---------------- recibidor ----------------
   // banco de espera, monitor de cámaras, planta y flecha de neón hacia la sala
-  put('furniture/bench', -3.2, 0, iz1 - 0.5, Math.PI);
+  // dos butacas de cuero negro mirando a la sala, mesita con lámpara y planta, perchero
+  put('luxuf/Sofa_individual', -3.4, 0, iz1 - 0.75, Math.PI, 0.6);
+  put('luxuf/Sofa_individual', -1.95, 0, iz1 - 0.75, Math.PI, 0.6);
+  const nst = put('luxhi/NightStand_1', -4.6, 0, iz1 - 0.5, 0, 1.1);
+  if (nst) put('luxhi/Light_Desk', -4.6, nst[1], iz1 - 0.55, 0, 1.4, false);
+  put('furniture/coatRackStanding', ix0 + 0.45, 0, LZ + 0.55);
+  put('luxhi/Light_Floor1', -1.4, 0, LZ + 0.5, 0, 1.9, false);
   rbox(g, mat('monitorCCTV', { color: '#0c1a14', emissive: '#2fd47a', emissiveIntensity: 0.6, roughness: 0.2 }), 0.9, 0.55, 0.06, -10.4, 2.0, LZ + PT / 2 + 0.05, 0.02);
   plane(g, mat('cctvTex', { color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.7, map: canvasTex('cctv', 128, 80, (c, w, h) => { c.fillStyle = '#0d1f16'; c.fillRect(0, 0, w, h); c.strokeStyle = '#3cff9a'; c.lineWidth = 1; for (let k = 0; k < 4; k++) { const x = (k % 2) * 64, y = Math.floor(k / 2) * 40; c.strokeRect(x + 2, y + 2, 60, 36); c.fillStyle = 'rgba(80,255,160,0.25)'; c.fillRect(x + 8 + k * 5, y + 14, 20, 16); } c.fillStyle = '#ff4040'; c.fillRect(118, 4, 6, 6); }) }), 0.84, 0.5, -10.4, 2.0, LZ + PT / 2 + 0.09, 0);
-  put('furniture/pottedPlant', ix0 + 0.5, 0, iz1 - 0.5);
+  put('luxhi/Houseplant_1', ix0 + 0.5, 0, iz1 - 0.5, 0, 2.6);
   plane(g, neonMat('pasa', '→ PASA', cyan, { w: 512, h: 128, font: 'bold 70px "Arial Black", sans-serif', ei: 1.8 }), 1.4, 0.35, (AX0 + AX1) / 2 + 2.4, 2.4, LZ + PT / 2 + 0.03, 0);
 
   // ---------------- sala: mostrador enrejado de la tienda ----------------
@@ -223,14 +229,14 @@ export function cartelHQ() {
 
   // mesa de la mercancía en el centro de la sala: fardos, básculas y una bolsa con fajos
   const tx = -2.6, tz = -1.0;
-  rbox(g, steel, 2.4, 0.06, 1.1, tx, 0.9, tz, 0.02);
-  for (const [sx, sz] of [[-1.1, -0.45], [1.1, -0.45], [-1.1, 0.45], [1.1, 0.45]]) cyl(g, steel, 0.03, 0.03, 0.88, tx + sx, 0.44, tz + sz, 8);
-  for (let k = 0; k < 5; k++) rbox(g, k % 2 ? wrap : pack, 0.36, 0.14, 0.26, tx - 0.8 + (k % 3) * 0.42, 1.0 + Math.floor(k / 3) * 0.15, tz - 0.2 + (k % 2) * 0.05, 0.04);
-  rbox(g, mat('bascula', { color: '#d6d9dc', roughness: 0.3, metalness: 0.5 }), 0.3, 0.06, 0.3, tx + 0.7, 0.97, tz + 0.2, 0.03);
-  rbox(g, mat('pantallaBascula', { color: '#102010', emissive: '#40ff60', emissiveIntensity: 0.8 }), 0.12, 0.04, 0.02, tx + 0.7, 0.98, tz + 0.36, 0.005);
-  rbox(g, mat('bolsaDeporte', { color: '#1d1f24', roughness: 0.7 }), 0.6, 0.3, 0.32, tx + 0.6, 1.08, tz - 0.25, 0.1);
-  for (let k = 0; k < 4; k++) rbox(g, cash, 0.18, 0.05, 0.09, tx + 0.45 + k * 0.1, 1.25, tz - 0.25, 0.01);
-  boxes.push([tx - 1.2, tx + 1.2, tz - 0.55, tz + 0.55, 1]);
+  const tbl = put('luxhi/Table_RoundLarge', tx, 0, tz, 0, 1.45);
+  const ty = tbl ? tbl[1] : 0.82;
+  for (let k = 0; k < 5; k++) rbox(g, k % 2 ? wrap : pack, 0.36, 0.14, 0.26, tx - 0.8 + (k % 3) * 0.42, ty + 0.08 + Math.floor(k / 3) * 0.15, tz - 0.2 + (k % 2) * 0.05, 0.04);
+  rbox(g, mat('bascula', { color: '#d6d9dc', roughness: 0.3, metalness: 0.5 }), 0.3, 0.06, 0.3, tx + 0.7, ty + 0.04, tz + 0.2, 0.03);
+  rbox(g, mat('pantallaBascula', { color: '#102010', emissive: '#40ff60', emissiveIntensity: 0.8 }), 0.12, 0.04, 0.02, tx + 0.7, ty + 0.05, tz + 0.36, 0.005);
+  rbox(g, mat('bolsaDeporte', { color: '#1d1f24', roughness: 0.7 }), 0.6, 0.3, 0.32, tx + 0.6, ty + 0.15, tz - 0.25, 0.1);
+  for (let k = 0; k < 4; k++) rbox(g, cash, 0.18, 0.05, 0.09, tx + 0.45 + k * 0.1, ty + 0.32, tz - 0.25, 0.01);
+  for (const [cx, cz, ry] of [[tx - 0.6, tz + 0.95, Math.PI], [tx + 0.6, tz + 0.95, Math.PI], [tx - 0.6, tz - 0.95, 0], [tx + 0.6, tz - 0.95, 0]]) put('luxhi/Chair_2', cx, 0, cz, ry, 1.05);
   pend(tx, tz, 1.4);
   // cajas de madera y bidones contra la pared del despacho
   for (const [x, z, s] of [[OX - 0.6, -6.8, 1], [OX - 0.6, -5.7, 0.9], [OX - 1.5, -7.6, 1]]) put('survival/box-large', x, 0, z, 0.2 * s, s);
@@ -239,11 +245,19 @@ export function cartelHQ() {
 
   // ---------------- zona de sofás (delante a la derecha) ----------------
   const sx = 6.2, sz = 6.4;
-  put('furniture/rugRectangle', sx, 0, sz, 0, 1.4, false);
-  put('furniture/loungeSofa', sx, 0, iz1 - 0.55, Math.PI);
-  put('furniture/loungeSofa', sx - 2.3, 0, sz, Math.PI / 2);
-  put('furniture/tableCoffee', sx, 0, sz, 0);
-  rbox(g, cash, 0.18, 0.05, 0.09, sx - 0.2, 0.47, sz, 0.01); rbox(g, cash, 0.18, 0.05, 0.09, sx + 0.05, 0.47, sz + 0.05, 0.01);
+  const bottleM0 = () => mat('botellaAmbar', { color: '#7a4a12', roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.85 });
+  // sofá de cuero marrón mirando a la tele, dos butacas negras, mesa baja redonda y alfombra
+  put('luxhi/Carpet_Round', sx, 0.01, sz, 0, 2.6, false);
+  put('luxuf/Sofa2', sx - 2.0, 0, sz, Math.PI / 2, 0.55);
+  put('luxuf/Sofa_individual', sx + 0.3, 0, LZ + 0.95, 0, 0.6);
+  put('luxuf/Sofa_individual', sx + 0.3, 0, iz1 - 0.8, Math.PI, 0.6);
+  const ct = put('luxhi/Table_RoundSmall', sx, 0, sz, 0, 1.0);
+  const cy0 = ct ? ct[1] : 0.57;
+  rbox(g, cash, 0.18, 0.05, 0.09, sx - 0.2, cy0 + 0.025, sz, 0.01); rbox(g, cash, 0.18, 0.05, 0.09, sx + 0.05, cy0 + 0.025, sz + 0.05, 0.01);
+  cyl(g, bottleM0(), 0.045, 0.05, 0.24, sx + 0.25, cy0 + 0.12, sz - 0.2, 10);
+  put('luxhi/Light_Stand1', ix1 - 0.5, 0, iz1 - 0.5, 0, 1.15, false);
+  put('luxhi/Houseplant_3', LX + 0.45, 0, iz1 - 0.45, 0, 2.6);
+  put('luxhi/Light_Chandelier', sx, GH - 0.12 - 2.1 * 0.26, sz, 0, 2.1, false);
   const tvc = put('furniture/cabinetTelevision', ix1 - 0.4, 0, sz, -Math.PI / 2);
   if (tvc) put('furniture/televisionModern', ix1 - 0.4, tvc[1], sz, -Math.PI / 2, 1.3, false);
   // barra pequeña con botellas
@@ -252,7 +266,7 @@ export function cartelHQ() {
   const bottleM = [mat('botellaAmbar', { color: '#7a4a12', roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.85 }), mat('botellaVerde', { color: '#1f5a2a', roughness: 0.1, transparent: true, opacity: 0.85 }), mat('botellaClara', { color: '#d8e4ea', roughness: 0.05, transparent: true, opacity: 0.6 })];
   for (let k = 0; k < 7; k++) { const bx = 0.6 + k * 0.32; cyl(g, bottleM[k % 3], 0.045, 0.05, 0.24, bx, 1.22, LZ + 0.5, 10); cyl(g, bottleM[k % 3], 0.015, 0.02, 0.09, bx, 1.38, LZ + 0.5, 8); }
   boxes.push([0.35, 2.85, LZ + 0.25, LZ + 0.95, 1.1]);
-  for (const x of [0.9, 2.2]) put('furniture/stoolBar', x, 0, LZ + 1.4, 0, 1, false);
+  for (const x of [0.9, 2.2]) put('luxhi/Stool', x, 0, LZ + 1.35, 0, 1.15, false);
   plane(g, neonMat('calavera', '☠', magenta, { w: 256, h: 256, font: 'bold 200px sans-serif', ei: 2.4 }), 1.1, 1.1, ix1 - 0.05, 2.9, 4.6, -Math.PI / 2);
   plane(g, neonMat('plata', 'PLATA O PLOMO', magenta, { w: 1024, h: 128, font: 'italic bold 78px "Arial Black", sans-serif', ei: 2.2 }), 3.4, 0.42, sx, 3.3, iz1 - 0.05, Math.PI);
 
@@ -260,15 +274,22 @@ export function cartelHQ() {
   const ox = (OX + ix1) / 2, oz = (iz0 + LZ) / 2;
   // suelo de madera oscura y alfombra
   slab(g, mat('parquetJefe', { color: '#2b1a10', roughness: 0.45 }), OX + 0.1, ix1, 0.02, 0.04, iz0, LZ - 0.1);
-  put('furniture/rugRectangle', ox, 0.03, oz - 0.2, 0, 1.3, false);
-  put('furniture/desk', ox, 0.03, iz0 + 1.6, 0, 1.2);
-  put('furniture/chairDesk', ox, 0.03, iz0 + 0.9, 0, 1.1, false);
-  put('furniture/laptop', ox - 0.3, 0.03 + 0.95, iz0 + 1.55, 0.3, 1, false);
-  put('furniture/loungeChair', ox - 0.8, 0.03, iz0 + 3.0, Math.PI);
-  put('furniture/loungeChair', ox + 0.8, 0.03, iz0 + 3.0, Math.PI);
-  put('furniture/bookcaseClosedDoors', ix1 - 0.4, 0.03, oz + 1.2, -Math.PI / 2);
-  put('furniture/pottedPlant', OX + 0.5, 0.03, iz0 + 0.5);
-  put('furniture/lampSquareFloor', ix1 - 0.4, 0.03, iz0 + 0.5, 0, 1, false);
+  // escritorio de madera noble con sillón, dos butacas de cuero para las visitas, chimenea de
+  // mármol, librería y armario antiguo, alfombra, lámparas y plantas
+  put('luxhi/Carpet_1', ox, 0.04, oz - 0.3, Math.PI / 2, 2.4, false);
+  const dk = put('luxuf/Desk', ox, 0.03, iz0 + 1.7, Math.PI, 1);
+  const dy = 0.03 + (dk ? dk[1] : 0.92);
+  put('luxuf/OfficeChair', ox, 0.03, iz0 + 0.85, Math.PI, 1, false);
+  put('furniture/laptop', ox - 0.35, dy, iz0 + 1.75, Math.PI + 0.3, 1, false);
+  put('luxhi/Light_Desk', ox + 0.6, dy, iz0 + 1.8, Math.PI, 1.6, false);
+  for (let k = 0; k < 3; k++) rbox(g, cash, 0.18, 0.05, 0.09, ox + 0.1, dy + 0.025 + k * 0.05, iz0 + 1.85, 0.01);
+  put('luxuf/Sofa_individual', ox - 0.85, 0.03, iz0 + 3.1, 0, 0.55);
+  put('luxuf/Sofa_individual', ox + 0.85, 0.03, iz0 + 3.1, 0, 0.55);
+  put('luxhi/Fireplace', OX + 0.4, 0.03, -5.4, Math.PI / 2, 1.1);
+  put('luxuf/Bookcase_Books', ix1 - 0.3, 0.03, oz + 1.0, -Math.PI / 2, 0.62);
+  put('luxuf/ShortCloset', ix1 - 0.4, 0.03, iz0 + 0.95, -Math.PI / 2, 0.75);
+  put('luxhi/Houseplant_1', OX + 0.45, 0.03, iz0 + 0.45, 0, 2.6);
+  put('luxhi/Light_Stand1', OX + 0.45, 0.03, -2.6, 0, 1.15, false);
   // caja fuerte, cuadro con marco dorado y lámpara de mesa
   rbox(g, mat('cajaFuerteJefe', { color: '#2f3338', roughness: 0.35, metalness: 0.75 }), 0.7, 0.9, 0.6, OX + 0.55, 0.48, LZ - 0.6, 0.04);
   cyl(g, gold, 0.08, 0.08, 0.04, OX + 0.55, 0.6, LZ - 0.6 + 0.31, 16).rotation.x = Math.PI / 2;

@@ -12,7 +12,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 const GLBS = import.meta.glob('../assets/interior/*/*.glb', { query: '?url', import: 'default', eager: true });
 const TEX = import.meta.glob('../assets/interior/*/Textures/*.png', { query: '?url', import: 'default', eager: true });
-const KIT_SCALE = { furniture: 2, market: 1.15, survival: 2.6, cars: 1.75, retro: 1.2, factory: 1 };
+const KIT_SCALE = { furniture: 2, market: 1.15, survival: 2.6, cars: 1.75, retro: 1.2, factory: 1, luxhi: 0.005, luxuf: 0.01 }; // (Quaternius: en centímetros; el de interior viene al doble)
 const MODELS = {};
 // el Furniture Kit trae la tapicería rosa: en la oficina, gris oscuro y azul pizarra
 const TINT = { carpet: '#3f4650', carpetDarker: '#30363e', carpetWhite: '#c4c8cc', wood: '#6e5340', woodDark: '#4a3729', metal: '#8a939b', metalLight: '#c2c7cc', metalMedium: '#5d666e', metalDark: '#3a4047' }; // (tonos sobrios: madera oscura, metal gris)
@@ -42,6 +42,13 @@ export async function loadInterior() {
       const geo = list.length > 1 ? mergeGeometries(list) : list[0];
       const mat = m.clone();
       if (kit === 'furniture' && TINT[m.name]) mat.color.set(TINT[m.name]); // tapicería en tonos de oficina
+      if (kit.startsWith('lux')) {
+        // (Quaternius, convertidos de FBX: vienen transparentes y con el color oscurecido dos veces)
+        mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
+        mat.color.convertLinearToSRGB();
+        if (/light/i.test(m.name) && !/metal/i.test(m.name)) mat.emissive.set('#ffd9a0'), (mat.emissiveIntensity = 1.4);
+        else mat.emissive.set(0);
+      }
       mat.roughness = Math.max(0.45, mat.roughness ?? 0.7); mat.metalness = Math.min(0.3, mat.metalness ?? 0);
       if (mat.map) { mat.map.colorSpace = THREE.SRGBColorSpace; mat.map.anisotropy = 4; }
       parts.push({ geo, mat });
