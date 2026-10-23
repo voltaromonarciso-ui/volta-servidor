@@ -20,7 +20,7 @@ import { loadModels, makeRealHuman, MODELS, modelNames } from './entities/models
 import { loadVehicles } from './entities/vehicles.js';
 import { loadProps } from './world/props.js';
 import { loadInterior } from './world/interior.js';
-import { preloadProps } from './entities/realprops.js';
+import { preloadProps, tickProps } from './entities/realprops.js';
 import { HELD_PROPS } from './entities/helditems.js';
 import { loadBuildings } from './world/buildingkit.js';
 import { loadGrass } from './world/grass.js';
@@ -521,6 +521,7 @@ function frame() {
   updateCombat(dt);
   for (const c of G.cars) c.update(dt);
   updateObjects(dt);
+  tickProps(G.player.pos);
   tickCartel(dt);
   G.world.update(dt);
   if (G.uiOpen) hideGhost();

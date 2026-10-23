@@ -19,6 +19,8 @@ import { shopBuilding, warehouseBuilding, bankBranch, ownedWarehouse, naveFloorM
 import * as INT from './interior.js';
 import { eclipse as eclipseFacade } from './facades.js';
 import { cartelHQ } from './cartel.js';
+import { mansionHQ, UP as MANSION_UP } from './mansion.js';
+import { nearLoad } from '../entities/realprops.js';
 import { RANKS } from '../data/items.js';
 import { grassReady, islandLawn, tuft, fringeMesh } from './grass.js';
 import * as SKP from './streetkit.js';
@@ -624,7 +626,7 @@ export function buildIsland() {
   K.buildMountains(); // (sin el skyline de la ciudad antigua: en la isla quedaba flotando sobre el mar)
   W.interiorStats = INT.build(scene); // (las piezas pedidas por los almacenes)
   tempProps();
-  if (Object.keys(WAREHOUSES).some((k) => W.props[k]) || W.cartel) warehouseLights();
+  if (Object.keys(WAREHOUSES).some((k) => W.props[k]) || W.cartel || W.mansion) warehouseLights();
 }
 
 // Tu piso (starterflat.js): bloque de 4 plantas con portal, escalera y el estudio en la
@@ -1120,6 +1122,48 @@ function cartelFor(b) {
   DOORS.push({ x0: x - 12, x1: x + 12, z0: z - 9, z1: z + 9, x, z, ry: 0, house: false });
   return true;
 }
+// La Mansión: villa hueca con salón, comedor, dormitorio, cocina y despacho (world/mansion.js).
+// Se compra en la app Inmobiliaria; dentro se duerme, se guarda dinero en la caja fuerte
+// grande, se organizan fiestas y se reúne uno con los socios.
+export const MANSION = { price: 60000, blurb: 'Villa de lujo con piscina: dormitorio, despacho con caja fuerte, cocina y un salón para dar fiestas. La policía no entra sin orden.' };
+function mansionFor(b) {
+  if (!hasBuilding('q_Flat')) return false;
+  const r = mansionHQ(), x = b.cx, z = b.cz - 2, id = 'mansion';
+  F.place('real:mansion', () => r.group, x, z, 0, { solid: false });
+  pad(x - 20, x + 20, z - 18, z + 20, 0, id);
+  // colisiones con nivel: 'up' sólo en la planta alta, 'down' sólo abajo, 'low' a ras de suelo
+  const gy = groundH(x, z);
+  for (const [x0, x1, z0, z1, h, lv] of r.boxes) {
+    const c = K.addBox(x + x0, x + x1, z + z0, z + z1, h);
+    if (lv === 'up') c.yMin = gy + MANSION_UP - 0.6;
+    else if (lv === 'down') c.yMax = gy + MANSION_UP - 0.8;
+    else if (lv === 'low') c.yMax = gy + 0.45;
+  }
+  for (const it of r.items) INT.place(it.name, x + it.x, it.y, z + it.z, it.ry, it.s);
+  for (const f of r.floors) addFloor(x + f.x0, x + f.x1, z + f.z0, z + f.z1, (px, pz) => gy + f.h(px - x, pz - z), { upper: true });
+  nearLoad(x, z, 95, r.load);
+  for (const [tx, tz, k] of r.trees) (k === 'palm' ? palm(x + tx, z + tz, rr(8, 10)) : tree(x + tx, z + tz, 1.1, 1));
+  const mine = () => !!G.state.props[id];
+  K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.7, color: '#3b2518', locked: () => !mine(),
+    lockLabel: 'Llamar al timbre', lockMsg: () => 'Nadie abre. La mansión está en venta: mírala en la app Inmobiliaria.' });
+  K.makeDoor({ x: x + r.officeLeaf.x, z: z + r.officeLeaf.z, axis: 'z', width: r.officeLeaf.width, h: 2.55, color: '#3b2518' });
+  K.hitbox(x + r.bed.x, r.bed.y + 0.6, z + r.bed.z, 2.0, 1.0, 2.4, { actions: () => (mine() ? [{ label: 'Dormir', fn: () => G.act.sleep(id, { wake: 7 * 60 }) }] : []) });
+  K.hitbox(x + r.safe.x, 0.7, z + r.safe.z + 0.35, 0.9, 1.3, 0.3, { actions: () => (mine() ? [{ label: 'Abrir la caja fuerte', fn: () => G.act.openSafe({ entry: { type: 'safe', data: (G.state.mansionSafe ||= { cash: 0 }) } }) }] : []) });
+  K.hitbox(x + r.desk.x, 1.0, z + r.desk.z, 0.8, 1.2, 1.6, { actions: () => (mine() ? [{ label: 'Reunirse con los socios', fn: () => (G.act.mansionPartners ? G.act.mansionPartners() : G.act.toast?.('Hoy no ha venido nadie.', '🤝')) }] : []) });
+  K.hitbox(x + r.party.x, 1.1, z + r.party.z, 0.6, 1.2, 3.4, { actions: () => (mine() ? [{ label: 'Fiestas en la mansión', fn: () => (G.act.mansionParty ? G.act.mansionParty() : G.act.toast?.('Todavía no hay fiestas.', '🍾')) }] : []) });
+  const i = r.inside;
+  W.props[id] = {
+    x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, name: 'La Mansión', price: MANSION.price, blurb: MANSION.blurb, luxury: true, indoor: true, height: 3.2,
+    spawn: { x: x + r.entry.x, z: z + r.entry.z, yaw: Math.PI }, area: Math.round((i.x1 - i.x0) * (i.z1 - i.z0) + (16 - 0.6) * (13 - 0.6)),
+  };
+  const L = (l) => ({ x: x + l.x, z: z + l.z, c: l.c });
+  W.mansion = { x0: x + i.x0, x1: x + i.x1, z0: z + i.z0, z1: z + i.z1, gy, down: r.lights.down.map(L), up: r.lights.up.map(L) };
+  W.pois[id] = { x: x + r.door.x, z: z + r.door.z };
+  W.mapRects.push({ x0: x - 14, x1: x + 14, z0: z - 6.5, z1: z + 9, c: '#d8c8a8' });
+  W.mapLabels.push({ x, z, t: 'La Mansión' });
+  DOORS.push({ x0: x - 14, x1: x + 14, z0: z - 6.5, z1: z + 6.5, x, z, ry: 0, house: false });
+  return true;
+}
 function warehouseLights() {
   const L = [0, 1].map(() => { const l = new THREE.PointLight('#ffe6c0', 0, 34, 1.15); l.userData.terrainDone = true; scene.add(l); return l; });
   let at = null;
@@ -1128,11 +1172,18 @@ function warehouseLights() {
     let id = p && Object.keys(WAREHOUSES).find((k) => { const r = W.props[k]; return r && p.x > r.x0 - 1 && p.x < r.x1 + 1 && p.z > r.rack.z0 - 1 && p.z < r.z1 + 2; });
     const C = W.cartel;
     if (!id && C && p && p.x > C.x0 - 1 && p.x < C.x1 + 1 && p.z > C.z0 - 1 && p.z < C.z1 + 2) id = 'cartel';
+    const MN = W.mansion;
+    if (!id && MN && p && p.x > MN.x0 - 1 && p.x < MN.x1 + 1 && p.z > MN.z0 - 1 && p.z < MN.z1 + 2) id = p.y > MN.gy + MANSION_UP - 1 ? 'mansionUp' : 'mansionIn';
     if (id === at) return;
     at = id;
     if (id === 'cartel') {
       const y = groundH((C.x0 + C.x1) / 2, (C.z0 + C.z1) / 2) + 2.6; // (bajas: que no quemen el techo)
       C.lights.forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 14; });
+      return;
+    }
+    if (id === 'mansionIn' || id === 'mansionUp') {
+      const up = id === 'mansionUp', y = MN.gy + (up ? MANSION_UP + 2.6 : 2.7);
+      MN[up ? 'up' : 'down'].forEach((l, k) => { L[k].position.set(l.x, y, l.z); L[k].color.set(l.c); L[k].intensity = 16; });
       return;
     }
     for (const l of L) l.color.set('#ffe6c0');
@@ -1158,6 +1209,7 @@ const FILL = {
     const z = b.z1 - 9;
     const n = b.zone === 'barrioAlto' || b.zone === 'apartamentos' ? 2 : 3;
     if (b.zone === 'mansion') {
+      if (mansionFor(b)) { K.asphalt(b.cx - 3, b.cx + 3, b.cz + 17, b.z1, '#c9c2b4'); return; }
       addPad(b.cx - 8, b.cx + 8, b.cz - 15, b.cz - 7); // piscina a nivel
       K.building({ x0: b.cx - 13, x1: b.cx + 13, z0: b.cz - 4, z1: b.cz + 10, h: 9, wall: '#f2e6cf', trim: '#ffffff', roof: '#8c4a32', style: 'house', front: '+z', roofType: 'gable', seed: 951, mapColor: '#d8c8a8', label: 'Mansión' });
       K.asphalt(b.cx - 2.5, b.cx + 2.5, b.cz + 10, b.z1, '#c9c2b4');

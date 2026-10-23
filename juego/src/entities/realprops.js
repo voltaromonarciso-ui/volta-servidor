@@ -93,3 +93,16 @@ export function wornPaint(color, { kind = 'pintura', rep = 1, metalness = 0.35, 
   }
   return paints.get(k);
 }
+
+// Carga diferida: lo que sólo se ve de cerca (la mansión) se pide al acercarse a menos de r
+const pending = [];
+export function nearLoad(x, z, r, fn) { pending.push({ x, z, r, fn }); }
+let nextCheck = 0;
+export function tickProps(p, now = performance.now()) {
+  if (!pending.length || now < nextCheck) return;
+  nextCheck = now + 700;
+  for (let i = pending.length - 1; i >= 0; i--) {
+    const q = pending[i];
+    if ((p.x - q.x) ** 2 + (p.z - q.z) ** 2 < q.r * q.r) { pending.splice(i, 1); q.fn(); }
+  }
+}
