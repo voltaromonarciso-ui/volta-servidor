@@ -40,6 +40,13 @@ function load(name) {
         }
       });
       const r = { tpl: wrap, size: box.getSize(new THREE.Vector3()) };
+      // antes de que salga en pantalla: texturas subidas a la GPU y materiales compilados en
+      // segundo plano (si no, el primer fotograma en que aparece se congela un momento)
+      const R = GAME.renderer;
+      if (R && GAME.scene && GAME.camera) {
+        root.traverse((o) => { for (const m of o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []) for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) if (m[k]) R.initTexture(m[k]); });
+        return R.compileAsync(wrap, GAME.camera, GAME.scene).catch(() => null).then(() => { ready.set(name, r); return r; });
+      }
       ready.set(name, r);
       return r;
     }));

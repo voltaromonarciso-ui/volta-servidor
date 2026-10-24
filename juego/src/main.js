@@ -22,6 +22,7 @@ import { loadProps } from './world/props.js';
 import { loadInterior } from './world/interior.js';
 import { preloadProps, tickProps } from './entities/realprops.js';
 import { openLaunder } from './systems/fronts.js';
+import { updateCull } from './world/cull.js';
 import { openParty, openPartners } from './systems/mansionjobs.js';
 import { HELD_PROPS } from './entities/helditems.js';
 import { loadBuildings } from './world/buildingkit.js';
@@ -527,6 +528,7 @@ function frame() {
   tickProps(G.player.pos);
   tickCartel(dt);
   G.world.update(dt);
+  updateCull(dt, camera.position);
   if (G.uiOpen) hideGhost();
   const target = riding() ? { actions: [], info: '' } : updateInteract(dt);
   sky.update(dt);

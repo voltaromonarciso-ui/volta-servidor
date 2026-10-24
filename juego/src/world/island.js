@@ -1114,6 +1114,7 @@ function frontFor(b, x, z) {
   // los modelos fotoescaneados, en un grupo propio de la escena (se cargan al acercarse)
   const gy = groundH(x, z);
   const live = new THREE.Group(); live.position.set(x, gy, z); live.userData.terrainDone = true; scene.add(live);
+  live.userData.cullZone = { x0: x + r.inside.x0, x1: x + r.inside.x1, z0: z + r.inside.z0, z1: z + r.inside.z1 }; // (el interior sólo se dibuja con el jugador dentro o al lado)
   nearLoad(x, z, 70, () => r.load(live));
   K.makeDoor({ x: x + r.leaf.x, z: z + r.leaf.z, axis: 'x', width: r.leaf.width, h: 2.45, color: '#c9ced3' });
   if (r.backLeaf) K.makeDoor({ x: x + r.backLeaf.x, z: z + r.backLeaf.z, axis: 'x', width: r.backLeaf.width, h: 2.25, color: '#e8ecef' });
@@ -1179,6 +1180,7 @@ function mansionFor(b) {
   // los muebles fotoescaneados van en un grupo propio de la escena (el edificio se funde al
   // colocarlo y lo que se le añade después no se vería)
   const live = new THREE.Group(); live.position.set(x, gy, z); live.userData.terrainDone = true; scene.add(live);
+  live.userData.cullZone = { x0: x + r.inside.x0, x1: x + r.inside.x1, z0: z + r.inside.z0, z1: z + r.inside.z1 }; // (el interior sólo se dibuja con el jugador dentro o al lado)
   nearLoad(x, z, 95, () => r.load(live));
   for (const [tx, tz, k] of r.trees) (k === 'palm' ? palm(x + tx, z + tz, rr(8, 10)) : tree(x + tx, z + tz, 1.1, 1));
   const mine = () => !!G.state.props[id];
