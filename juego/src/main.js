@@ -444,7 +444,7 @@ async function boot() {
 
 // Ajuste automático (prioriza la fluidez): si no llega a ~28 fps de forma sostenida, baja un
 // paso (calidad, resolución, distancia de dibujo); si va sobrado un buen rato, deshace el último.
-let lowFps = 0, highFps = 0, playSecs = 0;
+let lowFps = 0, highFps = 0, playSecs = 0, capLow = 0, capT = 0, capTrial = 0;
 const AUTO_STEPS = [
   (st) => st.quality === 'alta' && ['quality', 'media', 'Calidad gráfica: media'],
   (st) => (st.res ?? 1) > 0.85 && ['res', 0.85, 'Resolución: 85 %'],
@@ -458,13 +458,22 @@ function applySetting(st, k, v) {
   else if (k === 'res') { st.res = v; resize(); }
   else if (k === 'draw') G.act.drawDistance(v);
 }
+// Ritmo fijo a 30 si no llega a ~50 fps de forma sostenida (con el límite en 'auto'); cada
+// minuto se prueba otra vez sin límite por si el dispositivo ya va sobrado
+function autoCap(fps) {
+  const st = G.state.settings;
+  if (G.paused || G.uiOpen || (st.fps || 'auto') !== 'auto') return;
+  if (!G.autoCap30) { capLow = fps < 50 ? capLow + 1 : 0; if (capLow >= 3) { G.autoCap30 = true; capLow = 0; capT = 0; } }
+  else if (++capT >= 60) { capT = 0; G.autoCap30 = false; capTrial = 4; }
+  if (capTrial > 0 && --capTrial === 0 && fps < 55) G.autoCap30 = true;
+}
 function autoQuality(fps) {
   const st = G.state.settings;
   if (G.paused || G.uiOpen || st.autoQ === false) return;
   playSecs++;
   if (playSecs < 5) return;
   lowFps = fps < 28 ? lowFps + 1 : 0;
-  highFps = fps > 52 ? highFps + 1 : 0;
+  highFps = fps > 52 && !G.autoCap30 ? highFps + 1 : 0;
   st.autoStack ||= [];
   if (lowFps >= 4) {
     lowFps = 0;
@@ -493,8 +502,27 @@ let fpsT = 0, frames = 0, phoneT = 0;
 const fpsEl = document.getElementById('fps');
 let menuAng = 0, ambT = 0;
 
-function frame() {
+// Medidor de tiempos por sistema (sólo con G.perf activo: window.__G.perf = {}); acumula ms
+// por sección para encontrar qué cuesta en cada fotograma
+let pmT = 0;
+function pm(k) {
+  const P = G.perf;
+  if (!P) return;
+  const t = performance.now();
+  if (k !== 'in') P[k] = (P[k] || 0) + (t - pmT);
+  else P.frames = (P.frames || 0) + 1;
+  pmT = t;
+}
+// Ritmo de fotogramas: si el dispositivo no aguanta 60 de forma estable, se fija en 30 (un
+// ritmo constante se ve más fluido que saltar entre 35 y 55, y calienta menos). Con
+// settings.fps 'auto' lo decide autoQuality; '30' o '60' lo fija el jugador.
+let lastFrameT = 0;
+const fpsCap = () => { const f = G.state?.settings?.fps; return f === '30' ? 30 : f === '60' ? 0 : G.autoCap30 ? 30 : 0; };
+function frame(now = performance.now()) {
   requestAnimationFrame(frame);
+  const cap = fpsCap();
+  if (cap && now - lastFrameT < 1000 / cap - 4) return; // (margen: el refresco no es exacto)
+  lastFrameT = now;
   const dt = Math.min(clock.getDelta(), 0.05);
   G.time += dt;
   if (G.paused) {
@@ -511,27 +539,36 @@ function frame() {
     renderFrame(false);
     return;
   }
+  pm('in');
   pollInput();
   const gdt = updateTime(dt);
   G.player.update(dt, G.uiOpen || !!riding());
   updateRiding(dt);
+  pm('player');
   updateWorkers(dt);
   updateStation(dt);
   updateCraft(dt);
   updateDressing(dt);
+  pm('sistemas');
   for (const n of G.npcs) n.update(dt, gdt);
+  pm('npcs');
   updatePolice(dt);
   updateGangs(dt);
   updateCombat(dt);
+  pm('policia');
   for (const c of G.cars) c.update(dt);
+  pm('coches');
   updateObjects(dt);
   tickProps(G.player.pos);
   tickCartel(dt);
   G.world.update(dt);
   updateCull(dt, camera.position);
+  pm('mundo');
   if (G.uiOpen) hideGhost();
   const target = riding() ? { actions: [], info: '' } : updateInteract(dt);
+  pm('interaccion');
   sky.update(dt);
+  pm('cielo');
   leo.animate(dt, 0);
   for (const c of clerks) { const near = c.group.position.distanceToSquared(G.player.pos) < 900; c.group.visible = near; if (near) c.animate(dt, 0); }
   leo.armR.rotation.x = -0.9 + Math.sin(G.time * 3) * 0.25;
@@ -548,10 +585,13 @@ function frame() {
   phoneT -= dt;
   if (phoneT <= 0) { phoneT = 0.5; tickPhone(); }
   tickBigMap(dt);
+  pm('hud');
   renderFrame(!G.uiOpen && !riding());
+  pm('render');
   frames++; fpsT += dt;
   if (fpsT > 1) {
     fpsEl.textContent = frames + ' fps';
+    autoCap(frames / fpsT);
     autoQuality(frames / fpsT);
     frames = 0; fpsT = 0;
   }

@@ -44,7 +44,8 @@ export function newState() {
     policeMemory: null,                                // aspecto que recuerda la policía
     vehicles: [],                                      // bici, patinete… { uid, type, x, z, yaw, battery }
     employees: [],                                     // personal contratado (systems/staff.js)
-    settings: { sens: 1, shadows: true, res: 1, sound: true, quality: 'alta' },
+    // (en móviles y tabletas se empieza en calidad media; el ajuste automático sube o baja)
+    settings: { sens: 1, shadows: true, res: 1, sound: true, quality: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'media' : 'alta', fps: 'auto' },
   };
 }
 

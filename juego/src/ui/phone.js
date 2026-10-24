@@ -754,6 +754,7 @@ export function settingsPanel(container, onExit) {
     toggle('Ajuste automático (prioriza la fluidez)', s.autoQ !== false, (v) => { s.autoQ = v; s.autoStack = []; }),
     choice('Calidad gráfica', [['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']], s.quality || 'alta', (v) => { s.autoQ = false; s.autoStack = []; G.act.quality(v); }),
     toggle('Sombras', s.shadows, (v) => { s.shadows = v; setShadows(v && s.quality !== 'baja'); }),
+    choice('Límite de FPS', [['auto', 'Auto'], ['30', '30'], ['60', '60']], s.fps || 'auto', (v) => { s.fps = v; G.autoCap30 = false; }),
     choice('Distancia de dibujo', [['corta', 'Corta'], ['media', 'Media'], ['larga', 'Larga']], s.draw || 'larga', (v) => G.act.drawDistance(v)),
     choice('Tráfico', [['poco', 'Poco'], ['normal', 'Normal'], ['mucho', 'Mucho']], s.traffic || 'normal', (v) => G.act.traffic(v)),
     toggle('Sonido', s.sound, (v) => { s.sound = v; }),

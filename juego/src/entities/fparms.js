@@ -57,6 +57,7 @@ function pointSeg(v, a, b) {
 }
 const _f = new THREE.Vector3(), _g = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
+const _hp = new THREE.Vector3(), _mp = new THREE.Vector3(), _hs = new THREE.Vector3(), _hq = new THREE.Quaternion(), _mq = new THREE.Quaternion();
 const wp = (o, v = new THREE.Vector3()) => o.getWorldPosition(v);
 
 // Gira un hueso (en el mundo) para que la dirección `from` pase a ser `to`
@@ -165,7 +166,23 @@ export class FPArms {
         ik(A.up, A.lo, A.hand, wrist, elbow);
         this.orient(A, F, P);
         this.untwist(A);
-        this.shape(A, HANDS[r.grip.hand], ref.solids, s === 'L' ? ref.segsR : null);
+        // los dedos respecto a la mano no cambian mientras se sujeta lo mismo (mano y objeto se
+        // mueven juntos): el cálculo con colisión (varios ms) se hace al cambiar de objeto o si
+        // el objeto se mueve respecto a la mano más de 5 mm / 3° (en metros y grados de verdad:
+        // los huesos del modelo llevan escala); si no, se reutilizan los dedos ya calculados
+        const key = r.grip.obj.uuid + '|' + r.grip.hand, C = (A.shapeCache ||= { key: null, q: null, d: new THREE.Vector3(), r: new THREE.Quaternion() });
+        A.hand.updateWorldMatrix(true, false);
+        A.hand.matrixWorld.decompose(_hp, _hq, _hs); M.matrixWorld.decompose(_mp, _mq, _hs);
+        _hq.invert();
+        const dl = _mp.sub(_hp).applyQuaternion(_hq), rq = _mq.premultiply(_hq);
+        const mov = dl.distanceTo(C.d), rot = 2 * Math.acos(Math.min(1, Math.abs(rq.dot(C.r))));
+        if (C.key === key && rot < 0.05 && mov < 0.005) {
+          let n = 0;
+          for (const ch of A.chains) { for (const b of ch) b.quaternion.copy(C.q[n++]); ch[0].updateMatrixWorld(true); }
+        } else {
+          this.shape(A, HANDS[r.grip.hand], ref.solids, s === 'L' ? ref.segsR : null);
+          C.key = key; C.d.copy(dl); C.r.copy(rq); C.q = A.chains.flat().map((b, i) => (C.q?.[i] || new THREE.Quaternion()).copy(b.quaternion));
+        }
         if (s === 'R') ref.segsR = this.capsules(A);
         continue;
       }
