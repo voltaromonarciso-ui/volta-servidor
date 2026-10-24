@@ -45,6 +45,7 @@ function floorMat(key, draw, tile) {
   return m;
 }
 function floor(g, m, x0, x1, z0, z1, y = 0.02) {
+  if (m.normalMap) return slab(g, m, x0, x1, y - 0.02, y, z0, z1); // (material con relieve: UV en metros)
   const f = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m.clone());
   f.material.map = m.map.clone(); f.material.map.needsUpdate = true; f.material.map.repeat.set((x1 - x0) / m.userData.tile, (z1 - z0) / m.userData.tile);
   f.rotation.x = -Math.PI / 2; f.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); f.receiveShadow = true; g.add(f); return f;
@@ -173,56 +174,118 @@ function office(K, x0, x1, z0, z1, H, M) {
 // ======================================================================
 export function laundromatHQ() {
   const K = kit(), { g, boxes, items, later, box, put, P } = K;
-  const W = 22, D = 14, GH = 4.0, H = 7.2;
+  const W = 22, D = 14, GH = 4.0, FH = 3.1, H = GH + 2 * FH; // local abajo y dos plantas de pisos
   const X0 = -W / 2, X1 = W / 2, Z0 = -D / 2, Z1 = D / 2;
   const ix0 = X0 + T, ix1 = X1 - T, iz0 = Z0 + T, iz1 = Z1 - T;
   const CH = GH - 0.25; // techo de dentro
   const M = {
-    wall: pbrMat('claro', '#eef4f7'), plinth: pbrMat('hormigon', '#8f8b86'), stone: pbrMat('blanco', '#f4f4f2'),
-    inner: mat('lavYeso', { color: '#f4f8fb', roughness: 0.9 }), alu: mat('lavAlu', { color: '#c9ced3', roughness: 0.35, metalness: 0.7 }),
+    wall: pbrMat('estuco', '#f3e8d6'), back: pbrMat('claro', '#efe6d8'), tile: pbrMat('fachadaAzulejo', '#d9e9f6'), plinth: pbrMat('hormigon', '#5d6168'),
+    stone: pbrMat('blanco', '#f7f4ee'), inner: pbrMat('yesoInt', '#f6f9fb'), alu: mat('lavAlu', { color: '#c9ced3', roughness: 0.35, metalness: 0.7 }),
     wood: floorMat('lavParque', (c, w, h) => { for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? '#8a6343' : '#946c4a'; c.fillRect(0, k * 32, w, 32); c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(0, k * 32, w, 2); c.fillRect(((k * 97) % w), k * 32, 2, 32); } }, 1.6),
     panel: mat('lavPanelLuz', { color: '#ffffff', emissive: '#f4fbff', emissiveIntensity: 1.2 }),
-    blue: mat('lavAzul', { color: '#2b7bd1', roughness: 0.5 }), white: mat('lavBlanco', { color: '#f7f7f5', roughness: 0.5 }),
+    blue: mat('lavAzul', { color: '#2b7bd1', roughness: 0.5 }), navy: mat('lavMarino', { color: '#173f73', roughness: 0.45 }), white: mat('lavBlanco', { color: '#f7f7f5', roughness: 0.5 }),
     laminate: mat('lavLaminado', { color: '#e9edf0', roughness: 0.4 }), steel: mat('lavAcero', { color: '#a9b0b6', roughness: 0.3, metalness: 0.8 }),
+    iron: mat('lavHierro', { color: '#1f2226', roughness: 0.4, metalness: 0.75 }), shutter: mat('lavContraventana', { color: '#2f6fae', roughness: 0.6 }), shutterDark: mat('lavLama', { color: '#255a8f', roughness: 0.65 }),
+    glassUp: mat('lavCristalArriba', { color: '#3a4b5a', roughness: 0.06, metalness: 0.75 }),
   };
-  const tiles = floorMat('lavBaldosa', (c, w, h) => { for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { c.fillStyle = (x + y) % 2 ? '#dfe9f0' : '#fbfcfd'; c.fillRect(x * 128, y * 128, 128, 128); } c.fillStyle = 'rgba(120,140,160,0.35)'; c.fillRect(0, 0, w, 2); c.fillRect(0, 0, 2, h); c.fillRect(0, 127, w, 2); c.fillRect(127, 0, 2, h); }, 1.0);
-  const wainTile = floorMat('lavAzulejo', (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(110,140,170,0.5)'; for (let k = 0; k <= 8; k++) { c.fillRect(0, k * 32, w, 2); c.fillRect(k * 32, 0, 2, h); } c.fillStyle = '#7fb3e6'; c.fillRect(0, 0, w, 30); }, 0.8);
+  const tiles = pbrMat('terrazo', '#f4f2ee');
+  const wainTile = pbrMat('azulejo', '#ffffff');
 
   // ---------------- fachada y muros ----------------
   const DX = -5.4, DW = 0.8;                  // puerta de la calle (centro x −5,4, 1,6 m)
   const WX0 = -3.9, WX1 = 10.3;               // escaparate
-  slab(g, M.wall, X0, X1, 0, H, Z0, Z0 + T);
-  slab(g, M.wall, X0, X0 + T, 0, H, Z0, Z1); slab(g, M.wall, X1 - T, X1, 0, H, Z0, Z1);
-  wallX(g, M.wall, Z1 - T, Z1, X0, X1, 0, GH, [[DX - DW, DX + DW, 0, 2.5], [WX0, WX1, 0.6, 3.2]]);
-  slab(g, M.wall, X0, X1, GH, H, Z1 - T, Z1);                       // planta de arriba (maciza)
+  slab(g, M.back, X0, X1, 0, H, Z0, Z0 + T);
+  slab(g, M.back, X0, X0 + T, 0, H, Z0, Z1); slab(g, M.back, X1 - T, X1, 0, H, Z0, Z1);
+  wallX(g, M.tile, Z1 - T, Z1, X0, X1, 0, GH, [[DX - DW, DX + DW, 0, 2.5], [WX0, WX1, 0.6, 3.2]]);
   slab(g, M.wall, X0, X1, GH - 0.1, GH, Z0, Z1);                   // forjado
-  slab(g, M.plinth, X0 - 0.05, X1 + 0.05, 0, 0.45, Z1, Z1 + 0.06);
-  slab(g, M.stone, X0 - 0.15, X1 + 0.15, H, H + 0.25, Z0 - 0.15, Z1 + 0.15);   // cornisa
-  slab(g, M.stone, X0 - 0.08, X1 + 0.08, GH - 0.05, GH + 0.18, Z1, Z1 + 0.16); // imposta
   boxes.push([X0, X1, Z0, Z0 + T, H], [X0, X0 + T, Z0, Z1, H], [X1 - T, X1, Z0, Z1, H], [X0, DX - DW, Z1 - T, Z1, H], [DX + DW, X1, Z1 - T, Z1, H]);
+  // bajo: zócalo de piedra oscura, pilastras de azulejo y la banda del rótulo
+  slab(g, M.plinth, X0 - 0.06, DX - DW, 0, 0.6, Z1, Z1 + 0.06); slab(g, M.plinth, DX + DW, X1 + 0.06, 0, 0.6, Z1, Z1 + 0.06);
+  for (const x of [X0 + 0.25, DX - DW - 0.2, DX + DW + 0.2, WX0 - 0.15, X1 - 0.25]) slab(g, M.tile, x - 0.22, x + 0.22, 0.6, GH - 0.55, Z1, Z1 + 0.09);
+  slab(g, M.navy, X0 - 0.06, X1 + 0.06, GH - 0.55, GH + 0.25, Z1, Z1 + 0.12);   // banda azul marino del rótulo
+  slab(g, M.stone, X0 - 0.1, X1 + 0.1, GH + 0.25, GH + 0.38, Z1, Z1 + 0.2);    // cornisa del local
+  slab(g, M.stone, X0 - 0.06, X1 + 0.06, GH - 0.62, GH - 0.55, Z1, Z1 + 0.16);
+  const sign = new THREE.Group(); sign.position.set(2.0, GH - 0.15, Z1 + 0.13); g.add(sign);
+  plane(sign, signMat('lavanderia', 'LAVANDERÍA ESPUMA', '#173f73', '#ffffff', { bubbles: true }), 9.6, 0.72, 0, 0, 0);
+  plane(g, signMat('lavAbierto', 'ABIERTO', 'rgba(0,0,0,0)', '#ff4d6a', { w: 256, h: 80, font: 'bold 54px "Arial Black", sans-serif' }), 0.9, 0.28, WX0 + 0.9, 2.75, Z1 - T / 2 - 0.04, 0);
   shopWindow(g, M.alu, WX0, WX1, 0.6, 3.2, Z1 - T / 2);
+  // vinilos del escaparate: burbujas y lo que se hace
+  const vinyl = mat('lavVinilo', { transparent: true, depthWrite: false, map: canvasTex('lavVinilo', 1024, 256, (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.textAlign = 'center'; c.font = 'bold 54px sans-serif'; c.fillStyle = 'rgba(255,255,255,0.92)'; c.fillText('LAVADO · SECADO · PLANCHADO', w / 2, 200);
+    for (let k = 0; k < 18; k++) { const x = 40 + ((k * 151) % (w - 80)), y = 30 + ((k * 67) % 120), r = 10 + (k % 4) * 9; c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 4; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.arc(x - r * 0.35, y - r * 0.35, r * 0.22, 0, 7); c.fill(); }
+  }) });
+  plane(g, vinyl, WX1 - WX0 - 0.6, (WX1 - WX0 - 0.6) / 4, (WX0 + WX1) / 2, 1.55, Z1 - T / 2 + 0.03);
   for (const s of [-1, 1]) slab(g, M.alu, DX + s * DW - 0.06, DX + s * DW + 0.06, 0, 2.56, Z1 - 0.05, Z1 + 0.06);
   slab(g, M.alu, DX - DW - 0.06, DX + DW + 0.06, 2.5, 2.56, Z1 - 0.05, Z1 + 0.06);
-  // toldo a rayas azules y blancas sobre el escaparate y la puerta, y el rótulo con burbujas
-  const awn = mat('lavToldo', { roughness: 0.85, side: THREE.DoubleSide, map: canvasTex('lavToldo', 256, 64, (c, w, h) => { for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? '#ffffff' : '#2b7bd1'; c.fillRect(k * 16, 0, 16, h); } c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(0, h - 10, w, 10); }, true) });
-  awn.map.repeat.set(4, 1);
-  const tl = new THREE.Mesh(new THREE.PlaneGeometry(WX1 - DX + DW + 1.0, 1.5), awn);
-  tl.position.set((DX - DW - 0.5 + WX1 + 0.5) / 2, 3.45, Z1 + 0.62); tl.rotation.x = -Math.PI / 2 + 0.5; g.add(tl);
-  for (const x of [DX - DW - 0.5, WX1 + 0.5]) cyl(g, M.alu, 0.02, 0.02, 1.4, x, 3.45 - 0.33, Z1 + 0.62, 6).rotation.x = 1.07;
-  const sign = new THREE.Group(); sign.position.set(2.2, GH + 0.45, Z1 + 0.2); g.add(sign);
-  rbox(sign, M.blue, 12.4, 1.3, 0.18, 0, 0.6, 0, 0.06);
-  plane(sign, signMat('lavanderia', 'LAVANDERÍA ESPUMA', '#2b7bd1', '#ffffff', { bubbles: true }), 12.0, 1.15, 0, 0.6, 0.1);
-  // ventanas de la planta de arriba con alféizar y persiana
-  const tint = mat('lavCristalArriba', { color: '#33424f', roughness: 0.1, metalness: 0.7 });
-  for (let wx = -8.5; wx <= 8.5; wx += 3.4) {
-    slab(g, M.stone, wx - 0.75, wx + 0.75, GH + 2.0, GH + 2.08, Z1, Z1 + 0.14);
-    slab(g, tint, wx - 0.6, wx + 0.6, GH + 2.08, GH + 3.5, Z1 - 0.02, Z1 + 0.02);
-    slab(g, mat('lavPersiana', { color: '#e8e2d6', roughness: 0.7 }), wx - 0.6, wx + 0.6, GH + 3.0, GH + 3.5, Z1 + 0.02, Z1 + 0.03);
+  slab(g, M.alu, DX - DW, DX + DW, 2.56, 3.3, Z1 - T / 2 - 0.02, Z1 - T / 2 + 0.02); // montante de cristal sobre la puerta
+  slab(g, GLASS(), DX - DW + 0.04, DX + DW - 0.04, 2.6, 3.26, Z1 - T / 2 - 0.03, Z1 - T / 2 + 0.03);
+  // número, timbre y apliques junto a la puerta; escalón de piedra
+  plane(g, signMat('lavNum12', '12', '#f7f4ee', '#173f73', { w: 128, h: 96, font: 'bold 64px sans-serif' }), 0.22, 0.16, DX + DW + 0.2, 2.2, Z1 + 0.1);
+  rbox(g, M.alu, 0.07, 0.12, 0.02, DX + DW + 0.2, 1.35, Z1 + 0.1, 0.01);
+  for (const s of [-1, 1]) {
+    const lamp = new THREE.Group(); lamp.position.set(DX + s * (DW + 0.2), 2.75, Z1 + 0.1); g.add(lamp);
+    rbox(lamp, M.iron, 0.1, 0.16, 0.06, 0, 0, 0, 0.02); cyl(lamp, M.iron, 0.012, 0.012, 0.18, 0, 0, 0.1, 6).rotation.x = Math.PI / 2;
+    cyl(lamp, mat('lavFarol', { color: '#fff3d6', emissive: '#ffd590', emissiveIntensity: 1.3, roughness: 0.3 }), 0.07, 0.05, 0.2, 0, -0.06, 0.2, 12);
+    cyl(lamp, M.iron, 0.09, 0.07, 0.04, 0, 0.06, 0.2, 12);
   }
+  slab(g, M.stone, DX - DW - 0.2, DX + DW + 0.2, 0, 0.12, Z1, Z1 + 0.45);
+  // toldo enrollable a rayas con faldón ondulado y brazos articulados
+  const awn = mat('lavToldo', { roughness: 0.85, side: THREE.DoubleSide, map: canvasTex('lavToldo', 256, 64, (c, w, h) => { for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? '#ffffff' : '#2b7bd1'; c.fillRect(k * 16, 0, 16, h); } c.fillStyle = 'rgba(0,0,0,0.1)'; c.fillRect(0, h - 8, w, 8); }, true) });
+  awn.map.repeat.set(5, 1);
+  const valance = mat('lavFaldon', { transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.85, map: canvasTex('lavFaldon', 256, 64, (c, w, h) => { c.clearRect(0, 0, w, h); for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? '#ffffff' : '#2b7bd1'; c.beginPath(); c.moveTo(k * 16, 0); c.lineTo(k * 16 + 16, 0); c.lineTo(k * 16 + 16, h * 0.55); c.arc(k * 16 + 8, h * 0.55, 8, 0, Math.PI); c.closePath(); c.fill(); } }, true) });
+  valance.map.repeat.set(5, 1);
+  const AW0 = WX0 - 0.3, AW1 = WX1 + 0.3, AL = 1.6, AT = 0.32; // largo y caída del toldo
+  const ag = new THREE.Group(); ag.position.set((AW0 + AW1) / 2, GH - 0.62, Z1 + 0.12); g.add(ag);
+  cyl(ag, M.white, 0.08, 0.08, AW1 - AW0, 0, 0, 0, 16).rotation.z = Math.PI / 2;            // cofre del rollo
+  const cloth = new THREE.Mesh(new THREE.PlaneGeometry(AW1 - AW0, AL), awn); cloth.rotation.x = -Math.PI / 2 + AT; cloth.position.set(0, -Math.sin(AT) * AL / 2, Math.cos(AT) * AL / 2); ag.add(cloth);
+  const ay = -Math.sin(AT) * AL, az = Math.cos(AT) * AL;
+  cyl(ag, M.alu, 0.025, 0.025, AW1 - AW0, 0, ay, az, 8).rotation.z = Math.PI / 2;            // barra de carga
+  const fal = new THREE.Mesh(new THREE.PlaneGeometry(AW1 - AW0, 0.28), valance); fal.position.set(0, ay - 0.14, az + 0.01); ag.add(fal);
+  for (const x of [-(AW1 - AW0) / 2 + 0.3, (AW1 - AW0) / 2 - 0.3]) { const arm = cyl(ag, M.alu, 0.018, 0.018, AL * 0.98, x, ay / 2 - 0.05, az / 2, 6); arm.rotation.x = Math.PI / 2 - AT; }
+  // pisos de arriba: estuco, ventanas con recercado de piedra, contraventanas y balcones de hierro
+  wallX(g, M.wall, Z1 - T, Z1, X0, X1, GH, H, [-8.1, -4.3, 0, 4.3, 8.1].flatMap((wx, k) => [[wx - 0.65, wx + 0.65, GH + (k % 2 ? 0.9 : 0.15) + 0, GH + 2.45], [wx - 0.65, wx + 0.65, GH + FH + (k % 2 ? 0.9 : 0.15), GH + FH + 2.45]]));
+  for (let f = 0; f < 2; f++) for (const [k, wx] of [-8.1, -4.3, 0, 4.3, 8.1].entries()) {
+    const y0 = GH + f * FH + (k % 2 ? 0.9 : 0.15), y1 = GH + f * FH + 2.45, balcony = k % 2 === 0;
+    slab(g, M.glassUp, wx - 0.65, wx + 0.65, y0, y1, Z1 - T / 2 - 0.02, Z1 - T / 2 + 0.02);
+    for (const x of [wx - 0.63, wx - 0.02, wx + 0.57]) slab(g, M.white, x, x + 0.06, y0, y1, Z1 - T / 2 - 0.04, Z1 - T / 2 + 0.04);
+    slab(g, M.white, wx - 0.65, wx + 0.65, y0 + (y1 - y0) * 0.62, y0 + (y1 - y0) * 0.62 + 0.05, Z1 - T / 2 - 0.04, Z1 - T / 2 + 0.04);
+    for (const x of [wx - 0.82, wx + 0.65]) slab(g, M.stone, x, x + 0.17, y0, y1 + 0.18, Z1, Z1 + 0.06);   // jambas
+    slab(g, M.stone, wx - 0.85, wx + 0.85, y1, y1 + 0.2, Z1, Z1 + 0.1);                                        // dintel
+    for (const s of [-1, 1]) {                                                                                   // contraventanas de lamas
+      const sx0 = s < 0 ? wx - 1.5 : wx + 0.85, sx1 = s < 0 ? wx - 0.85 : wx + 1.5;
+      slab(g, M.shutter, sx0, sx1, y0, y1, Z1 + 0.02, Z1 + 0.06);
+      for (let l = 1; l < 10; l++) slab(g, M.shutterDark, sx0 + 0.04, sx1 - 0.04, y0 + ((y1 - y0) * l) / 10 - 0.012, y0 + ((y1 - y0) * l) / 10 + 0.012, Z1 + 0.06, Z1 + 0.075);
+    }
+    if (balcony) {
+      const by = y0, bz = 0.55;
+      slab(g, M.stone, wx - 1.0, wx + 1.0, by - 0.14, by, Z1, Z1 + bz);                                      // losa del balcón
+      slab(g, M.stone, wx - 1.0, wx + 1.0, by - 0.2, by - 0.14, Z1, Z1 + bz - 0.05);
+      for (let x = wx - 0.95; x <= wx + 0.95; x += 0.12) slab(g, M.iron, x - 0.01, x + 0.01, by, by + 0.95, Z1 + bz - 0.06, Z1 + bz - 0.04);
+      for (let zz = Z1 + 0.1; zz < Z1 + bz - 0.05; zz += 0.12) for (const x of [wx - 0.97, wx + 0.97]) slab(g, M.iron, x - 0.01, x + 0.01, by, by + 0.95, zz - 0.01, zz + 0.01);
+      slab(g, M.iron, wx - 1.0, wx + 1.0, by + 0.95, by + 1.0, Z1 + bz - 0.08, Z1 + bz - 0.02);
+      for (const x of [wx - 1.0, wx + 0.98]) slab(g, M.iron, x, x + 0.02, by + 0.95, by + 1.0, Z1, Z1 + bz - 0.02);
+      if ((k + f) % 2 === 0) P('potted_plant_01', wx + 0.6, by, Z1 + 0.28, k, 0.75, false);
+    } else slab(g, M.stone, wx - 0.85, wx + 0.85, y0 - 0.08, y0, Z1, Z1 + 0.14);                              // alféizar
+    if ((k * 3 + f) % 4 === 1) { rbox(g, M.white, 0.8, 0.55, 0.28, wx + 1.0, y0 - 0.55, Z1 + 0.18, 0.04); cyl(g, mat('lavRejillaAC', { color: '#9aa1a8', roughness: 0.5 }), 0.18, 0.18, 0.02, wx + 1.0, y0 - 0.55, Z1 + 0.33, 20).rotation.x = Math.PI / 2; }
+  }
+  slab(g, M.stone, X0 - 0.06, X1 + 0.06, GH + FH - 0.08, GH + FH + 0.06, Z1, Z1 + 0.1);        // imposta entre pisos
+  slab(g, M.stone, X0 - 0.18, X1 + 0.18, H, H + 0.3, Z0 - 0.18, Z1 + 0.18);                    // cornisa
+  slab(g, M.stone, X0 - 0.1, X1 + 0.1, H + 0.3, H + 0.85, Z1 - 0.15, Z1 + 0.1);                // peto
+  slab(g, M.back, X0, X1, H - 0.25, H, Z0, Z1);                                                // cubierta
+  for (const z of [Z0 + 2.5, Z1 - 3]) { cyl(g, M.white, 0.35, 0.35, 0.9, X1 - 2.5, H + 0.45, z, 16); }            // depósitos de la azotea
+  const dish = cyl(g, M.white, 0.45, 0.05, 0.12, X0 + 2.5, H + 1.1, Z1 - 1.0, 20); dish.rotation.x = -1.0; cyl(g, M.iron, 0.02, 0.02, 0.8, X0 + 2.5, H + 0.5, Z1 - 1.0, 6);
+  for (const x of [X0 + 0.12, X1 - 0.12]) { cyl(g, mat('lavBajante', { color: '#7d8186', roughness: 0.5, metalness: 0.5 }), 0.05, 0.05, H, x, H / 2, Z1 + 0.08, 10); }
+  // en la acera: macetas a la puerta y caballete con el horario
+  P('potted_plant_01', DX - DW - 0.55, 0.12, Z1 + 0.4, 0, 1.15, false); P('potted_plant_01', DX + DW + 0.55, 0.12, Z1 + 0.4, 1, 1.15, false);
+  const easel = new THREE.Group(); easel.position.set(WX0 + 1.4, 0, Z1 + 0.9); easel.rotation.y = 0.25; g.add(easel);
+  const board = noteMat('lavCaballete', ['AUTOSERVICIO', 'Todos los días', '8:00 - 22:00', 'Lavado 8 kg 4,50', 'Secado 1,00'], { head: '#173f73', bg: '#1d2124', fg: '#ffffff' });
+  for (const s of [-1, 1]) { const b = plane(easel, board, 0.58, 0.8, 0, 0.5, s * 0.15, s < 0 ? Math.PI : 0, s * 0.18); b.material.side = THREE.FrontSide; rbox(easel, M.iron, 0.62, 0.86, 0.02, 0, 0.5, s * 0.14, 0.01).rotation.x = s * 0.18; }
 
   // ---------------- interior: suelos, techo, forros ----------------
   floor(g, tiles, ix0, ix1, iz0, iz1);
-  slab(g, mat('lavTecho', { color: '#f9fbfc', roughness: 0.9 }), ix0, ix1, CH, CH + 0.05, iz0, iz1);
+  const grid = mat('falsoTecho', { roughness: 0.9, map: canvasTex('falsoTecho', 128, 128, (c, w, h) => { c.fillStyle = '#f4f5f3'; c.fillRect(0, 0, w, h); for (let k = 0; k < 500; k++) { c.fillStyle = 'rgba(150,150,140,0.25)'; c.fillRect((k * 37) % w, (k * 71) % h, 1, 1); } c.fillStyle = '#c9cdd1'; c.fillRect(0, 0, w, 4); c.fillRect(0, 0, 4, h); }, true) });
+  grid.userData.tile = 0.6;
+  slab(g, grid, ix0, ix1, CH, CH + 0.05, iz0, iz1);
   const liner = (x0, x1, z0, z1, holes) => (x1 - x0 > z1 - z0 ? wallX(g, M.inner, z0, z1, x0, x1, 0, CH, holes) : wallZ(g, M.inner, x0, x1, z0, z1, 0, CH, holes));
   liner(ix0, ix1, iz0, iz0 + 0.02); liner(ix0, ix0 + 0.02, iz0, iz1); liner(ix1 - 0.02, ix1, iz0, iz1);
   liner(ix0, ix1, iz1 - 0.02, iz1, [[DX - DW, DX + DW, 0, 2.5], [WX0, WX1, 0.6, 3.2]]);
@@ -236,7 +299,7 @@ export function laundromatHQ() {
   box(OX - PT / 2, OX + PT / 2, iz0, OZ + PT / 2, CH);
   wallBoxes(box, 'x', OZ - PT / 2, OZ + PT / 2, OX, ix1, CH, [OD]);
   // azulejo blanco con cenefa azul hasta 1,2 m en la sala
-  const wain = (x0, x1, z0, z1) => slab(g, wainTile, x0, x1, 0, 1.2, z0, z1);
+  const wain = (x0, x1, z0, z1) => { slab(g, wainTile, x0, x1, 0, 1.45, z0, z1); slab(g, M.blue, x0 - 0.005, x1 + 0.005, 1.45, 1.52, z0 - 0.005, z1 + 0.005); };
   wain(ix0 + 0.02, ix0 + 0.04, BZ + PT / 2, iz1 - 0.02);
   wain(ix0 + 0.02, TD[0], BZ + PT / 2, BZ + PT / 2 + 0.02); wain(TD[1], OX - PT / 2, BZ + PT / 2, BZ + PT / 2 + 0.02);
   // luces del techo: paneles por la sala y la trastienda
@@ -244,12 +307,44 @@ export function laundromatHQ() {
   P('ceiling_fan', -5.0, CH - 0.52, 2.5, 0, 0.5, false);
 
   // ---------------- sala de autoservicio ----------------
+  const towel = (col) => mat('toalla' + col, { color: col, roughness: 0.95 });
   // lavadoras a lo largo de la pared izquierda (mirando a la sala) con su número
   const num = (n) => mat('lavNum' + n, { roughness: 0.5, map: canvasTex('lavNum' + n, 64, 64, (c) => { c.fillStyle = '#2b7bd1'; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.fill(); c.fillStyle = '#fff'; c.font = 'bold 36px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(n), 32, 34); }) });
   let n = 1;
   for (let z = BZ + 1.0; z < iz1 - 0.9; z += 0.78) { put('furniture/washer', ix0 + 0.4, 0, z, Math.PI / 2, 0.92); plane(g, num(n++), 0.16, 0.16, ix0 + 0.06, 1.55, z, Math.PI / 2); }
   // columnas de lavadora y secadora contra la pared de la trastienda (mirando a la sala)
   for (let x = ix0 + 1.25; x < TD[0] - 0.4; x += 0.78) { put('furniture/washerDryerStacked', x, 0, BZ + PT / 2 + 0.4, 0, 0.92); plane(g, num(n++), 0.16, 0.16, x, 1.98, BZ + PT / 2 + 0.03); }
+  // franja iluminada sobre las lavadoras con lo que se puede hacer en cada zona
+  slab(g, M.navy, ix0 + 0.02, ix0 + 0.5, CH - 0.5, CH, BZ + 0.6, iz1 - 0.6);
+  plane(g, signMat('lavFranjaL', 'LAVADORAS · 8 kg · 14 kg', '#173f73', '#ffffff', { w: 1024, h: 96, font: 'bold 56px sans-serif' }), iz1 - BZ - 1.4, 0.38, ix0 + 0.51, CH - 0.25, (BZ + iz1) / 2, Math.PI / 2);
+  slab(g, M.navy, ix0 + 0.6, TD[0] - 0.2, CH - 0.5, CH, BZ + PT / 2, BZ + PT / 2 + 0.48);
+  plane(g, signMat('lavFranjaS', 'LAVADORA + SECADORA', '#173f73', '#ffffff', { w: 1024, h: 96, font: 'bold 56px sans-serif' }), TD[0] - ix0 - 1.0, 0.38, (ix0 + TD[0]) / 2 + 0.2, CH - 0.25, BZ + PT / 2 + 0.49);
+  for (const [x0, x1, z0, z1] of [[ix0 + 0.5, ix0 + 0.52, BZ + 0.6, iz1 - 0.6], [ix0 + 0.6, TD[0] - 0.2, BZ + PT / 2 + 0.48, BZ + PT / 2 + 0.5]]) slab(g, M.panel, x0, x1, CH - 0.53, CH - 0.5, z0, z1);
+  // máquina expendedora de detergente y suavizante
+  const vend = mat('lavExpendedora', { roughness: 0.3, emissive: '#ffffff', emissiveIntensity: 0.15, map: canvasTex('lavExpendedora', 128, 256, (c, w, h) => {
+    c.fillStyle = '#e8edf1'; c.fillRect(0, 0, w, h); c.fillStyle = '#2b7bd1'; c.fillRect(0, 0, w, 34); c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillText('DETERGENTE', w / 2, 22);
+    c.fillStyle = '#cfe3f3'; c.fillRect(10, 44, 80, 150);
+    const cols = ['#ff7b2e', '#2fb0e8', '#7ad14d', '#f2d14b', '#d24bd6', '#ffffff'];
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) { c.fillStyle = cols[(r * 3 + k) % cols.length]; c.fillRect(16 + k * 25, 52 + r * 36, 18, 26); c.fillStyle = '#555'; c.fillRect(14 + k * 25, 80 + r * 36, 22, 3); }
+    c.fillStyle = '#333'; c.fillRect(98, 60, 22, 40); c.fillStyle = '#10261a'; c.fillRect(98, 108, 22, 14); c.fillStyle = '#222'; c.fillRect(20, 210, 70, 30);
+  }) });
+  rbox(g, M.steel, 0.75, 1.85, 0.7, 3.4, 0.925, iz1 - 1.6, 0.03);
+  plane(g, vend, 0.7, 1.4, 3.4 - 0.38, 1.05, iz1 - 1.6, -Math.PI / 2);
+  box(3.0, 3.8, iz1 - 1.95, iz1 - 1.25, 1.85);
+  // tele en la pared (con el canal de noticias) y carros de ropa de rejilla
+  const tv = new THREE.Group(); tv.position.set(-0.6, 2.75, BZ + PT / 2 + 0.06); g.add(tv);
+  rbox(tv, M.iron, 1.1, 0.66, 0.06, 0, 0, 0, 0.02);
+  plane(tv, mat('lavTele', { color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.55, map: canvasTex('lavTele', 256, 144, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#1b4f8a'); gr.addColorStop(1, '#0d2a4a'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = '#c0392b'; c.fillRect(0, h - 30, w, 30); c.fillStyle = '#fff'; c.font = 'bold 16px sans-serif'; c.fillText('ÚLTIMA HORA · Rooktown', 10, h - 10); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fillRect(150, 20, 90, 70); c.fillStyle = '#e8b27a'; c.beginPath(); c.arc(195, 50, 18, 0, 7); c.fill(); }) }), 1.02, 0.58, 0, 0, 0.035);
+  const cart = (x, z, ry) => {
+    const cg = new THREE.Group(); cg.position.set(x, 0, z); cg.rotation.y = ry; g.add(cg);
+    for (const sx of [-0.3, 0.3]) for (const sz of [-0.22, 0.22]) { cyl(cg, M.steel, 0.012, 0.012, 0.9, sx, 0.5, sz, 6); cyl(cg, M.iron, 0.04, 0.04, 0.03, sx, 0.04, sz, 10).rotation.x = Math.PI / 2; }
+    for (const y of [0.55, 0.95]) { slab(cg, M.steel, -0.31, 0.31, y - 0.008, y + 0.008, -0.23, 0.23); }
+    for (let k = -5; k <= 5; k++) { slab(cg, M.steel, k * 0.06 - 0.004, k * 0.06 + 0.004, 0.55, 0.95, -0.23, -0.222); slab(cg, M.steel, k * 0.06 - 0.004, k * 0.06 + 0.004, 0.55, 0.95, 0.222, 0.23); }
+    for (let k = -3; k <= 3; k++) { slab(cg, M.steel, -0.31, -0.302, 0.55, 0.95, k * 0.065 - 0.004, k * 0.065 + 0.004); slab(cg, M.steel, 0.302, 0.31, 0.55, 0.95, k * 0.065 - 0.004, k * 0.065 + 0.004); }
+    cyl(cg, M.blue, 0.018, 0.018, 0.6, 0, 1.25, -0.23, 8).rotation.z = Math.PI / 2; for (const sx of [-0.3, 0.3]) cyl(cg, M.steel, 0.012, 0.012, 0.3, sx, 1.1, -0.23, 6);
+    rbox(cg, towel('#9ec9f0'), 0.5, 0.18, 0.36, 0, 0.66, 0, 0.06); rbox(cg, towel('#f2f2ee'), 0.4, 0.12, 0.3, 0.02, 0.78, 0.02, 0.05);
+    box(x - 0.35, x + 0.35, z - 0.35, z + 0.35, 1.0);
+  };
   // fregadero, estante de detergentes y armario alto junto a la puerta de la trastienda
   put('furniture/bathroomSink', 0.0, 0, BZ + PT / 2 + 0.32, 0, 1.6);
   put('furniture/kitchenCabinetUpper', 0.0, 1.55, BZ + PT / 2 + 0.22, 0, 1.4, false);
@@ -268,8 +363,8 @@ export function laundromatHQ() {
   box(fx0, fx1, fz - 0.5, fz + 0.5, 0.9);
   P('wicker_basket_01', fx0 + 0.6, 0.885, fz - 0.15, 0.3, null, false, { w: 0.55 });
   P('wicker_basket_01', fx1 - 0.8, 0.885, fz + 0.1, -0.2, null, false, { w: 0.55 });
-  const towel = (col) => mat('toalla' + col, { color: col, roughness: 0.95 });
   for (const [x, cols] of [[fx0 + 1.6, ['#f2f2ee', '#9ec9f0', '#f2f2ee', '#f6c5c5']], [fx0 + 2.4, ['#c9e7c5', '#ffffff', '#ffe5a8']]]) cols.forEach((c, k) => rbox(g, towel(c), 0.4, 0.06, 0.3, x, 0.915 + k * 0.062, fz + 0.05, 0.025));
+  cart(-8.6, 4.6, 0.3); cart(-1.2, 0.2, -0.5);
   // bancos junto al escaparate, mirando a las lavadoras; sillas y planta
   for (const x of [-2.6, -0.4, 1.8]) put('furniture/benchCushion', x, 0, iz1 - 0.55, Math.PI, 2.0);
   P('plastic_monobloc_chair_01', 3.3, 0, iz1 - 0.7, Math.PI + 0.4, 0.82);
@@ -353,20 +448,15 @@ export function carwashHQ() {
   const ix0 = X0 + T, ix1 = X1 - T, iz0 = Z0 + T, iz1 = Z1 - T;
   const CH = GH - 0.3;
   const M = {
-    wall: pbrMat('claro', '#e6eef5'), plinth: pbrMat('hormigon', '#8f8b86'), concrete: pbrMat('hormigon', '#b9b6b0'),
+    wall: pbrMat('panelMetal', '#dfe7ee'), plinth: pbrMat('hormigon', '#5d6168'), concrete: pbrMat('hormigonPintado', '#c9ccce'), tunnel: pbrMat('azulejoLargo', '#ffffff'),
     inner: mat('lvYeso', { color: '#eef2f5', roughness: 0.9 }), panelBlue: mat('lvPanelAzul', { color: '#1d6fd1', roughness: 0.45, metalness: 0.2 }),
     steel: mat('lvAcero', { color: '#b9c0c6', roughness: 0.3, metalness: 0.85 }), yellow: mat('lvAmarillo', { color: '#f2c230', roughness: 0.5 }),
     dark: mat('lvOscuro', { color: '#24282d', roughness: 0.5 }), white: mat('lvBlanco', { color: '#f7f7f5', roughness: 0.5 }),
     panel: mat('lvPanelLuz', { color: '#ffffff', emissive: '#f4fbff', emissiveIntensity: 1.3 }),
     wood: floorMat('lvParque', (c, w, h) => { for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? '#7d5a3d' : '#886445'; c.fillRect(0, k * 32, w, 32); c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(0, k * 32, w, 2); c.fillRect(((k * 97) % w), k * 32, 2, 32); } }, 1.6),
   };
-  const wetFloor = floorMat('lvSueloMojado', (c, w, h) => {
-    c.fillStyle = '#8e9296'; c.fillRect(0, 0, w, h);
-    for (let k = 0; k < 900; k++) { const v = 120 + (k * 37) % 40; c.fillStyle = `rgba(${v},${v},${v + 4},0.35)`; c.fillRect((k * 53) % w, (k * 91) % h, 3, 3); }
-    c.fillStyle = 'rgba(40,60,80,0.18)'; for (let k = 0; k < 7; k++) { c.beginPath(); c.ellipse((k * 71) % w, (k * 113) % h, 30 + k * 4, 14 + k * 2, k, 0, 7); c.fill(); }
-    c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, w, 2); c.fillRect(0, 0, 2, h);
-  }, 2.0);
-  const tiles = floorMat('lvBaldosa', (c, w, h) => { for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { c.fillStyle = (x + y) % 2 ? '#d7dde2' : '#eceff1'; c.fillRect(x * 128, y * 128, 128, 128); } c.fillStyle = 'rgba(90,100,110,0.4)'; c.fillRect(0, 0, w, 2); c.fillRect(0, 0, 2, h); c.fillRect(0, 127, w, 2); c.fillRect(127, 0, 2, h); }, 0.6);
+  const wetFloor = pbrMat('sueloGaraje', '#c4c6c8');
+  const tiles = pbrMat('baldosaGris', '#e8eaec');
 
   // ---------------- muros ----------------
   // túnel (x −13,7..−4,5) abierto delante y detrás; boxes (−4,5..6) abiertos delante; tienda (6..13,7)
@@ -379,7 +469,6 @@ export function carwashHQ() {
   slab(g, M.wall, X0, X1, GH - 0.2, GH, Z0, Z1);                                  // cubierta
   slab(g, M.panelBlue, X0 - 0.05, X1 + 0.05, GH - 1.2, GH - 0.2, Z1, Z1 + 0.08);   // banda azul de la fachada
   slab(g, M.white, X0 - 0.2, X1 + 0.2, GH, GH + 0.35, Z0 - 0.2, Z1 + 0.2);         // peto
-  slab(g, M.plinth, X0 - 0.05, X1 + 0.05, 0, 0.4, Z1, Z1 + 0.06);
   boxes.push([X0, X0 + T, Z0, Z1, GH], [X1 - T, X1, Z0, Z1, GH]);
   wallBoxes(box, 'x', Z0, Z0 + T, X0, X1, GH, [TO]);
   wallBoxes(box, 'x', Z1 - T, Z1, X0, X1, GH, [TO, BO, SD]);
@@ -396,10 +485,44 @@ export function carwashHQ() {
   cyl(sem, mat('semRojo', { color: '#5a1010', emissive: '#ff2020', emissiveIntensity: 0.25 }), 0.09, 0.09, 0.03, 0, 0.17, 0.11, 16).rotation.x = Math.PI / 2;
   cyl(sem, mat('semVerde', { color: '#20ff60', emissive: '#20ff60', emissiveIntensity: 1.8 }), 0.09, 0.09, 0.03, 0, -0.17, 0.11, 16).rotation.x = Math.PI / 2;
 
+  // marco de la boca del túnel con franjas de aviso y cortina de tiras de goma
+  const chev = mat('lvChevron', { roughness: 0.5, map: canvasTex('lvChevron', 64, 256, (c, w, h) => { c.fillStyle = '#f2c230'; c.fillRect(0, 0, w, h); c.fillStyle = '#1d2124'; for (let y = -64; y < h; y += 48) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y + 32); c.lineTo(w, y + 56); c.lineTo(0, y + 24); c.fill(); } }) });
+  for (const x of [TO[0] - 0.25, TO[1]]) slab(g, chev, x, x + 0.25, 0, 3.95, Z1, Z1 + 0.12);
+  slab(g, chev, TO[0] - 0.25, TO[1] + 0.25, 3.8, 4.0, Z1, Z1 + 0.12);
+  for (const zf of [Z1 - T / 2, Z0 + T / 2]) {
+    const strip = mat('lvTiraGoma', { color: '#2b5f9e', transparent: true, opacity: 0.82, roughness: 0.35, side: THREE.DoubleSide });
+    for (let x = TO[0] + 0.12, k = 0; x < TO[1]; x += 0.24, k++) { const st = plane(g, strip, 0.2, 1.6, x, 3.0, zf + 0.04, 0); st.rotation.z = (k % 3 - 1) * 0.02; }
+    slab(g, M.steel, TO[0], TO[1], 3.75, 3.82, zf - 0.04, zf + 0.04);
+  }
+  // marquesina sobre la boca de los boxes
+  slab(g, M.panelBlue, BO[0] - 0.2, BO[1] + 0.2, 3.9, 4.05, Z1, Z1 + 1.4);
+  slab(g, M.white, BO[0] - 0.2, BO[1] + 0.2, 3.85, 3.9, Z1 + 1.3, Z1 + 1.4);
+  for (let x = BO[0] + 0.6; x < BO[1]; x += 2.6) slab(g, M.panel, x - 0.4, x + 0.4, 3.83, 3.85, Z1 + 0.5, Z1 + 0.9);
+  // tótem con el nombre y los precios junto a la calle
+  const tot = new THREE.Group(); tot.position.set(X1 - 1.2, 0, Z1 + 3.2); g.add(tot);
+  rbox(tot, M.dark, 1.6, 0.4, 0.6, 0, 0.2, 0, 0.04);
+  rbox(tot, M.panelBlue, 1.3, 5.6, 0.36, 0, 3.1, 0, 0.05);
+  for (const zz of [0.185, -0.185]) {
+    const ry = zz > 0 ? 0 : Math.PI;
+    plane(tot, signMat('lvTotemCab', 'LAVADERO', '#1d6fd1', '#ffffff', { w: 512, h: 128, bubbles: true, font: 'bold 84px "Arial Black", sans-serif' }), 1.2, 0.32, 0, 5.4, zz, ry);
+    plane(tot, noteMat('lvTotemPrecios', ['PRECIOS', 'Básico ........ 6', 'Espuma ........ 9', 'Cera ........... 12', 'Total ........... 15', 'Box 1 € / 4 min'], { head: '#f2c230', bg: '#ffffff', fg: '#1d2b36', w: 256, h: 320 }), 1.1, 1.4, 0, 4.2, zz, ry);
+    plane(tot, signMat('lvTotem24', 'ABIERTO 24 H', '#1d2124', '#4dff8a', { w: 512, h: 96, font: 'bold 60px sans-serif' }), 1.1, 0.22, 0, 3.25, zz, ry);
+  }
+  box(X1 - 2.0, X1 - 0.4, Z1 + 2.9, Z1 + 3.5, 5.9);
+  // bolardos y flechas pintadas en el suelo de la entrada
+  for (const x of [TO[0] - 0.5, TO[1] + 0.25, BO[0] - 0.1, BO[1] + 0.1]) { cyl(g, M.yellow, 0.1, 0.1, 0.9, x, 0.45, Z1 + 0.5, 14); cyl(g, M.dark, 0.105, 0.105, 0.08, x, 0.7, Z1 + 0.5, 14); box(x - 0.1, x + 0.1, Z1 + 0.4, Z1 + 0.6, 0.9); }
+  const arrow = mat('lvFlecha', { transparent: true, depthWrite: false, map: canvasTex('lvFlecha', 128, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); c.moveTo(w / 2, 10); c.lineTo(w - 14, 90); c.lineTo(w * 0.65, 90); c.lineTo(w * 0.65, h - 10); c.lineTo(w * 0.35, h - 10); c.lineTo(w * 0.35, 90); c.lineTo(14, 90); c.closePath(); c.fill(); }) });
+  for (const z of [Z1 + 2.2, Z1 + 4.6]) plane(g, arrow, 1.0, 2.0, (TO[0] + TO[1]) / 2, 0.035, z, Math.PI, -Math.PI / 2);
+  plane(g, signMat('lvEntrada', 'ENTRADA', 'rgba(0,0,0,0)', 'rgba(255,255,255,0.85)', { w: 512, h: 128, font: 'bold 90px sans-serif' }), 2.6, 0.65, (TO[0] + TO[1]) / 2, 0.035, Z1 + 6.3, Math.PI, -Math.PI / 2);
+  // zócalo oscuro bajo las chapas y canalón
+  slab(g, M.plinth, SX0, X1 + 0.05, 0, 0.5, Z1, Z1 + 0.07);
+  cyl(g, mat('lvBajante', { color: '#7d8186', roughness: 0.5, metalness: 0.5 }), 0.05, 0.05, GH, X1 - 0.12, GH / 2, Z1 + 0.08, 10);
+
   // ---------------- túnel de lavado ----------------
   floor(g, wetFloor, TX0, TX1, iz0, iz1);
   slab(g, mat('lvTechoT', { color: '#dfe5ea', roughness: 0.8 }), TX0, TX1, CH, CH + 0.05, iz0, iz1);
-  wallZ(g, M.panelBlue, TX0, TX0 + 0.03, iz0, iz1, 0, CH); wallZ(g, M.panelBlue, TX1 - 0.18, TX1 - 0.15, iz0, iz1, 0, CH);
+  wallZ(g, M.tunnel, TX0, TX0 + 0.03, iz0, iz1, 0, CH); wallZ(g, M.tunnel, TX1 - 0.18, TX1 - 0.15, iz0, iz1, 0, CH);
+  for (const x of [TX0 + 0.03, TX1 - 0.18]) slab(g, M.panelBlue, x - 0.01, x + 0.01, 1.2, 1.35, iz0, iz1); // franja azul
   slab(g, M.wall, TX1 - 0.15, TX1 + 0.15, 0, CH, iz0, iz1); box(TX1 - 0.15, TX1 + 0.15, iz0, iz1, CH);
   // carriles guía del coche y rejillas del desagüe
   for (const x of [-10.2, -7.9]) { slab(g, M.steel, x - 0.06, x + 0.06, 0.02, 0.12, iz0 + 0.5, iz1 - 0.5); slab(g, M.yellow, x - 0.07, x + 0.07, 0.02, 0.04, iz1 - 0.5, iz1 - 0.2); }
@@ -436,7 +559,9 @@ export function carwashHQ() {
   slab(g, mat('lvTechoB', { color: '#dfe5ea', roughness: 0.8 }), TX1 + 0.15, BX1, CH, CH + 0.05, iz0, iz1);
   const MID = (TX1 + BX1) / 2;
   slab(g, M.panelBlue, MID - 0.1, MID + 0.1, 0, 3.0, iz0, iz1 - 2.0); box(MID - 0.1, MID + 0.1, iz0, iz1 - 2.0, 3.0);
-  wallX(g, M.panelBlue, iz0, iz0 + 0.03, TX1 + 0.15, BX1, 0, CH);
+  wallX(g, M.concrete, iz0, iz0 + 0.03, TX1 + 0.15, BX1, 0, CH);
+  wallZ(g, M.concrete, TX1 + 0.15, TX1 + 0.18, iz0, iz1, 0, CH);
+  slab(g, M.yellow, TX1 + 0.15, BX1, 0.02, 0.03, iz1 - 0.35, iz1 - 0.2); // línea amarilla de la boca
   for (const [k, bx] of [[1, (TX1 + MID) / 2], [2, (MID + BX1) / 2]]) {
     plane(g, signMat('box' + k, 'BOX ' + k, '#1d6fd1', '#ffffff', { w: 256, h: 96, font: 'bold 64px "Arial Black", sans-serif' }), 1.4, 0.52, bx, 3.4, iz0 + 0.05);
     // consola de monedas y programas, lanza colgada y manguera enrollada
@@ -457,6 +582,7 @@ export function carwashHQ() {
   const hose = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 8, 20, Math.PI * 1.4), M.dark); hose.position.set(0, 1.35, 0.18); hose.rotation.y = 0.4; vac.add(hose);
   plane(vac, signMat('aspirador', 'ASPIRADOR', '#1d2b36', '#f2c230', { w: 256, h: 64, font: 'bold 40px sans-serif' }), 0.5, 0.13, 0, 0.95, 0.32);
   box(BX1 + 0.55, BX1 + 1.25, Z1 + 0.85, Z1 + 1.55, 1.3);
+  const vac2 = vac.clone(); vac2.position.set(TX1 + 1.2, 0, Z1 + 1.6); g.add(vac2); box(TX1 + 0.85, TX1 + 1.55, Z1 + 1.25, Z1 + 1.95, 1.3);
 
   // ---------------- tienda (delante) y oficina (detrás) ----------------
   floor(g, tiles, SX0 + 0.15, ix1, OZ + PT / 2, iz1);

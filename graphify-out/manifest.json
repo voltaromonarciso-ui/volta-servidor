@@ -1692,9 +1692,9 @@
     "semantic_hash": ""
   },
   "juego/src/world/buildingkit.js": {
-    "mtime": 1792775708.9947429,
-    "seen": 1792785879.6673496,
-    "ast_hash": "5c53f4d69cfd0be3b54032eca1a913e0",
+    "mtime": 1792798194.9597077,
+    "seen": 1792800886.9139602,
+    "ast_hash": "92e507339fe279339fbbbb74c760aaff",
     "semantic_hash": ""
   },
   "juego/tools/blend_list.py": {
@@ -2358,15 +2358,111 @@
     "semantic_hash": ""
   },
   "juego/src/world/fronthq.js": {
-    "mtime": 1792798018.6666389,
-    "seen": 1792798139.9494927,
-    "ast_hash": "5ec7d21587e308d8de4a4384fccbcd36",
+    "mtime": 1792799001.743972,
+    "seen": 1792800886.9140751,
+    "ast_hash": "0f4bfcadf722d6b8e974644f43bee76b",
     "semantic_hash": ""
   },
   "juego/tests/fronts.spec.js": {
     "mtime": 1792798102.2826438,
     "seen": 1792798139.9501038,
     "ast_hash": "0a88e99d828d67ccb0e7409ca5a58300",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/exterior_wall_cladding_02_c.jpg": {
+    "mtime": 1792798184.1626487,
+    "seen": 1792800886.9239464,
+    "ast_hash": "a02a1017a26fec62731dd415e196e72c",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/exterior_wall_cladding_02_n.jpg": {
+    "mtime": 1792798184.1997573,
+    "seen": 1792800886.9239488,
+    "ast_hash": "6a2805a2168cf1d11debca862102a491",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/garage_floor_c.jpg": {
+    "mtime": 1792798184.2338345,
+    "seen": 1792800886.9239624,
+    "ast_hash": "bd5396fd51453cfea807ba170cf1ba4b",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/garage_floor_n.jpg": {
+    "mtime": 1792798184.2601657,
+    "seen": 1792800886.923967,
+    "ast_hash": "df87bf286b1d0e05523fbab34e4ef8df",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/large_grey_tiles_c.jpg": {
+    "mtime": 1792798184.2857344,
+    "seen": 1792800886.9239686,
+    "ast_hash": "389bc43ad3b932dc51157928676afdf2",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/large_grey_tiles_n.jpg": {
+    "mtime": 1792798184.3066487,
+    "seen": 1792800886.9239755,
+    "ast_hash": "4b4b4c102479299264fdb3f029ec64b7",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/long_white_tiles_c.jpg": {
+    "mtime": 1792798184.3373208,
+    "seen": 1792800886.923978,
+    "ast_hash": "417b1c4e9e0c2aa5929da64fec50eb33",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/long_white_tiles_n.jpg": {
+    "mtime": 1792798184.3648093,
+    "seen": 1792800886.9239795,
+    "ast_hash": "f819ec6a85fa88acfe0d1e56cdc0153b",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/painted_concrete_c.jpg": {
+    "mtime": 1792798184.3956118,
+    "seen": 1792800886.924273,
+    "ast_hash": "6f48e164ccd0a35b5f39efbdb81d282e",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/painted_concrete_n.jpg": {
+    "mtime": 1792798184.4186487,
+    "seen": 1792800886.9242823,
+    "ast_hash": "9b8fd8520309619ccd160f97482f489b",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/rectangular_facade_tiles_c.jpg": {
+    "mtime": 1792798184.4484448,
+    "seen": 1792800886.9251058,
+    "ast_hash": "b479e9b5cca9730a26bd72e93d8a8064",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/rectangular_facade_tiles_n.jpg": {
+    "mtime": 1792798184.4765768,
+    "seen": 1792800886.925112,
+    "ast_hash": "112283af54296409f48f912cdc6561fd",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/square_tiled_wall_c.jpg": {
+    "mtime": 1792798184.4986486,
+    "seen": 1792800886.9256172,
+    "ast_hash": "c8d2c90f2e332d866ba7ec2e8a8dbbb4",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/square_tiled_wall_n.jpg": {
+    "mtime": 1792798184.5336237,
+    "seen": 1792800886.925619,
+    "ast_hash": "0d6a4fef4b1299ee281a38a5227af155",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/terrazzo_tiles_c.jpg": {
+    "mtime": 1792798184.5667655,
+    "seen": 1792800886.9256208,
+    "ast_hash": "82bff677f02a868cfd25a67e70a4dbe6",
+    "semantic_hash": ""
+  },
+  "juego/src/assets/textures/pbr/terrazzo_tiles_n.jpg": {
+    "mtime": 1792798184.5882628,
+    "seen": 1792800886.9256225,
+    "ast_hash": "038eb17e657d8620621f3e5dc61abc2e",
     "semantic_hash": ""
   }
 }

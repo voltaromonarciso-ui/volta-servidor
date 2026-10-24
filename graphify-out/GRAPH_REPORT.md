@@ -1,17 +1,17 @@
-# Graph Report - volta-servidor  (2026-10-23)
+# Graph Report - volta-servidor  (2026-10-24)
 
 ## Corpus Check
-- 210 files · ~2,322,768 words
+- 210 files · ~2,350,523 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 299 file(s) not represented in the graph (top: .glb 266, (none) 10, .xml 10)
 
 ## Summary
-- 3076 nodes · 8504 edges · 137 communities (119 shown, 18 thin omitted)
+- 3076 nodes · 8506 edges · 137 communities (119 shown, 18 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 211 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8163a0c2`
+- Built from commit: `b542b836`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -596,12 +596,12 @@ Cohesion: 0.15
 Nodes (18): at(), home(), P(), piso(), QUESTS, drainK(), lampBoost(), simulateObjects() (+10 more)
 
 ### Community 122 - "fronthq.js"
-Cohesion: 0.32
-Nodes (19): canvasTex(), carwashHQ(), cyl(), floor(), floorMat(), kit(), laundromatHQ(), mat() (+11 more)
+Cohesion: 0.33
+Nodes (20): canvasTex(), carwashHQ(), cyl(), floor(), floorMat(), kit(), laundromatHQ(), mat() (+12 more)
 
 ### Community 123 - "mansion.js"
-Cohesion: 0.21
-Nodes (19): balG, balustrade(), canvasTex(), ci, copies(), cyl(), dressWindow(), hipRoof() (+11 more)
+Cohesion: 0.20
+Nodes (18): balG, balustrade(), canvasTex(), ci, copies(), cyl(), dressWindow(), hipRoof() (+10 more)
 
 ### Community 124 - "plant.js"
 Cohesion: 0.18
